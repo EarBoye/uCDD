@@ -15,7 +15,8 @@
 %define A_EQ 12080
 %define A_PREAMP 13160
 %define A_BARS 13260
-%define ASSET_EXTRA_BYTES 13302
+%define A_BUBBLES 13302
+%define ASSET_EXTRA_BYTES 13676
 %define LOGO_W 178
 %define LOGO_H 25
 %define DIGIT_W 13
@@ -92,6 +93,7 @@
 %define ANA_BAR_W 5
 %define ANA_TOP 49
 %define ANA_BOTTOM 84
+%define BUBBLE_RADII 6
 %define C_ENGRAVE 1
 %define C_LABEL 2
 %define C_TEXT 3
@@ -125,6 +127,14 @@
     dw 175, 46
     dw 225, 40
     dw 269, 44
+%endmacro
+%macro BUBBLE_TABLE 0
+    dw A_BUBBLES+0, 3, 3
+    dw A_BUBBLES+9, 5, 5
+    dw A_BUBBLES+34, 7, 5
+    dw A_BUBBLES+69, 9, 7
+    dw A_BUBBLES+132, 11, 9
+    dw A_BUBBLES+231, 13, 11
 %endmacro
 %macro DIGIT_TABLE 0
     dw 14, 27, 52, 65, 85, 98

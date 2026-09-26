@@ -3,10 +3,11 @@
 
 """Render the UCDDPLAY faceplate with Blender.
 
-blender -b --factory-startup -P faceplate.py -- <output.png> [samples]
+blender -b --factory-startup -P faceplate.py -- <output.png> <shells.png> [samples]
 
 Coordinates are VGA pixels of the 320x200 screen. The render is 1280x960
-(4:3), so one VGA pixel is 1.2 units high.
+(4:3), so one VGA pixel is 1.2 units high. shells.png is a second render
+with only the corner shells, for their mask.
 """
 
 import math
@@ -15,8 +16,8 @@ import sys
 import bpy
 
 argv = sys.argv[sys.argv.index('--') + 1:]
-OUT = argv[0]
-SAMPLES = int(argv[1]) if len(argv) > 1 else 96
+OUT, SHELLS = argv[0], argv[1]
+SAMPLES = int(argv[2]) if len(argv) > 2 else 96
 SCALE_Y = 1.2
 
 bpy.ops.wm.read_factory_settings(use_empty=True)
@@ -165,14 +166,16 @@ def volute(cx, cy, size, flip_x=1, flip_y=1, turns=1.6, tail=(1.0, 0.0), tail_le
     return path(pts, radius, GOLD, z=1.2, resolution=3)
 
 
-def shell(cx, cy, size, a0, a1, petals=6):
+def shell(cx, cy, size, a0, a1, petals=6, z=0.0):
     """A gold fan of petals between two screen angles in degrees."""
+    parts = []
     for i in range(petals):
         a = math.radians(a0 + (a1 - a0) * (i + 0.5) / petals)
         d = size * 0.55
-        sphere(cx + d * math.cos(a), cy + d * math.sin(a), 0.8, size * 0.55, size * 0.16, size * 0.12, GOLD,
-               rotation=-a)
-    sphere(cx, cy, 1.2, size * 0.2, size * 0.2, size * 0.14, GOLD)
+        parts.append(sphere(cx + d * math.cos(a), cy + d * math.sin(a), 0.8 + z, size * 0.55, size * 0.16,
+                            size * 0.12, GOLD, rotation=-a))
+    parts.append(sphere(cx, cy, 1.2 + z, size * 0.2, size * 0.2, size * 0.14, GOLD))
+    return parts
 
 
 def rosette(cx, cy, r=2.0):
@@ -185,13 +188,12 @@ def rosette(cx, cy, r=2.0):
 
 box(0, 0, 319, 199, -1.0, 0.0, PLATE)
 
-# Outer frame and corner shells.
+# Outer frame and corner shells. The shells lie on top of all frames.
 molding(1, 1, 318, 198, 1.2, GOLD, z=0.8, r=6)
 molding(3.6, 3.6, 315.4, 195.4, 0.45, CHROME, z=0.6, r=4)
-shell(4, 4, 14, 0, 90, petals=7)
-shell(315, 4, 14, 90, 180, petals=7)
-shell(4, 195, 14, -90, 0, petals=7)
-shell(315, 195, 14, 180, 270, petals=7)
+corner_shells = []
+for (x, y, a0) in ((4, 4, 0), (315, 4, 90), (4, 195, -90), (315, 195, 180)):
+    corner_shells += shell(x, y, 14, a0, a0 + 90, petals=7, z=3.4)
 
 # Logo window with a crest and C-scrolls.
 LOGO = (67, 5, 252, 38)
@@ -203,9 +205,7 @@ for sx in (-1, 1):
     volute(x, 13, 7.5, flip_x=sx, flip_y=1, turns=1.25, tail=(-0.2, 1.0), tail_len=1.6, radius=0.85)
     volute(x, 30, 7.5, flip_x=sx, flip_y=-1, turns=1.25, tail=(-0.2, 1.0), tail_len=1.6, radius=0.85)
     rosette(x - sx, 21.5, 2.2)
-shell(159.5, 5.2, 9, 20, 160, petals=9)
 rosette(159.5, 5.0, 2.4)
-shell(159.5, 38.8, 7, 200, 340, petals=7)
 for sx in (-1, 1):
     volute(159.5 + sx * 9, 4.2, 5.0, flip_x=sx, flip_y=1, turns=1.1, tail=(1.0, -0.1), tail_len=4.0, radius=0.55)
 
@@ -327,4 +327,14 @@ camera.location = (160, 120, 100)
 scene.camera = camera
 
 scene.render.filepath = OUT
+bpy.ops.render.render(write_still=True)
+
+for o in scene.objects:
+    if o.type in ('MESH', 'CURVE') and o not in corner_shells:
+        o.hide_render = True
+scene.render.film_transparent = True
+scene.render.image_settings.color_mode = 'RGBA'
+scene.cycles.samples = 16
+scene.cycles.use_denoising = False
+scene.render.filepath = SHELLS
 bpy.ops.render.render(write_still=True)

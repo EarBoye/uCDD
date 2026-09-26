@@ -223,6 +223,16 @@ animate_palette:
 show_message:
     mov [message_text], si
     mov word [message_timer], 210
+    mov byte [label_active], 0
+    ret
+
+; Return AX = the low word of the BIOS tick count.
+bios_ticks:
+    push ds
+    push 40h
+    pop ds
+    mov ax, [6ch]
+    pop ds
     ret
 
 ; The level for the effects: 0 to 255.
@@ -235,40 +245,207 @@ effect_level:
 
 draw_bottom:
     call set_bottom_rect
+    call bottom_content
+    jmp draw_label
+
+bottom_content:
     cmp word [message_timer], 0
     je .visual
     dec word [message_timer]
-    mov word [star_boost], 4
-    mov si, bottom_stars
-    mov cx, BOTTOM_STARS
-    call draw_stars
+    call slow_stars
     jmp draw_message
 .visual:
     cmp byte [play_state], PLAYING
-    jne draw_scroller
+    je .playing
+    cmp byte [label_active], 0
+    je draw_scroller
+    jmp slow_stars
+.playing:
+    cmp byte [vis_choice], VIS_RANDOM
+    jne .mode
     inc word [vis_timer]
     cmp word [vis_timer], VIS_FRAMES
     jb .mode
-    call next_visual
+    call random_visual
 .mode:
     movzx bx, byte [vis_mode]
     add bx, bx
     jmp [visual_table+bx]
 
-next_visual:
+slow_stars:
+    mov word [star_boost], 4
+    mov si, bottom_stars
+    mov cx, BOTTOM_STARS
+    jmp draw_stars
+
+; Select the next display, or RANDOM after the last one. Show its name.
+select_visual:
+    mov word [message_timer], 0
+    mov al, [vis_choice]
+    inc ax
+    cmp al, VIS_RANDOM
+    jbe .choice
+    xor al, al
+.choice:
+    mov [vis_choice], al
+    cmp al, VIS_RANDOM
+    je .label
+    call set_visual
+.label:
     mov word [vis_timer], 0
-    inc byte [vis_mode]
-    cmp byte [vis_mode], VIS_COUNT
-    jb .clear
-    mov byte [vis_mode], 0
-.clear:
+    movzx bx, byte [vis_choice]
+    add bx, bx
+    mov ax, [visual_names+bx]
+    mov [label_text], ax
+    call bios_ticks
+    mov [label_start], ax
+    mov byte [label_active], 1
+    ret
+
+; Change to a different display at random.
+random_visual:
+    call random
+    xor dx, dx
+    mov cx, VIS_COUNT-1
+    div cx
+    mov al, dl
+    cmp al, [vis_mode]
+    jb set_visual
+    inc ax
+
+; AL = display. Start it with empty buffers.
+set_visual:
+    mov [vis_mode], al
+    mov word [vis_timer], 0
     push es
+    push ds
+    pop es
+    mov di, bubbles
+    mov cx, BUBBLES*BUBBLE_SIZE/2
+    xor ax, ax
+    rep stosw
     mov es, [work_seg]
     mov di, W_FIRE
     mov cx, (FIRE_ROWS+SCROLL_H)*SCROLL_W/2
-    xor ax, ax
     rep stosw
     pop es
+    ret
+
+; The name of the selected display. It dissolves in and out.
+draw_label:
+    cmp byte [label_active], 0
+    je .done
+    call bios_ticks
+    sub ax, [label_start]
+    cmp ax, LABEL_TICKS
+    jb .visible
+    mov byte [label_active], 0
+.done:
+    ret
+.visible:
+    mov bx, ax
+    mov ax, LABEL_TICKS
+    sub ax, bx
+    shl ax, 4
+    xor dx, dx
+    mov cx, LABEL_FADE
+    div cx
+    inc bx
+    shl bx, 2
+    cmp ax, bx
+    jb .level
+    mov ax, bx
+.level:
+    cmp ax, 16
+    jbe .store
+    mov ax, 16
+.store:
+    mov [label_level], al
+    mov si, [label_text]
+    mov di, si
+    call string_end
+    sub di, si
+    shl di, 3
+    mov ax, (SCROLL_X0+SCROLL_X1+1)/2
+    sub ax, di
+    mov [label_x], ax
+    mov byte [draw_color], C_BLACK
+    mov word [scroll_shadow], 2
+    call label_pass
+    mov word [scroll_shadow], 0
+
+; Draw the label in the 2x font, or its shadow.
+label_pass:
+    mov si, [label_text]
+    mov cx, [label_x]
+    add cx, [scroll_shadow]
+.char:
+    lodsb
+    test al, al
+    jz .done
+    movzx bx, al
+    sub bx, 32
+    shl bx, 3
+    add bx, A_FONT8
+    mov dx, SCROLL_Y0+2
+    add dx, [scroll_shadow]
+    mov bp, 8
+.row:
+    mov ah, [gs:bx]
+    push cx
+.bit:
+    shl ah, 1
+    jnc .next_bit
+    call label_block
+.next_bit:
+    add cx, 2
+    test ah, ah
+    jnz .bit
+    pop cx
+    inc bx
+    add dx, 2
+    dec bp
+    jnz .row
+    add cx, 16
+    jmp .char
+.done:
+    ret
+
+; CX = x, DX = y. A 2x2 block of the label.
+label_block:
+    pusha
+    mov bx, dx
+    call .pair
+    inc bx
+    call .pair
+    popa
+    ret
+.pair:
+    mov ax, cx
+    call label_pixel
+    inc ax
+
+; AX = x, BX = y. The Bayer matrix removes pixels while the label fades.
+label_pixel:
+    push bx
+    and bx, 3
+    shl bx, 2
+    mov di, ax
+    and di, 3
+    mov dl, [bayer+bx+di]
+    pop bx
+    cmp dl, [label_level]
+    jae .done
+    cmp word [scroll_shadow], 0
+    jne .put
+    mov dx, bx
+    sub dx, SCROLL_Y0
+    and dx, 15
+    add dl, C_RAINBOW
+    mov [draw_color], dl
+.put:
+    jmp put_masked
+.done:
     ret
 
 ; The message has one or two lines. A | character starts the second line.
@@ -419,10 +596,7 @@ masked_vspan:
     ret
 
 draw_scope:
-    mov word [star_boost], 4
-    mov si, bottom_stars
-    mov cx, BOTTOM_STARS
-    call draw_stars
+    call slow_stars
     mov byte [draw_color], C_STRIPE_PRE
     mov word [scope_channel], 2
     call .channel
@@ -581,3 +755,168 @@ draw_warp:
     mov si, bottom_stars
     mov cx, BOTTOM_STARS
     jmp draw_stars
+
+; Bubbles rise from each analyzer band. A louder band makes more bubbles,
+; and they are larger and redder.
+draw_bubbles:
+    xor bp, bp
+.band:
+    movzx dx, byte [bar_level+bp]
+    test dx, dx
+    jz .next_band
+    call random
+    xor ah, ah
+    shr ax, 1
+    cmp ax, dx
+    jae .next_band
+    call new_bubble
+.next_band:
+    inc bp
+    cmp bp, ANA_BARS
+    jb .band
+    mov si, bubbles
+    mov cx, BUBBLES
+.bubble:
+    cmp byte [si+B_RADIUS], 0
+    je .next
+    movzx ax, byte [si+B_SPEED]
+    sub [si+B_Y], ax
+    mov bx, [si+B_Y]
+    shr bx, 4
+    ; The bubble grows while it rises.
+    mov ax, BUBBLE_Y+1
+    sub ax, bx
+    shr ax, 1
+    inc ax
+    cmp al, [si+B_MAX]
+    jb .radius
+    mov al, [si+B_MAX]
+.radius:
+    mov [si+B_RADIUS], al
+    movzx di, al
+    dec di
+    imul di, di, 6
+    mov ax, [bubble_table+di+4]
+    shr ax, 1
+    add ax, bx
+    cmp ax, SCROLL_Y0
+    jge .draw
+    mov byte [si+B_RADIUS], 0
+    jmp .next
+.draw:
+    mov ax, [si+B_X]
+    imul ax, ax, 40
+    mov dx, [frame]
+    shl dx, 4
+    add ax, dx
+    call sine
+    sar ax, 14
+    add ax, [si+B_X]
+    mov dl, [si+B_COLOR]
+    call draw_bubble
+.next:
+    add si, BUBBLE_SIZE
+    loop .bubble
+    ret
+
+; BP = band, DX = its level. Start a bubble below the band.
+new_bubble:
+    mov di, bubbles
+    mov cx, BUBBLES
+.find:
+    cmp byte [di+B_RADIUS], 0
+    je .found
+    add di, BUBBLE_SIZE
+    loop .find
+    ret
+.found:
+    mov byte [di+B_RADIUS], 1
+    mov word [di+B_Y], BUBBLE_Y*16
+    ; Most music stays below the top of the bars. 1.5 times the level
+    ; gives large red bubbles for loud bands.
+    imul bx, dx, 3
+    shr bx, 1
+    cmp bx, BAR_HEIGHT
+    jbe .level
+    mov bx, BAR_HEIGHT
+.level:
+    imul ax, bx, 15
+    mov cl, BAR_HEIGHT
+    div cl
+    add al, C_SPECTRUM
+    mov [di+B_COLOR], al
+    call random
+    and ax, 31
+    imul dx, bx, BUBBLE_RADII-1
+    add ax, dx
+    mov cl, BAR_HEIGHT+1
+    div cl
+    inc ax
+    mov [di+B_MAX], al
+    call random
+    and al, 15
+    add al, 8
+    add al, [di+B_MAX]
+    add al, [di+B_MAX]
+    mov [di+B_SPEED], al
+    call random
+    xor dx, dx
+    mov cx, SCROLL_W
+    div cx
+    imul ax, bp, SCROLL_W
+    add ax, dx
+    xor dx, dx
+    mov cx, ANA_BARS
+    div cx
+    add ax, SCROLL_X0
+    mov [di+B_X], ax
+    ret
+
+; AX = x, BX = y of the center, DI = bubble_table entry, DL = color.
+draw_bubble:
+    pusha
+    mov [bubble_color], dl
+    push bx
+    movzx bx, dl
+    mov dl, [gs:A_SHADE+bx]
+    mov [bubble_fill], dl
+    pop bx
+    mov cx, [bubble_table+di+2]
+    mov bp, [bubble_table+di+4]
+    mov si, [bubble_table+di]
+    mov dx, cx
+    shr dx, 1
+    sub ax, dx
+    mov dx, bp
+    shr dx, 1
+    sub bx, dx
+    call pixel_offset
+.row:
+    push cx
+    push di
+.pixel:
+    mov al, [gs:si]
+    inc si
+    test al, al
+    jz .skip
+    cmp byte [fs:di], C_KEY
+    jne .skip
+    mov dl, [bubble_color]
+    cmp al, 1
+    je .put
+    mov dl, [bubble_fill]
+    cmp al, 3
+    je .put
+    mov dl, C_WHITE
+.put:
+    mov [es:di], dl
+.skip:
+    inc di
+    loop .pixel
+    pop di
+    pop cx
+    add di, 320
+    dec bp
+    jnz .row
+    popa
+    ret

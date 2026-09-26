@@ -74,8 +74,20 @@
 %define SCROLL_W (SCROLL_X1-SCROLL_X0+1)
 %define SCROLL_H (SCROLL_Y1-SCROLL_Y0+1)
 %define FIRE_ROWS (SCROLL_H+3)
-%define VIS_COUNT 4
+%define VIS_COUNT 5
+%define VIS_RANDOM VIS_COUNT
 %define VIS_FRAMES 1050
+%define LABEL_TICKS 55
+%define LABEL_FADE 24
+%define BUBBLES 96
+%define BUBBLE_SIZE 8
+%define B_X 0
+%define B_Y 2
+%define B_SPEED 4
+%define B_RADIUS 5
+%define B_MAX 6
+%define B_COLOR 7
+%define BUBBLE_Y (SCROLL_Y1+1)
 
 ; ui
 %define DIGIT_BYTES (DIGIT_W*DIGIT_H)

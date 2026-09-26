@@ -187,7 +187,17 @@ request_buttons:
     dw REQ_X0+174, 60, browser_close, text_cancel
     dw 0
 
-visual_table dw draw_scope, draw_waterfall, draw_fire, draw_warp
+visual_table dw draw_warp, draw_scope, draw_waterfall, draw_fire, draw_bubbles
+visual_names dw name_stars, name_spectra, name_firebars, name_lavaflow, name_bubbles, name_random
+name_stars db 'STARS',0
+name_spectra db 'SPECTRA',0
+name_firebars db 'FIREBARS',0
+name_lavaflow db 'LAVAFLOW',0
+name_bubbles db 'BUBBLES',0
+name_random db 'RANDOM',0
+bayer db 0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5
+bubble_table:
+    BUBBLE_TABLE
 
 ; Preamp, then 31 Hz to 16 kHz, then the name.
 presets:
@@ -220,3 +230,4 @@ poll_timer db 1
 eq_on db 1
 eq_band db 1
 volume db 255
+vis_choice db VIS_RANDOM

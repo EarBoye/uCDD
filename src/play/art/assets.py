@@ -3,7 +3,7 @@
 
 """Make the UCDDPLAY graphics and tables.
 
-python assets.py <faceplate.png> <logo.png>
+python assets.py <faceplate.png> <shells.png> <logo.png>
 
 The inputs come from faceplate.py and logo.py. The script writes
 ../assets.bin and ../assets.inc. It needs Pillow. The program build does not
@@ -67,6 +67,7 @@ STARS = 243
 STRIPE, STRIPE_PRE, EQ_LINE = 246, 247, 248
 KNOB_CHROME = 249
 RED, WHITE = 254, 255
+BUBBLE_RADII = 6
 
 FONT8 = {
     ' ': ['........'] * 8,
@@ -372,12 +373,13 @@ def details(cv):
             cv.tiny(tx + 1, 158, name, (255, 255, 255))
             cv.tiny(tx, 157, name, ENGRAVE)
 
-    text = 'uCDD PLAY   DIGITAL AUDIO REPRODUCER'
+    text = 'DIGITAL SOUND FOR THE MASSES'
     cv.emboss_tiny(W // 2 - (len(text) * 4 - 1) // 2, 194, text, gold_face(1))
 
 
-def compose(face_path):
+def compose(face_path, shells_path):
     raw = Image.open(face_path).convert('RGB').resize((W, H), Image.LANCZOS)
+    render = raw.copy().load()
     cv = Canvas(raw)
     key = set()
     for rect in (LOGO_WIN, SCROLL_WIN):
@@ -385,7 +387,9 @@ def compose(face_path):
         for y in range(y0, y1 + 1):
             for x in range(x0, x1 + 1):
                 r, g, b = cv.get(x, y)
-                if r * 3 + g * 5 + b * 2 < 700:
+                # Only the rounded corners of the frame stay in the logo window.
+                inner = rect == LOGO_WIN and (x0 + 2 < x < x1 - 2 or y0 + 2 < y < y1 - 2)
+                if inner or r * 3 + g * 5 + b * 2 < 700:
                     key.add((x, y))
                     cv.put(x, y, (0, 0, 4))
     x0, y0, x1, y1 = ANA_WIN
@@ -397,6 +401,13 @@ def compose(face_path):
         cv.rect(x0, y0, x1, y1, lambda x, y: lerp((250, 236, 190), (214, 190, 130),
                                                   (x - x0) / (x1 - x0) * 0.4 + (y - y0) / (y1 - y0) * 0.6))
     details(cv)
+    # The corner shells lie on top of the windows and their details.
+    shells = Image.open(shells_path).getchannel('A').resize((W, H), Image.LANCZOS).load()
+    for y in range(H):
+        for x in range(W):
+            if shells[x, y] >= 128:
+                cv.put(x, y, render[x, y])
+                key.discard((x, y))
     return raw, key
 
 
@@ -502,6 +513,29 @@ def knob_sprites():
     return data
 
 
+def bubble_sprites():
+    """Rings for radius 1 to BUBBLE_RADII: 1 = rim, 2 = highlight, 3 = inside."""
+    data = bytearray()
+    table = []
+    for r in range(1, BUBBLE_RADII + 1):
+        ry = round(r / 1.2)
+        rows = [[0] * (2 * r + 1) for _ in range(2 * ry + 1)]
+        for a in range(360):
+            t = math.radians(a)
+            rows[ry + round(r * math.sin(t) / 1.2)][r + round(r * math.cos(t))] = 1
+        if r == 1:
+            rows = [[0, 1, 0], [1, 1, 1], [0, 1, 0]]
+        else:
+            for row in rows:
+                rim = [x for x, v in enumerate(row) if v]
+                for x in range(rim[0] + 1, rim[-1]):
+                    row[x] = row[x] or 3
+            rows[ry - (ry + 1) // 2][r - (r + 1) // 2] = 2
+        table.append((len(data), 2 * r + 1, 2 * ry + 1))
+        data += bytes(v for row in rows for v in row)
+    return data, table
+
+
 def font_bytes():
     data = bytearray()
     for code in range(32, 128):
@@ -556,8 +590,8 @@ def bar_bins():
 
 
 def main():
-    face_path, logo_path = sys.argv[1], sys.argv[2]
-    face, key = compose(face_path)
+    face_path, shells_path, logo_path = sys.argv[1:4]
+    face, key = compose(face_path, shells_path)
     logo_rgb, logo_alpha = load_logo(logo_path)
     palette = static_palette(face, logo_rgb)
     face_data = map_image(face, palette, Image.Dither.FLOYDSTEINBERG)
@@ -577,6 +611,7 @@ def main():
     cursor = sprite(CURSOR, {'O': 0, 'W': ui['GOLD_HI'], 'G': ui['GOLD'], 'L': ui['GOLD_LO']})
     eq, preamp = eq_tables()
     sine = struct.pack('<1024h', *(round(32767 * math.sin(2 * math.pi * k / 1024)) for k in range(1024)))
+    bubbles, bubble_table = bubble_sprites()
 
     extra = bytearray()
     offsets = {}
@@ -600,6 +635,7 @@ def main():
     add('A_EQ', eq, 4)
     add('A_PREAMP', preamp, 4)
     add('A_BARS', bar_bins())
+    add('A_BUBBLES', bubbles)
 
     assert len(face_data) == 64000
     blob = bytes(face_data) + bytes(extra)
@@ -634,7 +670,7 @@ def main():
         'PROGRESS_X': PROGRESS_X, 'PROGRESS_Y': PROGRESS_Y, 'PROGRESS_CELLS': PROGRESS_CELLS,
         'CALENDAR_X': CALENDAR_X, 'CALENDAR_Y': CALENDAR_Y,
         'ANA_BARS': ANA_BARS, 'ANA_BAR_X0': ANA_X0, 'ANA_STEP': ANA_STEP, 'ANA_BAR_W': ANA_BAR_W,
-        'ANA_TOP': ANA_TOP, 'ANA_BOTTOM': ANA_BOTTOM,
+        'ANA_TOP': ANA_TOP, 'ANA_BOTTOM': ANA_BOTTOM, 'BUBBLE_RADII': BUBBLE_RADII,
     }
     for name, value in consts.items():
         lines.append(f'%define {name} {value}')
@@ -643,6 +679,10 @@ def main():
     lines.append('%macro BUTTON_TABLE 0')
     for x, w in BUTTONS:
         lines.append(f'    dw {x}, {w}')
+    lines.append('%endmacro')
+    lines.append('%macro BUBBLE_TABLE 0')
+    for offset, w, h in bubble_table:
+        lines.append(f'    dw A_BUBBLES+{offset}, {w}, {h}')
     lines.append('%endmacro')
     lines.append('%macro DIGIT_TABLE 0')
     lines.append('    dw ' + ', '.join(str(x) for x in DIGIT_X))

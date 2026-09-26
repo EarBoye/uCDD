@@ -122,7 +122,7 @@ key_preset:
     inc al
     jmp eq_preset
 key_visual:
-    jmp next_visual
+    jmp select_visual
 key_up_gain:
     mov ah, 1
     jmp key_gain

@@ -28,6 +28,14 @@ cd_memory_low:
     mov byte [cd_memory_saved], 1
     mov ax, 5801h
     xor bx, bx
+%ifdef RESIDENT_AUDIO
+    ; A program loaded low frees its image when it stays resident. Put the
+    ; buffers at the top of conventional RAM, above that free space.
+    cmp word [resident_psp], 0a000h
+    jae .strategy
+    mov bl, 2
+.strategy:
+%endif
     int 21h
     jc .done
     cmp byte [cd_umb_link], 0

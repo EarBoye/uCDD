@@ -27,6 +27,7 @@ This update adds support for 16-bit DPMI programs, changes how protected-mode ga
 - Accept Sound Blaster output rates up to 48000 Hz. Support 16-bit mono and unsigned 16-bit game sound.
 - Apply the voice level and the wave output level to direct DAC output.
 - Support MODE2/2352 Form 1 data tracks in CUE sheets.
+- Keep free conventional memory contiguous when DOS loads UCDD into conventional memory and uCDD moves the audio service into upper memory.
 - Add Absolute Pinball, Amazing Learning Games with Rayman, An Elder Scrolls Legend: Battlespire, Batman Forever: The Arcade Game, Battle Race, Blood, Bust-A-Move 2 Arcade Edition, Chasm: The Rift, Cyber Police (CYBERPO1.EXE), and Cyberball to the list of working Redbook-audio games.
 
 # Beta 0.9.2c

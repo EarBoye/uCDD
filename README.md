@@ -52,7 +52,7 @@ Do not load the audio driver for games that use ADPCM sound. ADPCM is not suppor
 
 ### Installation
 
-Install once per boot, before the redirector. `UCDD -install -units 2` creates two empty drives (1 to 4). Restart DOS to change the unit count. `LH` loads the resident driver into upper memory when UMBs are available (requires ~38KB of contiguous space).
+Install once per boot, before the redirector. `UCDD -install -units 2` creates two empty drives (1 to 4). Restart DOS to change the unit count. `LH` loads the resident driver into upper memory when UMBs are available (requires ~50KB of upper memory).
 
 ```dos
 UCDD -mount C:\IMAGES\GAME.CUE

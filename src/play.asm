@@ -425,6 +425,14 @@ message_text dw 0
 message_buffer times 48 db 0
 vis_timer dw 0
 vis_mode db 0
+label_active db 0
+label_level db 0
+label_start dw 0
+label_text dw 0
+label_x dw 0
+bubble_color db 0
+bubble_fill db 0
+bubbles times BUBBLES*BUBBLE_SIZE db 0
 scroll_offset dw 0
 scroll_shadow dw 0
 scope_channel dw 0
