@@ -65,11 +65,13 @@ dpmi_write_vector:
     test ax, ax
     jz .write
     mov edx, [ebx+28]
+    DPMI_OFFSET16 edx, dx
     call dpmi_code_target
     jc dpmi_bad_selector
 .write:
     imul ecx, 6
     mov eax, [ebx+28]
+    DPMI_OFFSET16 eax, ax
     mov [edi+ecx], eax
     mov ax, [ebx+32]
     mov [edi+ecx+4], ax
@@ -203,6 +205,26 @@ dpmi_deliver_exception:
     and eax, 0fffffcffh
     call dpmi_restore_flags
     mov [esp+56], eax
+    cmp byte [ebp+dpmi_client16], 0
+    je .frame_ready
+    ; A 16-bit handler gets word fields and returns with a 16-bit RETF.
+    push dword [edi+28]
+    push dword [edi+24]
+    push dword [edi+20]
+    push dword [edi+16]
+    push dword [edi+12]
+    push dword [edi+8]
+    add edi, 16
+    mov word [edi], dpmi_exception_return
+    mov word [edi+2], DPMI_STUB16
+    mov ecx, 4
+.word_field:
+    pop eax
+    mov [edi+ecx], ax
+    add ecx, 2
+    cmp ecx, 16
+    jb .word_field
+.frame_ready:
     sub edi, 3e0000h
     mov [esp+60], edi
     mov dword [esp+64], DPMI_IRQ_SS
@@ -229,6 +251,8 @@ dpmi_exception_done:
     sub ebp, .base
     cmp byte [ebp+dpmi_exception_active], 1
     jne .bad_return
+    cmp byte [ebp+dpmi_client16], 0
+    jne .word_return
     cmp word [esp+44], 3bh
     jne .bad_return
     mov eax, dpmi_exception_return+2
@@ -261,12 +285,50 @@ dpmi_exception_done:
     mov ecx, 5
     cld
     rep movsd
+.restored:
+    mov byte [ebp+dpmi_exception_active], 0
     mov eax, [esp+48]
     call dpmi_restore_flags
     mov [esp+48], eax
     call dpmi_stack_release
-    mov byte [ebp+dpmi_exception_active], 0
     jmp mon_dpmi.done
+.word_return:
+    cmp word [esp+44], DPMI_STUB16
+    jne .bad_return
+    mov eax, dpmi_exception_return+2
+    cmp eax, [esp+40]
+    jne .bad_return
+    cmp word [esp+56], DPMI_IRQ_SS
+    jne .bad_return
+    ; After the 16-bit RETF, SP points to the error word.
+    mov esi, [esp+52]
+    mov eax, [ebp+dpmi_exception_cursor]
+    sub eax, 4096-8
+    cmp esi, eax
+    jb .bad_return
+    mov eax, [ebp+dpmi_exception_cursor]
+    sub eax, 12
+    cmp esi, eax
+    ja .bad_return
+    add esi, 3e0002h
+    push esi
+    movzx edx, word [esi]
+    mov ax, [esi+2]
+    call dpmi_code_target
+    pop esi
+    jc .bad_return
+    movzx edx, word [esi+6]
+    mov ax, [esi+8]
+    call dpmi_stack_target
+    jc .bad_return
+    xor ecx, ecx
+.word_copy:
+    movzx eax, word [esi+ecx*2]
+    mov [esp+40+ecx*4], eax
+    inc ecx
+    cmp ecx, 5
+    jb .word_copy
+    jmp .restored
 .bad_return:
     mov byte [ebp+dpmi_exit_code], 1
     mov word [ebp+mon_status], 1
@@ -288,35 +350,20 @@ dpmi_reflect:
     cmp byte [ebp+dpmi_active], 1
     jne .bad_gate
     cmp word [ebx+44], 3bh
+    je .stub_ready
+    cmp word [ebx+44], DPMI_STUB16
     jne .bad_gate
+.stub_ready:
     mov eax, [ebx+40]
-    sub eax, dpmi_default_vectors+7
+    sub eax, dpmi_default_vectors+2
     jc .bad_gate
-    cmp eax, 255*11
+    cmp eax, 255*3
     ja .bad_gate
     xor edx, edx
-    mov ecx, 11
+    mov ecx, 3
     div ecx
     test edx, edx
     jnz .bad_gate
-    push eax
-    mov ax, [ebx+56]
-    call dpmi_descriptor
-    jc .bad_stack
-    mov edx, [ebx+52]
-    test byte [esi+6], 40h
-    jnz .stack_size
-    movzx edx, dx
-.stack_size:
-    mov ax, [ebx+56]
-    mov ecx, 4
-    xor edi, edi
-    call dpmi_buffer
-    jc .bad_stack
-    mov eax, [eax]
-    pop edx
-    cmp eax, edx
-    jne .bad_gate
     mov [ebp+dpmi_reflect_vector], al
     cmp al, 31h
     je dpmi_dispatch
@@ -326,8 +373,6 @@ dpmi_reflect:
 .other:
     cld
     jmp dpmi_dos_translate
-.bad_stack:
-    pop eax
 .bad_gate:
     sub dword [esp+40], 2
     pop es
@@ -341,15 +386,18 @@ dpmi_reflect_vector db 21h
 ; Preserve arithmetic results across the default vector's outer IRET.
 dpmi_reflect_flags:
     cmp word [ebx+44], 3bh
+    je .stub
+    cmp word [ebx+44], DPMI_STUB16
     jne .done
+.stub:
     pushad
     mov eax, [ebx+40]
-    sub eax, dpmi_default_vectors+7
+    sub eax, dpmi_default_vectors+2
     jc .unchanged
-    cmp eax, 255*11
+    cmp eax, 255*3
     ja .unchanged
     xor edx, edx
-    mov ecx, 11
+    mov ecx, 3
     div ecx
     test edx, edx
     jnz .unchanged
@@ -361,15 +409,26 @@ dpmi_reflect_flags:
     jnz .stack_size
     movzx edx, dx
 .stack_size:
+    mov ecx, 12
+    cmp word [ebx+44], 3bh
+    je .frame_size
+    mov ecx, 6
+.frame_size:
     mov ax, [ebx+56]
-    mov ecx, 16
     mov edi, 1
     call dpmi_buffer
     jc .bad
+    ; The IRET frame of the stub holds the caller's flags: a word at +4 for 16-bit code.
     mov edx, [ebx+48]
     and edx, 08d5h
-    and dword [eax+12], 0fffff72ah
-    or [eax+12], edx
+    cmp word [ebx+44], 3bh
+    jne .word_flags
+    and dword [eax+8], 0fffff72ah
+    or [eax+8], edx
+    jmp .unchanged
+.word_flags:
+    and word [eax+4], 0f72ah
+    or [eax+4], dx
 .unchanged:
     popad
 .done:
@@ -378,14 +437,12 @@ dpmi_reflect_flags:
     popad
     jmp dpmi_locked_abort
 
+; These bytes run as 32-bit code through 3Bh and as 16-bit code through
+; DPMI_STUB16. The host finds the vector from the return offset.
 dpmi_default_vectors:
-%assign vector 0
 %rep 256
-    push strict dword vector
     int 0f2h
-    add esp, 4
-    iretd
-%assign vector vector+1
+    iret
 %endrep
 
 ; EBX=interrupt frame, ESI=protected vector.
@@ -400,32 +457,49 @@ dpmi_deliver_interrupt:
     mov ax, [ebx+56]
     call dpmi_descriptor
     jc .bad
+    mov ecx, 12
+    cmp byte [ebp+dpmi_client16], 0
+    je .frame_size
+    mov ecx, 6
+.frame_size:
     mov edi, [ebx+52]
     test byte [esi+6], 40h
     jnz .wide_stack
-    sub di, 12
+    sub di, cx
     movzx edx, di
     jmp .stack
 .wide_stack:
-    sub edi, 12
+    sub edi, ecx
     mov edx, edi
 .stack:
     push edi
+    push ecx
     mov ax, [ebx+56]
-    mov ecx, 12
     mov edi, 1
     call dpmi_buffer
+    pop ecx
     pop edi
     jc .bad
     mov [ebx+52], edi
     mov edi, eax
+    mov eax, [ebx+48]
+    call dpmi_virtual_flags
+    cmp ecx, 6
+    je .word_frame
+    mov [edi+8], eax
     mov eax, [ebx+40]
     mov [edi], eax
     mov eax, [ebx+44]
     mov [edi+4], eax
-    mov eax, [ebx+48]
-    call dpmi_virtual_flags
-    mov [edi+8], eax
+    jmp .framed
+.word_frame:
+    ; A 16-bit handler returns with a 16-bit IRET.
+    mov [edi+4], ax
+    mov eax, [ebx+40]
+    mov [edi], ax
+    mov ax, [ebx+44]
+    mov [edi+2], ax
+.framed:
     pop esi
     mov eax, [esi]
     mov [ebx+40], eax
@@ -460,6 +534,7 @@ dpmi_software_interrupt:
     loop .frame
     add esp, 8
     mov ebx, esp
+    call dpmi_tf_entry
     cmp word [esi+4], 0
     jne dpmi_deliver_interrupt
     cld

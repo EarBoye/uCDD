@@ -91,6 +91,14 @@ own_host_install:
     jne .host_mode_ready
     mov ah, 1
 .host_mode_ready:
+    cmp byte [keep_vcpi], 0
+    je .vcpi_ready
+    or ah, 2
+.vcpi_ready:
+    cmp dword [host_irq_slot], 0
+    je .slot_ready
+    or ah, 4
+.slot_ready:
     push bp
     mov bp, sb_game_vector
     call far [own_host_entry]

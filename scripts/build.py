@@ -59,6 +59,7 @@ def main():
                                    profile=args.profile_host)
         else:
             assemble(source, name, exe=True)
+    assemble_player()
     (BUILD / 'UCDDRV.EXE').unlink(missing_ok=True)
     if (ROOT / 'tests' / 'probe.asm').is_file():
         assemble('tests/probe.asm', 'PROBE.COM')
@@ -84,6 +85,28 @@ def assemble_resident_host(defines=(), profile=False):
         raise ValueError('The driver overlaps its host overlay.')
     (BUILD / 'UCDD.EXE').write_bytes(program.ljust(65536, b'\0') + host)
     print(f'UCDD.EXE with internal host: {65536 + len(host)} bytes')
+
+
+def assemble_player():
+    assemble('src/play.asm', 'UCDDPLAY.BIN', listing=True)
+    program = (BUILD / 'UCDDPLAY.BIN').read_bytes()
+    (BUILD / 'UCDDPLAY.BIN').unlink()
+    if len(program) > 65534:
+        raise ValueError('UCDDPLAY exceeds one segment.')
+    # The word at offset 3 is the start of the zero data, which is not stored.
+    zero = struct.unpack_from('<H', program, 3)[0]
+    if any(program[zero:]):
+        raise ValueError('UCDDPLAY has data in its zero area.')
+    assets = (ROOT / 'src' / 'play' / 'assets.bin').read_bytes()
+    assets += bytes(-len(assets) % 16)
+    code = len(assets) // 16
+    image = assets + program[:zero]
+    size = 32 + len(image)
+    extra = (len(program) - zero + 15) // 16
+    header = struct.pack('<14H', 0x5a4d, size % 512, (size + 511) // 512, 0, 2, extra, extra,
+                         code, len(program) & 0xfffe, 0, 0, code, 28, 0)
+    (BUILD / 'UCDDPLAY.EXE').write_bytes(header.ljust(32, b'\0') + image)
+    print(f'UCDDPLAY.EXE: {size} bytes')
 
 
 if __name__ == '__main__':

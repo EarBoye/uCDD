@@ -20,7 +20,7 @@ pro_start:
     inc di
     loop .save
     mov al, 22h
-    mov ah, 0ffh
+    mov ah, [master_register]
     call indexed_write
     mov ax, 0ff04h
     call indexed_write

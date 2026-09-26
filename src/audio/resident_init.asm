@@ -112,6 +112,8 @@ audio_activate:
     mov ax, 2508h
     int 21h
     mov byte [cd_background_set], 1
+    ; The hotkeys work without an MDM list.
+    call mdm_hooks
     clc
     ret
 .cleanup:

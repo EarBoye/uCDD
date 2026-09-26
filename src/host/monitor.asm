@@ -16,11 +16,16 @@
 %endif
 
 %ifdef HOST_DPMI
+%ifdef RESIDENT_HOST
+%define DPMI_LDT_COUNT 8192
+%else
 %define DPMI_LDT_COUNT 512
+%endif
 %define MON_VECTOR_COUNT 256
 %define MON_SERVER_SELECTOR 80
 %define DPMI_IRQ_SS 37h
 %define DPMI_CALLBACK_SS 3fh
+%define DPMI_STUB16 6bh
 %else
 %define MON_VECTOR_COUNT 32
 %define MON_SERVER_SELECTOR 48
@@ -43,6 +48,14 @@
     loop %%restore
     add esp, 8
     mov ebx, esp
+%endmacro
+
+; A 16-bit client passes a 16-bit offset. Ignore the high word.
+%macro DPMI_OFFSET16 2
+    cmp byte [ebp+dpmi_client16], 0
+    je %%wide
+    movzx %1, %2
+%%wide:
 %endmacro
 
 %macro MON_IRETD 0
@@ -114,10 +127,13 @@ monitor_init:
     mov [mon_gdt+24+7], dh
 %ifdef HOST_DPMI
     mov [mon_gdt+56+2], ax
+    mov [mon_gdt+DPMI_STUB16-3+2], ax
     mov edx, eax
     shr edx, 16
     mov [mon_gdt+56+4], dl
     mov [mon_gdt+56+7], dh
+    mov [mon_gdt+DPMI_STUB16-3+4], dl
+    mov [mon_gdt+DPMI_STUB16-3+7], dh
     lea edx, [eax+dpmi_ldt]
     mov [mon_gdt+72+2], dx
     shr edx, 16
@@ -555,14 +571,48 @@ mon_irq:
 %ifdef HOST_DPMI
     cmp bl, [ebp+dpmi_audio_irq]
     je .real_irq
+%ifdef RESIDENT_HOST
+    cmp byte [ebp+resident_refill_busy], 0
+    je .queue
+    ; The CD refill can wait for a disk or RTC IRQ, and the client cannot run now.
+    cmp bl, 6
+    je .disk_irq
+    cmp bl, 8
+    jb .queue
+    cmp bl, 11
+    jbe .disk_irq
+    cmp bl, 14
+    jae .disk_irq
+.queue:
+%endif
     call dpmi_pic_queue
     jmp .done
+%ifdef RESIDENT_HOST
+.disk_irq:
+    lea edi, [ebp+mon_rm_regs]
+    mov dword [edi+32], 2
+    mov dword [edi+46], 0
+    call mon_real_int
+    jmp .done
+%endif
 .real_irq:
 %endif
     lea edi, [ebp+mon_rm_regs]
     mov dword [edi+32], 2
     mov dword [edi+46], 0
+%ifdef RESIDENT_HOST
+    cmp byte [ebp+resident_irq_slot], 0
+    je .audio_int
+    ; The IVT can hold the game's handler. Call the mixer's handler.
+    mov ecx, [ebp+resident_mixer_vector]
+    mov [ebp+mon_rm_irq_target], ecx
+    mov al, 3
+    call mon_real_far
+    jmp .audio_done
+.audio_int:
+%endif
     call mon_real_int
+.audio_done:
 %ifdef HOST_DPMI
     call dpmi_hardware_room
     jc .done
@@ -643,8 +693,10 @@ mon_dpmi:
 %ifdef HOST_DPMI
     cld
     mov ebx, esp
+    call dpmi_record_segments
     call dpmi_sti_arrival
     call dpmi_locked_capture
+    call dpmi_tf_entry
     cmp word [ebp+mon_vectors+31h*6+4], 0
     je .host_service
     lea esi, [ebp+mon_vectors+31h*6]
@@ -669,10 +721,11 @@ mon_dpmi:
     test cx, cx
     jnz .vector_ready
     movzx edx, byte [esp+24]
-    imul edx, 11
+    imul edx, 3
     add edx, dpmi_default_vectors
     mov [esp+28], edx
-    mov cx, 3bh
+    call dpmi_stub_selector
+    mov cx, ax
 .vector_ready:
 %endif
     mov [esp+32], cx
@@ -753,6 +806,23 @@ mon_real_far_start:
     mov [ebp+mon_rm_kind], al
 mon_real_transfer:
     HOST_COUNT bridge, 0
+    ; A raw switch can run client code inside this call. Keep the outer state.
+    sub esp, 36
+    push esi
+    push edi
+    push ecx
+    lea esi, [ebp+mon_return]
+    lea edi, [esp+12]
+    mov ecx, 9
+    cld
+    rep movsd
+    pop ecx
+    pop edi
+    pop esi
+    push dword [ebp+mon_switch+16]
+    push dword [ebp+mon_resume_sp]
+    push dword [ebp+mon_tss+4]
+    push dword [ebp+mon_rm_regs+46]
     push fs
     push gs
     push dword [ebp+mon_rm_stack]
@@ -776,6 +846,9 @@ mon_real_transfer:
     mov al, [ebp+dpmi_audio_irq]
     cmp al, [ebp+dpmi_guest_irq]
     jne .irq_ready
+    ; With the JEMMEX IRQ slot, the mixer gets the IRQ without the IVT.
+    cmp byte [ebp+resident_irq_slot], 0
+    jne .irq_ready
     movzx ebx, al
     movzx eax, byte [ebp+mon_master]
     add eax, ebx
@@ -794,6 +867,8 @@ mon_real_transfer:
     mov ecx, 50
     cld
     rep movsb
+    ; A client flags image can carry an injected TF.
+    and byte [ebp+mon_rm_regs+33], 0feh
     mov dword [ebp+mon_return], mon_real_callback
     lea eax, [ebp+mon_resume]
     mov [ebp+mon_switch+16], eax
@@ -807,10 +882,15 @@ mon_resume:
     mov ebp, edi
     mov esp, [ebp+mon_resume_sp]
 %ifdef HOST_DPMI
-    movzx eax, word [esp+50]
+    lea esi, [esp+66]
 %else
-    movzx eax, word [esp+44]
+    lea esi, [esp+60]
 %endif
+    lea edi, [ebp+mon_return]
+    mov ecx, 9
+    cld
+    rep movsd
+    movzx eax, word [esi]
     test eax, eax
     jz .stack_ready
     cmp word [ebp+mon_rm_regs+48], 0
@@ -821,21 +901,23 @@ mon_resume:
     add [ebp+mon_return+12], ax
 .stack_ready:
     lea esi, [ebp+mon_rm_regs]
-    mov edi, [ebp+mon_rm_target]
+    mov edi, [esp]
     mov ecx, 50
-    cld
     rep movsb
-    mov dword [ebp+mon_return], monitor_run.returned
-    lea eax, [ebp+mon_enter]
-    mov [ebp+mon_switch+16], eax
 %ifdef RESIDENT_HOST
     mov al, [ebp+dpmi_audio_irq]
     cmp al, [ebp+dpmi_guest_irq]
+    jne .irq_restored
+    cmp byte [ebp+resident_irq_slot], 0
     jne .irq_restored
     movzx ebx, al
     movzx eax, byte [ebp+mon_master]
     add eax, ebx
     shl eax, 2
+    ; Keep a vector that the real-mode code installed during the call.
+    mov ecx, [ebp+dpmi_bridge_vectors+ebx*4]
+    cmp [eax], ecx
+    jne .irq_restored
     mov ecx, [esp+12]
     mov [eax], ecx
 .irq_restored:
@@ -848,7 +930,11 @@ mon_resume:
     pop dword [ebp+mon_rm_stack]
     pop gs
     pop fs
-    add esp, 4
+    pop dword [ebp+mon_rm_regs+46]
+    pop dword [ebp+mon_tss+4]
+    pop dword [ebp+mon_resume_sp]
+    pop dword [ebp+mon_switch+16]
+    add esp, 40
     ret
 
 mon_exception:
@@ -909,11 +995,13 @@ mon_exception:
     cmp dword [esp+40], 1
     jne .ordinary_exception
     cmp byte [ebp+dpmi_step_active], 1
-    jne .ordinary_exception
+    jne .tf_image
     test byte [esp+52], 3
     jz .ordinary_exception
     mov ebx, esp
     cld
+    call dpmi_quiet_limit
+    jc .step_full
     HOST_SAMPLE_STEP
     call dpmi_step_check
     ; VIF stays clear: skip IRQ/refill checks, but retain stack repair.
@@ -925,6 +1013,13 @@ mon_exception:
     add esp, 8
     jmp mon_iret.restore_stack
 .step_full:
+    xor edi, edi
+    jmp .advance
+.tf_image:
+    mov ebx, esp
+    call dpmi_tf_loaded
+    jnc .ordinary_exception
+    call dpmi_tf_fired
     xor edi, edi
     jmp .advance
 .ordinary_exception:
@@ -1082,6 +1177,15 @@ mon_exception:
     MON_IRETD
 .cli:
 %ifdef HOST_DPMI
+    ; A POPF just before this CLI loaded an injected TF image. Deliver
+    ; pending IRQs first; the CLI faults again.
+    mov ebx, esp
+    call dpmi_tf_loaded
+    jnc .cli_state
+    call dpmi_tf_fired
+    xor edi, edi
+    jmp .advance
+.cli_state:
     cmp word [ebp+dpmi_vif], 0
     jne .trace_cli
     and word [esp+56], 0feffh
@@ -1089,8 +1193,26 @@ mon_exception:
     jmp .advance
 .trace_cli:
     HOST_COUNT cli, 0
-    mov byte [ebp+dpmi_vif], 0
-    mov byte [ebp+dpmi_step_active], 1
+    cmp byte [ebp+dpmi_vif], 0
+    je .cli_stepping
+    call dpmi_tf_disarm
+    call dpmi_clear_vif
+    cmp byte [ebp+dpmi_step_active], 0
+    je .cli_quiet
+    mov ebx, esp
+    call dpmi_tf_inject
+    jnc .cli_unstepped
+    call dpmi_cli_site_check
+    jnc .step_cli
+.cli_unstepped:
+    mov byte [ebp+dpmi_step_active], 0
+.cli_quiet:
+    and word [esp+56], 0feffh
+    or word [esp+56], 200h
+    jmp .advance
+.cli_stepping:
+    call dpmi_clear_vif
+.step_cli:
     or word [esp+56], 300h
     add [esp+48], edi
     mov ebx, esp
@@ -1103,6 +1225,10 @@ mon_exception:
 .sti:
 %ifdef HOST_DPMI
     mov ebx, esp
+    call dpmi_tf_loaded
+    jnc .sti_state
+    call dpmi_tf_fired
+.sti_state:
     call dpmi_sti_begin
     xor edi, edi
 %endif
@@ -1114,6 +1240,11 @@ mon_exception:
     je .unhandled
     test byte [esp+52], 3
     jz .unhandled
+    mov ebx, esp
+    call dpmi_tf_loaded
+    jnc .fault_frame
+    call dpmi_tf_fired
+.fault_frame:
     cmp byte [ebp+dpmi_exception_active], 0
     jne .unhandled
     mov eax, [esp+40]
@@ -1357,6 +1488,9 @@ mon_gdt:
     db 0,82h,0,0
 %endif
     times 3 dq 0
+%ifdef HOST_DPMI
+    dq 0000fa000000ffffh
+%endif
 mon_gdt_end:
 mon_stubs:
 %assign vector 0

@@ -87,6 +87,72 @@ dpmi_locked_capture:
 .done:
     ret
 
+; EBX=client frame that starts with ES and DS. Keep the segments of the
+; client's last protected-mode entry for interrupts that arrive in real mode.
+dpmi_record_segments:
+    test byte [ebx+44], 3
+    jz .done
+    test byte [ebx+50], 2
+    jnz .done
+    push eax
+    mov eax, [ebx]
+    mov [ebp+dpmi_client_segs], ax
+    mov eax, [ebx+4]
+    mov [ebp+dpmi_client_segs+2], ax
+    mov [ebp+dpmi_client_segs+4], fs
+    mov [ebp+dpmi_client_segs+6], gs
+    pop eax
+.done:
+    ret
+
+; Load the recorded FS and GS. Return ES in AX and DS in DX.
+dpmi_client_segments:
+    push ecx
+    mov ecx, [ebp+dpmi_client_segs+4]
+    call dpmi_load_fs_gs
+    mov dx, 2bh
+    mov ax, [ebp+dpmi_client_segs+2]
+    call dpmi_usable_selector
+    push eax
+    mov ax, [ebp+dpmi_client_segs]
+    call dpmi_usable_selector
+    pop edx
+    pop ecx
+    ret
+
+; ECX=FS in the low word and GS in the high word. Unusable selectors load 0.
+dpmi_load_fs_gs:
+    push eax
+    push edx
+    xor edx, edx
+    mov ax, cx
+    call dpmi_usable_selector
+    mov fs, ax
+    shr ecx, 16
+    mov ax, cx
+    call dpmi_usable_selector
+    mov gs, ax
+    pop edx
+    pop eax
+    ret
+
+; Replace AX with DX when AX is not a present readable segment.
+dpmi_usable_selector:
+    push ecx
+    verr ax
+    jnz .other
+    lar ecx, ax
+    test ch, 80h
+    jnz .done
+.other:
+    mov ax, dx
+.done:
+    pop ecx
+    ret
+
+dpmi_client_segs times 4 dw 0
+dpmi_raw_segs dd 0
+
 dpmi_deliver_hardware:
     call dpmi_locked_capture
     call dpmi_stack_acquire
@@ -114,10 +180,20 @@ dpmi_deliver_hardware:
     mov [edi+12], eax
     mov eax, [ebx+56]
     mov [edi+16], eax
+    cmp byte [ebp+dpmi_client16], 0
+    jne .word_frame
     sub edi, 12
     mov dword [edi], dpmi_locked_return
     mov dword [edi+4], 3bh
     mov dword [edi+8], 2
+    jmp .framed
+.word_frame:
+    ; A 16-bit handler returns with a 16-bit IRET.
+    sub edi, 6
+    mov word [edi], dpmi_locked_return
+    mov word [edi+2], DPMI_STUB16
+    mov word [edi+4], 2
+.framed:
     sub edi, DPMI_LOCK_BASE
     mov [ebx+52], edi
     mov dword [ebx+56], DPMI_IRQ_SS
@@ -149,7 +225,10 @@ dpmi_locked_done:
     cmp dword [ebp+dpmi_locked_depth], 0
     je dpmi_locked_abort
     cmp word [esp+44], 3bh
+    je .stub
+    cmp word [esp+44], DPMI_STUB16
     jne dpmi_locked_abort
+.stub:
     cmp dword [esp+40], dpmi_locked_return+2
     jne dpmi_locked_abort
     cmp word [esp+56], DPMI_IRQ_SS
@@ -187,16 +266,22 @@ dpmi_locked_done:
     mov ecx, 5
     cld
     rep movsd
+    dec dword [ebp+dpmi_locked_depth]
     mov eax, [esp+48]
     call dpmi_restore_flags
     mov [esp+48], eax
-    dec dword [ebp+dpmi_locked_depth]
     call dpmi_stack_release
     jmp mon_dpmi.done
 
 dpmi_hardware_room:
+%ifdef RESIDENT_HOST
+    ; Hold client interrupts while the CD refill runs inside DOS.
+    cmp byte [ebp+resident_refill_busy], 0
+    jne .full
+%endif
     cmp dword [ebp+dpmi_stack_depth], DPMI_LOCK_LEVELS
     jb .available
+.full:
     stc
     ret
 .available:

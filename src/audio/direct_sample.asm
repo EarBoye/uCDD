@@ -25,8 +25,11 @@ sb_dac_sample:
     je .done
     movzx edx, byte [sb_dac_value]
     sub edx, 128
-    shl edx, 7
     mov esi, edx
+    imul edx, [sb_pcm_gain]
+    imul esi, [sb_pcm_gain+4]
+    sar edx, 8
+    sar esi, 8
 .done:
     pop fs
     pop bx

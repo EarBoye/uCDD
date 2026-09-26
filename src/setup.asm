@@ -7,143 +7,449 @@ org 0
 
     jmp start
 
-%define CONFIG_EXE_PATH 1
 %include "audio/config.asm"
+%include "setup/screen.asm"
 
 start:
     mov [cs:psp], ds
-    mov si, 81h
-    movzx cx, byte [80h]
-.help_leading:
-    jcxz .normal
-    lodsb
-    dec cx
-    cmp al, ' '
-    je .help_leading
-    cmp al, 9
-    je .help_leading
-    cmp al, '/'
-    jne .normal
-    jcxz .normal
-    lodsb
-    dec cx
-    cmp al, '?'
-    jne .normal
-.help_tail:
-    jcxz .show_help
-    lodsb
-    dec cx
-    cmp al, ' '
-    je .help_tail
-    cmp al, 9
-    je .help_tail
-    jmp .normal
-.show_help:
-    jmp show_command_help
-.normal:
     push cs
     pop ds
     push cs
     pop es
     cld
+    call command_line
     call config_path_init
     jnc .path_ready
     mov dx, path_message
+    jmp exit_error
+.path_ready:
+    mov si, config_data
+    mov di, config_default
+    mov cx, CONFIG_SIZE
+    rep movsb
+    cmp byte [handoff], 0
+    je .load
+    call handoff_check
+    jnc .load
+    mov dx, handoff_message
+    jmp exit_error
+.load:
+    call config_load
+    mov [load_status], al
+    cmp byte [handoff], 0
+    je .menu
+    cmp al, LOAD_OK
+    je install_settings
+.menu:
+    call main_menu
+    jc .cancel
+    cmp byte [handoff], 0
+    jne install_settings
+    mov dx, saved_message
+    call resident_audio_present
+    jnc .print
+    mov dx, restart_message
+.print:
+    mov ah, 9
+    int 21h
+    mov ax, 4c00h
+    int 21h
+.cancel:
+    mov ax, 4c01h
+    int 21h
+
+exit_error:
     mov ah, 9
     int 21h
     mov ax, 4c01h
     int 21h
-.path_ready:
-    mov ax, 3
-    int 10h
-    mov ah, 1
-    mov cx, 2000h
-    int 10h
-    call suggest_blaster
-    call config_load
-    jnc .loaded
-    mov word [status], invalid_message
-.loaded:
-    call draw
-.key:
+
+; Copy the checked settings into the driver and set BLASTER for games.
+install_settings:
+    call config_derive
+    mov byte [config_ready], 1
+    les di, [handoff_pointer]
+    mov si, config_data
+    mov cx, CONFIG_SIZE
+    rep movsb
+    push cs
+    pop es
+    call blaster_update
+    push cs
+    pop es
+    jc .failed
+    mov si, blaster_set_message
+    call print_text
+    mov si, blaster_value
+    call print_text
+    mov si, period_line
+    call print_text
+    mov ax, 4c00h
+    int 21h
+.failed:
+    xor si, si
+    mov di, blaster_value
+    call blaster_build
+    mov si, blaster_failed_message
+    call print_text
+    mov si, blaster_value
+    call print_text
+    mov si, blaster_failed_end
+    call print_text
+    mov ax, 4c00h
+    int 21h
+
+; SI zero-terminated text for standard output.
+print_text:
+    mov dx, si
+    xor cx, cx
+.length:
+    lodsb
+    test al, al
+    jz .write
+    inc cx
+    jmp .length
+.write:
+    mov bx, 1
+    mov ah, 40h
+    int 21h
+    ret
+
+; Read /? or the internal -INSTALL segment:offset option from UCDD.
+command_line:
+    mov es, [psp]
+    mov si, 81h
+    movzx cx, byte [es:80h]
+    call skip_blanks
+    jcxz .done
+    cmp byte [es:si], '/'
+    jne .option
+    cmp cx, 2
+    jb .done
+    cmp byte [es:si+1], '?'
+    jne .done
+    add si, 2
+    sub cx, 2
+    call skip_blanks
+    test cx, cx
+    jz show_command_help
+    jmp .done
+.option:
+    mov di, install_option
+    mov bx, 8
+    cmp cx, 9
+    jb .done
+.compare:
+    mov al, [es:si]
+    cmp al, 'a'
+    jb .upper
+    sub al, 20h
+.upper:
+    cmp al, [di]
+    jne .done
+    inc si
+    inc di
+    dec cx
+    dec bx
+    jnz .compare
+    mov byte [handoff], 1
+    call skip_blanks
+    call parse_hex4
+    jc .done
+    mov dx, ax
+    jcxz .done
+    cmp byte [es:si], ':'
+    jne .done
+    inc si
+    dec cx
+    call parse_hex4
+    jc .done
+    mov [handoff_pointer], ax
+    mov [handoff_pointer+2], dx
+.done:
+    push cs
+    pop es
+    ret
+
+; ES:SI text, CX remaining length.
+skip_blanks:
+    jcxz .done
+    cmp byte [es:si], ' '
+    je .skip
+    cmp byte [es:si], 9
+    jne .done
+.skip:
+    inc si
+    dec cx
+    jmp skip_blanks
+.done:
+    ret
+
+; ES:SI text, CX remaining length. Return AX from four hexadecimal digits.
+parse_hex4:
+    push bx
+    push dx
+    xor ax, ax
+    mov bx, 4
+.digit:
+    jcxz .bad
+    mov dl, [es:si]
+    cmp dl, 'a'
+    jb .upper
+    sub dl, 20h
+.upper:
+    sub dl, '0'
+    cmp dl, 9
+    jbe .value
+    sub dl, 7
+    cmp dl, 0ah
+    jb .bad
+    cmp dl, 0fh
+    ja .bad
+.value:
+    shl ax, 4
+    or al, dl
+    inc si
+    dec cx
+    dec bx
+    jnz .digit
+    clc
+    jmp .done
+.bad:
+    stc
+.done:
+    pop dx
+    pop bx
+    ret
+
+; The pointer must be in the memory block of UCDD, the parent program.
+handoff_check:
+    push es
+    mov es, [psp]
+    movzx ebx, word [es:16h]
+    lea ax, [bx-1]
+    mov es, ax
+    cmp byte [es:0], 'M'
+    je .size
+    cmp byte [es:0], 'Z'
+    jne .bad
+.size:
+    movzx ecx, word [es:3]
+    shl ebx, 4
+    shl ecx, 4
+    add ecx, ebx
+    movzx eax, word [handoff_pointer+2]
+    shl eax, 4
+    movzx edx, word [handoff_pointer]
+    add eax, edx
+    cmp eax, ebx
+    jb .bad
+    add eax, CONFIG_SIZE
+    cmp eax, ecx
+    ja .bad
+    les di, [handoff_pointer]
+    cmp dword [es:di], 'uCDD'
+    jne .bad
+    cmp byte [es:di+4], CONFIG_VERSION
+    jne .bad
+    pop es
+    clc
+    ret
+.bad:
+    pop es
+    stc
+    ret
+
+show_command_help:
+    push cs
+    pop ds
+    mov dx, setup_usage_message
+    mov ah, 9
+    int 21h
+    mov dx, license_notice
+    mov ah, 9
+    int 21h
+    mov ax, 4c00h
+    int 21h
+
+; Return CF set if the user exits without saving.
+main_menu:
+    movzx bx, byte [load_status]
+    shl bx, 1
+    mov ax, [load_messages+bx]
+    mov [status], ax
+    cmp byte [load_status], LOAD_OK
+    je .resident
+    mov byte [changed], 1
+    jmp .start
+.resident:
+    call resident_audio_present
+    jnc .start
+    mov word [status], installed_message
+.start:
+    call screen_start
+    mov word [form_title], main_title
+    mov word [form_items], main_items
+    mov word [form_count], MAIN_ITEMS
+    mov word [form_selected], 0
+    mov word [form_draw], main_draw
+    mov word [form_keys], main_keys
+    mov word [form_notes], main_notes
+    mov word [form_status_row], 0311h
+    mov byte [menu_result], 1
+    call form_run
+    call screen_stop
+    cmp byte [menu_result], 0
+    je .saved
+    stc
+    ret
+.saved:
+    clc
+    ret
+
+main_draw:
+    mov dx, 0504h
+    mov si, table_header
+    mov bl, A_TITLE
+    call put_text
+    mov dx, 0604h
+    mov cx, 69
+    mov al, 0c4h
+    mov bl, A_BOX
+    call put_repeat
+    mov dx, 0704h
+    mov si, physical_label
+    call put_text
+    mov dx, 0904h
+    mov cx, 69
+    mov al, 0fah
+    call put_repeat
+    mov dx, 0b04h
+    mov si, virtual_label
+    call put_text
+    mov dx, 0c11h
+    mov si, wss_name
+    call put_text
+    ; The virtual WSS codec uses the DMA Low channel of the virtual SB.
+    mov dx, 0c3bh
+    mov al, [virtual_dma8]
+    add al, '0'
+    mov cx, 1
+    call put_repeat
+    mov dl, 45h
+    mov al, '*'
+    call put_repeat
+    mov dx, 0e04h
+    mov si, info_labels
+    call put_text
+    mov dx, 0e11h
+    movzx bx, byte [sound_card]
+    shl bx, 1
+    mov si, [output_texts+bx]
+    mov bl, A_BOX
+    call put_text
+    mov dx, 0f11h
+    mov si, games_text
+    call put_text
+    ret
+
+main_keys:
+    cmp ah, 44h
+    jne .escape
+    call save_action
+    stc
+    ret
+.escape:
+    cmp al, 27
+    jne .done
+    call cancel_action
+    stc
+    ret
+.done:
+    clc
+    ret
+
+save_action:
+    call config_valid
+    jnc .valid
+    mov word [status], invalid_values_message
+    ret
+.valid:
+    call config_save
+    jnc .saved
+    mov word [status], save_message
+    ret
+.saved:
+    mov byte [menu_result], 0
+    mov byte [form_done], 1
+    ret
+
+cancel_action:
+    cmp byte [changed], 0
+    je .exit
+    mov si, confirm_message
+    call status_now
     xor ah, ah
     int 16h
-    cmp al, 27
-    je exit
-    cmp ah, 44h
-    je save
-    cmp ah, 3ch
-    je test_sound
-    cmp ah, 48h
-    je .up
-    cmp ah, 50h
-    je .down
-    cmp ah, 4bh
-    je .change
-    cmp ah, 4dh
-    je .change
-    cmp al, 13
-    jne .key
-.change:
-    mov cx, 1
-    cmp ah, 4bh
-    jne .step
-    movzx bx, byte [selected]
-    movzx cx, byte [choice_counts+bx]
-    dec cx
-.step:
-    movzx bx, byte [selected]
-    shl bx, 1
-.cycle:
-    call [changes+bx]
-    loop .cycle
-    mov word [status], changed_message
-    jmp .loaded
-.up:
-    cmp byte [selected], 0
-    je .key
-    dec byte [selected]
-    jmp .loaded
-.down:
-    cmp byte [selected], 4
-    je .key
-    inc byte [selected]
-    jmp .loaded
+    or al, 20h
+    cmp al, 'y'
+    je .exit
+    mov word [status], empty_text
+    ret
+.exit:
+    mov byte [menu_result], 1
+    mov byte [form_done], 1
+    ret
 
-save:
-    call config_save
-    jc save_error
-    jmp exit
-save_error:
-    mov word [status], save_message
-    jmp start.loaded
-test_sound:
+; A page keeps a copy of the settings. Cancel puts the copy back.
+page_begin:
+    mov si, config_data
+    mov di, page_saved
+    mov cx, CONFIG_SIZE
+    rep movsb
+    mov al, [changed]
+    mov [page_changed], al
+    ret
+
+page_ok:
+    mov byte [form_done], 1
+    ret
+
+page_cancel:
+    mov si, page_saved
+    mov di, config_data
+    mov cx, CONFIG_SIZE
+    rep movsb
+    mov al, [page_changed]
+    mov [changed], al
+    mov byte [form_done], 1
+    ret
+
+test_action:
     call resident_audio_present
-    jc .resident
-    call config_save
-    jc save_error
-    mov word [status], listen_message
-    call draw
+    jnc .free
+    mov word [status], resident_test_message
+    ret
+.free:
+    call config_derive
+    mov si, listen_message
+    call status_now
     mov bx, (setup_end-$$+15)/16+64+16
     mov es, [psp]
     mov ah, 4ah
     int 21h
-    jc .failed
     push cs
     pop es
+    jc .failed
     call speaker_test
     jc .failed
     mov word [status], test_message
-    mov byte [result], 0
-    jmp start.loaded
+    ret
 .failed:
-    mov byte [result], 1
     mov word [status], test_error
-    jmp start.loaded
-.resident:
-    mov word [status], resident_message
-    jmp start.loaded
+    ret
 
+; Return CF set if the uCDD audio driver is resident.
 resident_audio_present:
     pushad
     push es
@@ -179,396 +485,189 @@ resident_audio_present:
     popad
     ret
 
-show_command_help:
-    push cs
-    pop ds
-    mov dx, setup_usage_message
-    mov ah, 9
-    int 21h
-    mov dx, license_notice
-    mov ah, 9
-    int 21h
-    mov ax, 4c00h
-    int 21h
-
-exit:
-    mov ax, 3
-    int 10h
-    mov ax, 4c00h
-    mov al, [result]
-    int 21h
-
-change_card:
-    inc byte [sound_card]
-    cmp byte [sound_card], 2
-    je .wss
-    jb .done
-    cmp byte [sound_card], 3
-    je .sb
-    mov byte [sound_card], 0
-.sb:
-    mov word [sb_base], 220h
-.done:
+; List and text routines for the main screen choices.
+model_list:
+    mov si, model_values
     ret
-.wss:
-    mov word [sb_base], 530h
-    mov byte [sb_irq], 7
+irq_list:
+    mov si, irq_values
     ret
-change_port:
-    cmp byte [sound_card], 2
-    je .wss
-    add word [sb_base], 20h
-    cmp word [sb_base], 280h
-    jbe .done
-    mov word [sb_base], 220h
-.done:
+dma8_list:
+    mov si, dma8_values
     ret
-.wss:
-    cmp word [sb_base], 530h
-    je .p604
-    cmp word [sb_base], 604h
-    je .pe80
-    cmp word [sb_base], 0e80h
-    je .pf40
-    mov word [sb_base], 530h
+sb_port_list:
+    mov si, sb_port_values
     ret
-.p604:
-    mov word [sb_base], 604h
+virtual_model_list:
+    mov si, virtual_model_values
     ret
-.pe80:
-    mov word [sb_base], 0e80h
+wss_port_list:
+    mov si, wss_port_values
     ret
-.pf40:
-    mov word [sb_base], 0f40h
+wss_irq_list:
+    mov si, wss_irq_values
     ret
-change_irq:
-    xor byte [sb_irq], 2
-    ret
-change_dma8:
-    xor byte [sb_dma8], 2
-    ret
-change_dma16:
-    cmp byte [sound_card], 0
-    jne .done
-    inc byte [sb_dma16]
-    cmp byte [sb_dma16], 7
-    jbe .done
-    mov byte [sb_dma16], 5
-.done:
-    ret
-
-draw:
-    push es
-    mov ax, 0b800h
-    mov es, ax
-    xor di, di
-    mov ax, 1720h
-    mov cx, 2000
-    rep stosw
-    pop es
-    mov dx, 0205h
-    mov si, title
-    call put
-    mov dx, 0405h
-    mov si, subtitle
-    call put
-    mov dx, 0607h
-    mov si, labels
-    call put
-    mov dx, 0627h
-    mov si, sb16_name
-    cmp byte [sound_card], 0
-    je .card
-    mov si, sb_name
-    cmp byte [sound_card], 3
-    je .card
-    mov si, pro_name
-    cmp byte [sound_card], 2
-    jne .card
-    mov si, wss_name
-.card:
-    call put
-    mov ax, [sb_base]
-    mov di, port_text+2
-    mov cx, 3
-.hex:
-    mov bx, ax
-    and bx, 15
-    mov bl, [hex_digits+bx]
-    mov [di], bl
-    dec di
-    shr ax, 4
-    loop .hex
-    mov dx, 0827h
-    mov si, port_text
-    call put
-    mov al, [sb_irq]
-    add al, '0'
-    mov [number_text], al
-    mov dx, 0a27h
-    mov si, number_text
-    call put
-    mov al, [sb_dma8]
-    add al, '0'
-    mov [number_text], al
-    mov dx, 0c27h
-    mov si, number_text
-    call put
-    mov al, [sb_dma16]
-    add al, '0'
-    mov [number_text], al
-    mov dx, 0e27h
-    mov si, number_text
-    cmp byte [sound_card], 0
-    je .high_dma
-    mov si, unused_text
-.high_dma:
-    call put
-    mov dx, 1007h
-    mov si, output_sb
-    cmp byte [sound_card], 3
-    je .output
-    mov si, output_16
-    cmp byte [sound_card], 1
-    jne .output
-    mov si, output_pro
-.output:
-    call put
-    mov dh, [selected]
-    shl dh, 1
-    add dh, 6
-    mov dl, 4
-    mov si, arrow
-    call put
-    mov dx, 1205h
-    mov si, [status]
-    call put
-    mov dx, 1505h
-    mov si, help
-    call put
-%ifdef SETUP_SNAPSHOT
-    push ds
-    mov ax, 40h
-    mov ds, ax
-    mov bx, [6ch]
-.frame:
-    mov ax, [6ch]
-    sub ax, bx
-    cmp ax, 2
-    jb .frame
-    pop ds
-    mov al, 2
-    out 0e6h, al
-%endif
-    ret
-
-put:
-    push ax
-    push bx
-    push cx
-    push di
-    push es
-    mov ax, 0b800h
-    mov es, ax
-    movzx ax, dh
-    imul ax, 160
-    movzx di, dl
-    shl di, 1
-    add di, ax
-.next:
-    lodsb
-    test al, al
-    jz .done
-    cmp al, 13
-    je .cr
-    cmp al, 10
-    je .lf
-    mov ah, 1fh
-    stosw
-    jmp .next
-.cr:
-    mov ax, di
-    mov bl, 160
-    div bl
-    mul bl
-    mov di, ax
-    jmp .next
-.lf:
-    add di, 160
-    jmp .next
-.done:
-    pop es
-    pop di
-    pop cx
-    pop bx
-    pop ax
-    ret
-
-suggest_blaster:
-    push es
-    mov es, [psp]
-    mov ax, [es:2ch]
-    test ax, ax
-    jz .done
-    mov es, ax
-    xor si, si
-.variable:
-    cmp si, 0fff0h
-    jae .done
-    cmp byte [es:si], 0
+; Only an SB16 has a high DMA channel.
+virtual_dma16_list:
+    mov si, dma16_values
+    cmp byte [virtual_model], 0
     je .done
-    cmp dword [es:si], 'BLAS'
-    jne .skip
-    cmp dword [es:si+4], 'TER='
-    je .found
-.skip:
-    inc si
-    cmp byte [es:si-1], 0
-    jne .skip
-    jmp .variable
-.found:
-    add si, 8
-.token:
-    mov dl, [es:si]
-    inc si
-    test dl, dl
-    jz .done
-    cmp dl, ' '
-    je .token
-    and dl, 0dfh
-    mov bx, 10
-    cmp dl, 'A'
-    jne .number
-    mov bx, 16
-.number:
-    xor ax, ax
-.digit:
-    movzx cx, byte [es:si]
-    cmp cl, ' '
-    je .value
-    test cl, cl
-    jz .value
-    sub cl, '0'
-    cmp cl, 9
-    jbe .valid_digit
-    and cl, 0dfh
-    sub cl, 7
-.valid_digit:
-    cmp cx, bx
-    jae .done
-    imul ax, bx
-    jo .done
-    add ax, cx
-    inc si
-    jmp .digit
-.value:
-    cmp dl, 'A'
-    jne .irq
-    mov cx, ax
-    sub cx, 220h
-    test cx, 0ff9fh
-    jnz .token
-    mov [sb_base], ax
-    jmp .token
-.irq:
-    cmp dl, 'I'
-    jne .dma
-    cmp ax, 5
-    je .set_irq
-    cmp ax, 7
-    jne .token
-.set_irq:
-    mov [sb_irq], al
-    jmp .token
-.dma:
-    cmp dl, 'D'
-    jne .high
-    cmp ax, 1
-    je .set_dma
-    cmp ax, 3
-    jne .token
-.set_dma:
-    mov [sb_dma8], al
-    jmp .token
-.high:
-    cmp dl, 'H'
-    jne .type
-    cmp ax, 5
-    jb .token
-    cmp ax, 7
-    ja .token
-    mov [sb_dma16], al
-    jmp .token
-.type:
-    cmp dl, 'T'
-    jne .token
-    cmp ax, 6
-    je .sb16
-    cmp ax, 1
-    je .sb
-    cmp ax, 3
-    je .sb
-    cmp ax, 2
-    je .pro
-    cmp ax, 4
-    jne .token
-.pro:
-    mov byte [sound_card], 1
-    jmp .token
-.sb:
-    mov byte [sound_card], 3
-    jmp .token
-.sb16:
-    mov byte [sound_card], 0
-    jmp .token
+    mov si, no_values
 .done:
-    pop es
     ret
+physical_dma16_list:
+    mov si, dma16_values
+    cmp byte [sound_card], 0
+    je .done
+    mov si, no_values
+.done:
+    ret
+
+text_model:
+    push bx
+    mov bx, ax
+    shl bx, 1
+    mov si, [model_names+bx]
+    pop bx
+    jmp copy_text
+
+; Keep the port valid for the new card.
+model_changed:
+    call port_list
+    mov ax, [sb_base]
+    call value_listed
+    jnc .done
+    mov ax, [si+1]
+    mov [sb_base], ax
+.done:
+    clc
+    ret
+
+MAIN_ITEMS equ 18
+main_items:
+    item 7,16,21,0, NONE,5,NONE,1, format_choice,choice_popup,choice_cycle,model_choice
+    item 7,41,3,0, NONE,6,0,2, format_choice,choice_popup,choice_cycle,port_choice
+    item 7,49,3,0, NONE,7,1,3, format_choice,choice_popup,choice_cycle,irq_choice
+    item 7,57,3,0, NONE,8,2,4, format_choice,choice_popup,choice_cycle,dma8_choice
+    item 7,67,3,0, NONE,9,3,NONE, format_choice,choice_popup,choice_cycle,dma16_choice
+    item 11,16,21,0, 0,10,NONE,6, format_choice,choice_popup,choice_cycle,virtual_model_choice
+    item 11,41,3,0, 1,10,5,7, format_choice,choice_popup,choice_cycle,virtual_port_choice
+    item 11,49,3,0, 2,11,6,8, format_choice,choice_popup,choice_cycle,virtual_irq_choice
+    item 11,57,3,0, 3,11,7,9, format_choice,choice_popup,choice_cycle,virtual_dma8_choice
+    item 11,67,3,0, 4,11,8,NONE, format_choice,choice_popup,choice_cycle,virtual_dma16_choice
+    item 12,41,3,0, 6,12,NONE,11, format_choice,choice_popup,choice_cycle,wss_port_choice
+    item 12,49,3,0, 7,12,10,NONE, format_choice,choice_popup,choice_cycle,wss_irq_choice
+    item 20,5,8,0, 10,NONE,NONE,13, format_label,hotkeys_screen,0,hotkeys_label
+    item 20,17,8,0, 10,NONE,12,14, format_label,mixer_screen,0,mixer_label
+    item 20,29,8,0, 10,NONE,13,15, format_label,detect_action,0,detect_label
+    item 20,41,8,0, 10,NONE,14,16, format_label,test_action,0,test_label
+    item 20,53,8,0, 10,NONE,15,17, format_label,save_action,0,save_label
+    item 20,65,8,0, 10,NONE,16,NONE, format_label,cancel_action,0,cancel_label
+main_notes dw 0,0,0,0,0
+    dw virtual_note,virtual_note,virtual_note,virtual_note,virtual_note,wss_note,wss_note
+    dw 0,0,0,0,0,0
+model_choice:
+    choice sound_card,1,model_list,text_model,model_changed
+port_choice:
+    choice sb_base,2,port_list,text_hex3,0
+irq_choice:
+    choice sb_irq,1,irq_list,text_decimal,0
+dma8_choice:
+    choice sb_dma8,1,dma8_list,text_decimal,0
+dma16_choice:
+    choice sb_dma16,1,physical_dma16_list,text_decimal,0
+virtual_port_choice:
+    choice virtual_base,2,sb_port_list,text_hex3,0
+virtual_irq_choice:
+    choice virtual_irq,1,irq_list,text_decimal,0
+virtual_dma8_choice:
+    choice virtual_dma8,1,dma8_list,text_decimal,0
+virtual_dma16_choice:
+    choice virtual_dma16,1,virtual_dma16_list,text_decimal,0
+virtual_model_choice:
+    choice virtual_model,1,virtual_model_list,text_model,0
+wss_port_choice:
+    choice virtual_wss_base,2,wss_port_list,text_hex3,0
+wss_irq_choice:
+    choice virtual_wss_irq,1,wss_irq_list,text_decimal,0
+model_values db 4
+    dw 0,1,3,2
+no_values db 0
+virtual_model_values db 3
+    dw 0,1,3
+model_names dw sb16_name,pro_name,wss_name,sb_name
+output_texts dw output_16,output_pro,output_16,output_sb
 
 psp dw 0
 resident_entry dd 0
 resident_report times 26 db 0
-selected db 0
-result db 0
-status dw initial_message
-changes dw change_card,change_port,change_irq,change_dma8,change_dma16
-choice_counts db 4,4,2,2,3
-title db 'uCDD Sound Setup',0
-sb_name db 'Sound Blaster / 1.5 / 2',0
-output_sb db 'Output: 22.22 kHz, 8-bit mono.',0
-subtitle db 'Select the settings for the physical sound card.',0
-labels db 'Card',13,10,13,10,'       I/O address',13,10,13,10
-    db '       IRQ',13,10,13,10,'       8-bit DMA',13,10,13,10,'       16-bit DMA',0
+handoff db 0
+handoff_pointer dd 0
+load_status db 0
+menu_result db 0
+load_messages dw empty_text,missing_message,old_message,invalid_message
+install_option db '-INSTALL'
+status_buffer times 240 db 0
+page_saved times CONFIG_SIZE db 0
+page_changed db 0
+
+main_title db 'uCDD Configuration',0
+table_header db 'Card'
+    times 9 db ' '
+    db 'Model'
+    times 20 db ' '
+    db 'Port    IRQ   DMA Low  DMA High',0
+physical_label db 'Physical',0
+virtual_label db 'Virtual',0
+info_labels db 'Output',10,'Games',0
 sb16_name db 'Sound Blaster 16',0
 pro_name db 'Sound Blaster Pro',0
 wss_name db 'Windows Sound System',0
-port_text db '220h',0
-number_text db '5',0
-unused_text db 'Not used',0
-hex_digits db '0123456789ABCDEF'
-arrow db '>',0
-output_16 db 'Output: 44.1 kHz, 16-bit stereo.',0
-output_pro db 'Output: 8-bit stereo. Nominal rate: 22.05 kHz.',0
-initial_message db '',0
-changed_message db '',0
-invalid_message db 'UCDD.CFG is not valid. Check all settings before you save.',0
+sb_name db 'Sound Blaster 1.5/2.0',0
+output_16 db '44.1 kHz, 16-bit stereo.',0
+output_pro db '8-bit stereo. Nominal rate: 22.05 kHz.',0
+output_sb db '22.22 kHz, 8-bit mono.',0
+games_text db 'Set your games to the virtual cards.',0
+hotkeys_label db 'Hotkeys',0
+mixer_label db 'Mixer',0
+detect_label db 'Detect',0
+test_label db 'Test',0
+save_label db 'Save',0
+cancel_label db 'Cancel',0
+ok_label db 'OK',0
+virtual_note db 'Match the physical card if you can.',0
+wss_note db 'The WSS codec uses the DMA Low channel of the virtual SB.',0
+missing_message db 'UCDD.CFG was not found.',0
+old_message db 'UCDD.CFG is from an older version.',0
+invalid_message db 'UCDD.CFG is not valid.',0
+installed_message db 'The audio driver is installed. Restart DOS to use changed settings.',0
+invalid_values_message db 'A setting is not valid.',0
 save_message db 'The settings cannot be saved.',0
-listen_message db 'Listen for a tone from each speaker.',0
-test_message db 'The test has stopped. Check that both speakers made a sound.',0
+confirm_message db 'Exit without saving? Press Y to exit. Press a different key to stay.',0
+fixed_message db 'The selected card does not use this setting.',0
+listen_message db 'A tone plays on the left speaker, then on the right speaker.',0
+test_message db 'Test complete.',0
 test_error db 'The test failed. Check the sound card and its settings.',0
-resident_message db 'Restart DOS before you run the sound test.',0
-help db 'Up/Down: Select   Left/Right/Enter: Change',13,10
-    db '     F2: Save and test   F10: Save and exit   Esc: Exit',0
+resident_test_message db 'The uCDD audio driver uses the card. Start DOS without UCDD -install.',0
+blaster_set_message db 'BLASTER is set to ',0
+period_line db '.',13,10,0
+blaster_failed_message db 'BLASTER cannot be set. Set BLASTER=',0
+blaster_failed_end db ' before you start a game.',13,10,0
 
-setup_usage_message db 'Use UCDDSET to select the physical sound card settings.',13,10
-    db 'Use the arrow keys to select and change a setting.',13,10
-    db 'Use F2 to save the settings and test the sound.',13,10
-    db 'Use F10 to save the settings and exit.',13,10
-    db 'Use Esc to exit without saving.',13,10
-    db 'Use UCDDSET /? to show this information.',13,10,'$'
+saved_message db 'The settings are saved.',13,10,'$'
+restart_message db 'The settings are saved. Restart DOS to use them.',13,10,'$'
+handoff_message db 'Use UCDD -install to install the driver.',13,10,'$'
+path_message db 'The program directory cannot be read.',13,10,'$'
+setup_usage_message db 'UCDDSET sets the sound cards, hotkeys, and volumes for uCDD.',13,10,13,10
+    db 'UCDDSET saves the settings in UCDD.CFG.',13,10
+    db 'UCDD -install loads them and sets BLASTER for the virtual card.',13,10,'$'
 %include "notice.inc"
 
+%include "setup/hotkeys.asm"
+%include "setup/mixer.asm"
+%include "setup/config_file.asm"
+%include "setup/blaster.asm"
+%include "setup/detect.asm"
 %include "audio/speaker.asm"
 %include "config_path.asm"
-path_message db 'The program directory cannot be read.',13,10,'$'
 setup_end:

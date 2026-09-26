@@ -28,7 +28,8 @@ dpmi_dos_allocate:
     mov ax, [edi+28]
     mov [ebx+36], ax
     push edi
-    mov ecx, 1
+    movzx ecx, word [ebx+24]
+    call dpmi_dos_tile_count
     call dpmi_descriptor_allocate
     pop edi
     jc .full
@@ -41,16 +42,8 @@ dpmi_dos_allocate:
     mov [ebx+36], ax
 .result:
     movzx eax, word [edi+28]
-    shl eax, 4
-    mov [esi+2], ax
-    shr eax, 16
-    mov [esi+4], al
-    movzx eax, word [ebx+24]
-    shl eax, 4
-    dec eax
-    mov [esi], ax
-    shr eax, 16
-    mov [esi+6], al
+    movzx ecx, word [ebx+24]
+    call dpmi_dos_tiles
     jmp dpmi_dos_success
 .full:
     mov ax, [edi+28]
@@ -73,6 +66,8 @@ dpmi_dos_free:
     mov word [edi+28], 4900h
     call dpmi_dos_call
     jnz dpmi_dos_error
+    mov ecx, 1
+    call dpmi_dos_untile
     movzx eax, word [ebx+28]
     call dpmi_clear_selector
     shr eax, 3
@@ -87,6 +82,8 @@ dpmi_dos_resize:
     mov ax, [ebx+28]
     call dpmi_dos_descriptor
     jc dpmi_dos_bad_selector
+    call dpmi_dos_tile_room
+    jc dpmi_dos_full
     call dpmi_descriptor_base
     shr eax, 4
     push eax
@@ -98,13 +95,13 @@ dpmi_dos_resize:
     mov word [edi+28], 4a00h
     call dpmi_dos_call
     jnz dpmi_dos_error
-    movzx eax, word [ebx+24]
-    shl eax, 4
-    dec eax
-    mov [esi], ax
-    shr eax, 16
-    and byte [esi+6], 70h
-    or [esi+6], al
+    movzx ecx, word [ebx+24]
+    call dpmi_dos_tile_count
+    call dpmi_dos_untile
+    call dpmi_descriptor_base
+    shr eax, 4
+    movzx ecx, word [ebx+24]
+    call dpmi_dos_tiles
     jmp dpmi_dos_success
 dpmi_dos_error:
     mov ax, [edi+16]
@@ -134,6 +131,9 @@ dpmi_dos_success:
 dpmi_dos_bad_value:
     mov ax, 8021h
     jmp dpmi_dos_finish_error
+dpmi_dos_full:
+    mov ax, 8011h
+    jmp dpmi_dos_finish_error
 dpmi_dos_bad_selector:
     mov ax, 8022h
 dpmi_dos_finish_error:
@@ -161,6 +161,104 @@ dpmi_dos_descriptor:
     stc
     ret
 
+; ECX=paragraphs. Return ECX=descriptors for the block. 16-bit clients get
+; one descriptor for each 64 KB.
+dpmi_dos_tile_count:
+    cmp byte [ebp+dpmi_client16], 0
+    je .one
+    add ecx, 0fffh
+    shr ecx, 12
+    ret
+.one:
+    mov ecx, 1
+    ret
+; ESI=first descriptor, EAX=real segment, ECX=paragraphs.
+dpmi_dos_tiles:
+    pushad
+    shl eax, 4
+    mov edx, ecx
+.tile:
+    mov ecx, edx
+    cmp byte [ebp+dpmi_client16], 0
+    je .size
+    cmp ecx, 1000h
+    jbe .size
+    mov ecx, 1000h
+.size:
+    sub edx, ecx
+    mov [esi+2], ax
+    mov ebx, eax
+    shr ebx, 16
+    mov [esi+4], bl
+    shl ecx, 4
+    dec ecx
+    mov [esi], cx
+    shr ecx, 16
+    and byte [esi+6], 70h
+    or [esi+6], cl
+    test edx, edx
+    jz .done
+    add eax, 10000h
+    add esi, 8
+    mov word [esi+5], 00f2h
+    lea ebx, [esi-dpmi_ldt]
+    sub ebx, ebp
+    shr ebx, 3
+    mov byte [ebp+dpmi_used+ebx], 5
+    jmp .tile
+.done:
+    popad
+    ret
+; ESI=first descriptor, ECX=descriptors to keep. Free the tiles after them.
+dpmi_dos_untile:
+    pushad
+    lea edx, [esi-dpmi_ldt]
+    sub edx, ebp
+    shr edx, 3
+    add edx, ecx
+.next:
+    cmp edx, DPMI_LDT_COUNT
+    jae .done
+    cmp byte [ebp+dpmi_used+edx], 5
+    jne .done
+    mov byte [ebp+dpmi_used+edx], 0
+    mov dword [ebp+dpmi_ldt+edx*8], 0
+    mov dword [ebp+dpmi_ldt+edx*8+4], 0
+    lea eax, [edx*8+7]
+    call dpmi_clear_selector
+    inc edx
+    jmp .next
+.done:
+    popad
+    ret
+; ESI=first descriptor. CF when the tiles for BX paragraphs do not fit.
+dpmi_dos_tile_room:
+    pushad
+    movzx ecx, word [ebx+24]
+    call dpmi_dos_tile_count
+    lea edx, [esi-dpmi_ldt]
+    sub edx, ebp
+    shr edx, 3
+    lea eax, [edx+ecx]
+    cmp eax, DPMI_LDT_COUNT
+    ja .full
+.check:
+    inc edx
+    dec ecx
+    jz .fits
+    cmp byte [ebp+dpmi_used+edx], 0
+    je .check
+    cmp byte [ebp+dpmi_used+edx], 5
+    je .check
+.full:
+    popad
+    stc
+    ret
+.fits:
+    popad
+    clc
+    ret
+
 dpmi_dos_translate:
     cmp byte [ebp+dpmi_reflect_vector], 21h
     jne .ordinary
@@ -177,10 +275,13 @@ dpmi_dos_translate:
     jmp dpmi_dos_free
 .resize:
     cmp byte [ebx+37], 4ah
-    jne .ordinary
+    jne .dos16
     mov ax, [ebx]
     mov [ebx+28], ax
     jmp dpmi_dos_resize
+.dos16:
+    cmp byte [ebp+dpmi_client16], 0
+    jne dpmi_dos16
 .ordinary:
     call dpmi_dos_frame
     mov al, [ebp+dpmi_reflect_vector]

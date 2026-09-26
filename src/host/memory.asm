@@ -29,6 +29,7 @@ dpmi_memory_init:
 dpmi_memory_info:
     mov ax, [ebx]
     mov edx, [ebx+8]
+    DPMI_OFFSET16 edx, dx
     mov ecx, 48
     mov edi, 1
     call dpmi_buffer
@@ -269,6 +270,18 @@ dpmi_memory_find:
 
 dpmi_memory_release:
     pushad
+    ; Freed code can come back at the same address. Forget its CLI sites.
+    mov ecx, DPMI_CLI_SITES
+.site:
+    mov eax, [ebp+dpmi_cli_linear+ecx*4-4]
+    sub eax, [esi]
+    shr eax, 12
+    cmp eax, [esi+4]
+    jae .site_next
+    mov dword [ebp+dpmi_cli_linear+ecx*4-4], 0
+    mov byte [ebp+dpmi_cli_score+ecx-1], 0
+.site_next:
+    loop .site
     mov edi, [esi]
     mov ecx, [esi+4]
     jecxz .empty
@@ -482,6 +495,7 @@ dpmi_page_free:
 
 dpmi_flush:
     HOST_COUNT flush
+    inc dword [ebp+dpmi_page_generation]
     push eax
     mov eax, cr3
     mov cr3, eax

@@ -79,7 +79,7 @@ sb_real_irq:
     cmp byte [es:di], 0
     je .take
     cmp byte [es:di+1], 0
-    jne .done
+    jne .protected
 .take:
     push cs
     call virtual_irq_take
@@ -109,6 +109,43 @@ sb_real_irq:
     mov [sb_real_vector], eax
     mov byte [sb_real_pending], 1
 .done:
+    ret
+; A client's real-mode call was interrupted. Its protected-mode handler gets
+; the IRQ through the host bridge. The host delivers the IRQs it reflects.
+.protected:
+    push ds
+    mov bx, [irq_sp]
+    mov ds, [irq_ss]
+    mov ax, es
+    cmp [bx+6], ax
+    pop ds
+    je .done
+    ; Without the JEMMEX IRQ slot, host calls show the mixer in the vector. A
+    ; real-mode handler written directly to the vector then gets the IRQ there.
+    cmp dword [host_irq_slot], 0
+    jne .bridge
+    push es
+    xor ax, ax
+    mov es, ax
+    movzx bx, byte [guest_vector]
+    shl bx, 2
+    mov ax, [es:bx+2]
+    pop es
+    mov bx, cs
+    cmp ax, bx
+    je .bridge
+    mov bx, es
+    cmp ax, bx
+    jne .take
+.bridge:
+    push cs
+    call virtual_irq_take
+    test ax, ax
+    jz .done
+    mov ax, [es:di+2]
+    mov [sb_real_vector], ax
+    mov [sb_real_vector+2], es
+    mov byte [sb_real_pending], 1
     ret
 sb_real_vector dd 0
 sb_real_pending db 0

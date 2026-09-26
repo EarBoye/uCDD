@@ -2,7 +2,7 @@
 ; SPDX-License-Identifier: GPL-3.0-only
 
 .wss_port:
-    sub dx, 530h
+    sub dx, [virtual_wss_base]
     test cl, 4
     jz .wss_read
     cmp dx, 4
@@ -204,6 +204,7 @@
     cmp edx, 65535
     ja .unsupported
     mov byte [game_source], 1
+    mov byte [pending_format], 0
     mov si, dma8
     xor cl, cl
     jmp .validate_dma

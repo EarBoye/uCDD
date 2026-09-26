@@ -150,34 +150,6 @@ sb_start:
     mov [dma_count_port], ax
     call physical_reset
     jc .fail
-    mov dx, [sb_base]
-    add dx, 4
-    mov al, 80h
-    call physical_write
-    inc dx
-    call physical_read
-    mov [saved_irq], al
-    mov al, 2
-    cmp byte [sb_irq], 5
-    je .irq_value
-    mov al, 4
-.irq_value:
-    call physical_write
-    dec dx
-    mov al, 81h
-    call physical_write
-    inc dx
-    call physical_read
-    mov [saved_dma], al
-    mov cl, [sb_dma8]
-    mov al, 1
-    shl al, cl
-    mov ah, al
-    mov cl, [sb_dma16]
-    mov al, 1
-    shl al, cl
-    or al, ah
-    call physical_write
     mov si, mixer_registers
     mov di, mixer_saved
     mov cx, 4
@@ -190,7 +162,12 @@ sb_start:
     call physical_read
     mov [di], al
     inc di
+    ; Registers 30h and 31h hold the master volume.
     mov al, 0f8h
+    cmp cx, 2
+    jbe .level
+    mov al, [master_register]
+.level:
     call physical_write
     loop .mixer
     mov al, [sb_irq]
@@ -308,19 +285,6 @@ sb_stop:
     inc di
     call physical_write
     loop .mixer
-    mov dx, [sb_base]
-    add dx, 4
-    mov al, 80h
-    call physical_write
-    inc dx
-    mov al, [saved_irq]
-    call physical_write
-    dec dx
-    mov al, 81h
-    call physical_write
-    inc dx
-    mov al, [saved_dma]
-    call physical_write
     mov byte [sb_running], 0
 .done:
     ret
@@ -525,8 +489,6 @@ irq_sp dw 0
 next_half dw 0
 periods dd 0
 saved_pic db 0
-saved_irq db 0
-saved_dma db 0
 sb_running db 0
 dsp_failed db 0
 mixer_registers db 30h,31h,32h,33h

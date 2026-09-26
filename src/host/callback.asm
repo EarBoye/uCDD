@@ -5,6 +5,7 @@ HOST_PROTECTED
 dpmi_callback_allocate:
     mov ax, [ebx]
     mov edx, [ebx+8]
+    DPMI_OFFSET16 edx, dx
     mov ecx, 50
     mov edi, 1
     call dpmi_buffer
@@ -12,6 +13,7 @@ dpmi_callback_allocate:
     push eax
     mov ax, [ebx+4]
     mov edx, [ebx+12]
+    DPMI_OFFSET16 edx, dx
     call dpmi_code_target
     jc .bad
     push dword [esi]
@@ -45,10 +47,12 @@ dpmi_callback_allocate:
     pop eax
     mov [esi], eax
     mov eax, [ebx+12]
+    DPMI_OFFSET16 eax, ax
     mov [edi+4], eax
     mov ax, [ebx]
     mov [edi+8], ax
     mov eax, [ebx+8]
+    DPMI_OFFSET16 eax, ax
     mov [edi+12], eax
     pop eax
     mov [edi+16], eax
@@ -163,7 +167,7 @@ dpmi_callback_pm:
     mov eax, [ebp+dpmi_sti_ip]
     mov [ebp+dpmi_callback_sti+4], eax
     mov byte [ebp+dpmi_sti_shadow], 0
-    mov word [ebp+dpmi_vif], 0100h
+    mov word [ebp+dpmi_vif], 0
     mov dword [ebp+mon_return+12], dpmi_callback_real_top
     mov eax, [ebp+mon_real_base]
     shr eax, 4
@@ -196,6 +200,8 @@ dpmi_callback_pm:
     mov [esi+4], al
     mov byte [esi+6], 0
     mov byte [esi+7], 0
+    cmp byte [ebp+dpmi_client16], 0
+    jne .word_frame
     mov eax, 3fe000h+4096-12
     lea edx, [ebp+dpmi_callback_return]
     mov [eax], edx
@@ -203,7 +209,17 @@ dpmi_callback_pm:
     mov dword [eax+8], 2
     push dword DPMI_CALLBACK_SS
     push dword 4096-12
-    push dword 2
+    jmp .framed
+.word_frame:
+    ; A 16-bit procedure returns with a 16-bit IRET.
+    mov eax, 3fe000h+4096-6
+    mov word [eax], dpmi_callback_return
+    mov word [eax+2], DPMI_STUB16
+    mov word [eax+4], 2
+    push dword DPMI_CALLBACK_SS
+    push dword 4096-6
+.framed:
+    push dword 202h
     movzx eax, word [ebx]
     push eax
     push dword [ebx+4]
@@ -225,10 +241,17 @@ dpmi_callback_done:
     cmp byte [cs:ebp+dpmi_callback_active], 1
     jne .bad_gate
     cmp word [ss:esp+12], 23h
-    jne .bad_gate
+    jne .word_gate
     lea eax, [ebp+dpmi_callback_return+2]
     cmp [ss:esp+8], eax
     jne .bad_gate
+    jmp .gate_address
+.word_gate:
+    cmp word [ss:esp+12], DPMI_STUB16
+    jne .bad_gate
+    cmp dword [ss:esp+8], dpmi_callback_return+2
+    jne .bad_gate
+.gate_address:
     cmp word [ss:esp+24], DPMI_CALLBACK_SS
     jne .bad_gate
     mov eax, 4096
@@ -403,6 +426,7 @@ dpmi_callback_enter:
     int 67h
     ud2
 dpmi_callback_real_return:
+    and byte [cs:dpmi_callback_regs+33], 0feh
     push word [cs:dpmi_callback_regs+32]
     push word [cs:dpmi_callback_regs+44]
     push word [cs:dpmi_callback_regs+42]

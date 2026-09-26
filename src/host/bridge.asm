@@ -41,6 +41,10 @@ dpmi_bridge_real_allocate:
     int 21h
     mov ah, 48h
     mov bx, 128
+    cmp byte [dpmi_client16], 0
+    je .size_ready
+    mov bx, 128+DPMI_XFER_PARAS
+.size_ready:
     int 21h
     jc .restore
     mov [dpmi_bridge_real_segment], ax
@@ -84,14 +88,18 @@ dpmi_bridge_install:
     xor ebx, ebx
 .irq:
     call dpmi_bridge_vector
+    mov ecx, [ebp+mon_real_base]
+    shl ecx, 12
+    mov cx, [ebp+dpmi_bridge_stubs+ebx*2]
     mov eax, [edx*4]
+    ; A stub in the vector means a live bridge. Keep its saved handler.
+    cmp eax, ecx
+    je .saved
     mov [ebp+dpmi_bridge_vectors+ebx*4], eax
+.saved:
     cmp bl, [ebp+dpmi_audio_irq]
     je .next
-    mov eax, [ebp+mon_real_base]
-    shl eax, 12
-    mov ax, [ebp+dpmi_bridge_stubs+ebx*2]
-    mov [edx*4], eax
+    mov [edx*4], ecx
 .next:
     inc ebx
     cmp ebx, 16
@@ -181,8 +189,11 @@ dpmi_bridge_update:
     cmp word [esi+4], 0
     je .next
     cmp word [esi+4], 3bh
+    je .default
+    cmp word [esi+4], DPMI_STUB16
     jne .enable
-    imul eax, edx, 11
+.default:
+    imul eax, edx, 3
     add eax, dpmi_default_vectors
     cmp [esi], eax
     je .next
@@ -266,18 +277,22 @@ dpmi_bridge_pm:
     ; The interrupted real-mode code had interrupts enabled.
     mov byte [ebp+dpmi_vif], 1
     mov byte [ebp+dpmi_step_active], 0
+    btr ebx, 8
+    jnc .queue
+    mov byte [ebp+dpmi_sti_sb_held], 1
+    jmp .queued
+.queue:
     call dpmi_pic_queue
+.queued:
     push dword DPMI_IRQ_SS
     push dword [ebp+dpmi_locked_cursor]
     push dword 202h
     push dword 3bh
     push dword dpmi_bridge_return
-    mov ax, 2bh
-    mov ds, ax
+    ; Handlers may rely on the segments of the client's real-mode call.
+    call dpmi_client_segments
     mov es, ax
-    xor eax, eax
-    mov fs, ax
-    mov gs, ax
+    mov ds, dx
     MON_IRETD
 
 dpmi_bridge_return:
@@ -393,38 +408,55 @@ dpmi_bridge_stubs:
 %rep 16
 dpmi_bridge_irq_%+irq:
     pushf
-    cmp byte [cs:dpmi_sti_shadow], 0
-    je .open
-    test word [cs:dpmi_bridge_mask], 1<<irq
-    jz .chain
-    popf
-    push strict word irq
-    jmp dpmi_bridge_defer
-.open:
     call dpmi_bridge_blocked
-%if irq < 2 || irq = 12
-    jc .defer_blocked
-%else
+%if irq = 6 || irq >= 8 && irq <= 11 || irq >= 14
+    ; The CD refill can wait for the disk and RTC IRQs.
     jc .chain
+%elif irq < 2 || irq = 12
+    jc .defer
+%else
+    jnc .open
+    jz .defer
+    jmp .chain
+.open:
 %endif
     test word [cs:dpmi_bridge_mask], 1<<irq
     jz .chain
+    cmp byte [cs:dpmi_sti_shadow], 0
+    jne .shadow
     popf
     push strict word irq
     jmp dpmi_bridge_enter
-%if irq < 2 || irq = 12
-.defer_blocked:
+.defer:
     test word [cs:dpmi_bridge_mask], 1<<irq
     jz .chain
+.shadow:
     popf
     push strict word irq
     jmp dpmi_bridge_defer
-%endif
 .chain:
     popf
     jmp far [cs:dpmi_bridge_vectors+irq*4]
 %assign irq irq+1
 %endrep
+
+; A virtual guest IRQ during a real-mode call, entered like an IRQ handler.
+dpmi_bridge_virtual:
+    pushf
+    cmp byte [cs:dpmi_bridge_installed], 0
+    je .later
+    cmp byte [cs:dpmi_sti_shadow], 0
+    jne .later
+    call dpmi_bridge_blocked
+    jc .later
+    popf
+    ; Bit 8 marks an SB IRQ that uCDD has already taken.
+    push strict word 100h
+    jmp dpmi_bridge_enter
+.later:
+    popf
+    mov byte [cs:dpmi_sti_sb_held], 1
+    iret
 
 dpmi_bridge_defer:
     push bp
@@ -451,12 +483,21 @@ dpmi_bridge_defer:
     add sp, 2
     iret
 
+; CF=1 blocks delivery. Then ZF=1 marks a CD refill and ZF=0 a disabled client.
 dpmi_bridge_blocked:
+%ifdef RESIDENT_HOST
+    ; The CD refill runs inside DOS. The client must not run until it ends.
+    cmp byte [cs:resident_refill_busy], 0
+    je .client
+    cmp al, al
+    stc
+    ret
+.client:
+%endif
     cmp byte [cs:dpmi_vif], 0
     jne .enabled
     cmp dword [cs:dpmi_locked_depth], 0
     je .enabled
-.blocked:
     stc
     ret
 .enabled:

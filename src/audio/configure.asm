@@ -1,35 +1,48 @@
 ; SPDX-FileCopyrightText: 2026 vorvek
 ; SPDX-License-Identifier: GPL-3.0-only
 
+; UCDDSET reads UCDD.CFG, shows its menu if the file needs attention, and
+; copies the checked settings to config_data.
 audio_configure:
     call config_path_init
     mov dx, config_path_message
     jc .error
-    call config_load
-    jnc .done
-    cmp ax, 2
-    mov dx, config_read_message
-    jne .error
-    mov dx, setup_start_message
-    mov ah, 9
-    int 21h
     mov bx, [config_directory_end]
     mov dword [bx+4], 'SET.'
     mov dword [bx+8], 'EXE'
+    mov ax, cs
+    mov di, setup_segment
+    call config_hex
+    mov ax, config_data
+    mov di, setup_offset
+    call config_hex
     call config_run_setup
     jc .error
-    call config_path_init
-    mov dx, config_path_message
-    jc .error
-    call config_load
-    mov dx, config_unsaved_message
-    jc .error
-.done:
+    mov dx, setup_exit_message
+    cmp byte [config_ready], 1
+    jne .error
     clc
     ret
 .error:
     mov [audio_error_text], dx
     stc
+    ret
+
+; AX value. Write four hexadecimal digits at DI.
+config_hex:
+    mov cx, 4
+.digit:
+    rol ax, 4
+    mov bl, al
+    and bl, 15
+    add bl, '0'
+    cmp bl, '9'
+    jbe .store
+    add bl, 7
+.store:
+    mov [di], bl
+    inc di
+    loop .digit
     ret
 
 config_run_setup:
@@ -57,11 +70,11 @@ config_run_setup:
     mov bx, setup_exec
     mov dx, config_path
     mov [setup_sp], sp
+    mov [setup_ss], ss
     mov ax, 4b00h
     int 21h
     cli
-    mov dx, cs
-    mov ss, dx
+    mov ss, [cs:setup_ss]
     mov sp, [cs:setup_sp]
     sti
     push cs
@@ -95,14 +108,15 @@ config_run_setup:
     ret
 
 setup_exec dw 0, setup_tail, 0, setup_fcb, 0, setup_fcb, 0
-setup_tail db 0,13
+setup_tail db setup_tail_end-setup_tail-1,' -INSTALL '
+setup_segment db '0000:'
+setup_offset db '0000'
+setup_tail_end db 13
 setup_fcb times 37 db 0
 setup_sp dw 0
+setup_ss dw 0
 setup_strategy dw 0
 setup_umb db 0
 config_path_message db 'The program directory cannot be read.',13,10,'$'
-config_read_message db 'UCDD.CFG cannot be read. Run UCDDSET and save the settings.',13,10,'$'
-config_unsaved_message db 'UCDD.CFG was not saved. The audio driver is not installed.',13,10,'$'
-setup_start_message db 'UCDD.CFG was not found. Sound setup will start.',13,10,'$'
 setup_exec_message db 'UCDDSET.EXE cannot be started.',13,10,'$'
 setup_exit_message db 'Sound setup did not complete. The audio driver is not installed.',13,10,'$'

@@ -31,6 +31,7 @@ mix_half:
 %endif
     call cd_begin_half
 %ifdef RESIDENT_AUDIO
+    call cd_filter
 .cd_ready:
 %endif
 %endif
@@ -150,6 +151,8 @@ mix_half:
     cmp byte [sb_filter_legacy], 0
     jne .frame
     cmp byte [game_frame_shift], 2
+    jne .frame
+    cmp byte [game_format], 0
     jne .frame
     cmp dword [game_step], 65536
     jne .frame
@@ -453,10 +456,34 @@ mix_half:
     mov si, ax
     movsx edx, word [fs:si]
     movsx esi, word [fs:si+2]
+    test byte [game_format], 2
+    jnz .unsigned_pair
+.pair_scale:
     sar edx, 1
     sar esi, 1
     jmp .advance
+.unsigned_pair:
+    xor dh, 80h
+    movsx edx, dx
+    xor si, 8000h
+    movsx esi, si
+    jmp .pair_scale
+.sb_mono16:
+    shl eax, 1
+    add ax, [sb_tail_read_offset]
+    mov si, ax
+    movsx edx, word [fs:si]
+    test byte [game_format], 2
+    jz .mono16_scale
+    xor dh, 80h
+    movsx edx, dx
+.mono16_scale:
+    sar edx, 1
+    mov esi, edx
+    jmp .advance
 .stereo8:
+    test byte [game_format], 1
+    jnz .sb_mono16
 %ifdef WSS_INPUT
     cmp byte [game_source], 1
     jne .bytes

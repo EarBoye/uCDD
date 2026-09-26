@@ -4,15 +4,6 @@
 %include "audio/wss_codec.asm"
 
 wss_start:
-    mov byte [wss_output_board], 0
-    mov dx, [sb_base]
-    add dx, 3
-    call physical_read
-    and al, 3fh
-    cmp al, 4
-    jne .codec
-    mov byte [wss_output_board], 1
-.codec:
     call wss_ready
     jc .fail
     mov al, 9
@@ -28,29 +19,16 @@ wss_start:
     cmp bx, 16
     jb .save
     mov byte [wss_saved_valid], 1
-    cmp byte [wss_output_board], 0
-    je .program
-    mov al, 2
-    cmp byte [sb_irq], 5
-    je .dma_select
-    add al, 8
-.dma_select:
-    cmp byte [sb_dma8], 1
-    je .board
-    inc al
-.board:
-    mov dx, [sb_base]
-    call physical_write
-.program:
     mov ax, 0c49h
     call indexed_write
     mov ax, 5b48h
     call indexed_write
     call wss_calibrate
     jc .restore_fail
-    mov ax, 0006h
+    mov ah, [master_register]
+    mov al, 6
     call indexed_write
-    mov ax, 0007h
+    mov al, 7
     call indexed_write
     mov ax, 020ah
     call indexed_write
@@ -195,4 +173,3 @@ wss_restore:
     ret
 wss_saved times 16 db 0
 wss_saved_valid db 0
-wss_output_board db 0

@@ -38,6 +38,24 @@ resident_host_init:
     push es
     pushad
     mov [cs:dpmi_audio_irq], al
+    ; The IVT holds the mixer's handler for the physical IRQ now.
+    push bx
+    push edx
+    push es
+    movzx bx, al
+    add bx, 8
+    cmp al, 8
+    jb .mixer_vector
+    add bx, 70h-10h
+.mixer_vector:
+    shl bx, 2
+    xor dx, dx
+    mov es, dx
+    mov edx, [es:bx]
+    mov [cs:resident_mixer_vector], edx
+    pop es
+    pop edx
+    pop bx
     push ax
     push si
     push di
@@ -57,6 +75,15 @@ resident_host_init:
     pop di
     pop si
     pop ax
+    test ah, 2
+    jz .vcpi_hidden
+    mov byte [cs:dpmi_hide_vcpi], 0
+.vcpi_hidden:
+    test ah, 4
+    jz .slot_ready
+    mov byte [cs:resident_irq_slot], 1
+.slot_ready:
+    and ah, 1
     mov [cs:mon_vcpi_flags_slot], ah
     mov [cs:resident_traps], cx
     mov [cs:resident_traps+2], ds
@@ -129,6 +156,28 @@ resident_host_init:
     mov dx, dpmi_mux
     mov ax, 252fh
     int 21h
+    cmp byte [cs:dpmi_hide_vcpi], 0
+    je .vcpi_ready
+    mov [dpmi_ems_gateway], ds
+    push ds
+    pop es
+    mov di, dpmi_ems_name
+    push ds
+    mov ds, [dpmi_old_ems+2]
+    mov si, 0ah
+    mov cx, 8
+    cld
+    rep movsb
+    pop ds
+    push ds
+    mov ax, ds
+    add ax, (dpmi_ems_base-host_gateway_start)/16
+    mov ds, ax
+    mov dx, dpmi_ems-dpmi_ems_base
+    mov ax, 2567h
+    int 21h
+    pop ds
+.vcpi_ready:
     pop ds
     popad
     pop es
@@ -157,6 +206,8 @@ HOST_REAL
 resident_refill dd 0
 resident_refill_pending dd 0
 resident_refill_busy db 0
+resident_irq_slot db 0
+resident_mixer_vector dd 0
 resident_port dd 0
 resident_take dd 0
 resident_wss_event dd 0
@@ -170,7 +221,7 @@ resident_port_count equ ($-resident_ports)/2
 HOST_SCRATCH
 HOST_LINEAR_PAGE equ 0e0000000h
 HOST_LINEAR_PDE equ (HOST_LINEAR_PAGE >> 22)
-HOST_XMS_KIB equ ((host_protected_end-host_protected_start+21501)/1024)
+HOST_XMS_KIB equ ((host_ldt_end-host_protected_start+21501)/1024)
 HOST_STACK_BYTES equ 2048
 HOST_STACK_PARAS equ (HOST_STACK_BYTES/16)
 HOST_GATEWAY_MIN_PARAS equ ((host_gateway_end-host_gateway_start+15)/16)
@@ -442,7 +493,7 @@ host_storage_commit:
     mov edx, [host_xms_physical]
     add edx, [host_xms_tail_offset]
     mov eax, [host_xms_tail_bytes]
-    add eax, 4095
+    add eax, host_ldt_end-host_protected_end+4095
     shr eax, 12
     mov cx, ax
 .map:
@@ -892,5 +943,9 @@ host_gateway_end:
 HOST_PROTECTED
 align 16
 host_protected_end:
+; The LDT pages follow the image in XMS. Each client start clears them.
+dpmi_ldt equ host_protected_end
+dpmi_used equ dpmi_ldt+DPMI_LDT_COUNT*8
+host_ldt_end equ dpmi_used+DPMI_LDT_COUNT
 HOST_SCRATCH
 host_image_end:

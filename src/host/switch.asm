@@ -8,7 +8,8 @@ dpmi_state_addresses:
     shr eax, 4
     mov [ebx+24], ax
     mov word [ebx+32], dpmi_state_real
-    mov word [ebx+12], 3bh
+    call dpmi_stub_selector
+    mov [ebx+12], ax
     mov eax, dpmi_state_pm
     mov [ebx+8], eax
     jmp mon_dpmi.success
@@ -17,7 +18,8 @@ dpmi_raw_addresses:
     shr eax, 4
     mov [ebx+24], ax
     mov word [ebx+32], dpmi_raw_enter
-    mov word [ebx+12], 3bh
+    call dpmi_stub_selector
+    mov [ebx+12], ax
     mov eax, dpmi_raw_exit
     mov [ebx+8], eax
     jmp mon_dpmi.success
@@ -40,10 +42,16 @@ dpmi_raw:
     cmp byte [ebp+dpmi_active], 1
     jne .bad_gate
     cmp word [esp+44], 3bh
+    je .stub
+    cmp word [esp+44], DPMI_STUB16
     jne .bad_gate
+.stub:
     cmp dword [esp+40], dpmi_raw_exit+2
     jne .bad_gate
     mov ebx, esp
+    call dpmi_record_segments
+    mov [ebp+dpmi_raw_segs], fs
+    mov [ebp+dpmi_raw_segs+2], gs
     call dpmi_locked_capture
     mov eax, [esp+16]
     mov [ebp+dpmi_raw_bp], eax
@@ -90,7 +98,23 @@ dpmi_raw_pm:
     mov es, ax
     mov ss, ax
     mov ebp, edi
-    lea esp, [ebp+mon_kernel_stack_top]
+    mov esp, [ebp+mon_tss+4]
+    mov eax, [ebp+dpmi_raw_switch]
+    mov [ebp+mon_switch+16], eax
+    lea edx, [ebp+mon_resume]
+    cmp eax, edx
+    jne .stack_ready
+    ; The switch came from a host real-mode call. Keep the frame of the call.
+    mov esp, [ebp+mon_resume_sp]
+    mov [ebp+mon_tss+4], esp
+.stack_ready:
+    cmp byte [ebp+dpmi_client16], 0
+    je .offsets_ready
+    movzx eax, word [ebp+dpmi_raw_regs]
+    mov [ebp+dpmi_raw_regs], eax
+    movzx eax, word [ebp+dpmi_raw_regs+16]
+    mov [ebp+dpmi_raw_regs+16], eax
+.offsets_ready:
     cmp byte [ebp+dpmi_active], 1
     jne dpmi_locked_abort
     mov ax, [ebp+dpmi_raw_regs+4]
@@ -112,18 +136,29 @@ dpmi_raw_pm:
     mov ecx, 9
     cld
     rep movsd
-    lea eax, [ebp+mon_enter]
-    mov [ebp+mon_switch+16], eax
+    lea eax, [ebp+mon_resume]
+    cmp [ebp+mon_switch+16], eax
+    je .caller_stack
+    cmp dword [ebp+dpmi_bridge_depth], 0
+    jne .caller_stack
+    cmp byte [ebp+dpmi_callback_active], 0
+    je .return_ready
+.caller_stack:
+    ; The host stack can be in use. Host calls use the caller's stack.
+    movzx eax, word [ebp+dpmi_raw_rm_stack]
+    mov [ebp+mon_return+12], eax
+    movzx eax, word [ebp+dpmi_raw_rm_stack+2]
+    mov [ebp+mon_return+16], eax
+.return_ready:
     movzx eax, word [ebp+dpmi_raw_regs+20]
     push eax
     push dword [ebp+dpmi_raw_regs+16]
     movzx eax, word [ebp+dpmi_raw_flags]
-    mov byte [ebp+dpmi_vif], 0
-    mov byte [ebp+dpmi_step_active], 1
+    mov word [ebp+dpmi_vif], 1
+    call dpmi_tf_disarm
     test eax, 200h
-    jz .flags_ready
-    mov byte [ebp+dpmi_vif], 1
-    mov byte [ebp+dpmi_step_active], 0
+    jnz .flags_ready
+    call dpmi_clear_vif
 .flags_ready:
     and eax, 0cd7h
     or eax, 202h
@@ -131,9 +166,11 @@ dpmi_raw_pm:
     movzx eax, word [ebp+dpmi_raw_regs+4]
     push eax
     push dword [ebp+dpmi_raw_regs]
-    xor eax, eax
-    mov fs, ax
-    mov gs, ax
+    ; Some extenders keep FS and GS across a raw switch. Restore them.
+    push ecx
+    mov ecx, [ebp+dpmi_raw_segs]
+    call dpmi_load_fs_gs
+    pop ecx
     mov es, [ebp+dpmi_raw_regs+24]
     mov ax, [ebp+dpmi_raw_regs+28]
     mov ebp, [ebp+dpmi_raw_regs+8]
@@ -180,6 +217,8 @@ dpmi_raw_enter:
     jne .inactive
     pop word [cs:dpmi_raw_flags]
     cli
+    mov [cs:dpmi_raw_rm_stack], sp
+    mov [cs:dpmi_raw_rm_stack+2], ss
     mov [cs:dpmi_raw_regs], edi
     mov [cs:dpmi_raw_regs+4], esi
     mov [cs:dpmi_raw_regs+8], ebp
@@ -191,9 +230,11 @@ dpmi_raw_enter:
     pop ds
     mov ax, cs
     mov ss, ax
-    mov sp, dpmi_callback_real_top
+    mov sp, dpmi_raw_stack_top
     and byte [mon_gdt+24+5], 0fdh
     mov edi, [mon_base]
+    mov eax, [mon_switch+16]
+    mov [dpmi_raw_switch], eax
     lea eax, [edi+dpmi_raw_pm]
     mov [mon_switch+16], eax
     mov esi, [mon_real_base]
@@ -211,5 +252,9 @@ dpmi_raw_regs times 32 db 0
 dpmi_raw_flags dw 0
 dpmi_raw_bp dd 0
 dpmi_raw_target dd 0
+dpmi_raw_switch dd 0
+dpmi_raw_rm_stack dd 0
+    times 32 db 0
+dpmi_raw_stack_top:
 dpmi_exit_frame times 36 db 0
 HOST_PROTECTED

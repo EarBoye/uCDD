@@ -244,11 +244,11 @@ port_callback:
 .not_keyboard:
 %endif
 %ifdef WSS_INPUT
-    cmp dx, 530h
-    jb .normal_port
-    cmp dx, 537h
+    push dx
+    sub dx, [virtual_wss_base]
+    cmp dx, 7
+    pop dx
     jbe .wss_port
-.normal_port:
 %endif
     cmp dx, 200h
     jb .dma_port
@@ -351,6 +351,8 @@ port_callback:
     je .done
     cmp bl, 81h
     je .done
+    test bl, bl
+    jz .mixer_reset
     mov [virtual_mixer+bx], al
     cmp bl, 0eh
     jne .mixer_volume
@@ -358,19 +360,59 @@ port_callback:
     mov [sb_filter_bypass], al
     jmp .done
 .mixer_volume:
+    ; The SB16 keeps the voice volume in 32h and 33h. Register 04h shows both.
     cmp bl, 4
+    jne .voice16
+    mov ah, al
+    and al, 0f0h
+    or al, 8
+    mov [virtual_mixer+32h], al
+    shl ah, 4
+    or ah, 8
+    mov [virtual_mixer+33h], ah
+    jmp .voice_gain
+.voice16:
+    cmp bl, 32h
+    je .voice_view
+    cmp bl, 33h
     jne .done
-    shr al, 5
-    movzx ebx, al
+.voice_view:
+    mov al, [virtual_mixer+32h]
+    and al, 0f0h
+    mov ah, [virtual_mixer+33h]
+    shr ah, 4
+    or al, ah
+    mov [virtual_mixer+4], al
+.voice_gain:
+    movzx ebx, byte [virtual_mixer+32h]
+    shr bl, 5
     mov eax, [sb_pcm_levels+ebx*4]
     mov [sb_pcm_gain], eax
-    mov al, [virtual_mixer+4]
-    shr al, 1
-    and al, 7
-    movzx ebx, al
+    movzx ebx, byte [virtual_mixer+33h]
+    shr bl, 5
     mov eax, [sb_pcm_levels+ebx*4]
     mov [sb_pcm_gain+4], eax
     jmp .done
+.mixer_reset:
+    ; Register 00h restores the SB16 defaults.
+    push cs
+    pop es
+    mov di, virtual_mixer
+    mov cx, 40h
+    xor eax, eax
+    cld
+    rep stosw
+    mov [sb_filter_bypass], al
+    mov al, 0cch
+    mov [virtual_mixer+4], al
+    mov [virtual_mixer+22h], al
+    mov [virtual_mixer+26h], al
+    mov eax, 0c0c0c0c0h
+    mov [virtual_mixer+30h], eax
+    mov [virtual_mixer+34h], ax
+    mov dword [virtual_mixer+3ch], 0b151fh
+    mov dword [virtual_mixer+44h], 80808080h
+    jmp .voice_gain
 .flip_reset:
     mov byte [si+DMA_FLIP], 0
     call dma_shared_write
@@ -467,6 +509,8 @@ port_callback:
     je .time_constant
     cmp al, 41h
     je .rate
+    cmp al, 42h
+    je .input_rate
     cmp al, 40h
     je .time_constant
     cmp al, 48h
@@ -523,7 +567,8 @@ port_callback:
     je .force_irq
     cmp al, 0e1h
     jne .unsupported
-    mov word [reply], 0504h
+    mov ax, [virtual_dsp_version]
+    mov [reply], ax
     mov byte [reply_count], 2
     jmp .done
 .speaker_off:
@@ -550,11 +595,11 @@ port_callback:
 %endif
     jmp .done
 .resume8:
-    cmp byte [game_frame_shift], 2
+    cmp byte [game_irq_bit], 2
     je .done
     jmp .resume
 .resume16:
-    cmp byte [game_frame_shift], 2
+    cmp byte [game_irq_bit], 2
     jne .done
 .resume:
     cmp byte [sb_paused], 0
@@ -568,11 +613,11 @@ port_callback:
     mov byte [game_active], 1
     jmp .done
 .exit8:
-    cmp byte [game_frame_shift], 2
+    cmp byte [game_irq_bit], 2
     je .done
     jmp .exit_block
 .exit16:
-    cmp byte [game_frame_shift], 2
+    cmp byte [game_irq_bit], 2
     jne .done
 .exit_block:
     cmp byte [game_active], 0
@@ -620,11 +665,11 @@ port_callback:
     mov [game_exit_frame], eax
     jmp .done
 .pause8:
-    cmp byte [game_frame_shift], 2
+    cmp byte [game_irq_bit], 2
     je .done
     jmp .pause
 .pause16:
-    cmp byte [game_frame_shift], 2
+    cmp byte [game_irq_bit], 2
     jne .done
 .pause:
     cmp byte [game_active], 0
@@ -663,6 +708,9 @@ port_callback:
     mov byte [sb_paused], 1
     mov byte [game_active], 0
     jmp .done
+.input_rate:
+    ; The SB16 uses one sample rate for output and input.
+    mov byte [dsp_command], 41h
 .rate:
     mov byte [arguments], 2
     jmp .done
@@ -679,6 +727,7 @@ port_callback:
 .legacy_format:
     push ax
     mov byte [pending_frame_shift], 0
+    mov byte [pending_format], 0
     cmp byte [dsp_command], 24h
     je .legacy_mono
     test ax, ax
@@ -744,7 +793,8 @@ port_callback:
 .set_rate:
     cmp word [game_rate], 4000
     jb .unsupported
-    cmp word [game_rate], 44100
+    ; Games can request a little more than the documented 45000 Hz.
+    cmp word [game_rate], 48000
     ja .unsupported
     movzx eax, word [game_rate]
     shl eax, 16
@@ -757,13 +807,29 @@ port_callback:
     cmp byte [arguments], 3
     jne .length
     mov byte [pending_frame_shift], 0
+    mov byte [pending_format], 0
     cmp byte [dsp_command], 0b2h
     je .format16
     cmp byte [dsp_command], 0b6h
     jne .mono_mode
 .format16:
+    test al, 0cfh
+    jnz .unsupported
     cmp al, 30h
-    jne .unsupported
+    je .stereo16
+    ; Unsigned and mono 16-bit data use auto-initialized DMA only.
+    test byte [dsp_command], 4
+    jz .unsupported
+    test al, 10h
+    jnz .signed16
+    or byte [pending_format], 2
+.signed16:
+    test al, 20h
+    jnz .stereo16
+    or byte [pending_format], 1
+    mov byte [pending_frame_shift], 1
+    jmp .argument_done
+.stereo16:
     mov byte [pending_frame_shift], 2
     jmp .argument_done
 .mono_mode:
@@ -838,7 +904,10 @@ port_callback:
     mov si, dma8
     mov cl, 0
     cmp byte [pending_frame_shift], 2
-    jne .dma_selected
+    je .wide_dma
+    test byte [pending_format], 1
+    jz .dma_selected
+.wide_dma:
     mov si, dma16
     mov cl, 1
 .dma_selected:
@@ -859,19 +928,43 @@ port_callback:
     cmp bl, 45h
     jne .unsupported
 .direction_ready:
+    cmp byte [sb_single], 0
+    je .block_length
     cmp ax, [si+DMA_COUNT]
     ja .unsupported
+.block_length:
     movzx edx, ax
     inc edx
     shl edx, cl
 .validate_dma:
     cmp byte [sb_single], 1
     je .single_buffer
-    cmp edx, 512
-    jb .unsupported
     movzx ebx, word [si+DMA_COUNT]
     inc ebx
     shl ebx, cl
+    cmp edx, 512
+    jae .large_block
+    ; Detection code loops one short block over the whole buffer.
+    cmp edx, ebx
+    jne .short_block
+    mov cl, [pending_frame_shift]
+    mov eax, 1
+    shl eax, cl
+    dec eax
+    test edx, eax
+    jnz .unsupported
+    jmp .buffer_address
+.short_block:
+    ; A short block must last two output periods.
+    mov cl, [pending_frame_shift]
+    mov eax, edx
+    shr eax, cl
+    imul eax, OUTPUT_RATE
+    movzx ecx, word [game_rate]
+    imul ecx, PERIOD_FRAMES*2
+    cmp eax, ecx
+    jb .unsupported
+.large_block:
     cmp ebx, 512
     jb .unsupported
     cmp ebx, 32768
@@ -894,6 +987,10 @@ port_callback:
 %endif
     mov eax, ebx
     sub eax, edx
+    jae .free_bytes
+    ; A block longer than the buffer: the game polls the DMA position.
+    mov eax, ebx
+.free_bytes:
     mov cl, [pending_frame_shift]
     shr eax, cl
     imul eax, OUTPUT_RATE
@@ -989,9 +1086,14 @@ port_callback:
     mov [game_block_bytes], edx
     mov cl, [pending_frame_shift]
     mov [game_frame_shift], cl
+    mov al, [pending_format]
+    mov [game_format], al
     mov al, 1
     cmp cl, 2
+    je .wide_irq
+    cmp word [game_dma], dma16
     jne .irq_bit
+.wide_irq:
     inc al
 .irq_bit:
     mov [game_irq_bit], al
@@ -1110,7 +1212,12 @@ port_callback:
     je .mixer_read
     cmp dx, 3
     je .dma_read
-    jmp .unsupported
+    cmp dx, 2
+    je .dma_read
+    cmp dx, 83h
+    jne .unsupported
+    mov al, [si+DMA_PAGE]
+    jmp .result
 .reset_read:
     mov al, 0ffh
     jmp .result
@@ -1159,6 +1266,7 @@ port_callback:
 .dma_read:
     cmp byte [si+DMA_FLIP], 0
     jne .count_high
+    push dx
     cmp si, [game_dma]
     jne .idle_count
     cmp byte [game_active], 0
@@ -1224,10 +1332,24 @@ port_callback:
     mov bx, 0ffffh
 .snapshot:
     mov [si+DMA_SNAPSHOT], bx
+    pop dx
+.dma_value:
+    cmp dx, 3
+    je .count_value
+    ; The current address is the start address plus the transferred units.
+    mov ax, [si+DMA_ADDRESS]
+    add ax, [si+DMA_COUNT]
+    sub ax, bx
+    mov bx, ax
+.count_value:
     mov al, bl
+    cmp byte [si+DMA_FLIP], 0
+    je .count_result
+    mov al, bh
     jmp .count_result
 .count_high:
-    mov al, [si+DMA_SNAPSHOT+1]
+    mov bx, [si+DMA_SNAPSHOT]
+    jmp .dma_value
 .count_result:
     xor byte [si+DMA_FLIP], 1
     jmp .result
@@ -1517,6 +1639,9 @@ game_frame_shift db 0
 game_source db 0
 pending_frame_shift db 0
 game_irq_bit db 1
+; Bit 0: 16-bit mono. Bit 1: unsigned 16-bit.
+game_format db 0
+pending_format db 0
 game_block_bytes dd 4096
 game_exit_frame dd 0
 game_mix_frame dd 0
@@ -1527,7 +1652,9 @@ sb_pcm_levels dd 164,2067,3276,5193,8230,13045,20675,32768
 virtual_mixer:
     times 4 db 0
     db 0eeh
-    times 251 db 0
+    times 32h-5 db 0
+    db 0e8h, 0e8h
+    times 256-34h db 0
 dma8 db 0,1,0,0
     dw 0,0,0
     dd 0

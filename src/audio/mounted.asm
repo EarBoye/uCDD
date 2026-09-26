@@ -269,18 +269,7 @@ cd_request:
     mov [cd_volume], al
     mov al, [es:di+4]
     mov [cd_volume+1], al
-    movzx eax, byte [cd_volume]
-    test eax, eax
-    jz .left_gain
-    inc eax
-.left_gain:
-    mov [cd_gain], eax
-    movzx eax, byte [cd_volume+1]
-    test eax, eax
-    jz .right_gain
-    inc eax
-.right_gain:
-    mov [cd_gain+4], eax
+    call cd_gain_update
     jmp .ok
 .input:
     cmp byte [es:di], 6
@@ -544,6 +533,28 @@ cd_request:
     mov ax, [cs:cd_result]
     popf
     retf
+
+; Scale the CD-ROM volume of each channel by the user CD audio volume.
+cd_gain_update:
+    pushad
+    xor ebx, ebx
+.channel:
+    movzx eax, byte [cd_volume+bx]
+    test eax, eax
+    jz .store
+    inc eax
+    movzx ecx, byte [config_cd_volume]
+    imul eax, ecx
+    xor edx, edx
+    mov ecx, 100
+    div ecx
+.store:
+    mov [cd_gain+ebx*4], eax
+    inc bx
+    cmp bx, 2
+    jb .channel
+    popad
+    ret
 
 cd_clear_state:
     push eax
@@ -856,6 +867,42 @@ cd_pump:
 %define CD_QUEUE_HELPERS 1
 %include "audio/cd_resample.asm"
 %endif
+%ifdef RESIDENT_AUDIO
+; UCDDPLAY filters the CD samples of each period in place. The owner check
+; skips the filter after its program ends without removing it.
+cd_filter:
+    cmp byte [cd_valid], 0
+    je .done
+    cmp dword [cd_filter_hook], 0
+    je .done
+    pushad
+    push ds
+    push es
+    push fs
+    push gs
+    mov ax, [cd_filter_owner]
+    dec ax
+    mov es, ax
+    inc ax
+    cmp [es:1], ax
+    jne .restore
+    mov bx, [cd_position]
+    mov cx, [cd_take_bytes]
+    mov edx, [cd_consumed]
+    call far [cd_filter_hook]
+.restore:
+    pop gs
+    pop fs
+    pop es
+    pop ds
+    popad
+.done:
+    ret
+
+cd_filter_hook dd 0
+cd_filter_owner dw 0
+%endif
+
 cd_begin_half:
 %ifdef RESIDENT_AUDIO
     jmp cd_begin_resampled

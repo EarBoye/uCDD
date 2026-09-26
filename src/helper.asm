@@ -13,6 +13,9 @@ command_entry:
     stosb
     push cs
     pop ds
+    mov word [full_path+INFO_STRIDE], 2048
+    mov word [full_path+INFO_COUNT], 1
+    mov byte [mount_tracks+TRACK_CONTROL], 40h
     mov si, arguments
 .parse:
     call token
@@ -34,6 +37,8 @@ command_entry:
     cmp byte [memory_mode], 0
     jne usage
 %endif
+    cmp byte [keep_vcpi], 0
+    jne usage
 %endif
     call token
     jnc usage
@@ -57,6 +62,9 @@ command_entry:
     call option_equal
     je .units
 %ifdef RESIDENT_AUDIO
+    mov di, vcpi_option
+    call option_equal
+    je .vcpi
 %ifdef EMS_QUEUE
     mov di, ems_option
     call option_equal
@@ -84,6 +92,11 @@ command_entry:
     mov [requested_units], al
     jmp .parse
 %ifdef RESIDENT_AUDIO
+.vcpi:
+    cmp byte [keep_vcpi], 0
+    jne usage
+    mov byte [keep_vcpi], 1
+    jmp .parse
 %ifdef EMS_QUEUE
 .ems:
     cmp byte [memory_mode], 0
@@ -153,6 +166,8 @@ command_entry:
     cmp byte [memory_mode], 0
     jne usage
 %endif
+    cmp byte [keep_vcpi], 0
+    jne usage
 %endif
     cmp byte [requested_units], 0
     jne usage
@@ -575,6 +590,7 @@ drive_option db '-DRIVE',0
 install_option db '-INSTALL',0
 units_option db '-UNITS',0
 %ifdef RESIDENT_AUDIO
+vcpi_option db '-VCPI',0
 %ifdef EMS_QUEUE
 ems_option db '-EMS',0
 %endif
@@ -587,17 +603,26 @@ packet:
     dd 0
     dw 2
 change_buffer db 9,0
-usage_message db 'Use UCDD -install [-units <1 to 4>]'
+usage_message db 'UCDD mounts CD images as CD-ROM drives.',13,10,13,10
+    db 'UCDD -install [-units n]'
 %ifdef RESIDENT_AUDIO
 %ifdef EMS_QUEUE
     db ' [-ems]'
 %endif
+    db ' [-vcpi]'
 %endif
-    db '.',13,10
-    db 'Use UCDD -mount <image> [-drive <letter>].',13,10
-    db 'Use UCDD -unmount [<image>] [-drive <letter>].',13,10
-    db 'Use an MDM file for up to 10 discs. Select a disc with Ctrl+Alt+1 to 0.',13,10
-    db 'Use UCDD /? to show this information.',13,10,'$'
+    db 13,10
+    db 'UCDD -mount image [-drive d]',13,10
+    db 'UCDD -unmount [image] [-drive d]',13,10,13,10
+    db '  -units n   Number of drives, 1 to 4.',13,10
+%ifdef RESIDENT_AUDIO
+%ifdef EMS_QUEUE
+    db '  -ems       Keep the CD audio queue in EMS, not in XMS.',13,10
+%endif
+    db '  -vcpi      Keep VCPI. The sound of VCPI programs bypasses uCDD.',13,10
+%endif
+    db '  image      ISO, CUE, BIN, or MDM file. An MDM file lists up to 10 discs.',13,10
+    db '  -drive d   uCDD drive letter.',13,10,'$'
 no_drives_message db 'No uCDD drive is available.',13,10,'$'
 full_message db 'All uCDD drives are in use.',13,10,'$'
 empty_message db 'No image is mounted on the selected drive.',13,10,'$'
@@ -613,18 +638,13 @@ unmounted_message db 'The image is unmounted.',13,10,'$'
 drive_message db 'Drive '
 done_drive db '?',':',13,10,'$'
 %include "notice.inc"
-arguments times 128 db 0
-full_path times 128 db 0
-    dw 2048,0
-    dd 0
-    dw 1
-mount_tracks:
-    dd 0,0
-    db 40h,0,0,0
-    times (MAX_TRACKS-1)*TRACK_SIZE db 0
-    dd 0
-device_list times 26*5 db 0
-drive_list times 26 db 0
+; Command buffers use the zero-filled DOS save area. A command instance never
+; installs, and installation reads its arguments before it prepares the units.
+arguments equ sda_save
+full_path equ arguments+128
+mount_tracks equ full_path+INFO_TRACKS
+device_list equ full_path+INFO_SIZE
+drive_list equ device_list+26*5
 
 %include "cue.asm"
 %include "mdm_helper.asm"

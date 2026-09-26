@@ -52,6 +52,7 @@ prepare_image:
     mov byte [si], 0
     mov word [cue_next], cue_text
     mov word [cue_count], 0
+    mov word [cue_payload], 16
     mov dword [cue_gaps], 0
     mov byte [cue_file_seen], 0
     mov byte [cue_have_index], 1
@@ -160,7 +161,13 @@ prepare_image:
     jne cue_bad
     mov di, cue_mode1
     call option_equal
+    je .data
+    ; XA Form 1 data starts after the 8-byte subheader.
+    mov di, cue_mode2
+    call option_equal
     jne cue_bad
+    mov word [cue_payload], 24
+.data:
     mov di, [cue_current]
     mov byte [di+TRACK_CONTROL], 40h
     jmp .mode_done
@@ -268,7 +275,8 @@ prepare_image:
     mov eax, [mount_tracks+TRACK_START]
     mov [full_path+INFO_ORIGIN], eax
     mov word [full_path+INFO_STRIDE], 2352
-    mov word [full_path+INFO_PAYLOAD], 16
+    mov ax, [cue_payload]
+    mov [full_path+INFO_PAYLOAD], ax
     mov si, full_path
     mov di, cue_resolved
     mov bx, [cue_bin_name]
@@ -407,6 +415,8 @@ cue_binary db 'BINARY',0
 cue_track db 'TRACK',0
 cue_audio db 'AUDIO',0
 cue_mode1 db 'MODE1/2352',0
+cue_mode2 db 'MODE2/2352',0
+cue_payload dw 16
 cue_index db 'INDEX',0
 cue_resolved times 128 db 0
 cue_text times 16385 db 0

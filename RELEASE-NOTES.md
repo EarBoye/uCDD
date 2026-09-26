@@ -1,3 +1,34 @@
+# Beta 0.9.3
+
+This update adds support for 16-bit DPMI programs, changes how protected-mode games use DPMI and VCPI, and moves all sound card settings into UCDDSET. It adds UCDDPLAY, a CD player for uCDD drives. It also fixes CD-Audio and game sound in many protected-mode games.
+
+## Changes in 0.9.3
+
+- Keep all settings in a new version of UCDD.CFG. `UCDD -install` runs UCDDSET, which must be in the directory of UCDD.EXE. UCDDSET loads the settings, copies them into the driver, and sets BLASTER for the virtual Sound Blaster. It keeps the other BLASTER fields. UCDD no longer reads BLASTER. UCDDSET opens its menu when UCDD.CFG is missing, from an older version, or not valid.
+- Initialize the physical card before `UCDD -install`. uCDD no longer sets the IRQ and DMA channels of Sound Blaster 16 and WSS cards.
+- Redesign UCDDSET with settings for the physical card, the virtual Sound Blaster, and the virtual WSS codec, and with Hotkeys and Mixer pages.
+- Detect the physical card. UCDDSET finds Sound Blaster 16 cards through the mixer, older Sound Blaster cards through an interrupt and DMA test, and WSS codecs. BLASTER supplies only the values that the tests cannot find.
+- Select the virtual Sound Blaster model: Sound Blaster 16, Sound Blaster Pro, or Sound Blaster 1.5/2.0. The model sets the DSP version and the BLASTER type. Set the port and the start IRQ of the virtual WSS codec.
+- Select the hotkey modifiers, including the Windows key, the disc keys (1 to 0 or F1 to F10), and keys for the next disc, the previous disc, eject, and the CD-Audio volume. Eject and insert discs with a hotkey, for MDM lists and single images.
+- Set the start level of CD-Audio, the wave output level, the master volume of the physical card, and the step of the volume hotkeys.
+- Fix a crash after UCDDSET returned when UCDD.CFG was missing at installation.
+- Shorten the command help of UCDD and UCDDSET.
+- Add UCDDPLAY, a VGA CD player for uCDD drives. It has a 10-band equalizer for CD-Audio, a spectrum analyzer, VU meters, shuffle and repeat modes, mouse support, and a requester that mounts and ejects images and MDM lists.
+- Support 16-bit DPMI programs, including DOS call translation for Borland Pascal 7 programs, and allow more protected-mode selectors. This fixes the startup failure in Chasm: The Rift.
+- Hide the JEMMEX VCPI interface from protected-mode games while uCDD provides DPMI, so that game sound goes through uCDD. Add the `-vcpi` install option for programs that need VCPI. This fixes missing sound and music in Cyberball and Amazing Learning Games with Rayman, and the freeze at the name prompt in An Elder Scrolls Legend: Battlespire.
+- Reduce the cost of interrupt-flag emulation for protected-mode games. This removes the slowdown during file access in DOS/4GW games such as Bust-A-Move 2.
+- Stop single-stepping protected-mode interrupt and exception handlers.
+- Support nested raw mode switches and preserve FS and GS across them. Let disk interrupts reach the BIOS during background CD reads. Accept CD IOCTL input requests with a zero transfer count. This fixes the startup freeze in Absolute Pinball.
+- Report the busy status during CD-Audio playback on every request. This fixes repeated music restarts in Batman Forever: The Arcade Game.
+- Report the DMA current address and page registers, and accept DSP command 42h. This fixes the startup exception and slow sound setup in Blood.
+- Deliver Sound Blaster interrupts during real-mode calls from protected-mode games, and keep interrupt vectors that sound drivers change during a host call. This fixes the freeze at the loading screen in Bust-A-Move 2.
+- Accept short auto-initialize blocks, and blocks longer than the DMA buffer. This fixes missing table sounds in Cyberball and missing effects in Cyber Police.
+- Support Sound Blaster 16 mixer resets and voice volume registers. This fixes quiet effects in Battle Race.
+- Accept Sound Blaster output rates up to 48000 Hz. Support 16-bit mono and unsigned 16-bit game sound.
+- Apply the voice level and the wave output level to direct DAC output.
+- Support MODE2/2352 Form 1 data tracks in CUE sheets.
+- Add Absolute Pinball, Amazing Learning Games with Rayman, An Elder Scrolls Legend: Battlespire, Batman Forever: The Arcade Game, Battle Race, Blood, Bust-A-Move 2 Arcade Edition, Chasm: The Rift, Cyber Police (CYBERPO1.EXE), and Cyberball to the list of working Redbook-audio games.
+
 # Beta 0.9.2c
 
 ## Changes in 0.9.2c

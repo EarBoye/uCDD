@@ -1,150 +1,46 @@
 ; SPDX-FileCopyrightText: 2026 vorvek
 ; SPDX-License-Identifier: GPL-3.0-only
 
+; UCDDSET checked the virtual card and the volumes in config_data.
 guest_configure:
-    push es
-    mov es, [resident_psp]
-    mov ax, [es:2ch]
-    test ax, ax
-    jz .ready
-    mov es, ax
-    xor si, si
-.variable:
-    cmp si, 0fff0h
-    jae .bad
-    cmp byte [es:si], 0
-    je .ready
-    cmp dword [es:si], 'BLAS'
-    jne .skip
-    cmp dword [es:si+4], 'TER='
-    je .found
-.skip:
-    inc si
-    jz .bad
-    cmp byte [es:si-1], 0
-    jne .skip
-    jmp .variable
-.found:
-    add si, 8
-    xor bp, bp
-.token:
-    mov dl, [es:si]
-    inc si
-    jz .bad
-    test dl, dl
-    jz .complete
-    cmp dl, ' '
-    je .token
-    cmp dl, 9
-    je .token
-    and dl, 0dfh
-    mov ebx, 10
-    mov di, guest_irq
-    mov dh, 2
-    cmp dl, 'I'
-    je .number
-    mov di, guest_dma8
-    mov dh, 4
-    cmp dl, 'D'
-    je .number
-    mov di, guest_dma16
-    mov dh, 8
-    cmp dl, 'H'
-    je .number
-    mov di, guest_base
-    mov dh, 1
-    cmp dl, 'A'
-    jne .ignore
-    mov ebx, 16
-.number:
-    movzx ax, dh
-    test bp, ax
-    jnz .bad
-    or bp, ax
-    xor eax, eax
-    mov cl, [es:si]
-    cmp cl, ' '
-    je .bad
-    cmp cl, 9
-    je .bad
-    test cl, cl
-    jz .bad
-.digit:
-    movzx ecx, byte [es:si]
-    test cl, cl
-    jz .value
-    cmp cl, ' '
-    je .value
-    cmp cl, 9
-    je .value
-    cmp cl, '0'
-    jb .bad
-    cmp cl, '9'
-    jbe .decimal_digit
-    and cl, 0dfh
-    cmp cl, 'A'
-    jb .bad
-    cmp cl, 'F'
-    ja .bad
-    sub cl, 'A'-10
-    jmp .valid_digit
-.decimal_digit:
-    sub cl, '0'
-.valid_digit:
-    cmp ecx, ebx
-    jae .bad
-    imul eax, ebx
-    add eax, ecx
-    cmp eax, 65535
-    ja .bad
-    inc si
-    jz .bad
-    jmp .digit
-.value:
-    mov [di], ax
-    jmp .token
-.ignore:
-    mov al, [es:si]
-    test al, al
-    jz .token
-    cmp al, ' '
-    je .token
-    cmp al, 9
-    je .token
-    inc si
-    jz .bad
-    jmp .ignore
-.complete:
-    and bp, 7
-    cmp bp, 7
-    jne .bad
-    mov ax, [guest_base]
-    sub ax, 220h
-    test ax, 0ff9fh
-    jnz .bad
-    cmp word [guest_irq], 5
-    je .dma
-    cmp word [guest_irq], 7
-    jne .bad
-.dma:
-    cmp word [guest_dma8], 1
-    je .high
-    cmp word [guest_dma8], 3
-    jne .bad
-.high:
-    cmp word [guest_dma16], 5
-    jb .bad
-    cmp word [guest_dma16], 7
-    ja .bad
-.ready:
-    pop es
+    mov ax, [virtual_base]
+    mov [guest_base], ax
+    movzx ax, byte [virtual_irq]
+    mov [guest_irq], ax
+    mov al, [virtual_dma8]
+    mov [guest_dma8], ax
+    mov al, [virtual_dma16]
+    mov [guest_dma16], ax
+    ; A game can still select another IRQ in the WSS board register.
+    mov al, [virtual_wss_irq]
+    mov [wss_guest_irq], ax
+    movzx edi, byte [config_game_volume]
+    cmp di, 100
+    je .levels
+    mov ebx, 100
+    mov si, sb_pcm_levels
+    mov cx, 8
+    call guest_scale
+    mov si, sb_pcm_gain
+    mov cx, 2
+    call guest_scale
+    mov si, wss_attenuation
+    mov cx, 64
+    call guest_scale
+.levels:
+    call cd_gain_update
     call guest_ports_init
-    clc
     ret
-.bad:
-    pop es
-    mov word [audio_error_text], guest_config_message
-    stc
+
+; SI dword table, CX count, EDI percent, EBX 100.
+guest_scale:
+    mov eax, [si]
+    imul eax, edi
+    xor edx, edx
+    div ebx
+    mov [si], eax
+    add si, 4
+    loop guest_scale
     ret
 
 guest_ports_init:
@@ -218,9 +114,17 @@ guest_port_translate:
     cmp ax, 224h
     jb .dma
     cmp ax, 22fh
-    ja .done
+    ja .wss
     sub ax, 220h
     add ax, [guest_base]
+    ret
+.wss:
+    cmp ax, 530h
+    jb .done
+    cmp ax, 537h
+    ja .done
+    sub ax, 530h
+    add ax, [virtual_wss_base]
     ret
 .dma:
     cmp ax, 2
@@ -258,5 +162,3 @@ guest_port_translate:
     ret
 
 guest_dma_pages db 87h,83h,81h,82h,8fh,8bh,89h,8ah
-guest_config_message db 'BLASTER is not valid. Use A220 to A280 in steps of 20 (hex),',13,10
-    db 'I5 or I7, D1 or D3, and H5 to H7. A, I, and D are required.',13,10,'$'

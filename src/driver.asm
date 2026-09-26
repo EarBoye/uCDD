@@ -23,6 +23,9 @@ old_sp dw 0
 resident_psp dw 0
 %ifdef RESIDENT_AUDIO
 memory_mode db 0
+%ifdef RESIDENT_AUDIO
+keep_vcpi db 0
+%endif
 %endif
 caller_psp dw 0
 sda_pointer dd 0
@@ -144,6 +147,21 @@ interrupt:
 .success:
     mov ax, 0100h
 .done:
+%ifdef RESIDENT_AUDIO
+    ; MSCDEX drivers report busy on every request while audio plays.
+    cmp ax, 0100h
+    jne .status
+    mov si, [unit_pointer]
+    cmp dword [si+AUDIO_ENTRY], 0
+    je .status
+    cmp byte [cd_started], 0
+    je .status
+    mov edx, [cd_consumed]
+    cmp edx, [cd_length]
+    jae .status
+    or ah, 2
+.status:
+%endif
     lfs bp, [active_request]
     mov [fs:bp+3], ax
 .restore:
@@ -170,16 +188,20 @@ interrupt:
 ioctl_buffer:
     cmp bp, 0ffech
     ja .bad
-    cmp byte [fs:bp], 13
+    mov al, [fs:bp]
+    cmp al, 13
     je .header_ok
-    cmp byte [fs:bp], 18
+    cmp al, 18
     je .header_ok
-    cmp byte [fs:bp], 20
+    cmp al, 20
     jb .bad
 .header_ok:
     mov cx, [fs:bp+18]
+    ; Absolute Pinball sends a zero count. Allow the largest control block.
     test cx, cx
-    jz .bad
+    jnz .count_ok
+    mov cl, 11
+.count_ok:
     les di, [fs:bp+14]
     movzx eax, di
     movzx edx, cx
@@ -573,7 +595,8 @@ request_not_ready:
 
 ; AX: 0 query, 1 mount, 2 eject, 3 describe, 4 attach, 5 detach. BL: unit.
 ; AX: 7 mount MDM, 8 copy its name (128 bytes). See MDM_INPUT_SIZE.
-; DS:DX points to image info (1/3) or the audio callback (4/5).
+; AX: 9 set the CD sample filter of the caller, or remove it with 0:0.
+; DS:DX points to image info (1/3), the audio callback (4/5), or the filter (9).
 ; AX returns 0/1 for empty/loaded, or 8001h..8007h for an error.
 control:
     pushf
@@ -617,6 +640,8 @@ control:
 %ifdef RESIDENT_AUDIO
     cmp word [control_op], 6
     je .audio_report
+    cmp word [control_op], 9
+    je .filter
 %endif
     mov word [control_result], 8002h
     cmp byte [si+LOCKED], 0
@@ -668,6 +693,11 @@ control:
     cmp si, [mdm_unit]
     je .loaded
     cmp word [si+HANDLE], 0ffffh
+    jne .loaded
+    ; A hotkey eject keeps the image mounted.
+    cmp si, [units_base]
+    jne .state
+    cmp word [eject_handle], 0ffffh
     je .state
 .loaded:
     inc ax
@@ -713,6 +743,14 @@ control:
     xor ax, ax
 %endif
     stosw
+    mov word [control_result], 0
+    jmp .done
+.filter:
+    les bx, [sda_pointer]
+    mov ax, [es:bx+10h]
+    mov [cd_filter_owner], ax
+    mov eax, [path_pointer]
+    mov [cd_filter_hook], eax
     mov word [control_result], 0
     jmp .done
 %endif
@@ -812,8 +850,9 @@ mount_image:
     je .iso_format
     cmp cx, 2352
     jne .reject
-    cmp word [es:di+INFO_PAYLOAD], 16
-    jne .reject
+    ; The helper sets payload 16 (MODE1) or 24 (MODE2 Form 1).
+    test byte [es:di+INFO_PAYLOAD], 0e7h
+    jnz .reject
     jmp .format_ok
 .iso_format:
     cmp word [es:di+INFO_PAYLOAD], 0
@@ -1057,7 +1096,14 @@ eject_unit:
 .single:
     mov bx, [si+HANDLE]
     cmp bx, 0ffffh
+    jne .close
+    ; A hotkey eject keeps the image open.
+    cmp si, [units_base]
+    jne .empty
+    xchg bx, [eject_handle]
+    cmp bx, 0ffffh
     je .empty
+.close:
     mov ah, 3eh
     int 21h
     jc .return
@@ -1399,10 +1445,9 @@ audio_prepare:
     mov word [audio_error_text], audio_unit_message
     cmp byte [unit_count], 1
     jne .bad
-    call guest_configure
-    jc .bad
     call audio_configure
     jc .bad
+    call guest_configure
     cmp byte [sound_card], 3
     jne .pro_rate
     mov dword [output_rate], 44444

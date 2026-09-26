@@ -1,0 +1,583 @@
+; SPDX-FileCopyrightText: 2026 vorvek
+; SPDX-License-Identifier: GPL-3.0-only
+
+; The logo window and the bottom window.
+
+; SI = star table, CX = count, star_x0..star_y1 = the window.
+; A star is x in 1/16 pixels, y, and a layer from 0 to 2.
+init_stars:
+.star:
+    call random
+    xor dx, dx
+    mov bx, [star_x1]
+    sub bx, [star_x0]
+    inc bx
+    div bx
+    add dx, [star_x0]
+    shl dx, 4
+    mov [si], dx
+    call random
+    xor dx, dx
+    mov bx, [star_y1]
+    sub bx, [star_y0]
+    inc bx
+    div bx
+    add dx, [star_y0]
+    mov [si+2], dl
+    call random
+    xor dx, dx
+    mov bx, 3
+    div bx
+    mov [si+3], dl
+    add si, STAR_SIZE
+    loop .star
+    ret
+
+; SI = star table, CX = count, star_boost = speed in 1/16.
+; Fast stars draw as streaks.
+draw_stars:
+    pusha
+.star:
+    movzx ax, byte [si+3]
+    inc ax
+    add ax, ax
+    mul word [star_boost]
+    shr ax, 4
+    mov bp, ax
+    mov ax, [si]
+    sub ax, bp
+    mov dx, [star_x0]
+    shl dx, 4
+    cmp ax, dx
+    jge .inside
+    mov dx, [star_x1]
+    sub dx, [star_x0]
+    inc dx
+    shl dx, 4
+    add ax, dx
+.inside:
+    mov [si], ax
+    movzx bx, byte [si+2]
+    mov dl, [si+3]
+    add dl, C_STARS
+    mov [draw_color], dl
+    shr ax, 4
+    shr bp, 4
+    inc bp
+.streak:
+    cmp ax, [star_x1]
+    ja .next
+    call put_masked
+    inc ax
+    dec bp
+    jnz .streak
+.next:
+    add si, STAR_SIZE
+    loop .star
+    popa
+    ret
+
+set_logo_rect:
+    mov word [star_x0], LOGO_X0
+    mov word [star_y0], LOGO_Y0
+    mov word [star_x1], LOGO_X1
+    mov word [star_y1], LOGO_Y1
+    ret
+
+set_bottom_rect:
+    mov word [star_x0], SCROLL_X0
+    mov word [star_y0], SCROLL_Y0
+    mov word [star_x1], SCROLL_X1
+    mov word [star_y1], SCROLL_Y1
+    ret
+
+init_visuals:
+    call set_logo_rect
+    mov si, logo_stars
+    mov cx, LOGO_STARS
+    call init_stars
+    call set_bottom_rect
+    mov si, bottom_stars
+    mov cx, BOTTOM_STARS
+    call init_stars
+    ret
+
+draw_logo_window:
+    call set_logo_rect
+    mov word [star_boost], 8
+    mov si, logo_stars
+    mov cx, LOGO_STARS
+    call draw_stars
+    xor bp, bp
+.bar:
+    mov ax, [frame]
+    lea cx, [bp+3]
+    mul cx
+    mov cx, bp
+    imul cx, cx, 341
+    add ax, cx
+    call sine
+    movsx eax, ax
+    imul eax, 11
+    sar eax, 15
+    add ax, (LOGO_Y0+LOGO_Y1)/2-4
+    mov bx, ax
+    imul dx, bp, COPPER_SHADES
+    add dl, C_COPPER
+    mov cx, COPPER_SHADES
+.shade:
+    cmp bx, LOGO_Y0
+    jl .skip
+    cmp bx, LOGO_Y1
+    jg .skip
+    mov [draw_color], dl
+    push cx
+    mov ax, LOGO_X0
+    mov cx, LOGO_X1-LOGO_X0+1
+    call masked_span
+    pop cx
+.skip:
+    inc bx
+    inc dl
+    loop .shade
+    inc bp
+    cmp bp, 3
+    jb .bar
+    mov byte [sprite_mask], 1
+    mov ax, (LOGO_X0+LOGO_X1+1-LOGO_W)/2+2
+    mov bx, (LOGO_Y0+LOGO_Y1+1-LOGO_H)/2+2
+    mov cx, LOGO_W
+    mov dx, LOGO_H
+    mov si, A_LOGO
+    call shade_sprite
+    sub ax, 2
+    sub bx, 2
+    call draw_sprite
+    mov byte [sprite_mask], 0
+    ret
+
+; Set the copper bar and rainbow colors for this frame.
+animate_palette:
+    push es
+    push ds
+    pop es
+    mov di, dynamic_palette
+    xor bp, bp
+.bar:
+    mov ax, [frame]
+    shr ax, 1
+    imul cx, bp, 21
+    add ax, cx
+    and ax, 63
+    imul si, ax, 3
+    add si, A_RAINBOW
+    mov bx, copper_profile
+.shade:
+    push si
+    mov cx, 3
+.channel:
+    movzx ax, byte [gs:si]
+    mul byte [bx]
+    shr ax, 6
+    cmp bx, copper_profile+4
+    jne .store
+    mov dx, 63
+    sub dx, ax
+    shr dx, 1
+    add ax, dx
+.store:
+    stosb
+    inc si
+    loop .channel
+    pop si
+    inc bx
+    cmp bx, copper_profile+COPPER_SHADES
+    jb .shade
+    inc bp
+    cmp bp, 3
+    jb .bar
+    xor bx, bx
+.rainbow:
+    mov ax, bx
+    shl ax, 2
+    add ax, [frame]
+    and ax, 63
+    imul si, ax, 3
+    add si, A_RAINBOW
+    mov cx, 3
+.copy:
+    mov al, [gs:si]
+    stosb
+    inc si
+    loop .copy
+    inc bx
+    cmp bx, 16
+    jb .rainbow
+    pop es
+    mov si, dynamic_palette
+    mov al, C_COPPER
+    mov cx, 3*COPPER_SHADES+16
+    jmp set_palette
+
+; SI = message. Show it in the bottom window for three seconds.
+show_message:
+    mov [message_text], si
+    mov word [message_timer], 210
+    ret
+
+; The level for the effects: 0 to 255.
+effect_level:
+    movzx ax, byte [vu_level]
+    movzx dx, byte [vu_level+1]
+    add ax, dx
+    shr ax, 1
+    ret
+
+draw_bottom:
+    call set_bottom_rect
+    cmp word [message_timer], 0
+    je .visual
+    dec word [message_timer]
+    mov word [star_boost], 4
+    mov si, bottom_stars
+    mov cx, BOTTOM_STARS
+    call draw_stars
+    jmp draw_message
+.visual:
+    cmp byte [play_state], PLAYING
+    jne draw_scroller
+    inc word [vis_timer]
+    cmp word [vis_timer], VIS_FRAMES
+    jb .mode
+    call next_visual
+.mode:
+    movzx bx, byte [vis_mode]
+    add bx, bx
+    jmp [visual_table+bx]
+
+next_visual:
+    mov word [vis_timer], 0
+    inc byte [vis_mode]
+    cmp byte [vis_mode], VIS_COUNT
+    jb .clear
+    mov byte [vis_mode], 0
+.clear:
+    push es
+    mov es, [work_seg]
+    mov di, W_FIRE
+    mov cx, (FIRE_ROWS+SCROLL_H)*SCROLL_W/2
+    xor ax, ax
+    rep stosw
+    pop es
+    ret
+
+; The message has one or two lines. A | character starts the second line.
+draw_message:
+    mov si, [message_text]
+    mov di, si
+.find:
+    mov al, [di]
+    test al, al
+    jz .one
+    cmp al, '|'
+    je .two
+    inc di
+    jmp .find
+.one:
+    mov bx, SCROLL_Y0+7
+    jmp message_line
+.two:
+    push di
+    mov bx, SCROLL_Y0+2
+    call message_line
+    pop si
+    inc si
+    mov di, si
+    call string_end
+    mov bx, SCROLL_Y0+12
+
+; SI = start, DI = end, BX = y. Draw the line in the center of the window.
+message_line:
+    push bx
+    mov bx, message_buffer
+.copy:
+    cmp si, di
+    jae .end
+    mov al, [si]
+    mov [bx], al
+    inc si
+    inc bx
+    jmp .copy
+.end:
+    mov byte [bx], 0
+    sub bx, message_buffer
+    shl bx, 2
+    mov ax, (SCROLL_X0+SCROLL_X1+1)/2
+    sub ax, bx
+    pop bx
+    mov si, message_buffer
+    mov byte [draw_color], C_GOLD_HI
+    jmp draw_text_shadow
+
+draw_scroller:
+    mov word [star_boost], 16
+    mov si, bottom_stars
+    mov cx, BOTTOM_STARS
+    call draw_stars
+    mov byte [draw_color], C_BLACK
+    mov word [scroll_shadow], 2
+    call .pass
+    mov word [scroll_shadow], 0
+    call .pass
+    add word [scroll_offset], 2
+    mov ax, [scroll_length]
+    shl ax, 4
+    cmp [scroll_offset], ax
+    jb .done
+    sub [scroll_offset], ax
+.done:
+    ret
+.pass:
+    mov cx, SCROLL_X0
+.column:
+    mov ax, cx
+    sub ax, SCROLL_X0
+    add ax, [scroll_offset]
+    mov dx, ax
+    shr ax, 4
+    cmp ax, [scroll_length]
+    jb .char
+    sub ax, [scroll_length]
+.char:
+    mov bx, ax
+    movzx bx, byte [scroll_text+bx]
+    sub bx, 32
+    shl bx, 3
+    add bx, A_FONT8
+    shr dx, 1
+    and dl, 7
+    mov dh, 80h
+    xchg cl, dl
+    shr dh, cl
+    xchg cl, dl
+    push cx
+    mov ax, cx
+    shl ax, 3
+    mov si, [frame]
+    shl si, 3
+    add ax, si
+    call sine
+    movsx eax, ax
+    imul eax, 3
+    sar eax, 15
+    add ax, SCROLL_Y0+2
+    add ax, [scroll_shadow]
+    mov si, ax
+    pop cx
+    mov bp, 8
+.row:
+    test [gs:bx], dh
+    jz .next_row
+    mov ax, cx
+    add ax, [scroll_shadow]
+    push bx
+    mov bx, si
+    cmp word [scroll_shadow], 0
+    jne .color_ready
+    mov di, bx
+    sub di, SCROLL_Y0
+    and di, 15
+    add di, C_RAINBOW
+    xchg ax, di
+    mov [draw_color], al
+    xchg ax, di
+.color_ready:
+    call put_masked
+    inc bx
+    call put_masked
+    pop bx
+.next_row:
+    inc bx
+    add si, 2
+    dec bp
+    jnz .row
+    inc cx
+    cmp cx, SCROLL_X1
+    jbe .column
+    ret
+
+; AX = x, BX = top, DX = bottom. A vertical span over window glass.
+masked_vspan:
+    cmp bx, dx
+    jle .ready
+    xchg bx, dx
+.ready:
+    call put_masked
+    inc bx
+    cmp bx, dx
+    jle .ready
+    ret
+
+draw_scope:
+    mov word [star_boost], 4
+    mov si, bottom_stars
+    mov cx, BOTTOM_STARS
+    call draw_stars
+    mov byte [draw_color], C_STRIPE_PRE
+    mov word [scope_channel], 2
+    call .channel
+    mov byte [draw_color], C_STRIPE
+    mov word [scope_channel], 0
+.channel:
+    mov si, [ring_pos]
+    sub si, SCROLL_W*2
+    mov ax, SCROLL_X0
+    mov word [scope_last], (SCROLL_Y0+SCROLL_Y1)/2
+.point:
+    and si, RING_FRAMES-1
+    mov di, si
+    shl di, 2
+    add di, [scope_channel]
+    movsx dx, byte [ring+di+1]
+    sar dx, 4
+    neg dx
+    add dx, (SCROLL_Y0+SCROLL_Y1)/2
+    mov bx, [scope_last]
+    mov [scope_last], dx
+    push dx
+    call masked_vspan
+    pop dx
+    add si, 2
+    inc ax
+    cmp ax, SCROLL_X1
+    jbe .point
+    ret
+
+draw_waterfall:
+    push es
+    mov es, [work_seg]
+    ; Move the rows one pixel to the left and add a column from the bars.
+    push ds
+    push es
+    pop ds
+    mov di, W_FIRE
+    mov bx, SCROLL_H
+.shift:
+    lea si, [di+1]
+    mov cx, SCROLL_W-1
+    rep movsb
+    inc di
+    dec bx
+    jnz .shift
+    pop ds
+    xor bx, bx
+.new:
+    mov ax, SCROLL_H-1
+    sub ax, bx
+    imul ax, ax, ANA_BARS
+    xor dx, dx
+    mov cx, SCROLL_H
+    div cx
+    mov si, ax
+    movzx ax, byte [bar_level+si]
+    imul ax, ax, 15
+    mov cl, BAR_HEIGHT
+    div cl
+    add al, C_HEAT
+    imul di, bx, SCROLL_W
+    mov [es:W_FIRE+di+SCROLL_W-1], al
+    inc bx
+    cmp bx, SCROLL_H
+    jb .new
+    pop es
+    jmp draw_fire_buffer
+
+draw_fire:
+    push es
+    mov es, [work_seg]
+    call effect_level
+    add ax, 128
+    mov [fire_heat], ax
+    mov di, W_FIRE+(FIRE_ROWS-2)*SCROLL_W
+    mov cx, 2*SCROLL_W
+.seed:
+    call random
+    xor ah, ah
+    mul word [fire_heat]
+    mov al, ah
+    test dx, dx
+    jz .store
+    mov al, 255
+.store:
+    stosb
+    loop .seed
+    mov di, W_FIRE
+    mov bx, FIRE_ROWS-2
+.row:
+    mov cx, SCROLL_W
+.pixel:
+    movzx ax, byte [es:di+SCROLL_W]
+    movzx dx, byte [es:di+SCROLL_W-1]
+    add ax, dx
+    movzx dx, byte [es:di+SCROLL_W+1]
+    add ax, dx
+    movzx dx, byte [es:di+2*SCROLL_W]
+    add ax, dx
+    shr ax, 2
+    sub ax, 2
+    jnc .heat
+    xor ax, ax
+.heat:
+    stosb
+    loop .pixel
+    dec bx
+    jnz .row
+    push ds
+    push es
+    pop ds
+    mov si, W_FIRE
+    mov di, W_FIRE+FIRE_ROWS*SCROLL_W
+    mov cx, SCROLL_W*SCROLL_H
+.map:
+    lodsb
+    shr al, 4
+    add al, C_HEAT
+    stosb
+    loop .map
+    pop ds
+    pop es
+    mov si, W_FIRE+FIRE_ROWS*SCROLL_W
+    jmp draw_buffer
+
+draw_fire_buffer:
+    mov si, W_FIRE
+; SI = color buffer in the work segment, one byte for each window pixel.
+draw_buffer:
+    push ds
+    mov ds, [work_seg]
+    mov di, SCROLL_Y0*320+SCROLL_X0
+    mov bx, SCROLL_H
+.row:
+    mov cx, SCROLL_W
+.pixel:
+    lodsb
+    cmp byte [fs:di], C_KEY
+    jne .skip
+    mov [es:di], al
+.skip:
+    inc di
+    loop .pixel
+    add di, 320-SCROLL_W
+    dec bx
+    jnz .row
+    pop ds
+    ret
+
+draw_warp:
+    call effect_level
+    shr ax, 1
+    add ax, 16
+    mov [star_boost], ax
+    mov si, bottom_stars
+    mov cx, BOTTOM_STARS
+    jmp draw_stars

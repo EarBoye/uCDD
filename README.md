@@ -2,36 +2,29 @@
 
 **Eternal betaware**
 
-μCDD is a virtual CD-ROM driver for DOS. It mounts disc images from a local hard disk and emulates CD-Audio on the same sound card the game already uses.
+μCDD is a virtual CD-ROM driver for DOS. It mounts disc images from a local hard disk and plays their CD-Audio through the sound card, mixed with the game's own sound.
 
-## Before you load the driver
+## Requirements
 
-- **Set `BLASTER` first.** Run `SET BLASTER=...` before `UCDD -install`, and use those settings in the game. The driver reads the virtual I/O address, IRQ, and DMA channels once, at installation. Changing `BLASTER` later does not change the loaded driver; restart DOS to use different settings.
-- **Set up the physical card with `UCDDSET`.** It saves the card type, I/O address, IRQ, and DMA channels in `UCDD.CFG`. These are separate from the virtual settings in `BLASTER`. The game's settings and the physical card's settings can differ.
-- **For a Plug and Play WSS card, configure the card first.** Enter its WSS base address (four ports below the codec index port), assigned IRQ 5 or 7, and DMA 1 or 3 in `UCDDSET`.
-- **Do not load the audio driver for games that use ADPCM sound.** ADPCM is not supported or passed through. Its playback commands would conflict with the PCM output that μCDD uses to mix game sound and CD audio. Boot DOS without `UCDD -install` before playing those games. Unmounting an image does not unload the driver.
-
-## How it works
-
-`UCDD.EXE` installs as a DOS CD-ROM device. It requires a redirector such as [SHSUCDX](http://adoxa.altervista.org/shsucdx/) or MSCDEX to assign it a drive letter. The installer is discarded after load. Use `-mount` and `-unmount` to change the image in the resident driver.
-
-μCDD traps the game's sound-card I/O and DMA access, converts its PCM sound, and mixes it with CD samples from the image. The physical sound card plays the combined stream. An internal host keeps the traps in place for protected-mode games.
-
-The virtual Sound Blaster accepts original Sound Blaster, SB Pro, and SB16 PCM commands. It identifies as an SB16 (DSP 4.05); the `T` field does not change this. Games can also use a virtual Windows Sound System codec at 530h, with the same 8-bit DMA channel selected by `D`.
-
-Supported `BLASTER` settings are `A220`, `A240`, `A260`, or `A280`; `I5` or `I7`; `D1` or `D3`; and `H5`, `H6`, or `H7`. Set `A`, `I`, and `D`. If `H` is absent, the driver uses `H5`. If `BLASTER` is absent, it uses `A220 I5 D1 H5`.
-
-## Usage
-
-A 386 or later, DOS 5 or later, and a CD redirector are required. CD-Audio also needs XMS, VCPI, and a supported interface for I/O port traps. HIMEM alone does not provide these interfaces.
-
-μCDD is designed to work alongside [JEMMEX](https://github.com/Baron-von-Riedesel/Jemm). Versions 5.86 and 5.87 are supported, including the changed port-trap callback interface introduced in 5.87pre1. The published 0.9.0 binary rejects that interface.
+- 386 or later, DOS 5 or later, and a CD redirector: [SHSUCDX](http://adoxa.altervista.org/shsucdx/) or MSCDEX.
+- For CD-Audio: XMS, VCPI, and an I/O port-trap interface. HIMEM alone does not provide these. μCDD is designed for [JEMMEX](https://github.com/Baron-von-Riedesel/Jemm) 5.86 and 5.87, including the port-trap callback interface changed in 5.87pre1. The published 0.9.0 binary rejects that interface. HIMEM.SYS with EMM386 is best effort; see [Microsoft EMM386 and shared DMA](#microsoft-emm386-and-shared-dma).
+- A Sound Blaster (1.5/2.0, Pro, or 16) or a Windows Sound System codec. **Initialize the card before `UCDD -install`.** μCDD does not configure it. Set the jumpers, or run the card's Plug and Play or setup utility (CTCM, UNISOUND, and so on) first.
 
 **Protected-mode game support is incomplete.**
 
-**Note:** CD-Audio Performance on anything below a Pentium processor may be lacklustre. Uncompressed audio requires around 800KB/s of constant read speed.
+**Note:** CD-Audio performance on anything below a Pentium processor may be lacklustre. Uncompressed audio requires around 800KB/s of constant read speed.
 
-Copy `UCDD.EXE` and `UCDDSET.EXE` into one directory. Run `UCDDSET` before the first audio install. If there's no `UCDD.CFG` file, `UCDD -install` will start `UCDDSET` itself.
+## Setup
+
+Copy `UCDD.EXE` and `UCDDSET.EXE` into one directory and run `UCDDSET`.
+
+![UCDDSET](docs/ucddset.png)
+
+- **Physical** is the card in the machine. μCDD plays the mix on it. For a Plug and Play WSS codec, enter the WSS base address, four ports below the codec index port.
+- **Virtual** is what games see: a Sound Blaster (SB16, SB Pro, or SB 1.5/2.0, which report DSP 4.05, 3.02, or 2.01) and a WSS codec. The WSS codec uses the DMA Low channel of the virtual Sound Blaster, and a game can move its IRQ through the WSS board register. Where possible, match the virtual model to the physical card. For example, a virtual SB Pro on an SB Pro-compatible card keeps the game sound in 8-bit stereo and avoids a 16-bit conversion.
+- **Detect** reads the physical card from the hardware. `BLASTER` only fills in values that the tests cannot find. **Test** plays a tone on each speaker. Both need DOS without the μCDD audio driver.
+
+`UCDDSET` saves to `UCDD.CFG`. `UCDD -install` runs `UCDDSET`, which copies the settings into the driver and sets `BLASTER` for the virtual Sound Blaster. Other `BLASTER` fields, such as `P330`, are kept. If `UCDD.CFG` is missing or from an older version, the `UCDDSET` menu opens first. Changes take effect at the next boot.
 
 CONFIG.SYS:
 ```dos
@@ -41,20 +34,21 @@ DEVICE=C:\JEMMEX\JEMMEX.EXE
 
 AUTOEXEC.BAT:
 ```dos
-SET BLASTER=A220 I5 D1 H5 T6
 LH C:\UCDD\UCDD.EXE -install
 C:\DOS\SHSUCDX.COM /D:UCDD0001 /L:F
 ```
 
-Compatibility with Microsoft `HIMEM.SYS` and `EMM386` is best effort and requires workarounds, including separate physical and virtual DMA channels as described below.
+`MSCDEX` can also assign the drive letter.
 
-`MSCDEX` can also assign the CD drive letter.
+Do not load the audio driver for games that use ADPCM sound. ADPCM is not supported or passed through, and its playback commands conflict with the PCM output that μCDD mixes into. Boot without `UCDD -install` for those games. Unmounting an image does not unload the driver.
 
-### Microsoft EMM386 and shared DMA
+## How it works
 
-EMM386's port-trapping interface cannot trap ports below `100h`, which includes the DMA controller registers. A game can therefore replace the DMA settings used for physical audio output.
+`UCDD.EXE` installs as a DOS CD-ROM device. The redirector assigns its drive letter. The installer is discarded after load.
 
-With EMM386, select different 16-bit DMA channels for the physical output and the game. For example, physical DMA 7 with virtual DMA 5 avoids the audio failure. Configure the physical card first, then enter its actual settings in `UCDDSET`. Set the virtual channel with `BLASTER` (`H5` in this example) before installing uCDD, and use those virtual settings in the game. Both streams still play through the same sound card.
+μCDD traps the game's sound-card I/O and DMA access, converts its PCM sound, and mixes it with CD samples from the image. The physical card plays the combined stream. An internal DPMI host keeps the traps in place for protected-mode games.
+
+## Usage
 
 ### Installation
 
@@ -86,13 +80,44 @@ UCDD -mount C:\IMAGES\GAME.MDM
 UCDD -unmount C:\IMAGES\GAME.MDM
 ```
 
-The first disc is mounted. At the game's disc-change prompt, press **Ctrl+Alt+1** through **Ctrl+Alt+9** for discs 1 through 9, or **Ctrl+Alt+0** for disc 10. Left and right Ctrl/Alt both work. The number key still reaches the game. A held number selects its disc once. A number with no disc assigned does nothing.
+The first disc is mounted. At the game's disc-change prompt, use the [hotkeys](#hotkeys). A held key selects its disc once. A key with no disc assigned does nothing.
 
 Only one MDM file can be mounted at a time, on one virtual unit. The usual `-drive` selection applies. Mounting a single image over that unit releases the list. It can also be unmounted normally.
 
 Paths may be absolute or relative to the MDM file. A CUE sheet's BIN path is relative to the CUE sheet. Nested MDM files are not supported. Blank lines and spaces at the start or end of a line are ignored. Only the first ten non-empty lines count.
 
 All listed images are opened before the mount replaces the current disc. If a listed image is missing or invalid, the current image stays mounted. Give DOS enough file handles. If the drive is in use, μCDD waits, then applies the last requested disc. MDM files require XMS.
+
+### Hotkeys
+
+| Action | Default |
+| --- | --- |
+| Select disc 1 to 10 | Ctrl+Alt+1 to Ctrl+Alt+0 (or F1 to F10) |
+| Next / previous disc | Ctrl+Alt+PgDn / Ctrl+Alt+PgUp |
+| Eject | Ctrl+Alt+E |
+| CD-Audio volume up / down | Ctrl+Alt+Keypad + / Ctrl+Alt+Keypad - |
+
+The modifier keys can be any mix of Ctrl, Alt, Shift, and Win. The keys still reach the game. Key names are US layout; on other layouts, use the key in the same position.
+
+Eject makes the drive report no disc and keeps the image open. A disc key, or next or previous disc, inserts a disc again. The hotkeys control the MDM drive, or the first μCDD drive when no MDM file is mounted.
+
+Some BIOSes change the CPU speed with Ctrl+Alt+Keypad + and -. KEYB uses Ctrl+Alt+F1 and Ctrl+Alt+F2.
+
+### Protected-mode games and VCPI
+
+When the audio driver is installed, μCDD hides VCPI from programs. It answers the VCPI detection call (INT 67h, AX=DE00h) with "not available". All other EMS and VCPI calls go to JEMMEX without change.
+
+Many DOS extenders can use DPMI or VCPI. Some, such as PMODE/W and CauseWay, select VCPI first when it is available. In VCPI mode, the extender runs the game in its own protected mode and sends the sound directly to the card. μCDD cannot trap this access, so the game's sound and the CD-Audio stop or conflict. Without VCPI, these extenders use the μCDD DPMI host, which keeps the traps in place.
+
+The internal host serves one DPMI program at a time. A program that a running DPMI program starts still sees VCPI. The host runs 32-bit and 16-bit DPMI programs. For 16-bit programs, such as programs made with Borland Pascal 7, it also translates the DOS calls that use protected-mode addresses.
+
+If a program supports only VCPI, install with `UCDD -install -vcpi`. VCPI then stays visible, but the sound of these programs bypasses μCDD.
+
+### Microsoft EMM386 and shared DMA
+
+EMM386's port-trapping interface cannot trap ports below `100h`, which includes the DMA controller registers. A game can therefore replace the DMA settings used for physical audio output.
+
+With EMM386, select different 16-bit DMA channels for the physical and the virtual card in `UCDDSET`. For example, physical DMA High 7 with virtual DMA High 5 avoids the audio failure. Both streams still play through the same sound card.
 
 ### Images
 
@@ -101,29 +126,52 @@ Use DOS 8.3 names on a local hard disk. Image files must be smaller than 2 GiB. 
 | Format | Notes |
 | --- | --- |
 | `.ISO` | 2048-byte data sectors |
-| `.CUE` / `.BIN` | One BINARY file, sequential tracks, INDEX 01 on each track. INDEX 00 and PREGAP are accepted |
+| `.CUE` / `.BIN` | One BINARY file, sequential tracks, INDEX 01 on each track. INDEX 00 and PREGAP are accepted. The data track can be MODE1/2352 or MODE2/2352 with Form 1 sectors |
 | `.BIN` alone | MODE1/2352 data, no audio track table. Use a CUE sheet for CD-Audio |
 | `.MDM` | Disc list, as above |
 
 PREGAP adds silence without reading sectors from the BIN file. Put PREGAP before the track's INDEX entries. Track positions include these gaps.
 
-MODE2 sectors, compressed audio, FLAGS, and multi-file CUE sheets are not supported.
+Other MODE2 sector formats, compressed audio, FLAGS, and multi-file CUE sheets are not supported.
+
+### CD player
+
+`UCDDPLAY` plays the CD-Audio of a μCDD drive in VGA mode. It needs the audio driver.
+
+![UCDDPLAY](docs/ucddplay.png)
+
+- **OPEN** shows the images on the local hard disks. Select a CUE sheet, an ISO or BIN image, or an MDM file to mount it. **EJECT** unmounts the image.
+- **SHUF** plays the tracks in a random order. **REPEAT** repeats one track or all tracks.
+- The equalizer has a preamp, 10 bands from 31 Hz to 16 kHz, and presets. It changes only the CD-Audio, and only while `UCDDPLAY` runs. If the CPU is too slow for it, it stays off.
+- Push F1 to see all keys. With a mouse driver, the mouse also works.
+
+`UCDDPLAY D:` selects the μCDD drive D:. When you exit `UCDDPLAY`, the CD-Audio stops.
 
 ## GAMES WITH REDBOOK AUDIO THAT WORK
 
 These are games known to work, not a list of every game that may work.
 
+- Absolute Pinball
 - Alien Trilogy
 - Alone in the Dark
 - Alone in the Dark 2
 - Alone in the Dark 3
+- Amazing Learning Games with Rayman
+- An Elder Scrolls Legend: Battlespire
 - Archimedean Dynasty
+- Batman Forever: The Arcade Game
 - Battle Arena Toshinden
 - Battle Chess Enhanced CD-ROM
+- Battle Race
 - BC Racers
 - Big Red Racing
 - Blam! Machinehead
+- Blood
+- Bust-A-Move 2 Arcade Edition
 - Carmageddon
+- Chasm: The Rift
+- Cyber Police (CYBERPO1.EXE)
+- Cyberball
 - Descent II
 - Descent II: Vertigo Series
 - Fascination

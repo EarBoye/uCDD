@@ -29,6 +29,10 @@ dpmi_install:
     int 21h
     mov [dpmi_old_mux], bx
     mov [dpmi_old_mux+2], es
+    mov ax, 3567h
+    int 21h
+    mov [dpmi_old_ems], bx
+    mov [dpmi_old_ems+2], es
     clc
     ret
 %endif
@@ -62,6 +66,29 @@ dpmi_remove:
     pop ds
     ret
 HOST_REAL
+%ifdef RESIDENT_HOST
+; EMS detection reads the device name at offset 0Ah of the INT 67h segment.
+    align 16
+dpmi_ems_base:
+dpmi_old_ems dd 0
+dpmi_ems_gateway dw 0
+dpmi_hide_vcpi db 1
+    times 0ah-($-dpmi_ems_base) db 0
+dpmi_ems_name times 8 db 0
+; An extender in its own VCPI mode bypasses the port traps. Offer DPMI instead.
+dpmi_ems:
+    cmp ax, 0de00h
+    jne .chain
+    push ds
+    mov ds, [cs:dpmi_ems_gateway-dpmi_ems_base]
+    cmp byte [dpmi_active], 0
+    pop ds
+    jne .chain
+    mov ah, 84h
+    iret
+.chain:
+    jmp far [cs:dpmi_old_ems-dpmi_ems_base]
+%endif
 dpmi_mux:
     cmp ax, 1687h
     jne .chain
@@ -79,9 +106,15 @@ dpmi_mux:
 
 dpmi_entry:
     cmp ax, 1
-    jne .bad
+    ja .bad
     cmp byte [cs:dpmi_active], 0
     jne .bad
+    ; AX=0 starts a 16-bit client.
+    mov byte [cs:dpmi_client16], 0
+    test ax, ax
+    jnz .bits_ready
+    mov byte [cs:dpmi_client16], 1
+.bits_ready:
     pushf
     pushad
     push ds
@@ -219,9 +252,11 @@ mon_iret:
     jmp .no_irq
 .shadow_done:
     cmp byte [ebp+dpmi_vif], 1
-    jne .no_irq
+    jne .armed_wait
     test byte [esp+44], 3
     jz .no_irq
+    call dpmi_hardware_room
+    jc .no_irq
     call dpmi_pic_audio_allowed
     jc .pic_only
     cmp byte [ebp+dpmi_sti_sb_held], 0
@@ -273,6 +308,51 @@ mon_iret:
 .pic_protected:
     mov ebx, esp
     jmp dpmi_deliver_hardware
+; An injected TF image is outstanding. A pending IRQ must not wait for the
+; POPF: step to find where the client sets IF again.
+.armed_wait:
+    cmp byte [ebp+dpmi_tf_armed], 0
+    je .no_irq
+    cmp byte [ebp+dpmi_step_active], 0
+    jne .no_irq
+    test byte [esp+44], 3
+    jz .no_irq
+    ; The POPF already loaded the image: IF is on again.
+    test byte [esp+49], 1
+    jz .armed_pending
+    and word [esp+48], 0feffh
+    mov byte [ebp+dpmi_tf_armed], 0
+    mov byte [ebp+dpmi_vif], 1
+    jmp .shadow_done
+.armed_pending:
+    movzx eax, word [ebp+dpmi_pic_mask]
+    not eax
+    and ax, [ebp+dpmi_pending_irqs]
+    jnz .armed_step
+    cmp byte [ebp+dpmi_sti_sb_held], 0
+    jne .armed_step
+%ifdef RESIDENT_HOST
+    mov esi, [ebp+resident_audio_request]
+    test esi, esi
+    jz .no_irq
+    cmp byte [esi], 0
+    je .no_irq
+%else
+    jmp .no_irq
+%endif
+.armed_step:
+    call dpmi_hardware_room
+    jc .no_irq
+    call dpmi_clear_vif
+    cmp byte [ebp+dpmi_step_active], 0
+    je .no_irq
+    ; Decode the instruction at the resume point: it can be the POPF.
+    or word [esp+48], 300h
+    DPMI_STEP_NORMAL
+    cmp byte [ebp+dpmi_sti_shadow], 0
+    jne .no_irq
+    cmp byte [ebp+dpmi_vif], 1
+    je .shadow_done
 .no_irq:
 %ifdef RESIDENT_HOST
     call resident_refill_schedule
@@ -315,6 +395,15 @@ mon_iret:
     iretd
 
 dpmi_client_init:
+    mov byte [ebp+dpmi_tf_armed], 0
+    mov dword [ebp+dpmi_cli_site], -1
+    lea edi, [ebp+dpmi_cli_linear]
+    xor eax, eax
+    mov ecx, DPMI_CLI_SITES
+    rep stosd
+    lea edi, [ebp+dpmi_cli_score]
+    mov ecx, DPMI_CLI_SITES
+    rep stosb
     mov byte [ebp+dpmi_sti_shadow], 0
     mov byte [ebp+dpmi_callback_sti], 0
     mov byte [ebp+dpmi_sti_sb_held], 0
@@ -353,8 +442,11 @@ dpmi_client_init:
     call dpmi_initial_descriptor
     movzx eax, word [ebp+dpmi_client_ss]
     call dpmi_initial_descriptor
+    cmp byte [ebp+dpmi_client16], 0
+    jne .stack_ready
     mov byte [ebp+dpmi_ldt+2*8+6], 40h
     mov byte [ebp+dpmi_ldt+3*8+6], 40h
+.stack_ready:
     movzx eax, word [ebp+dpmi_psp]
     call dpmi_initial_descriptor
     mov word [ebp+dpmi_ldt+4*8], 0ffh
@@ -364,7 +456,17 @@ dpmi_client_init:
     mov byte [ebp+dpmi_used+5], 1
     call dpmi_initial_descriptor
 .environment_ready:
+    mov dword [ebp+dpmi_dos16_dta], 00800027h
     jmp dpmi_enter_client
+
+; Return AX=the ring-3 stub selector for the client's code size.
+dpmi_stub_selector:
+    mov ax, 3bh
+    cmp byte [ebp+dpmi_client16], 0
+    je .done
+    mov ax, DPMI_STUB16
+.done:
+    ret
 
 dpmi_initial_descriptor:
     shl eax, 4
@@ -492,12 +594,16 @@ dpmi_dispatch:
     je dpmi_resize
     cmp eax, 0604h
     je .page_size
+    ; The host never pages memory out. Lock and discard calls have no effect.
     cmp eax, 0600h
-    je mon_dpmi.success
-    cmp eax, 0601h
-    je mon_dpmi.success
+    jb .paging_ready
+    cmp eax, 0603h
+    jbe mon_dpmi.success
     cmp eax, 0702h
     je mon_dpmi.success
+    cmp eax, 0703h
+    je mon_dpmi.success
+.paging_ready:
     cmp eax, 0800h
     je dpmi_physical_map
     cmp eax, 0801h
@@ -524,6 +630,7 @@ dpmi_dispatch:
 .enable:
     call .interrupt_state_value
     mov byte [ebp+dpmi_vif], 1
+    call dpmi_tf_disarm
     mov byte [ebp+dpmi_step_active], 0
     and word [ebx+48], 0feffh
     or word [ebx+48], 200h
@@ -551,6 +658,7 @@ dpmi_dispatch:
 .simulate:
     mov ax, [ebx]
     mov edx, [ebx+8]
+    DPMI_OFFSET16 edx, dx
     mov ecx, 50
     mov edi, 1
     call dpmi_buffer
@@ -684,8 +792,10 @@ dpmi_dos:
     sub ebp, .base
     cld
     mov ebx, esp
+    call dpmi_record_segments
     call dpmi_locked_capture
     call dpmi_sti_arrival
+    call dpmi_tf_entry
     cmp word [ebp+mon_vectors+21h*6+4], 0
     je .host
     lea esi, [ebp+mon_vectors+21h*6]
@@ -738,6 +848,7 @@ dpmi_finish:
 %include "host/descriptors.asm"
 %include "host/memory.asm"
 %include "host/dos.asm"
+%include "host/dos16.asm"
 %include "host/vectors.asm"
 %include "host/switch.asm"
 %include "host/callback.asm"
@@ -759,11 +870,13 @@ dpmi_pending_irqs dd 0
 dpmi_sti_sb_held db 0
 dpmi_active db 0
 dpmi_audio_pm_handler db 0
-%if dpmi_audio_pm_handler-dpmi_active != 1
+dpmi_virtual_entry dw dpmi_bridge_virtual
+%if dpmi_audio_pm_handler-dpmi_active != 1 || dpmi_virtual_entry-dpmi_active != 2
     %error Invalid resident IRQ state layout
 %endif
 dpmi_psp dw 0
 dpmi_environment dw 0
+dpmi_client16 db 0
 dpmi_exit_code db 1
 dpmi_last_call dw 0
 dpmi_last_dos dw 0
@@ -811,5 +924,7 @@ dpmi_fault_ip dd 0
 dpmi_fault_regs times 16 dd 0
 dpmi_fault_bytes times 8 db 0
 dpmi_fault_stack times 64 db 0
+%ifndef RESIDENT_HOST
 dpmi_ldt times DPMI_LDT_COUNT*8 db 0
 dpmi_used times DPMI_LDT_COUNT db 0
+%endif

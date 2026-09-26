@@ -1,14 +1,27 @@
 ; SPDX-FileCopyrightText: 2026 vorvek
 ; SPDX-License-Identifier: GPL-3.0-only
 
+%ifndef RESIDENT_AUDIO
+%include "audio/config.asm"
+%endif
+%define HOTKEY_NEXT 11
+%define HOTKEY_PREVIOUS 12
+%define HOTKEY_EJECT 13
+
 mdm_unit dw 0
 mdm_count db 0
 mdm_current db 0
+; 1 to 10 selects a disc. The other values are HOTKEY_* actions.
 mdm_pending db 0
+mdm_ejected db 0
+; Left and right bits for Ctrl, Alt, Shift, and Win.
 mdm_modifiers db 0
 mdm_prefix db 0
 mdm_key_active db 0
-mdm_down dw 0
+mdm_last db 0
+; A hotkey keeps an ejected single image open for unit 0.
+eject_handle dw 0ffffh
+eject_sectors dd 0
 mdm_handles times MDM_MAX dw 0ffffh
 mdm_xms dd 0
 mdm_handle dw 0
@@ -106,6 +119,7 @@ mdm_mount:
     mov [mdm_unit], si
     mov byte [mdm_current], 1
     mov byte [mdm_pending], 0
+    mov byte [mdm_ejected], 0
 %ifdef RESIDENT_AUDIO
     call audio_bind
 %endif
@@ -203,6 +217,7 @@ mdm_release:
     mov word [mdm_unit], 0
     mov byte [mdm_count], 0
     mov byte [mdm_pending], 0
+    mov byte [mdm_ejected], 0
     xor si, si
 .close:
     mov bx, [mdm_handles+si]
@@ -292,6 +307,7 @@ mdm_scan:
     pushf
     push ax
     push bx
+    push cx
     cmp byte [cs:mdm_prefix], 1
     jbe .prefix
     dec byte [cs:mdm_prefix]
@@ -310,61 +326,152 @@ mdm_scan:
     mov byte [cs:mdm_prefix], 6
     jmp .done
 .scan:
-.modifier:
     mov ah, al
     and al, 7fh
-    mov bl, 1
+    jz .done
+    mov bl, [cs:mdm_prefix]
+    mov byte [cs:mdm_prefix], 0
+    ; BH is the left bit of the modifier group.
+    mov bh, 1
     cmp al, 1dh
-    je .set_modifier
-    mov bl, 2
+    je .side
+    mov bh, 4
     cmp al, 38h
-    je .set_modifier
-    cmp byte [cs:mdm_prefix], 0
-    jne .clear_prefix
-    sub al, 2
-    cmp al, 9
-    ja .done
-    mov bl, al
-    xor bh, bh
-    test ah, 80h
-    jz .make
-    btr word [cs:mdm_down], bx
-    jmp .done
-.make:
-    bts word [cs:mdm_down], bx
-    jc .done
-    cmp word [cs:mdm_unit], 0
+    je .side
+    test bl, bl
+    jnz .extended
+    mov bh, 10h
+    cmp al, 2ah
+    je .modifier
+    mov bh, 20h
+    cmp al, 36h
+    je .modifier
+    jmp .key
+.extended:
+    ; Ignore the shift codes that come with some E0 keys.
+    cmp al, 2ah
     je .done
-    mov al, [cs:mdm_modifiers]
-    mov ah, al
-    and al, 5
-    jz .done
-    and ah, 10
-    jz .done
-    inc bl
-    cmp bl, [cs:mdm_count]
-    ja .done
-    mov [cs:mdm_pending], bl
-    jmp .done
-.set_modifier:
-    cmp byte [cs:mdm_prefix], 1
-    jne .side
-    shl bl, 2
+    cmp al, 36h
+    je .done
+    mov bh, 40h
+    cmp al, 5bh
+    je .modifier
+    mov bh, 80h
+    cmp al, 5ch
+    je .modifier
+    cmp al, 47h
+    jb .e0
+    cmp al, 53h
+    jbe .key
+.e0:
+    or al, 80h
+    jmp .key
 .side:
+    test bl, bl
+    jz .modifier
+    shl bh, 1
+.modifier:
     test ah, 80h
     jz .pressed
-    not bl
-    and [cs:mdm_modifiers], bl
-    jmp .clear_prefix
+    not bh
+    and [cs:mdm_modifiers], bh
+    jmp .done
 .pressed:
-    or [cs:mdm_modifiers], bl
-.clear_prefix:
-    mov byte [cs:mdm_prefix], 0
+    or [cs:mdm_modifiers], bh
+    jmp .done
+.key:
+    test ah, 80h
+    jz .make
+    cmp al, [cs:mdm_last]
+    jne .done
+    mov byte [cs:mdm_last], 0
+    jmp .done
+.make:
+    mov bl, [cs:mdm_modifiers]
+    mov bh, [cs:config_modifiers]
+    mov cx, 4
+.group:
+    shr bh, 1
+    jnc .next_group
+    test bl, 3
+    jz .done
+.next_group:
+    shr bl, 2
+    loop .group
+    ; CL is 1 for a key that repeats.
+    cmp al, [cs:mdm_last]
+    sete cl
+    mov [cs:mdm_last], al
+    mov ah, 1
+    cmp byte [cs:config_disc_keys], 1
+    je .disc
+    mov ah, 3ah
+    cmp byte [cs:config_disc_keys], 2
+    jne .hotkey
+.disc:
+    mov bl, al
+    sub bl, ah
+    jbe .hotkey
+    cmp bl, 10
+    jbe .action
+.hotkey:
+    xor bx, bx
+.find:
+    cmp al, [cs:config_keys+bx]
+    je .found
+    inc bx
+    cmp bx, HOTKEY_COUNT
+    jb .find
+    jmp .done
+.found:
+    cmp bl, 3
+%ifdef RESIDENT_AUDIO
+    jae .volume
+%else
+    jae .done
+%endif
+    add bl, HOTKEY_NEXT
+.action:
+    test cl, cl
+    jnz .done
+    mov [cs:mdm_pending], bl
+    jmp .done
+%ifdef RESIDENT_AUDIO
+.volume:
+    call hotkey_volume
+%endif
 .done:
+    pop cx
     pop bx
     pop ax
     popf
     ret
+
+%ifdef RESIDENT_AUDIO
+; BL 3 raises and BL 4 lowers the CD audio volume.
+hotkey_volume:
+    push ds
+    push cs
+    pop ds
+    mov al, [config_cd_volume]
+    mov ah, [config_volume_step]
+    cmp bl, 3
+    jne .down
+    add al, ah
+    cmp al, 100
+    jbe .store
+    mov al, 100
+    jmp .store
+.down:
+    sub al, ah
+    jnc .store
+    xor al, al
+.store:
+    mov [config_cd_volume], al
+    call cd_gain_update
+    pop ds
+    ret
+%endif
 
 mdm_timer:
     pushf
@@ -415,7 +522,9 @@ mdm_switch:
     je .done
     mov si, [mdm_unit]
     test si, si
-    jz .done
+    jnz .unit
+    mov si, [units_base]
+.unit:
     cmp byte [si+LOCKED], 0
     jne .done
     cmp dword [si+AUDIO_ENTRY], 0
@@ -433,8 +542,34 @@ mdm_switch:
     mov [unit_pointer], si
     mov bl, [mdm_pending]
     mov byte [mdm_pending], 0
+    cmp si, [mdm_unit]
+    jne .single
+    mov bh, [mdm_count]
+    mov al, [mdm_current]
+    cmp bl, HOTKEY_EJECT
+    je .eject
+    cmp bl, HOTKEY_NEXT
+    jb .disc
+    ja .previous
+    inc al
+    cmp al, bh
+    jbe .select
+    mov al, 1
+    jmp .select
+.previous:
+    dec al
+    jnz .select
+    mov al, bh
+.select:
+    mov bl, al
+.disc:
+    cmp bl, bh
+    ja .done
     cmp bl, [mdm_current]
+    jne .load
+    cmp byte [mdm_ejected], 0
     je .done
+.load:
     push bx
     mov ax, cs
     shl eax, 16
@@ -457,6 +592,7 @@ mdm_switch:
     pop bx
     jc .rollback
     mov [mdm_current], bl
+    mov byte [mdm_ejected], 0
 %ifdef RESIDENT_AUDIO
     call cd_clear_state
     mov word [cd_handle], 0ffffh
@@ -476,6 +612,42 @@ mdm_switch:
     call mdm_read
     jnc .done
     mov si, [unit_pointer]
+    call clear_unit
+    jmp .done
+.eject:
+    cmp byte [mdm_ejected], 0
+    jne .done
+    mov byte [mdm_ejected], 1
+    call clear_unit
+    jmp .done
+.single:
+    cmp bl, HOTKEY_EJECT
+    je .single_eject
+    ; Disc 1, next, and previous insert the ejected image again.
+    cmp bl, 1
+    je .insert
+    cmp bl, HOTKEY_NEXT
+    jb .done
+.insert:
+    mov ax, 0ffffh
+    xchg ax, [eject_handle]
+    cmp ax, 0ffffh
+    je .done
+    mov [si+HANDLE], ax
+    mov eax, [eject_sectors]
+    mov [si+SECTORS], eax
+    mov byte [si+CHANGED], 0ffh
+%ifdef RESIDENT_AUDIO
+    call audio_bind
+%endif
+    jmp .done
+.single_eject:
+    mov ax, [si+HANDLE]
+    cmp ax, 0ffffh
+    je .done
+    mov [eject_handle], ax
+    mov eax, [si+SECTORS]
+    mov [eject_sectors], eax
     call clear_unit
 .done:
     pop word [unit_pointer]

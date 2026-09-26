@@ -28,6 +28,8 @@ dpmi_descriptor:
     je .fixed
     cmp edx, 38h
     je .fixed
+    cmp edx, DPMI_STUB16-3
+    je .fixed
     cmp edx, 40h
     jne .bad
 .fixed:
@@ -220,6 +222,7 @@ dpmi_descriptors:
     push dword [esi+4]
     mov ax, [ebx]
     mov edx, [ebx+8]
+    DPMI_OFFSET16 edx, dx
     mov ecx, 8
     mov edi, 1
     call dpmi_buffer
@@ -239,6 +242,7 @@ dpmi_descriptors:
     push esi
     mov ax, [ebx]
     mov edx, [ebx+8]
+    DPMI_OFFSET16 edx, dx
     mov ecx, 8
     xor edi, edi
     call dpmi_buffer
