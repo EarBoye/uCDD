@@ -357,6 +357,8 @@ mon_iret:
 %ifdef RESIDENT_HOST
     call resident_refill_schedule
 %endif
+    mov ax, [esp+44]
+    call dpmi_debug_arm
     pop es
     pop ds
     popad
@@ -395,6 +397,7 @@ mon_iret:
     iretd
 
 dpmi_client_init:
+    call dpmi_debug_reset
     mov byte [ebp+dpmi_tf_armed], 0
     mov dword [ebp+dpmi_cli_site], -1
     lea edi, [ebp+dpmi_cli_linear]
@@ -665,7 +668,7 @@ dpmi_dispatch:
     jc dpmi_error
     mov edi, eax
     movzx ecx, word [ebx+32]
-    cmp ecx, 30
+    cmp ecx, 2048
     ja dpmi_bad_value
     mov ax, [ebx+36]
     cmp al, 0
@@ -675,18 +678,31 @@ dpmi_dispatch:
     cmp byte [edi+29], 4ch
     je dpmi_bad_value
 .copy_stack:
+    push dword [edi+46]
+    call dpmi_large_stack_prepare
+    jc .prepare_error
+    push eax
     call dpmi_stack_copy
-    jc dpmi_error
+    jc .stack_error
     mov ax, [ebx+36]
     cmp al, 0
     jne .far_call
 .interrupt:
     movzx eax, byte [ebx+24]
     call mon_real_int_copy
-    jmp mon_dpmi.success
+    jmp .stack_done
 .far_call:
+    call dpmi_pic_real_chain
     call mon_real_far_copy
+.stack_done:
+    call dpmi_large_stack_restore
     jmp mon_dpmi.success
+.stack_error:
+    call dpmi_large_stack_restore
+    jmp dpmi_error
+.prepare_error:
+    add esp, 4
+    jmp dpmi_error
 
 ; EBX=client frame, EDI=real-mode register structure, ECX=word count.
 dpmi_stack_copy:
@@ -741,6 +757,7 @@ dpmi_stack_copy:
     clc
     ret
 .error:
+    mov edi, [esp+4]
     add esp, 8
     stc
     ret
@@ -780,6 +797,7 @@ dpmi_error:
     jmp mon_dpmi.done
 
 dpmi_dos:
+    DPMI_DEBUG_STOP
     pushad
     push ds
     push es
@@ -853,7 +871,9 @@ dpmi_finish:
 %include "host/switch.asm"
 %include "host/callback.asm"
 %include "host/bridge.asm"
+%include "host/realstack.asm"
 %include "host/interrupts.asm"
+%include "host/debug.asm"
 %include "host/locked.asm"
 %include "host/pic.asm"
 %include "host/cleanup.asm"

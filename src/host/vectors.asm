@@ -239,6 +239,7 @@ dpmi_exception_return:
 dpmi_debug_code times 64 db 0
 dpmi_first_exception times 16 db 0ffh
 dpmi_exception_done:
+    DPMI_DEBUG_STOP
     pushad
     push ds
     push es
@@ -335,6 +336,7 @@ dpmi_exception_done:
     jmp dpmi_finish
 
 dpmi_reflect:
+    DPMI_DEBUG_STOP
     pushad
     push ds
     push es

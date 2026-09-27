@@ -26,6 +26,21 @@ endstruc
 
 HOST_REAL
 dpmi_bridge_real_allocate:
+    mov bx, 128
+    cmp byte [dpmi_client16], 0
+    je .size_ready
+    mov bx, 128+DPMI_XFER_PARAS
+.size_ready:
+    call dpmi_real_allocate
+    jc .done
+    mov [dpmi_bridge_real_segment], ax
+.done:
+    ret
+
+; BX=paragraphs. Try upper memory first and keep the DOS allocation policy.
+dpmi_real_allocate:
+    push si
+    mov si, bx
     mov ax, 5800h
     int 21h
     push ax
@@ -40,14 +55,11 @@ dpmi_bridge_real_allocate:
     mov bx, 80h
     int 21h
     mov ah, 48h
-    mov bx, 128
-    cmp byte [dpmi_client16], 0
-    je .size_ready
-    mov bx, 128+DPMI_XFER_PARAS
-.size_ready:
+    mov bx, si
     int 21h
+    mov si, 0
     jc .restore
-    mov [dpmi_bridge_real_segment], ax
+    mov si, ax
 .restore:
     pop bx
     mov ax, 5803h
@@ -55,8 +67,10 @@ dpmi_bridge_real_allocate:
     pop bx
     mov ax, 5801h
     int 21h
-    cmp word [dpmi_bridge_real_segment], 0
-    je .bad
+    mov ax, si
+    pop si
+    test ax, ax
+    jz .bad
     clc
     ret
 .bad:
@@ -66,6 +80,15 @@ dpmi_bridge_real_allocate:
 dpmi_bridge_real_free:
     push ax
     push es
+    mov ax, [dpmi_large_stack_segment]
+    test ax, ax
+    jz .bridge
+    mov es, ax
+    mov ah, 49h
+    int 21h
+    mov word [dpmi_large_stack_segment], 0
+.bridge:
+    mov byte [dpmi_large_stack_busy], 0
     mov ax, [dpmi_bridge_real_segment]
     test ax, ax
     jz .done
@@ -221,6 +244,7 @@ dpmi_bridge_pm:
     ja dpmi_locked_abort
     cmp esp, BRIDGE_BOTTOM+bridge_frame_size+1024
     jb dpmi_locked_abort
+    call dpmi_debug_host_save
     sub esp, bridge_frame_size
     mov edi, esp
     mov eax, [ebp+dpmi_bridge_context]
@@ -300,6 +324,7 @@ dpmi_bridge_return:
     ud2
 
 dpmi_bridge_done:
+    DPMI_DEBUG_STOP
     pushad
     push ds
     push es
@@ -380,6 +405,7 @@ dpmi_bridge_done:
     mov fs, ax
     mov gs, ax
     mov ss, ax
+    call dpmi_debug_host_restore
     lea esp, [ebp+dpmi_bridge_return_frame]
     cmp byte [ebp+mon_vcpi_flags_slot], 0
     je .stack_ready

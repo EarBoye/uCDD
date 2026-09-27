@@ -3,7 +3,7 @@
 
 ; uCDD drives, MSCDEX requests, and the play logic.
 
-; Find the uCDD drives. CF when there is none.
+; Find the CD drives. CF when there is none.
 find_units:
     xor bx, bx
     mov ax, 1500h
@@ -28,21 +28,31 @@ find_units:
     imul di, si, 5
     mov dl, [device_list+di]
     les di, [device_list+di+1]
+    xor eax, eax
     cmp dword [es:di+10], 'UCDD'
-    jne .next
+    jne .add
     cmp dword [es:di+14], '0001'
-    jne .next
+    jne .add
     cmp dword [es:di+22], 'uCDD'
-    jne .next
+    jne .add
     cmp word [es:di+26], 2
-    jne .next
+    jne .add
+    mov eax, [es:di+28]
+    cmp dword [audio_control_entry], 0
+    jne .add
+    mov [audio_control_entry], eax
+    mov [audio_subunit], dl
+    mov bl, [unit_total]
+    mov [default_unit], bl
+.add:
     movzx bx, byte [unit_total]
+    push bx
+    shl bx, 2
+    mov [unit_controls+bx], eax
+    pop bx
     mov al, [drive_list+si]
     mov [unit_letters+bx], al
     mov [unit_subunits+bx], dl
-    shl bx, 2
-    mov eax, [es:di+28]
-    mov [unit_controls+bx], eax
     inc byte [unit_total]
 .next:
     inc si
@@ -67,14 +77,33 @@ select_unit:
     shl bx, 2
     mov eax, [unit_controls+bx]
     mov [control_entry], eax
+    mov byte [physical_source], 0
+    test eax, eax
+    jnz .done
+    mov byte [physical_source], 1
+.done:
     ret
 
 ; AX = operation, DS:DX = data. Return AX from the driver.
 call_control:
+    cmp dword [control_entry], 0
+    je audio_control.none
     push bx
     mov bl, [subunit]
     call far [control_entry]
     pop bx
+    ret
+
+audio_control:
+    cmp dword [audio_control_entry], 0
+    je .none
+    push bx
+    mov bl, [audio_subunit]
+    call far [audio_control_entry]
+    pop bx
+    ret
+.none:
+    mov ax, 8001h
     ret
 
 ; AL = command, CL = request length.
@@ -162,16 +191,21 @@ read_disc:
     mov byte [first_audio], 0
     mov byte [play_state], STOPPED
     mov dword [relative], 0
+    cmp byte [physical_source], 0
+    jne .toc
     mov dx, disc_info
     mov ax, 3
     call call_control
     test ax, ax
     jnz .done
+.toc:
     mov al, 10
     mov cx, 7
     call ioctl_input
     jc .done
     mov al, [control_block+1]
+    test al, al
+    jz .done
     mov [first_track], al
     mov al, [control_block+2]
     mov [last_track], al
@@ -198,8 +232,21 @@ read_disc:
     jc .done
     mov si, control_block+2
     call redbook_sector
+    cmp eax, [leadout]
+    jae .done
     movzx bx, cl
+    cmp cl, [first_track]
+    je .start_ready
+    mov si, bx
+    dec si
+    shl si, 2
+    cmp eax, [track_start+si]
+    jbe .done
+.start_ready:
     mov byte [track_data+bx], 1
+    mov dl, [control_block+6]
+    and dl, 10h
+    mov [track_pre+bx], dl
     test byte [control_block+6], 40h
     jnz .type_ready
     mov byte [track_data+bx], 0
@@ -212,6 +259,8 @@ read_disc:
     mov [track_start+bx], eax
     mov [track_index0+bx], eax
     ; The driver table gives INDEX 00 for gaps before tracks.
+    cmp byte [physical_source], 0
+    jne .index_ready
     movzx di, cl
     dec di
     imul di, TRACK_SIZE
@@ -238,6 +287,8 @@ read_disc:
 
 ; Check the drive for a changed or removed image. Return CF when it changed.
 disc_changed:
+    cmp byte [physical_source], 0
+    jne physical_changed
     mov dx, probe_info
     mov ax, 3
     call call_control
@@ -337,6 +388,8 @@ last_audio:
 
 ; EAX = start, EDX = end. Return CF on error.
 play_range:
+    cmp byte [physical_source], 0
+    jne physical_play
     cmp edx, eax
     jbe .fail
     mov [range_end], edx
@@ -386,6 +439,8 @@ play_track:
     jmp show_message
 
 stop_audio:
+    cmp byte [physical_source], 0
+    jne physical_stop
     mov al, 85h
     mov cl, 13
     call new_request
@@ -414,10 +469,16 @@ play_pause:
     mov al, [track]
     jmp play_track
 .pause:
+    cmp byte [physical_source], 0
+    je .pause_ready
+    call physical_position
+.pause_ready:
     call stop_audio
     mov byte [play_state], PAUSED
     ret
 .resume:
+    cmp byte [physical_source], 0
+    jne .replan
     cmp byte [replan], 0
     jne .replan
     mov al, 88h
@@ -710,6 +771,11 @@ read_position:
 
 ; Called once per frame.
 poll_drive:
+    cmp byte [physical_source], 0
+    je .media
+    cmp byte [play_state], PLAYING
+    je physical_poll
+.media:
     dec byte [disc_timer]
     jnz .state
     mov byte [disc_timer], 35
@@ -719,6 +785,8 @@ poll_drive:
     call read_disc
     ret
 .state:
+    cmp byte [physical_source], 0
+    jne .done
     cmp byte [play_state], STOPPED
     je .done
     dec byte [poll_timer]
@@ -754,6 +822,8 @@ poll_drive:
 ; AL = 0 to 255.
 set_volume:
     mov [volume], al
+    cmp byte [physical_source], 0
+    jne physical_volume
     mov [control_block+2], al
     mov [control_block+4], al
     mov byte [control_block+1], 0
@@ -765,6 +835,11 @@ set_volume:
     jmp ioctl_output
 
 read_volume:
+    cmp byte [physical_source], 0
+    je .read
+    mov byte [volume], 255
+    ret
+.read:
     mov al, 4
     mov cx, 9
     call ioctl_input
@@ -776,6 +851,7 @@ read_volume:
 
 next_unit:
     call stop
+    call hook_remove
     mov al, [unit]
     inc al
     cmp al, [unit_total]
@@ -784,4 +860,5 @@ next_unit:
 .select:
     call select_unit
     call read_disc
-    jmp read_volume
+    call read_volume
+    jmp hook_install

@@ -478,11 +478,14 @@ eq_calibrate:
 
 ; Install the hook in the driver. CF when the driver has no hook.
 hook_install:
+    cmp byte [physical_source], 0
+    jne .local
     mov dx, eq_hook
     mov ax, 9
     call call_control
     test ax, ax
     jnz .none
+.local:
     mov byte [hook_active], 1
     clc
     ret
@@ -493,6 +496,8 @@ hook_install:
 hook_remove:
     cmp byte [hook_active], 0
     je .done
+    cmp byte [physical_source], 0
+    jne .clear
     push ds
     xor dx, dx
     mov ds, dx
@@ -502,6 +507,7 @@ hook_remove:
     pop ds
     test ax, ax
     jnz .done
+.clear:
     mov byte [hook_active], 0
 .done:
     ret

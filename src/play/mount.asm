@@ -5,6 +5,19 @@
 
 ; DS:SI = image path. Mount it on the selected drive.
 mount_path:
+    cmp byte [physical_source], 0
+    je .image
+    cmp dword [audio_control_entry], 0
+    je .no_drive
+    push si
+    call stop
+    call hook_remove
+    mov al, [default_unit]
+    call select_unit
+    call hook_install
+    call read_volume
+    pop si
+.image:
     push si
     push ds
     pop es
@@ -57,6 +70,7 @@ mount_path:
     call refresh_drive
     jc .refresh_error
     call read_disc
+    call read_volume
     mov si, message_mounted
     jmp show_message
 .bad_image:
@@ -81,8 +95,13 @@ mount_path:
     call read_disc
     mov si, message_refresh
     jmp show_message
+.no_drive:
+    mov si, message_mount_drive
+    jmp show_message
 
 eject:
+    cmp byte [physical_source], 0
+    jne .physical
     xor ax, ax
     call call_control
     test ax, 8000h
@@ -101,6 +120,16 @@ eject:
     jmp show_message
 .empty:
     mov si, message_empty
+    jmp show_message
+.physical:
+    call stop
+    xor al, al
+    mov cx, 1
+    call ioctl_output
+    jc .error
+    jmp read_disc
+.error:
+    mov si, message_eject_error
     jmp show_message
 
 ; Tell the redirector that the image changed. CF on error.

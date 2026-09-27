@@ -4,6 +4,12 @@
 ; The image requester and the baroque frame for requesters.
 
 browser_open:
+    cmp byte [physical_source], 0
+    je .open
+    cmp byte [play_state], PLAYING
+    jne .open
+    call play_pause
+.open:
     cmp byte [browse_path], 0
     jne .scan
     mov ah, 19h
@@ -37,8 +43,8 @@ browser_open:
     mov byte [browse_path+3], 0
     jmp .scan
 .none:
-    mov si, message_no_hard_disk
-    jmp show_message
+    mov byte [browse_path], 0
+    jmp .scan
 
 ; DI = text. Return DI at the 0 end.
 string_end:
@@ -116,10 +122,14 @@ browser_scan:
     mov word [entry_count], 0
     mov word [entry_selected], 0
     mov word [entry_top], 0
+    call browser_cd_drives
+    cmp byte [browse_path], 0
+    je .sort
     mov es, [work_seg]
     cmp byte [browse_path+3], 0
     je .search
-    mov di, ENTRIES
+    imul di, [entry_count], ENTRY_SIZE
+    add di, ENTRIES
     mov byte [es:di+ENTRY_TYPE], ENTRY_UP
     mov dword [es:di+ENTRY_NAME], '..'
     inc word [entry_count]
@@ -210,6 +220,35 @@ browser_scan:
     pop ds
     ret
 
+browser_cd_drives:
+    mov es, [work_seg]
+    xor bx, bx
+.next:
+    cmp bl, [unit_total]
+    jae .done
+    imul di, bx, ENTRY_SIZE
+    add di, ENTRIES
+    mov byte [es:di+ENTRY_TYPE], ENTRY_CD
+    mov al, [unit_letters+bx]
+    add al, 'A'
+    mov [es:di+ENTRY_NAME], al
+    mov word [es:di+ENTRY_NAME+1], ': '
+    mov dword [es:di+ENTRY_NAME+3], 'CD-R'
+    mov dword [es:di+ENTRY_NAME+7], 'OM'
+    mov si, bx
+    shl si, 2
+    cmp dword [unit_controls+si], 0
+    je .index
+    mov dword [es:di+ENTRY_NAME+3], 'uCDD'
+    mov byte [es:di+ENTRY_NAME+7], 0
+.index:
+    mov [es:di+ENTRY_MB], bx
+    inc bx
+    inc word [entry_count]
+    jmp .next
+.done:
+    ret
+
 ; DS = entries. Compare the entry at BX with the entry at DI. Flags as for BX - DI.
 entry_compare:
     push bx
@@ -291,6 +330,8 @@ browser_enter:
     je .done
     mov ax, [entry_selected]
     call entry_read
+    cmp byte [entry_buffer+ENTRY_TYPE], ENTRY_CD
+    je .cd
     cmp byte [entry_buffer+ENTRY_TYPE], ENTRY_UP
     je browser_up
     mov di, browse_path
@@ -334,8 +375,20 @@ browser_enter:
     jmp browser_scan
 .done:
     ret
+.cd:
+    call stop
+    call hook_remove
+    mov al, [entry_buffer+ENTRY_MB]
+    call select_unit
+    call hook_install
+    call read_disc
+    call read_volume
+    mov byte [browser_active], 0
+    ret
 
 browser_up:
+    cmp byte [browse_path], 0
+    je .done
     cmp byte [browse_path+3], 0
     je .done
     mov di, browse_path
@@ -924,6 +977,9 @@ browser_draw:
 
 ; Return SI = the text for the right column of entry_buffer.
 entry_info:
+    mov si, text_cd
+    cmp byte [entry_buffer+ENTRY_TYPE], ENTRY_CD
+    je .done
     mov si, text_up
     cmp byte [entry_buffer+ENTRY_TYPE], ENTRY_UP
     je .done

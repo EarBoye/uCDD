@@ -295,7 +295,7 @@ main_menu:
     mov word [form_draw], main_draw
     mov word [form_keys], main_keys
     mov word [form_notes], main_notes
-    mov word [form_status_row], 0311h
+    mov word [form_status_row], 0310h
     mov byte [menu_result], 1
     call form_run
     call screen_stop
@@ -340,7 +340,7 @@ main_draw:
     mov al, '*'
     call put_repeat
     mov dx, 0e04h
-    mov si, info_labels
+    mov si, output_label
     call put_text
     mov dx, 0e11h
     movzx bx, byte [sound_card]
@@ -348,9 +348,16 @@ main_draw:
     mov si, [output_texts+bx]
     mov bl, A_BOX
     call put_text
-    mov dx, 0f11h
-    mov si, games_text
+    mov dx, 0f04h
+    mov si, applications_text
     call put_text
+    mov si, virtual_cards_text
+    mov bl, A_TITLE
+    call put_text
+    mov al, '.'
+    mov cx, 1
+    mov bl, A_BOX
+    call put_repeat
     ret
 
 main_keys:
@@ -557,12 +564,12 @@ main_items:
     item 11,67,3,0, 4,11,8,NONE, format_choice,choice_popup,choice_cycle,virtual_dma16_choice
     item 12,41,3,0, 6,12,NONE,11, format_choice,choice_popup,choice_cycle,wss_port_choice
     item 12,49,3,0, 7,12,10,NONE, format_choice,choice_popup,choice_cycle,wss_irq_choice
-    item 20,5,8,0, 10,NONE,NONE,13, format_label,hotkeys_screen,0,hotkeys_label
-    item 20,17,8,0, 10,NONE,12,14, format_label,mixer_screen,0,mixer_label
-    item 20,29,8,0, 10,NONE,13,15, format_label,detect_action,0,detect_label
-    item 20,41,8,0, 10,NONE,14,16, format_label,test_action,0,test_label
-    item 20,53,8,0, 10,NONE,15,17, format_label,save_action,0,save_label
-    item 20,65,8,0, 10,NONE,16,NONE, format_label,cancel_action,0,cancel_label
+    item 20,5,9,0, 10,NONE,NONE,13, format_button,hotkeys_screen,0,hotkeys_label
+    item 20,18,7,0, 10,NONE,12,14, format_button,mixer_screen,0,mixer_label
+    item 20,31,8,0, 10,NONE,13,15, format_button,detect_action,0,detect_label
+    item 20,43,6,0, 10,NONE,14,16, format_button,test_action,0,test_label
+    item 20,55,6,0, 10,NONE,15,17, format_button,save_action,0,save_label
+    item 20,65,8,0, 10,NONE,16,NONE, format_button,cancel_action,0,cancel_label
 main_notes dw 0,0,0,0,0
     dw virtual_note,virtual_note,virtual_note,virtual_note,virtual_note,wss_note,wss_note
     dw 0,0,0,0,0,0
@@ -619,7 +626,7 @@ table_header db 'Card'
     db 'Port    IRQ   DMA Low  DMA High',0
 physical_label db 'Physical',0
 virtual_label db 'Virtual',0
-info_labels db 'Output',10,'Games',0
+output_label db 'Output',0
 sb16_name db 'Sound Blaster 16',0
 pro_name db 'Sound Blaster Pro',0
 wss_name db 'Windows Sound System',0
@@ -627,7 +634,8 @@ sb_name db 'Sound Blaster 1.5/2.0',0
 output_16 db '44.1 kHz, 16-bit stereo.',0
 output_pro db '8-bit stereo. Nominal rate: 22.05 kHz.',0
 output_sb db '22.22 kHz, 8-bit mono.',0
-games_text db 'Set your games to the virtual cards.',0
+applications_text db 'Set your applications to use the ',0
+virtual_cards_text db 'VIRTUAL CARDS',0
 hotkeys_label db 'Hotkeys',0
 mixer_label db 'Mixer',0
 detect_label db 'Detect',0

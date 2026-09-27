@@ -29,6 +29,7 @@ dpmi_raw_exit:
     int 0f0h
     ud2
 dpmi_raw:
+    DPMI_DEBUG_STOP
     pushad
     push ds
     push es
@@ -99,6 +100,7 @@ dpmi_raw_pm:
     mov ss, ax
     mov ebp, edi
     mov esp, [ebp+mon_tss+4]
+    call dpmi_debug_host_save
     mov eax, [ebp+dpmi_raw_switch]
     mov [ebp+mon_switch+16], eax
     lea edx, [ebp+mon_resume]

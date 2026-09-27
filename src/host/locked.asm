@@ -212,6 +212,7 @@ dpmi_locked_return:
     ud2
 
 dpmi_locked_done:
+    DPMI_DEBUG_STOP
     pushad
     push ds
     push es

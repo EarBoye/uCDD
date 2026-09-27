@@ -600,19 +600,35 @@ dpmi_step_check:
     jnz .done
     cmp byte [ebp+dpmi_step_address_size], 4
     jne .done
-    mov edx, dr7
+    mov edx, [ebp+dpmi_debug_regs+28]
     test dl, 0ffh
     jnz .done
+    cmp al, 40h
+    jb .simple_other
+    cmp al, 4fh
+    jbe .simple_count_register
+.simple_other:
+    cmp al, 3dh
+    je .simple_compare_accumulator
+    cmp al, 81h
+    je .simple_compare_immediate
+    cmp al, 83h
+    je .simple_compare_immediate
+    cmp al, 0ffh
+    je .simple_count_operand
+    cmp al, 0ebh
+    je .simple_jump
     cmp al, 0e4h
     je .simple_io
     cmp al, 0f7h
     je .simple_negate
     cmp al, 0e4h
     ja .simple_io
-    cmp al, 74h
-    je .simple_branch
-    cmp al, 75h
-    je .simple_branch
+    cmp al, 70h
+    jb .simple_nonbranch
+    cmp al, 7fh
+    jbe .simple_branch
+.simple_nonbranch:
     cmp al, 23h
     je .simple_memory
     cmp al, 3bh
@@ -811,10 +827,144 @@ dpmi_step_check:
 .simple_flags:
     pushfd
     pop edx
-    and edx, 8d5h
-    and dword [ebx+56], ~8d5h
+    mov ecx, 8d5h
+.simple_flag_mask:
+    and edx, ecx
+    not ecx
+    and [ebx+56], ecx
     or [ebx+56], edx
     jmp .simple_advance
+.simple_count_register:
+    mov edx, eax
+    and eax, 7
+    cmp eax, 4
+    je .done
+    movzx esi, byte [ebp+dpmi_full_registers+eax]
+    add esi, ebx
+    jmp .simple_count
+.simple_count_operand:
+    call .fetch
+    jc .done
+    mov edx, eax
+    and edx, 38h
+    cmp edx, 8
+    ja .done
+    push edx
+    mov edx, 1
+    call .simple_operand
+    pop edx
+    jc .done
+.simple_count:
+    test dl, 8
+    jnz .simple_decrement
+    cmp ecx, 2
+    jne .simple_increment_dword
+    inc word [esi]
+    jmp .simple_count_flags
+.simple_increment_dword:
+    inc dword [esi]
+    jmp .simple_count_flags
+.simple_decrement:
+    cmp ecx, 2
+    jne .simple_decrement_dword
+    dec word [esi]
+    jmp .simple_count_flags
+.simple_decrement_dword:
+    dec dword [esi]
+.simple_count_flags:
+    pushfd
+    pop edx
+    mov ecx, 8d4h
+    jmp .simple_flag_mask
+.simple_compare_accumulator:
+    call .read_code
+    jc .done
+    add edi, ecx
+    lea esi, [ebx+36]
+    call dpmi_step_accumulator_loop
+    jnc .done
+    jmp .simple_compare_flags
+.simple_compare_immediate:
+    push eax
+    call .fetch
+    jc .simple_compare_bad
+    and al, 38h
+    cmp al, 38h
+    jne .simple_compare_bad
+    xor edx, edx
+    call .simple_operand
+    jc .simple_compare_bad
+    pop eax
+    cmp al, 83h
+    je .simple_compare_byte
+    call .read_code
+    jc .done
+    add edi, ecx
+    jmp .simple_compare_value
+.simple_compare_byte:
+    call .fetch
+    jc .done
+    inc edi
+    movsx eax, al
+.simple_compare_value:
+    call dpmi_step_count_loop
+    jnc .done
+.simple_compare_flags:
+    cmp ecx, 2
+    jne .simple_compare_immediate_dword
+    cmp [esi], ax
+    jmp .simple_flags
+.simple_compare_immediate_dword:
+    cmp [esi], eax
+    jmp .simple_flags
+.simple_compare_bad:
+    pop eax
+    jmp .done
+; EDX is zero for a read, one for a write. Return the operand in ESI.
+.simple_operand:
+    push edx
+    call .fetch
+    jc .simple_operand_bad
+    cmp al, 0c0h
+    jb .simple_operand_memory
+    and eax, 7
+    cmp eax, 4
+    je .simple_operand_bad
+    movzx esi, byte [ebp+dpmi_full_registers+eax]
+    add esi, ebx
+    inc edi
+    pop edx
+    clc
+    ret
+.simple_operand_memory:
+    call .effective_address
+    jc .simple_operand_bad
+    push edi
+    mov edi, [esp+4]
+    test edi, edi
+    jnz .simple_operand_write
+    call dpmi_read_buffer
+    jmp .simple_operand_checked
+.simple_operand_write:
+    call dpmi_buffer
+.simple_operand_checked:
+    pop edi
+    pop edx
+    mov esi, eax
+    ret
+.simple_operand_bad:
+    pop edx
+    stc
+    ret
+.simple_jump:
+    cmp edi, 1
+    jne .done
+    call .fetch
+    jc .done
+    inc edi
+    movsx eax, al
+    add edi, eax
+    jmp .simple_branch_target
 .simple_branch:
     cmp edi, 1
     jne .done
@@ -823,20 +973,36 @@ dpmi_step_check:
     jc .done
     inc edi
     movsx eax, al
-    test dword [ebx+56], 40h
-    setz dl
+    mov edx, [ebx+56]
+    mov ecx, esi
+    and ecx, 0eh
+    cmp ecx, 0ch
+    jae .simple_branch_signed
+    shr ecx, 1
+    test edx, [ebp+.simple_condition_masks+ecx*4]
+    setnz dl
+    jmp .simple_branch_decide
+.simple_branch_signed:
+    mov ecx, edx
+    shr ecx, 4
+    xor ecx, edx
+    and ecx, 80h
+    and edx, 40h
+    test esi, 2
+    jnz .simple_branch_signed_zero
+    xor edx, edx
+.simple_branch_signed_zero:
+    or edx, ecx
+    setnz dl
+.simple_branch_decide:
     and esi, 1
-    cmp esi, 0
-    je .simple_branch_zero
-    test dl, dl
+    xor edx, esi
+    test dl, 1
     jz .simple_advance
     add edi, eax
     jmp .simple_branch_target
-.simple_branch_zero:
-    test dl, dl
-    jnz .simple_advance
-    add edi, eax
-    jmp .simple_branch_target
+.simple_condition_masks:
+    dd 800h,1,40h,41h,80h,4
 .simple_branch_target:
     mov edx, [ebx+48]
     add edx, edi
@@ -905,6 +1071,8 @@ dpmi_step_check:
     popad
     ret
 .repeat:
+    test byte [ebp+dpmi_debug_regs+28], 0ffh
+    jnz .done
     cmp dword [esp+12], 0
     jne .done
     sub esp, 48
@@ -1107,6 +1275,301 @@ dpmi_step_check:
     add [ebx+60], ecx
 .adjust_done:
     popad
+    ret
+
+; INC EAX, CMP AX/EAX, immediate, and a backward JL/JB/JNE. Limit to 64 trips.
+dpmi_step_accumulator_loop:
+    pushad
+    sub esp, 8
+    mov [esp+4], edi
+    mov ax, [ebx+52]
+    mov edx, [ebx+48]
+    test edx, edx
+    jz .bad
+    dec edx
+    mov ecx, 8
+    mov edi, 2
+    call dpmi_code_buffer
+    jc .bad
+    mov esi, eax
+    and eax, 4095
+    cmp eax, 4096-8
+    ja .bad
+    cmp byte [esi], 40h
+    jne .bad
+    mov edi, [esp+4]
+    cmp dword [esp+8+24], 2
+    jne .dword_code
+    cmp edi, 4
+    jne .bad
+    cmp word [esi+1], 3d66h
+    jne .bad
+    jmp .branch
+.dword_code:
+    cmp edi, 5
+    jne .bad
+    cmp byte [esi+1], 3dh
+    jne .bad
+.branch:
+    movzx eax, byte [esi+edi+1]
+    cmp al, 72h
+    je .condition
+    cmp al, 7ch
+    je .condition
+    cmp al, 75h
+    jne .bad
+.condition:
+    mov [esp], eax
+    movsx eax, byte [esi+edi+2]
+    lea eax, [eax+edi+3]
+    test eax, eax
+    jnz .bad
+    mov esi, [esp+8+4]
+    mov edi, [esp+8+28]
+    mov ecx, 64
+.loop:
+    cmp dword [esp+8+24], 2
+    jne .dword
+    cmp [esi], di
+    jmp .flags
+.dword:
+    cmp [esi], edi
+.flags:
+    pushfd
+    pop edx
+    cmp byte [esp], 72h
+    je .below
+    cmp byte [esp], 75h
+    je .unequal
+    mov eax, edx
+    shr eax, 4
+    xor eax, edx
+    test al, 80h
+    jnz .body
+    jmp .exit
+.below:
+    test dl, 1
+    jnz .body
+    jmp .exit
+.unequal:
+    test dl, 40h
+    jnz .exit
+.body:
+    bt edx, 0
+    inc dword [esi]
+    pushfd
+    pop edx
+    dec ecx
+    jnz .loop
+    jmp .complete
+.exit:
+    mov eax, [esp+4]
+    add eax, 2
+    add [ebx+48], eax
+.complete:
+    and edx, 8d5h
+    and dword [ebx+56], ~8d5h
+    or [ebx+56], edx
+    add esp, 8
+    popad
+    clc
+    ret
+.bad:
+    add esp, 8
+    popad
+    stc
+    ret
+
+; ESI=operand, EAX=immediate, ECX=width, EDI=compare length. CF on fallback.
+; Run at most 64 stack-counter iterations after validating code and memory.
+dpmi_step_count_loop:
+    pushad
+    sub esp, 24
+    mov [esp+16], edi
+    mov dword [esp+12], 0
+    mov ax, [ebx+52]
+    mov edx, [ebx+48]
+    mov ecx, 64
+    mov edi, 2
+    call dpmi_code_buffer
+    jc .bad
+    mov esi, eax
+    and eax, 4095
+    cmp eax, 4096-64
+    ja .bad
+    mov [esp], esi
+    xor edi, edi
+    cmp byte [esi], 66h
+    jne .prefix
+    inc edi
+.prefix:
+    mov al, [esi+edi]
+    cmp al, 81h
+    je .operand
+    cmp al, 83h
+    jne .bad
+.operand:
+    cmp byte [esi+edi+1], 7dh
+    jne .bad
+    movsx edx, byte [esi+edi+2]
+    mov [esp+20], dl
+    add edx, [ebx+16]
+    mov ax, [ebx+64]
+    mov ecx, 4
+    mov edi, 1
+    call dpmi_buffer
+    jc .bad
+    cmp eax, [esp+24+4]
+    jne .bad
+    mov [esp+4], eax
+    mov edx, eax
+    and edx, 4095
+    cmp edx, 4096-4
+    ja .bad
+    ; A writable alias of the code must use the ordinary decoder.
+    shr eax, 12
+    mov eax, [0ffc00000h+eax*4]
+    mov edx, esi
+    shr edx, 12
+    xor eax, [0ffc00000h+edx*4]
+    and eax, 0fffff000h
+    jnz .separate
+    mov eax, [esp+4]
+    and eax, 4095
+    mov edx, esi
+    and edx, 4095
+    sub eax, edx
+    cmp eax, 64
+    jb .bad
+    cmp eax, -3
+    jae .bad
+.separate:
+    mov edi, [esp+16]
+    movzx eax, byte [esi+edi]
+    cmp al, 72h
+    je .condition
+    cmp al, 7ch
+    je .condition
+    cmp al, 75h
+    jne .bad
+.condition:
+    mov [esp+8], eax
+    movsx eax, byte [esi+edi+1]
+    lea edi, [edi+eax+2]
+    call .jumps
+    jc .bad
+    cmp byte [esi+edi], 8bh
+    jne .increment
+    movzx eax, byte [esi+edi+1]
+    mov edx, eax
+    and dl, 0c7h
+    cmp dl, 45h
+    jne .bad
+    mov dl, [esi+edi+2]
+    cmp dl, [esp+20]
+    jne .bad
+    shr eax, 3
+    and eax, 7
+    cmp eax, 4
+    je .bad
+    cmp eax, 5
+    je .bad
+    movzx eax, byte [ebp+dpmi_full_registers+eax]
+    add eax, ebx
+    mov [esp+12], eax
+    add edi, 3
+    cmp edi, 61
+    ja .bad
+.increment:
+    cmp word [esi+edi], 45ffh
+    jne .bad
+    mov al, [esi+edi+2]
+    cmp al, [esp+20]
+    jne .bad
+    add edi, 3
+    call .jumps
+    jc .bad
+    test edi, edi
+    jnz .bad
+    mov esi, [esp+4]
+    mov edi, [esp+24+28]
+    mov ecx, 64
+.loop:
+    cmp dword [esp+24+24], 2
+    jne .dword
+    cmp [esi], di
+    jmp .flags
+.dword:
+    cmp [esi], edi
+.flags:
+    pushfd
+    pop edx
+    cmp byte [esp+8], 72h
+    je .below
+    cmp byte [esp+8], 75h
+    je .unequal
+    mov eax, edx
+    shr eax, 4
+    xor eax, edx
+    test al, 80h
+    jnz .body
+    jmp .exit
+.below:
+    test dl, 1
+    jnz .body
+    jmp .exit
+.unequal:
+    test dl, 40h
+    jnz .exit
+.body:
+    mov eax, [esp+12]
+    test eax, eax
+    jz .count
+    push edx
+    mov edx, [esi]
+    mov [eax], edx
+    pop edx
+.count:
+    bt edx, 0
+    inc dword [esi]
+    pushfd
+    pop edx
+    dec ecx
+    jnz .loop
+    jmp .complete
+.exit:
+    mov eax, [esp+16]
+    add eax, 2
+    add [ebx+48], eax
+.complete:
+    and edx, 8d5h
+    and dword [ebx+56], ~8d5h
+    or [ebx+56], edx
+    add esp, 24
+    popad
+    clc
+    ret
+.bad:
+    add esp, 24
+    popad
+    stc
+    ret
+.jumps:
+    mov ecx, 3
+.jump:
+    cmp edi, 61
+    ja .jump_bad
+    cmp byte [esi+edi], 0ebh
+    jne .jump_done
+    movsx eax, byte [esi+edi+1]
+    lea edi, [edi+eax+2]
+    dec ecx
+    jnz .jump
+.jump_bad:
+    stc
+    ret
+.jump_done:
+    clc
     ret
 
 ; AX=code selector. Return ECX=4 or 2 for the code size, or CF. The

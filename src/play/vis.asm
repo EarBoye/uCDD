@@ -756,6 +756,62 @@ draw_warp:
     mov cx, BOTTOM_STARS
     jmp draw_stars
 
+; Combine moving waves. The audio level sets their color range.
+draw_plasma:
+    push es
+    mov es, [work_seg]
+    call effect_level
+    shr ax, 4
+    add ax, 4
+    mov bp, ax
+    xor si, si
+    mov di, W_FIRE
+.column:
+    imul ax, si, 7
+    imul dx, [frame], 3
+    add ax, dx
+    call sine
+    imul bp
+    shrd ax, dx, 15
+    mov bx, ax
+    imul ax, si, 3
+    mov dx, [frame]
+    shl dx, 1
+    sub ax, dx
+    call sine
+    sar ax, 13
+    add ax, bx
+    stosb
+    inc si
+    cmp si, SCROLL_W
+    jb .column
+    xor bx, bx
+.row:
+    imul ax, bx, 23
+    mov dx, [frame]
+    shl dx, 1
+    sub ax, dx
+    call sine
+    imul bp
+    shrd ax, dx, 15
+    mov dl, al
+    mov si, W_FIRE
+    mov cx, SCROLL_W
+.pixel:
+    mov al, [es:si]
+    add al, dl
+    and al, 15
+    add al, C_RAINBOW
+    stosb
+    inc si
+    loop .pixel
+    inc bx
+    cmp bx, SCROLL_H
+    jb .row
+    pop es
+    mov si, W_FIRE+SCROLL_W
+    jmp draw_buffer
+
 ; Bubbles rise from each analyzer band. A louder band makes more bubbles,
 ; and they are larger and redder.
 draw_bubbles:

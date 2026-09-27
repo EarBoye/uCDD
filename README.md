@@ -18,7 +18,25 @@
 
 Copy `UCDD.EXE` and `UCDDSET.EXE` into one directory and run `UCDDSET`.
 
-![UCDDSET](docs/ucddset.png)
+<table>
+  <tr>
+    <td align="center" width="33%">
+      <strong>Card settings</strong><br>
+      <a href="docs/ucddset.png"><img src="docs/ucddset.png" alt="UCDDSET physical and virtual sound card settings" width="100%"></a><br>
+      <sub>Set the physical and virtual cards.</sub>
+    </td>
+    <td align="center" width="33%">
+      <strong>Hotkeys</strong><br>
+      <a href="docs/ucddset-hotkeys.png"><img src="docs/ucddset-hotkeys.png" alt="UCDDSET hotkey assignments and modifier keys" width="100%"></a><br>
+      <sub>Choose resident hotkeys.</sub>
+    </td>
+    <td align="center" width="33%">
+      <strong>Mixer</strong><br>
+      <a href="docs/ucddset-mixer.png"><img src="docs/ucddset-mixer.png" alt="UCDDSET CD audio, game audio, and master volume controls" width="100%"></a><br>
+      <sub>Set audio levels and volume steps.</sub>
+    </td>
+  </tr>
+</table>
 
 - **Physical** is the card in the machine. μCDD plays the mix on it. For a Plug and Play WSS codec, enter the WSS base address, four ports below the codec index port.
 - **Virtual** is what games see: a Sound Blaster (SB16, SB Pro, or SB 1.5/2.0, which report DSP 4.05, 3.02, or 2.01) and a WSS codec. The WSS codec uses the DMA Low channel of the virtual Sound Blaster, and a game can move its IRQ through the WSS board register. Where possible, match the virtual model to the physical card. For example, a virtual SB Pro on an SB Pro-compatible card keeps the game sound in 8-bit stereo and avoids a 16-bit conversion.
@@ -126,26 +144,34 @@ Use DOS 8.3 names on a local hard disk. Image files must be smaller than 2 GiB. 
 | Format | Notes |
 | --- | --- |
 | `.ISO` | 2048-byte data sectors |
-| `.CUE` / `.BIN` | One BINARY file, sequential tracks, INDEX 01 on each track. INDEX 00 and PREGAP are accepted. The data track can be MODE1/2352 or MODE2/2352 with Form 1 sectors |
+| `.CUE` / `.BIN` | One BINARY file, sequential tracks, INDEX 01 on each track. INDEX 00 and PREGAP are accepted. The data track can be MODE1/2048, MODE1/2352, or MODE2/2352 with Form 1 sectors |
 | `.BIN` alone | MODE1/2352 data, no audio track table. Use a CUE sheet for CD-Audio |
 | `.MDM` | Disc list, as above |
 
 PREGAP adds silence without reading sectors from the BIN file. Put PREGAP before the track's INDEX entries. Track positions include these gaps.
 
-Other MODE2 sector formats, compressed audio, FLAGS, and multi-file CUE sheets are not supported.
+`FLAGS PRE` applies CD de-emphasis during playback. `DCP`, `4CH`, and `SCMS` are also accepted. `4CH` audio is treated as stereo; copy-control flags do not restrict playback.
+
+Other MODE2 sector formats, compressed audio, and multi-file CUE sheets are not supported.
 
 ### CD player
 
-`UCDDPLAY` plays the CD-Audio of a μCDD drive in VGA mode. It needs the audio driver.
+`UCDDPLAY` plays CD-Audio from μCDD images and physical CD drives in VGA mode. It needs the μCDD audio driver.
 
 ![UCDDPLAY](docs/ucddplay.png)
 
-- **OPEN** shows the images on the local hard disks. Select a CUE sheet, an ISO or BIN image, or an MDM file to mount it. **EJECT** unmounts the image.
+- **OPEN** shows CD drives and the images on local hard disks. Select a CD drive to use its disc, or select a CUE sheet, an ISO or BIN image, or an MDM file to mount it. If a physical drive is selected, images mount on the first μCDD drive. **EJECT** unmounts an image or opens the physical drive tray.
 - **SHUF** plays the tracks in a random order. **REPEAT** repeats one track or all tracks.
 - The equalizer has a preamp, 10 bands from 31 Hz to 16 kHz, and presets. It changes only the CD-Audio, and only while `UCDDPLAY` runs. If the CPU is too slow for it, it stays off.
 - Push F1 to see all keys. With a mouse driver, the mouse also works.
 
-`UCDDPLAY D:` selects the μCDD drive D:. When you exit `UCDDPLAY`, the CD-Audio stops.
+`UCDDPLAY D:` selects CD drive D:. Push D to select the next CD drive. When you exit `UCDDPLAY`, the CD-Audio stops.
+
+For a physical disc, load its DOS CD-ROM driver and assign it a drive letter with SHSUCDX. The drive and its driver must support digital audio extraction. UDVD2, OAKCDROM.SYS, and VIDE-CDD.SYS were checked with SHSUCDX in 86Box. In UCDDSET, set the **virtual** Sound Blaster model to SB16. This does not require a physical SB16 card. Keep the BLASTER value set by `UCDD -install`.
+
+Physical-disc audio passes through the equalizer and the μCDD audio output. It does not use the drive's internal audio cable. The player also applies de-emphasis to tracks marked with pre-emphasis. Opening the file browser pauses physical-disc playback; push Space to resume after closing it. If a read fails or cannot supply audio in time, playback stops and the player shows an error.
+
+Physical-disc playback uses the wave output level set in UCDDSET. The player's volume control adjusts this level further.
 
 ## GAMES WITH REDBOOK AUDIO THAT WORK
 
@@ -164,32 +190,44 @@ These are games known to work, not a list of every game that may work.
 - Battle Chess Enhanced CD-ROM
 - Battle Race
 - BC Racers
+- Betrayal at Krondor
 - Big Red Racing
 - Blam! Machinehead
 - Blood
 - Bust-A-Move 2 Arcade Edition
 - Carmageddon
 - Chasm: The Rift
+- Corridor 7: Alien Invasion
 - Cyber Police (CYBERPO1.EXE)
 - Cyberball
 - Descent II
 - Descent II: Vertigo Series
+- Destruction Derby
+- Destruction Derby 2
 - Fascination
 - Future Wars
 - Gobliiins
 - Gobliins 2: The Prince Buffoon
 - Goblins Quest 3
+- Little Big Adventure
+- Little Big Adventure 2
 - Loom
 - Lost in Time
 - Pro Pinball: The Web
 - Pro Pinball: Timeshock!
 - Quake
+- Rayman
+- Rayman 60 Levels
+- Rayman By His Fans
+- Rayman Designer
 - Realms of Arkania III: Shadows over Riva
 - Realms of Arkania: Blade of Destiny (German CD edition)
 - Realms of Arkania: Star Trail (German CD edition)
+- Return to Zork
 - Screamer
 - Screamer 2
 - Screamer Rally
+- ShadowCaster
 - The Manhole
 - The Secret of Monkey Island
 - Tomb Raider
@@ -197,6 +235,10 @@ These are games known to work, not a list of every game that may work.
 ## Build
 
 Assembler sources are in `src/`. NASM is required.
+
+## Special thanks
+
+Thanks to davidmorom on VOGONS for testing games and reporting compatibility problems.
 
 ## License
 

@@ -433,6 +433,8 @@ item_draw:
     shr cx, 4
     cmp cx, [form_selected]
     sete [item_focus]
+    cmp word [bx+ITEM_FORMAT], format_button
+    je .button
     cmp word [bx+ITEM_FORMAT], format_fader
     jne .value
     call fader_track
@@ -446,6 +448,24 @@ item_draw:
     mov bl, A_SELECT
 .line:
     call item_line
+    popa
+    ret
+.button:
+    mov bl, A_BOX
+    mov di, box_single
+    cmp byte [item_focus], 0
+    je .button_draw
+    mov bl, A_TITLE
+    mov di, box_double
+.button_draw:
+    push dx
+    call item_line
+    pop dx
+    dec dh
+    mov ah, 3
+    mov al, [item_width]
+    add al, 2
+    call draw_box
     popa
     ret
 
@@ -542,6 +562,9 @@ fader_track:
     ret
 
 ; Format routines. BX item, DI output.
+format_button:
+    jmp format_label
+
 format_label:
     mov si, [bx+ITEM_DATA]
     jmp copy_text
@@ -872,5 +895,6 @@ popup_width db 0
 field_text times 96 db 0
 hex_digits db '0123456789ABCDEF'
 box_single db 0dah,0c4h,0bfh,0b3h,0c0h,0d9h
+box_double db 0c9h,0cdh,0bbh,0bah,0c8h,0bch
 star_text db '*',0
 empty_text db 0

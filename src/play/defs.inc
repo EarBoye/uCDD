@@ -16,9 +16,10 @@
 %define ENTRY_NAME 1
 %define ENTRY_MB 14
 %define ENTRY_SIZE 16
-%define ENTRY_UP 0
-%define ENTRY_DIR 1
-%define ENTRY_FILE 2
+%define ENTRY_CD 0
+%define ENTRY_UP 1
+%define ENTRY_DIR 2
+%define ENTRY_FILE 3
 %define ENTRY_MAX 400
 %define LIST_ROWS 8
 %define REQ_X0 40
@@ -74,7 +75,7 @@
 %define SCROLL_W (SCROLL_X1-SCROLL_X0+1)
 %define SCROLL_H (SCROLL_Y1-SCROLL_Y0+1)
 %define FIRE_ROWS (SCROLL_H+3)
-%define VIS_COUNT 5
+%define VIS_COUNT 6
 %define VIS_RANDOM VIS_COUNT
 %define VIS_FRAMES 1050
 %define LABEL_TICKS 55

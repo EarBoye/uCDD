@@ -214,7 +214,9 @@ resident_wss_event dd 0
 resident_traps dd 0
 resident_game_vector dd 0
 resident_ports:
+%define PORT_MIXER_LABEL resident_mixer_ports
 %include "audio/ports.inc"
+%undef PORT_MIXER_LABEL
     dw 0a0h,0a1h,03dah,40h,43h
 resident_port_count equ ($-resident_ports)/2
 
@@ -911,12 +913,23 @@ resident_io:
     ret
 .regular:
     cmp cl, 1
+    je .callback
+    cmp cl, 2
     jne .bad
+    test ch, ch
+    jz .bad
+    cmp dx, [ebp+resident_mixer_ports]
+    jne .bad
+.callback:
     lea edi, [ebp+mon_rm_regs]
     mov [edi+28], eax
     mov [edi+20], edx
+    movzx eax, cl
+    dec eax
+    shl eax, 3
     movzx ecx, ch
     shl ecx, 2
+    or ecx, eax
     mov [edi+24], ecx
     mov dword [edi+46], 0
     mov word [edi+32], 2

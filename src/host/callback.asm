@@ -133,6 +133,7 @@ dpmi_callback_pm:
     mov ss, ax
     mov ebp, edi
     lea esp, [ebp+dpmi_callback_kernel_top]
+    call dpmi_debug_host_save
     mov eax, [ebp+mon_tss+4]
     mov [ebp+dpmi_callback_context+102], eax
     mov eax, [ebp+mon_rm_stack]
@@ -232,6 +233,7 @@ dpmi_callback_return:
     int 0f1h
     ud2
 dpmi_callback_done:
+    DPMI_DEBUG_STOP
     push eax
     push ebp
     call .check_base

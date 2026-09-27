@@ -58,7 +58,10 @@ audio_linked db 0
 
 audio_bind:
     cmp word [si+STRIDE], 2352
-    jne .done
+    je .bind
+    cmp word [si+TRACK_COUNT], 1
+    jbe .done
+.bind:
     pushad
     push es
     mov ax, [si+HANDLE]

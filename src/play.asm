@@ -63,9 +63,10 @@ start:
     mov gs, ax
     call find_units
     jc no_drives
-    xor al, al
+    mov al, [default_unit]
     cmp byte [wanted_drive], 0ffh
     je .unit
+    xor al, al
 .find:
     movzx bx, al
     mov dl, [unit_letters+bx]
@@ -101,7 +102,7 @@ start:
     call eq_calibrate
     mov dx, audio_report
     mov ax, 6
-    call call_control
+    call audio_control
     mov si, message_no_audio
     test ax, ax
     jnz .report
@@ -179,6 +180,7 @@ exit:
 emergency_exit:
     push cs
     pop ds
+    call physical_stop
     call hook_remove
     mov ax, 3
     int 10h
@@ -260,6 +262,7 @@ error_exit:
 
 %include "play/gfx.asm"
 %include "play/drive.asm"
+%include "play/physical.asm"
 %include "play/mount.asm"
 %include "play/browser.asm"
 %include "play/eq.asm"
@@ -308,6 +311,10 @@ unit db 0
 drive_letter db 0
 subunit db 0
 control_entry dd 0
+audio_control_entry dd 0
+audio_subunit db 0
+default_unit db 0
+physical_source db 0
 unit_letters times 26 db 0
 unit_subunits times 26 db 0
 unit_controls times 26 dd 0
@@ -330,6 +337,7 @@ order_count db 0
 order_index db 0
 order times MAX_TRACKS+1 db 0
 track_data times MAX_TRACKS+2 db 0
+track_pre times MAX_TRACKS+2 db 0
     align 4, db 0
 track_start times MAX_TRACKS+2 dd 0
 track_index0 times MAX_TRACKS+2 dd 0

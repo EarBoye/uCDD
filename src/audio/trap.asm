@@ -347,6 +347,8 @@ port_callback:
     jmp .done
 .mixer_data:
     movzx bx, byte [virtual_mixer_index]
+    cmp bl, 0fh
+    je .done
     cmp bl, 80h
     je .done
     cmp bl, 81h
@@ -360,38 +362,58 @@ port_callback:
     mov [sb_filter_bypass], al
     jmp .done
 .mixer_volume:
-    ; The SB16 keeps the voice volume in 32h and 33h. Register 04h shows both.
+    cmp bl, 22h
+    je .master_pair
+    cmp bl, 28h
+    je .cd_pair
     cmp bl, 4
-    jne .voice16
+    jne .volume16
+    mov bx, 32h
+    jmp .volume_pair
+.master_pair:
+    mov bx, 30h
+    jmp .volume_pair
+.cd_pair:
+    mov bx, 36h
+.volume_pair:
     mov ah, al
     and al, 0f0h
     or al, 8
-    mov [virtual_mixer+32h], al
+    mov [virtual_mixer+bx], al
     shl ah, 4
     or ah, 8
-    mov [virtual_mixer+33h], ah
-    jmp .voice_gain
-.voice16:
-    cmp bl, 32h
-    je .voice_view
-    cmp bl, 33h
-    jne .done
-.voice_view:
-    mov al, [virtual_mixer+32h]
+    mov [virtual_mixer+bx+1], ah
+    jmp .volume_update
+.volume16:
+    cmp bl, 30h
+    jb .done
+    cmp bl, 37h
+    ja .done
+    and bl, 0feh
+    cmp bl, 34h
+    je .done
+    mov al, [virtual_mixer+bx]
     and al, 0f0h
-    mov ah, [virtual_mixer+33h]
+    mov ah, [virtual_mixer+bx+1]
     shr ah, 4
     or al, ah
+    cmp bl, 30h
+    jne .cd_view
+    mov [virtual_mixer+22h], al
+    jmp .volume_update
+.cd_view:
+    cmp bl, 36h
+    jne .voice_view
+    mov [virtual_mixer+28h], al
+    jmp .volume_update
+.voice_view:
     mov [virtual_mixer+4], al
+.volume_update:
+%ifdef MOUNTED_AUDIO
+    call cd_gain_update
+%endif
 .voice_gain:
-    movzx ebx, byte [virtual_mixer+32h]
-    shr bl, 5
-    mov eax, [sb_pcm_levels+ebx*4]
-    mov [sb_pcm_gain], eax
-    movzx ebx, byte [virtual_mixer+33h]
-    shr bl, 5
-    mov eax, [sb_pcm_levels+ebx*4]
-    mov [sb_pcm_gain+4], eax
+    call sb_pcm_update
     jmp .done
 .mixer_reset:
     ; Register 00h restores the SB16 defaults.
@@ -407,12 +429,14 @@ port_callback:
     mov [virtual_mixer+4], al
     mov [virtual_mixer+22h], al
     mov [virtual_mixer+26h], al
+    mov [virtual_mixer+28h], al
     mov eax, 0c0c0c0c0h
     mov [virtual_mixer+30h], eax
     mov [virtual_mixer+34h], ax
+    mov [virtual_mixer+36h], ax
     mov dword [virtual_mixer+3ch], 0b151fh
     mov dword [virtual_mixer+44h], 80808080h
-    jmp .voice_gain
+    jmp .volume_update
 .flip_reset:
     mov byte [si+DMA_FLIP], 0
     call dma_shared_write
@@ -1254,6 +1278,10 @@ port_callback:
     jmp .result
 .mixer_read:
     movzx bx, byte [virtual_mixer_index]
+    ; Reserved on the SB16. Writable storage here causes false mixer detection.
+    cmp bx, 0fh
+    mov al, 0ffh
+    je .result
 %ifdef VIRTUAL_IRQ
     cmp bx, 82h
     jne .mixer_value
@@ -1648,13 +1676,17 @@ game_mix_frame dd 0
 virtual_resets dw 0
 virtual_starts dw 0
 virtual_mixer_index db 0
-sb_pcm_levels dd 164,2067,3276,5193,8230,13045,20675,32768
+%include "audio/mixer.asm"
 virtual_mixer:
     times 4 db 0
-    db 0eeh
-    times 32h-5 db 0
-    db 0e8h, 0e8h
-    times 256-34h db 0
+    db 0ffh
+    times 22h-5 db 0
+    db 0ffh
+    times 28h-23h db 0
+    db 0ffh
+    times 30h-29h db 0
+    times 8 db 0f8h
+    times 256-38h db 0
 dma8 db 0,1,0,0
     dw 0,0,0
     dd 0

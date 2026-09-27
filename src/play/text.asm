@@ -3,11 +3,12 @@
 
 ; Texts and tables with initial values.
 
-usage_message db 'Use UCDDPLAY [<drive>] to play CD-Audio from a uCDD drive.',13,10
+usage_message db 'Use UCDDPLAY [<drive>] to play CD-Audio from a CD drive.',13,10
+    db 'For a physical disc, set the virtual card to SB16 in UCDDSET.',13,10
     db 'Push F1 in UCDDPLAY to show the keys.',13,10
     db 'Use UCDDPLAY /? to show this information.',13,10,'$'
-no_drives_message db 'No uCDD drive is available.',13,10,'$'
-drive_error_message db 'The selected drive is not a uCDD drive.',13,10,'$'
+no_drives_message db 'No CD drive is available.',13,10,'$'
+drive_error_message db 'The selected drive is not a CD drive.',13,10,'$'
 vga_message db 'UCDDPLAY needs a VGA display.',13,10,'$'
 memory_message db 'There is not sufficient memory.',13,10,'$'
 
@@ -21,16 +22,22 @@ message_in_use db 'THE DRIVE IS LOCKED OR IN USE.|TRY AGAIN.',0
 message_refresh db 'THE IMAGE CHANGED. THE DRIVE|CACHE UPDATE FAILED.',0
 message_play_error db 'THE DRIVE CANNOT PLAY THIS TRACK.',0
 message_data_track db 'THIS IS A DATA TRACK.',0
-message_no_disc db 'NO DISC. PUSH O TO OPEN AN IMAGE.',0
+message_no_disc db 'NO DISC. PUSH O TO SELECT A DISC.',0
+message_physical_output db 'SET THE UCDD VIRTUAL CARD TO SB16.|CHECK BLASTER AND THE AUDIO SETUP.',0
+message_physical_memory db 'THERE IS NOT SUFFICIENT MEMORY|FOR THE AUDIO BUFFER.',0
+message_physical_read db 'THE DRIVE CANNOT READ CD AUDIO.|CHECK THE DISC AND CD DRIVER.',0
+message_physical_slow db 'THE DRIVE OR CPU IS TOO SLOW.|PLAYBACK HAS STOPPED.',0
+message_physical_stalled db 'THE AUDIO OUTPUT HAS STOPPED.|CHECK BLASTER AND THE AUDIO SETUP.',0
+message_mount_drive db 'INSTALL UCDD TO MOUNT AN IMAGE.',0
+message_eject_error db 'THE DRIVE CANNOT EJECT THE DISC.',0
 message_no_hard_disk db 'NO LOCAL HARD DISK IS AVAILABLE.',0
 message_slow db 'THE CPU IS TOO SLOW FOR|THE EQUALIZER. IT STAYS OFF.',0
-message_no_audio db 'THIS UCDD.EXE HAS NO CD AUDIO.|MOUNT AND EJECT WORK.',0
+message_no_audio db 'INSTALL UCDD WITH AUDIO SUPPORT.|CHECK THE DRIVER INSTALLATION.',0
 message_no_filter db 'THE EQUALIZER AND THE ANALYZER|NEED A NEWER UCDD.EXE.',0
 
-scroll_text db 'uCDD PLAY ... A CD PLAYER FOR uCDD DRIVES ... '
-    db 'PUSH O TO OPEN AN IMAGE ... PUSH SPACE TO PLAY OR PAUSE ... '
+scroll_text db 'uCDD PLAY ... A CD PLAYER FOR IMAGES AND CD DRIVES ... '
+    db 'PUSH O TO SELECT A DISC ... PUSH SPACE TO PLAY OR PAUSE ... '
     db 'PUSH F1 TO SEE ALL THE KEYS ... PUSH ESC TO STOP AND EXIT ... '
-    db 'THE EQUALIZER CHANGES ONLY THE CD AUDIO ... '
 scroll_end:
 scroll_length dw scroll_end-scroll_text
 
@@ -46,12 +53,13 @@ text_all db 'ALL',0
 text_dir db 'DIR',0
 text_up db 'UP',0
 text_user db 'USER',0
-text_mount db 'MOUNT',0
+text_mount db 'OPEN',0
+text_cd db 'CD',0
 text_drive db 'DRIVE',0
 text_cancel db 'CANCEL',0
 text_request_keys db 'ENTER OPEN  BACKSPACE UP  TAB DRIVE  ESC CANCEL',0
 drive_text db '?:',0
-browse_title db 'MOUNT AN IMAGE ON '
+browse_title db 'OPEN A DISC',0
 browse_title_drive db '?:',0
 text_help_title db 'uCDD PLAY KEYS',0
 
@@ -65,9 +73,9 @@ help_lines:
     db 'UP DOWN',0,'INCREASE OR DECREASE THE CD VOLUME',0
     db 'H',0,'SHUFFLE ON OR OFF',0
     db 'R',0,'REPEAT: OFF, ONE TRACK, OR ALL TRACKS',0
-    db 'O',0,'OPEN AN IMAGE',0
-    db 'E',0,'EJECT THE IMAGE',0
-    db 'D',0,'SELECT THE NEXT uCDD DRIVE',0
+    db 'O',0,'OPEN AN IMAGE OR SELECT A CD DRIVE',0
+    db 'E',0,'EJECT THE DISC',0
+    db 'D',0,'SELECT THE NEXT CD DRIVE',0
     db 'TAB',0,'SELECT AN EQUALIZER SLIDER',0
     db '+ -',0,'INCREASE OR DECREASE THE SLIDER',0
     db 'Q',0,'EQUALIZER ON OR OFF',0
@@ -187,13 +195,14 @@ request_buttons:
     dw REQ_X0+174, 60, browser_close, text_cancel
     dw 0
 
-visual_table dw draw_warp, draw_scope, draw_waterfall, draw_fire, draw_bubbles
-visual_names dw name_stars, name_spectra, name_firebars, name_lavaflow, name_bubbles, name_random
-name_stars db 'STARS',0
+visual_table dw draw_warp, draw_scope, draw_waterfall, draw_fire, draw_bubbles, draw_plasma
+visual_names dw name_warp, name_spectra, name_firebars, name_lavaflow, name_bubbles, name_plasma, name_random
+name_warp db 'WARP SPEED',0
 name_spectra db 'SPECTRA',0
 name_firebars db 'FIREBARS',0
 name_lavaflow db 'LAVAFLOW',0
 name_bubbles db 'BUBBLES',0
+name_plasma db 'PLASMA',0
 name_random db 'RANDOM',0
 bayer db 0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5
 bubble_table:

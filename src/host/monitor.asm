@@ -66,6 +66,15 @@
 %endif
 %endmacro
 
+%macro DPMI_DEBUG_STOP 0
+%ifdef HOST_DPMI
+    push eax
+    mov eax, 400h
+    mov dr7, eax
+    pop eax
+%endif
+%endmacro
+
 %ifdef RESIDENT_HOST
 HOST_SCRATCH
 %else
@@ -445,6 +454,7 @@ mon_enter:
     lea esp, [ebp+mon_kernel_stack_top]
     mov word [ebp+mon_status], 0
 %ifdef HOST_DPMI
+    call dpmi_debug_host_save
     cmp byte [ebp+dpmi_active], 0
     jne dpmi_client_init
 %endif
@@ -541,9 +551,11 @@ mon_spurious_slave:
     out 20h, al
     pop eax
 mon_spurious_master:
+    DPMI_DEBUG_STOP
     MON_IRETD
 
 mon_irq:
+    DPMI_DEBUG_STOP
     pushad
     push ds
     push es
@@ -680,6 +692,7 @@ mon_irq:
     MON_IRETD
 
 mon_dpmi:
+    DPMI_DEBUG_STOP
     pushad
     push ds
     push es
@@ -882,6 +895,9 @@ mon_resume:
     mov ebp, edi
     mov esp, [ebp+mon_resume_sp]
 %ifdef HOST_DPMI
+    call dpmi_debug_host_save
+%endif
+%ifdef HOST_DPMI
     lea esi, [esp+66]
 %else
     lea esi, [esp+60]
@@ -938,6 +954,7 @@ mon_resume:
     ret
 
 mon_exception:
+    DPMI_DEBUG_STOP
     pushad
     push ds
     push es
@@ -969,6 +986,13 @@ mon_exception:
 .software:
     jmp dpmi_software_interrupt
 .cpu_exception:
+    cmp dword [esp+40], 1
+    jne .debug_ready
+    test byte [esp+52], 3
+    jz .debug_ready
+    call dpmi_debug_breakpoint
+    jc .fault
+.debug_ready:
     cmp byte [ebp+dpmi_sti_shadow], 0
     je .shadow_arrival
     cmp dword [esp+40], 1
@@ -1007,6 +1031,8 @@ mon_exception:
     ; VIF stays clear: skip IRQ/refill checks, but retain stack repair.
     cmp word [ebp+dpmi_vif], 0100h
     jne .step_full
+    mov ax, [esp+52]
+    call dpmi_debug_arm
     pop es
     pop ds
     popad
@@ -1089,6 +1115,10 @@ mon_exception:
 %endif
 .opcode_ready:
     inc edi
+%ifdef HOST_DPMI
+    cmp al, 0fh
+    je .debug_instruction
+%endif
     cmp al, 0fah
     je .cli
     cmp al, 0fbh
@@ -1175,6 +1205,24 @@ mon_exception:
     popad
     add esp, 8
     MON_IRETD
+%ifdef HOST_DPMI
+.debug_instruction:
+    call mon_gp_fetch
+    jc .fault
+    cmp al, 20h
+    je .control_read
+    call dpmi_debug_move
+    jc .fault
+    cmp byte [ebp+dpmi_debug_pending], 0
+    je .advance
+    mov dword [esp+40], 1
+    or dword [esp+56], 10000h
+    jmp .fault
+.control_read:
+    call dpmi_cr0_read
+    jc .fault
+    jmp .advance
+%endif
 .cli:
 %ifdef HOST_DPMI
     ; A POPF just before this CLI loaded an injected TF image. Deliver
@@ -1254,6 +1302,24 @@ mon_exception:
     lea esi, [ebp+dpmi_exceptions+eax]
     cmp word [esi+4], 0
     jne dpmi_deliver_exception
+    mov ecx, [esp+40]
+    mov edx, 0bfh
+    bt edx, ecx
+    jnc .unhandled
+    lea esi, [ebp+mon_vectors+eax]
+    cmp word [esi+4], 0
+    je .unhandled
+    mov edi, esp
+    add edi, 44
+    mov ecx, 10
+.debug_frame:
+    mov eax, [edi-8]
+    mov [edi], eax
+    sub edi, 4
+    loop .debug_frame
+    add esp, 8
+    mov ebx, esp
+    jmp dpmi_deliver_interrupt
 .unhandled:
 %endif
     mov eax, cr2
@@ -1285,6 +1351,30 @@ mon_exception:
     jmp mon_leave
 
 %ifdef HOST_DPMI
+; CPU detection can read CR0. Control-register writes remain privileged.
+dpmi_cr0_read:
+    pushad
+    inc edi
+    call mon_gp_fetch
+    jc .bad
+    cmp al, 0c0h
+    jb .bad
+    cmp al, 0c7h
+    ja .bad
+    inc edi
+    and eax, 7
+    movzx esi, byte [ebp+dpmi_full_registers+eax]
+    mov eax, cr0
+    mov [ebx+esi], eax
+    mov [esp], edi
+    popad
+    clc
+    ret
+.bad:
+    popad
+    stc
+    ret
+
 ; EBX=exception frame, EDI=instruction offset. Keep other registers.
 mon_gp_fetch:
     pushad
@@ -1325,6 +1415,9 @@ mon_leave:
     mov fs, ax
     mov gs, ax
     mov ss, ax
+%ifdef HOST_DPMI
+    call dpmi_debug_host_restore
+%endif
     lea esp, [ebp+mon_return]
     cmp byte [ebp+mon_vcpi_flags_slot], 0
     je .return_stack_ready

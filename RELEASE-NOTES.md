@@ -1,3 +1,22 @@
+# Beta 0.9.3a
+
+## Changes in 0.9.3a
+
+- Add physical audio CD playback to UCDDPLAY.EXE through digital audio extraction. Select a compatible CD drive in Open and use the equalizer, track controls, volume, and eject without an internal audio cable.
+- Add a Plasma visualization to UCDDPLAY and rename Stars to Warp Speed.
+- Show bordered buttons in UCDDSET and make the virtual-card setup instruction clearer.
+- Accept PRE, DCP, 4CH, and SCMS flags in CUE sheets. This lets Destruction Derby mount its CUE sheet without removing the flags.
+- Apply CD de-emphasis to audio tracks marked PRE.
+- Reduce loading delays caused by protected-mode timer calibration loops, including those in Rayman By His Fans and Rayman Designer.
+- Support debug-register access and exception reflection in protected-mode games. This fixes the startup failure in Rayman.
+- Support CUE images with a MODE1/2048 data track followed by raw audio tracks. This fixes mounting the CD edition of Betrayal at Krondor.
+- Support protected-mode CPU checks used by Little Big Adventure 2 and word writes to the Sound Blaster mixer used by Little Big Adventure.
+- Allow larger parameter lists for DPMI real-mode calls. This fixes VESA initialization in Little Big Adventure.
+- Fix real-mode interrupt chaining from protected-mode programs. This fixes the startup freeze in Soccer Kid.
+- Correct Sound Blaster mixer detection, volume steps, and CD volume control used by Corridor 7.
+- Add Betrayal at Krondor, Corridor 7: Alien Invasion, Destruction Derby, Destruction Derby 2, Little Big Adventure, Little Big Adventure 2, Rayman, Rayman 60 Levels, Rayman By His Fans, Rayman Designer, Return to Zork, and ShadowCaster to the list of working Redbook-audio games.
+- Add a special thanks section for davidmorom's game testing and compatibility reports.
+
 # Beta 0.9.3
 
 This update adds support for 16-bit DPMI programs, changes how protected-mode games use DPMI and VCPI, and moves all sound card settings into UCDDSET. It adds UCDDPLAY, a CD player for uCDD drives. It also fixes CD-Audio and game sound in many protected-mode games.

@@ -18,9 +18,6 @@ guest_configure:
     cmp di, 100
     je .levels
     mov ebx, 100
-    mov si, sb_pcm_levels
-    mov cx, 8
-    call guest_scale
     mov si, sb_pcm_gain
     mov cx, 2
     call guest_scale

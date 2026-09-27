@@ -53,6 +53,7 @@ prepare_image:
     mov word [cue_next], cue_text
     mov word [cue_count], 0
     mov word [cue_payload], 16
+    mov word [cue_stride], 2352
     mov dword [cue_gaps], 0
     mov byte [cue_file_seen], 0
     mov byte [cue_have_index], 1
@@ -111,6 +112,9 @@ prepare_image:
     mov di, cue_index
     call option_equal
     je .index
+    mov di, cue_flags
+    call option_equal
+    je .flags
     jmp cue_bad
 .file:
     cmp byte [cue_file_seen], 0
@@ -162,6 +166,13 @@ prepare_image:
     mov di, cue_mode1
     call option_equal
     je .data
+    mov di, cue_cooked
+    call option_equal
+    jne .raw_mode2
+    mov word [cue_stride], 2048
+    mov word [cue_payload], 0
+    jmp .data
+.raw_mode2:
     ; XA Form 1 data starts after the 8-byte subheader.
     mov di, cue_mode2
     call option_equal
@@ -177,6 +188,41 @@ prepare_image:
 .mode_done:
     call token
     jnc cue_bad
+    jmp .line
+.flags:
+    cmp word [cue_count], 0
+    je cue_bad
+    cmp byte [cue_have_index], 0
+    jne cue_bad
+    call token
+    jc cue_bad
+.flag:
+    mov di, cue_pre
+    call option_equal
+    mov al, 10h
+    je .audio_flag
+    mov di, cue_4ch
+    call option_equal
+    mov al, 80h
+    je .audio_flag
+    mov di, cue_dcp
+    call option_equal
+    mov al, 20h
+    je .store_flag
+    mov di, cue_scms
+    call option_equal
+    jne cue_bad
+    jmp .next_flag
+.audio_flag:
+    mov di, [cue_current]
+    test byte [di+TRACK_CONTROL], 40h
+    jnz cue_bad
+.store_flag:
+    mov di, [cue_current]
+    or [di+TRACK_CONTROL], al
+.next_flag:
+    call token
+    jnc .flag
     jmp .line
 .pregap:
     cmp word [cue_count], 0
@@ -274,7 +320,8 @@ prepare_image:
     mov [full_path+INFO_COUNT], ax
     mov eax, [mount_tracks+TRACK_START]
     mov [full_path+INFO_ORIGIN], eax
-    mov word [full_path+INFO_STRIDE], 2352
+    mov ax, [cue_stride]
+    mov [full_path+INFO_STRIDE], ax
     mov ax, [cue_payload]
     mov [full_path+INFO_PAYLOAD], ax
     mov si, full_path
@@ -415,8 +462,15 @@ cue_binary db 'BINARY',0
 cue_track db 'TRACK',0
 cue_audio db 'AUDIO',0
 cue_mode1 db 'MODE1/2352',0
+cue_cooked db 'MODE1/2048',0
 cue_mode2 db 'MODE2/2352',0
+cue_stride dw 2352
 cue_payload dw 16
 cue_index db 'INDEX',0
+cue_flags db 'FLAGS',0
+cue_pre db 'PRE',0
+cue_dcp db 'DCP',0
+cue_4ch db '4CH',0
+cue_scms db 'SCMS',0
 cue_resolved times 128 db 0
 cue_text times 16385 db 0

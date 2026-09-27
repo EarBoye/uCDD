@@ -105,6 +105,38 @@ dpmi_pic_reflect:
     popad
     ret
 
+; An IRET call to a real IRQ vector transfers ownership of its EOI.
+dpmi_pic_real_chain:
+    cmp al, 2
+    jne .done
+    pushad
+    mov ecx, [edi+42]
+    xor ebx, ebx
+.irq:
+    bt [ebp+dpmi_pic_service], ebx
+    jnc .next
+    call dpmi_bridge_vector
+    mov al, dl
+    call dpmi_bridge_real_vector
+    cmp [esi], ecx
+    je .chain
+    cmp [ebp+dpmi_bridge_vectors+ebx*4], ecx
+    jne .next
+.chain:
+    btr [ebp+dpmi_pic_service], ebx
+    cmp ebx, 8
+    jb .restored
+    and byte [ebp+dpmi_pic_service], 0fbh
+    jmp .restored
+.next:
+    inc ebx
+    cmp ebx, 16
+    jb .irq
+.restored:
+    popad
+.done:
+    ret
+
 dpmi_pic_audio_allowed:
     push ecx
     mov cl, [ebp+dpmi_guest_irq]

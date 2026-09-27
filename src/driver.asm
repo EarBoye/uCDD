@@ -858,15 +858,33 @@ mount_image:
     cmp word [es:di+INFO_PAYLOAD], 0
     jne .reject
     cmp word [es:di+INFO_COUNT], 1
-    jne .reject
+    jbe .format_ok
+    mov ebx, [es:di+INFO_TRACKS+TRACK_SIZE+TRACK_INDEX0]
+    mov edx, [es:di+INFO_TRACKS+TRACK_CONTROL]
+    shr edx, 8
+    sub ebx, edx
+    jc .reject
+    imul edx, ebx, 2048
+    jo .reject
+    sub eax, edx
+    jc .reject
+    xor edx, edx
+    mov ecx, 2352
+    div ecx
+    test edx, edx
+    jnz .reject
+    add eax, ebx
+    mov ecx, 2048
+    jmp .sector_count
 .format_ok:
-    mov [candidate_stride], cx
-    mov dx, [es:di+INFO_PAYLOAD]
-    mov [candidate_payload], dx
     xor edx, edx
     div ecx
     test edx, edx
     jnz .reject
+.sector_count:
+    mov [candidate_stride], cx
+    mov dx, [es:di+INFO_PAYLOAD]
+    mov [candidate_payload], dx
     mov [candidate_total], eax
     mov [candidate_file_total], eax
     mov [candidate_limit], eax
@@ -883,7 +901,9 @@ mount_image:
     cmp ax, MAX_TRACKS
     ja .reject
     mov [candidate_count], ax
-    cmp byte [es:di+INFO_TRACKS+TRACK_CONTROL], 40h
+    mov al, [es:di+INFO_TRACKS+TRACK_CONTROL]
+    and al, 0dfh
+    cmp al, 40h
     jne .reject
     mov eax, [es:di+INFO_TRACKS+TRACK_START]
     cmp eax, [candidate_origin]
@@ -914,14 +934,23 @@ mount_image:
     mov ebx, eax
     inc ebx
     mov al, [es:di+TRACK_CONTROL]
-    and al, 0bfh
+    test al, 0fh
     jnz .reject
+    test al, 40h
+    jz .control_ok
+    test al, 90h
+    jnz .reject
+.control_ok:
     add di, TRACK_SIZE
     loop .validate_track
     mov eax, [candidate_file_total]
     add eax, edx
     jc .reject
     movzx ebx, word [candidate_stride]
+    cmp word [candidate_count], 1
+    je .disc_bytes
+    mov ebx, 2352
+.disc_bytes:
     imul ebx, eax
     jo .reject
     test ebx, ebx

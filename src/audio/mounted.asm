@@ -179,7 +179,9 @@ cd_open:
     test ax, ax
     jnz .next
     cmp word [cd_info+INFO_STRIDE], 2352
-    jne .next
+    je .found
+    cmp word [cd_info+INFO_COUNT], 1
+    jbe .next
     jmp .found
 .next:
     inc si
@@ -489,6 +491,8 @@ cd_request:
     mov [cd_offset], eax
     mov dword [cd_produced], 0
     mov dword [cd_consumed], 0
+    mov byte [cd_pre], 0
+    mov byte [cd_deemphasis_on], 0
 %ifdef RESIDENT_AUDIO
     mov dword [cd_fraction], 0
     mov dword [cd_step_error], 0
@@ -496,12 +500,18 @@ cd_request:
 %ifndef CD_FAILURE_TEST
     mov byte [cd_error], 0
 %endif
-    movzx eax, word [cd_info+INFO_COUNT]
-    dec eax
-    imul si, ax, TRACK_SIZE
-    mov eax, [cd_info+INFO_TRACKS+si+TRACK_CONTROL]
-    shr eax, 8
-    mov [cd_gap_total], eax
+    mov si, cd_info+INFO_TRACKS
+    mov cx, [cd_info+INFO_COUNT]
+    xor al, al
+.track_flags:
+    mov edx, [si+TRACK_CONTROL]
+    or al, dl
+    add si, TRACK_SIZE
+    loop .track_flags
+    and al, 10h
+    mov [cd_pre_tracks], al
+    shr edx, 8
+    mov [cd_gap_total], edx
     mov byte [cd_seek], 1
     call cd_foreground
     cmp byte [cd_error], 0
@@ -556,6 +566,17 @@ cd_gain_update:
     xor edx, edx
     mov ecx, 100
     div ecx
+%ifdef RESIDENT_AUDIO
+    push eax
+    push bx
+    mov si, bx
+    mov bx, 36h
+    call sb_mixer_gain
+    pop bx
+    pop edx
+    imul eax, edx
+    shr eax, 15
+%endif
 .store:
     mov [cd_gain+ebx*4], eax
     inc bx
@@ -673,8 +694,11 @@ cd_foreground:
     je .pump
     mov byte [cd_seek], 0
     mov bx, [cd_handle]
-    mov dx, [cd_offset]
-    mov cx, [cd_offset+2]
+    mov eax, [cd_offset]
+    call cd_cooked_offset
+    mov dx, ax
+    shr eax, 16
+    mov cx, ax
     mov ax, 4200h
     int 21h
     jc .read_bad
@@ -724,6 +748,8 @@ cd_map_chunk:
 .found:
     mov [cd_span_end], ebx
     mov ebx, [si+TRACK_CONTROL]
+    mov [cd_pre], bl
+    and byte [cd_pre], 10h
     shr ebx, 8
     sub edx, ebx
     neg edx
@@ -737,6 +763,7 @@ cd_map_chunk:
 .file:
     imul ebx, 2352
     sub eax, ebx
+    call cd_cooked_offset
     mov [cd_file_offset], eax
 .limit:
     mov eax, [cd_span_end]
@@ -746,6 +773,23 @@ cd_map_chunk:
     mov ecx, eax
 .done:
     pop bp
+    ret
+
+; The first data track can use 2048-byte sectors before raw audio.
+cd_cooked_offset:
+    cmp word [cd_info+INFO_STRIDE], 2048
+    jne .done
+    push edx
+    push ebx
+    mov edx, [cd_info+INFO_TRACKS+TRACK_SIZE+TRACK_INDEX0]
+    mov ebx, [cd_info+INFO_TRACKS+TRACK_CONTROL]
+    shr ebx, 8
+    sub edx, ebx
+    imul edx, 304
+    sub eax, edx
+    pop ebx
+    pop edx
+.done:
     ret
 
 cd_pump:
@@ -779,7 +823,10 @@ cd_pump:
 .read:
     mov byte [cd_silence], 0
     cmp dword [cd_gap_total], 0
+    jne .map
+    cmp byte [cd_pre_tracks], 0
     je .mapped
+.map:
     call cd_map_chunk
 .mapped:
     mov [cd_read_size], cx
@@ -851,6 +898,7 @@ cd_pump:
     sub cx, ax
     xor ax, ax
     rep stosb
+    call cd_deemphasis
     mov eax, [cd_produced]
     and eax, CD_QUEUE_BYTES-1
     mov [cd_write_offset], eax
@@ -870,6 +918,8 @@ cd_pump:
     mov byte [cd_error], 1
 .done:
     ret
+
+%include "audio/deemphasis.asm"
 
 %ifdef RESIDENT_AUDIO
 %define CD_QUEUE_HELPERS 1
@@ -1211,6 +1261,8 @@ cd_gap_total dd 0
 cd_file_offset dd 0
 cd_span_end dd 0
 cd_silence db 0
+cd_pre_tracks db 0
+cd_pre db 0
 cd_offset dd 0
 cd_length dd 0
 cd_remaining dd 0
