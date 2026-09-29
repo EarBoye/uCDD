@@ -1,3 +1,11 @@
+# Beta 0.9.3b
+
+## Changes in 0.9.3b
+
+- Add a Tunnel visualization to UCDDPLAY. Wireframe rings move toward the edge of the bottom window, with speed set by the audio level.
+- Allow a DPMI program to start another 16-bit or 32-bit DPMI program and resume when it exits. This lets the Batman Forever installer run its video test and lets Battle Arena Toshinden SETUP start SSETUP.
+- Preserve the driver information passed through interrupt E9h by 32-bit programs. This fixes the "DLL load aborted" error when 3dfx games load GLIDE2X.OVL.
+
 # Beta 0.9.3a
 
 ## Changes in 0.9.3a

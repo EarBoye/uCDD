@@ -756,6 +756,134 @@ draw_warp:
     mov cx, BOTTOM_STARS
     jmp draw_stars
 
+; Wireframe rings move from the vanishing point toward the window edge.
+draw_tunnel:
+    call effect_level
+    shr ax, 5
+    add ax, 2
+    add [tunnel_phase], ax
+    mov ax, [frame]
+    call sine
+    sar ax, 10
+    add ax, (SCROLL_X0+SCROLL_X1)/2
+    mov [tunnel_x], ax
+    mov ax, [frame]
+    shr ax, 1
+    call cosine
+    sar ax, 14
+    add ax, (SCROLL_Y0+SCROLL_Y1)/2
+    mov [tunnel_y], ax
+    mov byte [draw_color], C_STARS
+    mov cx, SCROLL_X0
+    mov dx, SCROLL_Y0
+    call tunnel_ray
+    mov dx, SCROLL_Y1
+    call tunnel_ray
+    mov cx, SCROLL_X1
+    call tunnel_ray
+    mov dx, SCROLL_Y0
+    call tunnel_ray
+    xor bp, bp
+.ring:
+    mov ax, [tunnel_phase]
+    shr ax, 4
+    and ax, 31
+    mov dx, bp
+    shl dx, 5
+    add ax, dx
+    mul ax
+    shr ax, 8
+    mov si, ax
+    mov ax, 256
+    sub ax, si
+    mov di, ax
+    mov ax, [tunnel_x]
+    sub ax, (SCROLL_X0+SCROLL_X1)/2
+    imul di
+    sar ax, 8
+    add ax, (SCROLL_X0+SCROLL_X1)/2
+    mov bx, ax
+    imul ax, si, (SCROLL_W-1)/2
+    shr ax, 8
+    mov cx, bx
+    sub bx, ax
+    add cx, ax
+    mov [tunnel_left], bx
+    mov [tunnel_right], cx
+    mov ax, [tunnel_y]
+    sub ax, (SCROLL_Y0+SCROLL_Y1)/2
+    imul di
+    sar ax, 8
+    add ax, (SCROLL_Y0+SCROLL_Y1)/2
+    mov bx, ax
+    imul ax, si, (SCROLL_H-1)/2
+    shr ax, 8
+    test ax, ax
+    jz .next
+    mov dx, bx
+    sub bx, ax
+    add dx, ax
+    mov [tunnel_top], bx
+    mov [tunnel_bottom], dx
+    mov ax, bp
+    add ax, ax
+    add al, C_RAINBOW
+    mov [draw_color], al
+    mov ax, [tunnel_left]
+    call masked_vspan
+    mov bx, [tunnel_top]
+    mov ax, [tunnel_right]
+    call masked_vspan
+    mov ax, [tunnel_left]
+    mov cx, [tunnel_right]
+    sub cx, ax
+    inc cx
+    mov bx, [tunnel_top]
+    call masked_span
+    mov bx, [tunnel_bottom]
+    call masked_span
+.next:
+    inc bp
+    cmp bp, 8
+    jb .ring
+    ret
+
+; CX,DX = a window corner. These rays are always wider than they are tall.
+tunnel_ray:
+    pusha
+    mov ax, [tunnel_x]
+    mov bx, [tunnel_y]
+    mov di, cx
+    sub di, ax
+    mov word [tunnel_step], 1
+    jge .right
+    neg di
+    mov word [tunnel_step], -1
+.right:
+    sub dx, bx
+    mov bp, dx
+    mov dx, 1
+    jge .down
+    neg bp
+    neg dx
+.down:
+    mov si, di
+    shr si, 1
+.pixel:
+    call put_masked
+    cmp ax, cx
+    je .done
+    add ax, [tunnel_step]
+    add si, bp
+    cmp si, di
+    jb .pixel
+    sub si, di
+    add bx, dx
+    jmp .pixel
+.done:
+    popa
+    ret
+
 ; Combine moving waves. The audio level sets their color range.
 draw_plasma:
     push es

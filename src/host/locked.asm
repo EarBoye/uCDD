@@ -4,7 +4,6 @@
 HOST_PROTECTED
 %define DPMI_LOCK_BASE 3e0000h
 %define DPMI_LOCK_LEVELS 4
-%define DPMI_LOCK_PAGES 7
 dpmi_locked_init:
     pushad
     xor ebx, ebx

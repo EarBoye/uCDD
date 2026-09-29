@@ -3,9 +3,6 @@
 
 ; 16-bit clients such as Borland RTM expect the host to translate DOS calls.
 ; Pointer data goes through a real-mode buffer after the bridge stacks.
-%define DPMI_XFER_BYTES 4096
-%define DPMI_XFER_DTA 4096
-%define DPMI_XFER_PARAS (DPMI_XFER_BYTES+128)/16
 
 HOST_PROTECTED
 ; EBX=client frame of an INT 21h call.

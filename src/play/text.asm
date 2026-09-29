@@ -195,14 +195,15 @@ request_buttons:
     dw REQ_X0+174, 60, browser_close, text_cancel
     dw 0
 
-visual_table dw draw_warp, draw_scope, draw_waterfall, draw_fire, draw_bubbles, draw_plasma
-visual_names dw name_warp, name_spectra, name_firebars, name_lavaflow, name_bubbles, name_plasma, name_random
+visual_table dw draw_warp, draw_scope, draw_waterfall, draw_fire, draw_bubbles, draw_plasma, draw_tunnel
+visual_names dw name_warp, name_spectra, name_firebars, name_lavaflow, name_bubbles, name_plasma, name_tunnel, name_random
 name_warp db 'WARP SPEED',0
 name_spectra db 'SPECTRA',0
 name_firebars db 'FIREBARS',0
 name_lavaflow db 'LAVAFLOW',0
 name_bubbles db 'BUBBLES',0
 name_plasma db 'PLASMA',0
+name_tunnel db 'TUNNEL',0
 name_random db 'RANDOM',0
 bayer db 0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5
 bubble_table:

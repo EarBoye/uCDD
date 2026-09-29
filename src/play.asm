@@ -446,6 +446,14 @@ scroll_shadow dw 0
 scope_channel dw 0
 scope_last dw 0
 fire_heat dw 0
+tunnel_phase dw 0
+tunnel_x dw 0
+tunnel_y dw 0
+tunnel_left dw 0
+tunnel_right dw 0
+tunnel_top dw 0
+tunnel_bottom dw 0
+tunnel_step dw 0
 time_minus db 0
 needle_x dw 0
 button_flash times BUTTON_COUNT db 0

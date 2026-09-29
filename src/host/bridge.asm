@@ -31,6 +31,12 @@ dpmi_bridge_real_allocate:
     je .size_ready
     mov bx, 128+DPMI_XFER_PARAS
 .size_ready:
+%ifdef RESIDENT_HOST
+    cmp byte [dpmi_nested_depth], 0
+    je .allocate
+    add bx, 128
+.allocate:
+%endif
     call dpmi_real_allocate
     jc .done
     mov [dpmi_bridge_real_segment], ax
@@ -108,6 +114,9 @@ dpmi_bridge_install:
     mov dword [ebp+dpmi_bridge_context], 0
     mov dword [ebp+dpmi_bridge_depth], 0
     mov word [ebp+dpmi_bridge_mask], 0
+    popad
+dpmi_bridge_install_vectors:
+    pushad
     xor ebx, ebx
 .irq:
     call dpmi_bridge_vector

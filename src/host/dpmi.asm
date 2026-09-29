@@ -107,20 +107,36 @@ dpmi_mux:
 dpmi_entry:
     cmp ax, 1
     ja .bad
+%ifndef RESIDENT_HOST
     cmp byte [cs:dpmi_active], 0
     jne .bad
-    ; AX=0 starts a 16-bit client.
-    mov byte [cs:dpmi_client16], 0
-    test ax, ax
-    jnz .bits_ready
-    mov byte [cs:dpmi_client16], 1
-.bits_ready:
+%endif
     pushf
     pushad
     push ds
     push es
     push fs
     push gs
+%ifdef RESIDENT_HOST
+    cmp byte [cs:dpmi_active], 0
+    je .saved
+    call dpmi_nested_save
+    jnc .saved
+    pop gs
+    pop fs
+    pop es
+    pop ds
+    popad
+    popf
+    jmp .bad
+.saved:
+%endif
+    ; AX=0 starts a 16-bit client.
+    mov byte [cs:dpmi_client16], 0
+    test ax, ax
+    jnz .bits_ready
+    mov byte [cs:dpmi_client16], 1
+.bits_ready:
     mov bp, sp
     push cs
     pop ds
@@ -174,6 +190,14 @@ dpmi_entry:
     cli
 %ifdef RESIDENT_HOST
     mov ax, [host_stack_segment]
+    cmp byte [dpmi_nested_depth], 0
+    je .stack_ready
+    mov ax, [dpmi_bridge_real_segment]
+    add ax, 128
+    cmp byte [dpmi_client16], 0
+    je .stack_ready
+    add ax, DPMI_XFER_PARAS
+.stack_ready:
     mov ss, ax
     mov sp, HOST_STACK_BYTES
 %else
@@ -184,6 +208,16 @@ dpmi_entry:
     sti
     call monitor_run
     mov byte [dpmi_active], 0
+%ifdef RESIDENT_HOST
+    cmp byte [dpmi_nested_depth], 0
+    je .free_stack
+    cli
+    mov dx, cs
+    mov ss, dx
+    mov sp, dpmi_nested_real_top
+    sti
+.free_stack:
+%endif
     call dpmi_bridge_real_free
     test ax, ax
     jz .exit
@@ -193,6 +227,12 @@ dpmi_entry:
     mov ax, [dpmi_environment]
     mov [es:2ch], ax
     mov al, [dpmi_exit_code]
+%ifdef RESIDENT_HOST
+    cmp byte [dpmi_nested_depth], 0
+    je .terminate
+    call dpmi_nested_restore
+.terminate:
+%endif
     mov ah, 4ch
     int 21h
 .bad:
@@ -460,6 +500,7 @@ dpmi_client_init:
     call dpmi_initial_descriptor
 .environment_ready:
     mov dword [ebp+dpmi_dos16_dta], 00800027h
+    mov word [ebp+dpmi_dll_vector+4], 0
     jmp dpmi_enter_client
 
 ; Return AX=the ring-3 stub selector for the client's code size.
@@ -814,10 +855,34 @@ dpmi_dos:
     call dpmi_locked_capture
     call dpmi_sti_arrival
     call dpmi_tf_entry
+    ; Watcom DLL loaders keep the PSP selector and GS in vector E9h for the
+    ; DLL start code. Under a DPMI host, DOS/4GW replaces that vector.
+    cmp byte [ebp+dpmi_client16], 0
+    jne .vector_ready
+    mov ax, [ebx+36]
+    cmp ax, 25e9h
+    je .dll_set
+    cmp ax, 35e9h
+    jne .vector_ready
+    cmp word [ebp+dpmi_dll_vector+4], 0
+    jne .dll_get
+.vector_ready:
     cmp word [ebp+mon_vectors+21h*6+4], 0
     je .host
     lea esi, [ebp+mon_vectors+21h*6]
     jmp dpmi_deliver_interrupt
+.dll_set:
+    mov ax, [ebx+4]
+    mov [ebp+dpmi_dll_vector+4], ax
+    mov eax, [ebx+28]
+    mov [ebp+dpmi_dll_vector], eax
+    jmp mon_dpmi.done
+.dll_get:
+    mov ax, [ebp+dpmi_dll_vector+4]
+    mov [ebx], ax
+    mov eax, [ebp+dpmi_dll_vector]
+    mov [ebx+24], eax
+    jmp mon_dpmi.done
 .host:
     mov byte [ebp+dpmi_reflect_vector], 21h
     mov ax, [ebx+36]
@@ -940,6 +1005,7 @@ dpmi_trace times DPMI_TRACE_COUNT dw 0
 dpmi_trace_args times DPMI_TRACE_COUNT*24 db 0
 dpmi_trace_end:
 %endif
+dpmi_dll_vector times 6 db 0
 dpmi_fault_ip dd 0
 dpmi_fault_regs times 16 dd 0
 dpmi_fault_bytes times 8 db 0

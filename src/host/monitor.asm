@@ -26,6 +26,10 @@
 %define DPMI_IRQ_SS 37h
 %define DPMI_CALLBACK_SS 3fh
 %define DPMI_STUB16 6bh
+%define DPMI_LOCK_PAGES 7
+%define DPMI_XFER_BYTES 4096
+%define DPMI_XFER_DTA 4096
+%define DPMI_XFER_PARAS (DPMI_XFER_BYTES+128)/16
 %else
 %define MON_VECTOR_COUNT 32
 %define MON_SERVER_SELECTOR 48
@@ -1513,6 +1517,10 @@ mon_callback_done:
     mov ax, 0de0ch
     int 67h
 
+%ifdef RESIDENT_HOST
+%include "host/nested.asm"
+%endif
+HOST_REAL
 align 4
 mon_base dd 0
 mon_real_base dd 0
