@@ -12,4 +12,10 @@ The UCDDPLAY graphics and tables are in `src/play/assets.bin` and `src/play/asse
 
 For a CD driver without resident audio, omit `--resident-audio`.
 
+## Build options
+
+These options apply with `--resident-audio`. All are off by default.
+
+- `--flat-sink`: when a 32-bit program calls a real-mode service with a flat data segment in DS or ES, pass segment `A000h` to real mode, not segment 0. A service that writes through an untranslated pointer then cannot damage low memory.
+
 The release source archive contains the project source and this build script. Install DOS, a memory manager, and a CD redirector separately. No third-party programs are included.
