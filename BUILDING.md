@@ -12,4 +12,11 @@ The UCDDPLAY graphics and tables are in `src/play/assets.bin` and `src/play/asse
 
 For a CD driver without resident audio, omit `--resident-audio`.
 
+## Build options
+
+These options apply with `--resident-audio`. All are off by default.
+
+- `--audio-period-frames N`: set the output period to 32, 64, 128, or 256 frames. The default is 32. A larger period makes fewer interrupts and costs less CPU time, with more delay: 256 frames is 5.8 ms at 44.1 kHz.
+- `--no-refill-hint`: test option. Refill the CD queue whenever a refill is due, without waiting for the display retrace.
+
 The release source archive contains the project source and this build script. Install DOS, a memory manager, and a CD redirector separately. No third-party programs are included.
