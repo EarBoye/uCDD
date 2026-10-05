@@ -1,3 +1,22 @@
+## About this fork
+
+This is a fork of vorvek's uCDD. All credit for the driver is his.
+
+It adds fixes found while testing on real hardware (Pentium MMX 233,
+430HX, ESS ES1868, Voodoo 1) across a large DOS game library:
+
+- Discs with non-standard root directory headers now mount (Hexen, Duke Nukem 3D Atomic)
+- Fixed memory corruption on exit when a game passes a protected-mode pointer to MSCDEX
+- Fixed a boot crash with odd-numbered sound card settings
+- Added an interrupt-flag pattern used by Need for Speed
+- Native ESS AudioDrive output, with an optional faster mode
+
+Each fix is on its own branch with test notes. Known open problems are
+listed in ISSUES.md.
+
+The original README follows.
+
+
 # μCDD
 
 **Eternal betaware**
