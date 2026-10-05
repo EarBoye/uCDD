@@ -1031,10 +1031,12 @@ mount_image:
     jb .reject
     test byte [pvd+181], 2
     jz .reject
+    ; Some discs give the root record a name length of 0.
     cmp byte [pvd+188], 1
-    jne .reject
-    cmp byte [pvd+189], 0
-    jne .reject
+    ja .reject
+    ; Some mastering software names the root record 1 in place of 0.
+    cmp byte [pvd+189], 1
+    ja .reject
     mov eax, [pvd+158]
     mov edx, [pvd+162]
     xchg dl, dh
