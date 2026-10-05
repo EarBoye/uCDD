@@ -646,6 +646,7 @@ mount_tracks equ full_path+INFO_TRACKS
 device_list equ full_path+INFO_SIZE
 drive_list equ device_list+26*5
 
+%define CUE_FAR 1
 %include "cue.asm"
 %include "mdm_helper.asm"
 program_end:

@@ -22,15 +22,35 @@ prepare_image:
     clc
     ret
 .cue:
+%ifdef CUE_FAR
+    cmp word [cue_segment], 0
+    jne .allocated
+    mov bx, (16385+15)/16
+    mov ah, 48h
+    int 21h
+    jc cue_bad
+    mov [cue_segment], ax
+.allocated:
+%endif
     mov dx, full_path
     mov ax, 3d00h
     int 21h
     jc cue_bad
     mov bx, ax
+%ifdef CUE_FAR
+    ; The text lives in its own DOS block, not in the program segment.
+    push ds
+    mov ds, [cue_segment]
+    xor dx, dx
+%else
     mov dx, cue_text
+%endif
     mov cx, 16385
     mov ah, 3fh
     int 21h
+%ifdef CUE_FAR
+    pop ds
+%endif
     pushf
     push ax
     mov ah, 3eh
@@ -42,6 +62,25 @@ prepare_image:
     ja cue_bad
     test ax, ax
     jz cue_bad
+%ifdef CUE_FAR
+    push es
+    mov es, [cue_segment]
+    xor si, si
+    mov cx, ax
+.nul_check:
+    cmp byte [es:si], 0
+    je .nul_found
+    inc si
+    loop .nul_check
+    mov byte [es:si], 0
+    pop es
+    mov word [cue_next], 0
+    jmp .nul_done
+.nul_found:
+    pop es
+    jmp cue_bad
+.nul_done:
+%else
     mov si, cue_text
     mov cx, ax
 .nul_check:
@@ -51,6 +90,7 @@ prepare_image:
     loop .nul_check
     mov byte [si], 0
     mov word [cue_next], cue_text
+%endif
     mov word [cue_count], 0
     mov word [cue_payload], 16
     mov word [cue_stride], 2352
@@ -58,6 +98,44 @@ prepare_image:
     mov byte [cue_file_seen], 0
     mov byte [cue_have_index], 1
 .line:
+%ifdef CUE_FAR
+    ; Copy the next line into the program segment for the parser.
+    push es
+    mov es, [cue_segment]
+    mov si, [cue_next]
+    cmp byte [es:si], 0
+    jne .copy_line
+    pop es
+    jmp .finish
+.copy_line:
+    mov di, cue_line
+.copy:
+    mov al, [es:si]
+    test al, al
+    jz .copied
+    inc si
+    cmp al, 10
+    je .copied
+    cmp al, 13
+    je .return
+    cmp di, cue_line+CUE_LINE-1
+    jae .long_line
+    mov [di], al
+    inc di
+    jmp .copy
+.long_line:
+    pop es
+    jmp cue_bad
+.return:
+    cmp byte [es:si], 10
+    jne .copied
+    inc si
+.copied:
+    mov byte [di], 0
+    mov [cue_next], si
+    pop es
+    mov si, cue_line
+%else
     mov si, [cue_next]
     cmp byte [si], 0
     je .finish
@@ -80,6 +158,7 @@ prepare_image:
     inc di
 .line_ready:
     mov [cue_next], di
+%endif
     call token
     jc .line
     mov di, cue_rem
@@ -122,6 +201,27 @@ prepare_image:
     inc byte [cue_file_seen]
     call token
     jc cue_bad
+%ifdef CUE_FAR
+    ; The line buffer is reused. Keep the name.
+    push si
+    mov si, bx
+    mov di, cue_name
+.name:
+    cmp di, cue_name+127
+    jae .name_long
+    lodsb
+    mov [di], al
+    inc di
+    test al, al
+    jnz .name
+    pop si
+    mov bx, cue_name
+    jmp .name_done
+.name_long:
+    pop si
+    jmp cue_bad
+.name_done:
+%endif
     mov [cue_bin_name], bx
     call token
     jc cue_bad
@@ -473,4 +573,11 @@ cue_dcp db 'DCP',0
 cue_4ch db '4CH',0
 cue_scms db 'SCMS',0
 cue_resolved times 128 db 0
+%ifdef CUE_FAR
+CUE_LINE equ 1024
+cue_segment dw 0
+cue_name times 128 db 0
+cue_line times CUE_LINE db 0
+%else
 cue_text times 16385 db 0
+%endif
