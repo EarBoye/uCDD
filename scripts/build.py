@@ -44,6 +44,8 @@ def main():
                         help='Build host counters in build/profile. Use with --resident-audio.')
     parser.add_argument('--disk-irq-direct', action='store_true',
                         help='Always pass IRQ 14 and 15 to the real-mode handler.')
+    parser.add_argument('--split-word-io', action='store_true',
+                        help='Run a rejected word port access as two byte accesses.')
     parser.add_argument('--flat-sink', action='store_true',
                         help='Reflect flat segments to real mode as segment A000, not 0.')
     parser.add_argument('--inject-register', action='store_true',
@@ -64,6 +66,8 @@ def main():
             defines = [f'OUTPUT_SHIFT={args.audio_period_frames.bit_length()-1}']
             if args.disk_irq_direct:
                 defines.append('DISK_IRQ_DIRECT=1')
+            if args.split_word_io:
+                defines.append('SPLIT_WORD_IO=1')
             if args.flat_sink:
                 defines.append('FLAT_SINK=1')
             if args.inject_register:
