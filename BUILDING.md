@@ -12,4 +12,10 @@ The UCDDPLAY graphics and tables are in `src/play/assets.bin` and `src/play/asse
 
 For a CD driver without resident audio, omit `--resident-audio`.
 
+## Build options
+
+These options apply with `--resident-audio`. All are off by default.
+
+- `--inject-register`: recognise `PUSHF, POP reg, CLI` and `PUSHFD, POP EAX, AND EAX,200h, CLI`, where the saved flags are in a register and not on the stack.
+
 The release source archive contains the project source and this build script. Install DOS, a memory manager, and a CD redirector separately. No third-party programs are included.
