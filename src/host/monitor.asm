@@ -1179,6 +1179,9 @@ mon_exception:
     jmp .fault
 .trapped:
     mov eax, [esp+36]
+%ifdef SPLIT_WORD_IO
+    mov [ebp+mon_split_port], edx
+%endif
     push ecx
     push edi
 %ifdef HOST_DPMI
@@ -1188,7 +1191,49 @@ mon_exception:
 %endif
     pop edi
     pop ecx
+%ifdef SPLIT_WORD_IO
+    jnc .io_done
+    ; The virtual card takes byte I/O. Run a word access as two byte accesses.
+    cmp cl, 2
+    jne .fault
+    mov edx, [ebp+mon_split_port]
+    push edx
+    push eax
+    mov eax, [esp+8+36]
+    mov cl, 1
+    push ecx
+    push edi
+    call dpmi_pic_io
+    pop edi
+    pop ecx
+    jc .split_fail
+    mov [esp], al
+    mov edx, [esp+4]
+    inc edx
+    mov al, 0ffh
+    bt [ebp+mon_bitmap], edx
+    jnc .split_join
+    mov eax, [esp+8+36]
+    shr eax, 8
+    push ecx
+    push edi
+    call dpmi_pic_io
+    pop edi
+    pop ecx
+    jc .split_fail
+.split_join:
+    mov ah, al
+    mov al, [esp]
+    add esp, 8
+    mov cl, 2
+    jmp .io_done
+.split_fail:
+    add esp, 8
+    jmp .fault
+.io_done:
+%else
     jc .fault
+%endif
     test ch, ch
     jnz .advance
     cmp cl, 1
@@ -1538,6 +1583,9 @@ mon_fault_ss dd 0
 mon_ready db 0
 mon_running db 0
 mon_master db 0
+%ifdef SPLIT_WORD_IO
+mon_split_port dd 0
+%endif
 mon_slave db 0
 mon_irqs dd 0
 mon_irq_callback dd 0
