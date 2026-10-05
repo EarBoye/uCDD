@@ -2,6 +2,17 @@
 ; SPDX-License-Identifier: GPL-3.0-only
 
 %include "host/profile.inc"
+; Refill window after a retrace, in output frames. The output clock advances
+; about one period at a time, so the window must span a whole period or a
+; larger period steps over it and deferred CD refills never run.
+%ifndef OUTPUT_SHIFT
+%define OUTPUT_SHIFT 5
+%endif
+%if (1 << OUTPUT_SHIFT) > 64
+%define REFILL_WINDOW_END (128 + (1 << OUTPUT_SHIFT))
+%else
+%define REFILL_WINDOW_END 192
+%endif
 
 %define SPLIT_HOST 1
 %macro HOST_REAL 0
@@ -631,9 +642,30 @@ resident_refill_schedule:
     jz .done
     test dword [esp+32+4+48], 20000h
     jnz .done
+    ; An almost empty CD queue cannot wait for the retrace window. A game that
+    ; waits for every retrace would otherwise never let the queue refill.
+    mov esi, [ebp+resident_refill_pending]
+    test esi, esi
+    jz .timed
+    cmp byte [esi], 2
+    jne .timed
+    mov edi, [ebp+resident_refill_clock]
+    test edi, edi
+    jz .window
+    mov eax, [edi]
+    sub eax, [ebp+resident_refill_last]
+    cmp eax, 128
+    jb .done
+    jmp .window
+.timed:
     ; Give the foreground mixer time after a retrace.
     movzx edx, byte [ebp+resident_vga_ready]
     mov edi, [ebp+resident_refill_clock]
+%ifdef NO_REFILL_HINT
+    ; Test build: ignore the retrace hint and refill whenever one is due.
+    mov edx, 1
+    jmp .hint_ready
+%endif
     test edi, edi
     jz .hint_ready
     cmp edx, 1
@@ -650,7 +682,7 @@ resident_refill_schedule:
     cmp eax, 128
     jb .done
     xor edx, edx
-    cmp eax, 192
+    cmp eax, REFILL_WINDOW_END
     seta dl
     xor dl, 1
 .hint_ready:
