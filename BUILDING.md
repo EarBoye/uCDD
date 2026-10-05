@@ -12,4 +12,10 @@ The UCDDPLAY graphics and tables are in `src/play/assets.bin` and `src/play/asse
 
 For a CD driver without resident audio, omit `--resident-audio`.
 
+## Build options
+
+These options apply with `--resident-audio`. All are off by default.
+
+- `--disk-irq-direct`: always pass IRQ 14 and 15 to the real-mode handler. For PCI IDE controllers, which hold a level-triggered request until that handler runs.
+
 The release source archive contains the project source and this build script. Install DOS, a memory manager, and a CD redirector separately. No third-party programs are included.
