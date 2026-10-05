@@ -46,6 +46,8 @@ sb_patch:
     jae .restore
     and ax, PERIOD_FRAMES-1
     shl ax, 2
+    mov cl, [ess_half]
+    shr ax, cl
     test byte [sound_card], 1
     jz .offset
     shr ax, 2
