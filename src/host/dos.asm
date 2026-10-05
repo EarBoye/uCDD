@@ -299,6 +299,17 @@ dpmi_dos_translate:
     jz .ds_ready
     call dpmi_descriptor
     jc dpmi_dos.unsupported
+%ifdef FLAT_SINK
+    ; A page-granular segment is the client's flat data, not DOS memory. Its
+    ; base says nothing about where a real-mode service may write: an
+    ; untranslated pointer would land in segment 0. Give such calls the
+    ; graphics segment, where a stray write does no harm.
+    test byte [esi+6], 80h
+    jz .ds_base
+    mov eax, 0a000h
+    jmp .ds_ready
+.ds_base:
+%endif
     call dpmi_descriptor_base
     cmp eax, 100000h
     jae dpmi_dos.unsupported
@@ -312,6 +323,17 @@ dpmi_dos_translate:
     jz .es_ready
     call dpmi_descriptor
     jc dpmi_dos.unsupported
+%ifdef FLAT_SINK
+    ; A page-granular segment is the client's flat data, not DOS memory. Its
+    ; base says nothing about where a real-mode service may write: an
+    ; untranslated pointer would land in segment 0. Give such calls the
+    ; graphics segment, where a stray write does no harm.
+    test byte [esi+6], 80h
+    jz .es_base
+    mov eax, 0a000h
+    jmp .es_ready
+.es_base:
+%endif
     call dpmi_descriptor_base
     cmp eax, 100000h
     jae dpmi_dos.unsupported
