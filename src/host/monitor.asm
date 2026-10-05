@@ -588,6 +588,10 @@ mon_irq:
     cmp bl, [ebp+dpmi_audio_irq]
     je .real_irq
 %ifdef RESIDENT_HOST
+%ifdef DISK_IRQ_DIRECT
+    cmp bl, 14
+    jae .disk_irq
+%endif
     cmp byte [ebp+resident_refill_busy], 0
     je .queue
     ; The CD refill can wait for a disk or RTC IRQ, and the client cannot run now.
