@@ -93,10 +93,12 @@ dsp_write:
     clc
     ret
 physical_reset:
+    mov al, 1
+; AL=reset value. The ESS extended mode sets bit 1 to clear the FIFO.
+.value:
     mov byte [dsp_failed], 0
     mov dx, [sb_base]
     add dx, 6
-    mov al, 1
     call physical_write
     mov cx, 64
 .delay:
@@ -126,7 +128,22 @@ physical_reset:
 .success:
     clc
     ret
+; Models 4 and 5 are the ESS AudioDrive in extended mode, on the WSS ring.
+; Callers that size the ring run this before they read the model.
+sb_model:
+    mov al, [sound_card]
+    sub al, 4
+    jb .done
+%ifdef RESIDENT_AUDIO
+    ; Model 5 plays at half rate.
+    mov [ess_half], al
+%endif
+    mov byte [sound_card], 2
+    mov byte [ess_native], 1
+.done:
+    ret
 sb_start:
+    call sb_model
     cmp byte [sound_card], 2
     je wss_start
     cmp byte [sound_card], 0
@@ -340,6 +357,8 @@ audio_irq:
     jne .half_ready
     shr ax, 1
 .half_ready:
+    mov cl, [ess_half]
+    shr ax, cl
     mov [next_half], ax
 %endif
     mov es, [output_segment]
@@ -355,6 +374,8 @@ audio_irq:
     jne .half_size
     shr ax, 1
 .half_size:
+    mov cl, [ess_half]
+    shr ax, cl
     xor [next_half], ax
     call mix_half
 %ifdef VIRTUAL_IRQ
@@ -426,6 +447,19 @@ audio_irq:
     call sb_mono_next
     jmp .acknowledged
 .wss:
+    cmp byte [ess_native], 0
+    je .codec
+    ; Bit 0: the extended mode DMA counter overflowed. Reading 2xEh clears it.
+    mov dx, [sb_base]
+    add dx, 0ch
+    call physical_read
+    test al, 1
+    jz .unowned
+    inc dx
+    inc dx
+    call physical_read
+    jmp .acknowledged
+.codec:
     mov dx, [sb_base]
     add dx, 6
     call physical_read

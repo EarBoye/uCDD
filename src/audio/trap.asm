@@ -129,6 +129,10 @@ output_clock:
 %ifdef RESIDENT_AUDIO
     cmp byte [sound_card], 2
     jne .pro_count
+    ; At half rate one byte of the ring stands for one word of the mix.
+    or al, [ess_half]
+    cmp byte [ess_half], 0
+    jne .count_ready
     shr ax, 1
     jmp .count_ready
 .pro_count:
