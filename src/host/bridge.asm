@@ -442,6 +442,13 @@ dpmi_bridge_stubs:
 %assign irq 0
 %rep 16
 dpmi_bridge_irq_%+irq:
+%ifdef DISK_IRQ_DIRECT
+%if irq >= 14
+    ; Hard disk IRQs always go to the real-mode handler. A PCI controller holds
+    ; its level-triggered request until that handler runs.
+    jmp far [cs:dpmi_bridge_vectors+irq*4]
+%endif
+%endif
     pushf
     call dpmi_bridge_blocked
 %if irq = 6 || irq >= 8 && irq <= 11 || irq >= 14
