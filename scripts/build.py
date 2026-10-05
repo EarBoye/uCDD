@@ -42,6 +42,8 @@ def main():
                         help='Build resident audio with the internal DPMI host.')
     parser.add_argument('--profile-host', action='store_true',
                         help='Build host counters in build/profile. Use with --resident-audio.')
+    parser.add_argument('--inject-register', action='store_true',
+                        help='Recognise PUSHF, POP reg, CLI and mark the flags image in the register.')
     parser.add_argument('--audio-period-frames', type=int, choices=(32, 64, 128, 256),
                         default=32, help='Set the resident audio output period for testing.')
     args = parser.parse_args()
@@ -55,7 +57,10 @@ def main():
     for source, name in [('src/ucdd.asm', 'UCDD.EXE'),
                          ('src/setup.asm', 'UCDDSET.EXE')]:
         if args.resident_audio and name == 'UCDD.EXE':
-            assemble_resident_host((f'OUTPUT_SHIFT={args.audio_period_frames.bit_length()-1}',),
+            defines = [f'OUTPUT_SHIFT={args.audio_period_frames.bit_length()-1}']
+            if args.inject_register:
+                defines.append('INJECT_REG=1')
+            assemble_resident_host(tuple(defines),
                                    profile=args.profile_host)
         else:
             assemble(source, name, exe=True)
@@ -74,7 +79,7 @@ def main():
 
 def assemble_resident_host(defines=(), profile=False):
     assemble('src/host/resident.asm', 'UCDDHOST.BIN',
-             ('HOST_PROFILE=1',) if profile else (), listing=True)
+             (*defines, *(('HOST_PROFILE=1',) if profile else ())), listing=True)
     host = (BUILD / 'UCDDHOST.BIN').read_bytes()
     if len(host) > 65535:
         raise ValueError('The host exceeds one segment.')

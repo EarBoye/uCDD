@@ -1694,7 +1694,98 @@ dpmi_tf_inject:
     call dpmi_code_buffer
     jc .no
     cmp byte [eax], 9ch
+%ifdef INJECT_REG
+    je .image_stack
+    cmp byte [eax], 0
+    jne .register
+    ; PUSHFD, POP EAX, AND EAX,200h, CLI keeps only the IF in EAX, and an
+    ; OR into a later PUSHFD image restores it. Set TF in EAX.
+    mov ax, [ebx+52]
+    mov edx, [ebx+48]
+    sub edx, 7
+    jc .no
+    mov ecx, 7
+    mov edi, 2
+    call dpmi_code_buffer
+    jc .no
+    cmp dword [eax], 0025589ch
     jne .no
+    cmp word [eax+4], 0002h
+    jne .no
+    cmp dword [ebx+36], 200h
+    jne .no
+    mov ax, [ebx+64]
+    call dpmi_descriptor
+    jc .no
+    mov ecx, 0ffffffffh
+    mov edx, [ebx+60]
+    test byte [esi+6], 40h
+    jnz .masked
+    mov ecx, 0ffffh
+    movzx edx, dx
+.masked:
+    or byte [ebx+37], 1
+    mov [ebp+dpmi_tf_mask], ecx
+    mov [ebp+dpmi_tf_esp], edx
+    mov ax, [ebx+64]
+    mov [ebp+dpmi_tf_ss], ax
+    mov byte [ebp+dpmi_tf_armed], 1
+    popad
+    clc
+    ret
+.register:
+    ; PUSHF, POP reg, CLI keeps the image in a register. Set TF there: the
+    ; PUSH reg, POPF that restores it traps once.
+    movzx esi, byte [eax]
+    sub esi, 58h
+    cmp esi, 7
+    ja .no
+    cmp esi, 4
+    je .no
+    push esi
+    mov ax, [ebx+52]
+    mov edx, [ebx+48]
+    sub edx, 2
+    jc .no_register
+    mov ecx, 1
+    mov edi, 2
+    call dpmi_code_buffer
+    jc .no_register
+    cmp byte [eax], 9ch
+    jne .no_register
+    mov ax, [ebx+64]
+    call dpmi_descriptor
+    jc .no_register
+    mov ecx, 0ffffffffh
+    mov edx, [ebx+60]
+    test byte [esi+6], 40h
+    jnz .register_stack
+    mov ecx, 0ffffh
+    movzx edx, dx
+.register_stack:
+    pop esi
+    shl esi, 2
+    neg esi
+    lea esi, [ebx+esi+36]
+    mov ax, [esi]
+    cmp ax, [ebx+56]
+    jne .no
+    or byte [esi+1], 1
+    mov [ebp+dpmi_tf_mask], ecx
+    mov [ebp+dpmi_tf_esp], edx
+    mov ax, [ebx+64]
+    mov [ebp+dpmi_tf_ss], ax
+    mov byte [ebp+dpmi_tf_armed], 1
+    popad
+    clc
+    ret
+.no_register:
+    pop esi
+    jmp .no
+.image_stack:
+%else
+    jne .no
+%endif
     mov ax, [ebx+64]
     call dpmi_descriptor
     jc .no
@@ -1993,7 +2084,7 @@ dpmi_tf_esp dd 0
 dpmi_tf_mask dd 0
 dpmi_tf_ss dw 0
 dpmi_tf_armed db 0
-DPMI_CLI_SITES equ 16
+DPMI_CLI_SITES equ 256
 dpmi_cli_site dd -1
 dpmi_cli_linear times DPMI_CLI_SITES dd 0
 dpmi_cli_score times DPMI_CLI_SITES db 0
