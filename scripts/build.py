@@ -42,6 +42,8 @@ def main():
                         help='Build resident audio with the internal DPMI host.')
     parser.add_argument('--profile-host', action='store_true',
                         help='Build host counters in build/profile. Use with --resident-audio.')
+    parser.add_argument('--no-refill-hint', action='store_true',
+                        help='Test build: ignore the retrace hint for deferred CD refills.')
     parser.add_argument('--disk-irq-direct', action='store_true',
                         help='Always pass IRQ 14 and 15 to the real-mode handler.')
     parser.add_argument('--split-word-io', action='store_true',
@@ -64,6 +66,8 @@ def main():
                          ('src/setup.asm', 'UCDDSET.EXE')]:
         if args.resident_audio and name == 'UCDD.EXE':
             defines = [f'OUTPUT_SHIFT={args.audio_period_frames.bit_length()-1}']
+            if args.no_refill_hint:
+                defines.append('NO_REFILL_HINT=1')
             if args.disk_irq_direct:
                 defines.append('DISK_IRQ_DIRECT=1')
             if args.split_word_io:
