@@ -36,11 +36,14 @@ own_host_install:
     int 21h
     jc .close_bad
     mov [own_host_umb], al
+    ; This buffer is freed once the host has moved out of it. Anything kept
+    ; that is allocated while it exists lands above it, so take it from the
+    ; top of conventional RAM: first fit leaves a hole its size below them.
     mov ax, 5803h
-    mov bx, 1
+    xor bx, bx
     int 21h
     mov ax, 5801h
-    xor bx, bx
+    mov bx, 2
     int 21h
     mov bx, (OWN_HOST_SIZE+15+12287+15)/16
     mov ah, 48h
