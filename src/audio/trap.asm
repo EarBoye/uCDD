@@ -1187,6 +1187,15 @@ port_callback:
     mov byte [game_active], 1
     inc word [virtual_starts]
 %ifdef RESIDENT_AUDIO
+    ; An output interrupt can be pending when this write returns. The game
+    ; must run before a block that starts a stream can end.
+    mov byte [sb_single_hold], 0
+    cmp byte [sb_single], 0
+    je .hold_ready
+    cmp byte [sb_patch_available], 1
+    je .hold_ready
+    mov byte [sb_single_hold], 1
+.hold_ready:
     cmp dword [ss:ebp+12], 1
     je .patch_deferred
     test bl, bl

@@ -358,7 +358,17 @@ audio_irq:
     xor [next_half], ax
     call mix_half
 %ifdef VIRTUAL_IRQ
+%ifdef RESIDENT_AUDIO
+    cmp byte [sb_single_hold], 0
+    je .tick
+    mov byte [sb_single_hold], 0
+    jmp .ticked
+.tick:
+%endif
     call virtual_irq_tick
+%ifdef RESIDENT_AUDIO
+.ticked:
+%endif
 %ifdef OWN_HOST
     mov byte [cd_refill_pending], 0
     cmp byte [cd_started], 1
