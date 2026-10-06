@@ -16,7 +16,7 @@ For a CD driver without resident audio, omit `--resident-audio`.
 
 These options apply with `--resident-audio`.
 
-- `--audio-period-frames N`: set the output period to 32, 64, 128, or 256 frames. The default is 32. A larger period makes fewer interrupts and costs less CPU time, with more delay: 256 frames is 5.8 ms at 44.1 kHz.
+- `--audio-period-frames N`: set the output period to 32, 64, 128, or 256 frames. The default is 32. A larger period makes fewer interrupts and costs less CPU time, with more delay: 256 frames is 5.8 ms at 44.1 kHz. The driver refuses a game's auto-initialize block that lasts less than two periods, so a larger period also leaves more games without sound: 256 frames needs blocks of 11.6 ms, 128 frames needs 5.8 ms.
 - `--flat-sink`: when a 32-bit program calls a real-mode service with a flat data segment in DS or ES, pass segment `A000h` to real mode, not segment 0. A service that writes through an untranslated pointer then cannot damage low memory.
 - `--inject-register`: recognise `PUSHF, POP reg, CLI` and `PUSHFD, POP EAX, AND EAX,200h, CLI`, where the saved flags are in a register and not on the stack.
 - `--disk-irq-direct`: always pass IRQ 14 and 15 to the real-mode handler. For PCI IDE controllers, which hold a level-triggered request until that handler runs.
