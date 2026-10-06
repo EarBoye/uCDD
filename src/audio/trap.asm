@@ -1415,8 +1415,17 @@ port_callback:
 .done:
 %ifdef RESIDENT_AUDIO
     cmp dword [ss:ebp+12], 1
-    jne .restore
+    jne .hold_clock
     dec byte [emm_in_callback]
+    jmp .restore
+.hold_clock:
+    ; Time the hold from the end of the write that started the block. On a
+    ; slow CPU this trap lasts longer than an output period.
+    cmp byte [sb_single_hold], 1
+    jne .restore
+    call output_clock
+    mov [sb_hold_clock], eax
+    mov byte [sb_single_hold], 2
 .restore:
 %endif
     pop fs

@@ -46,8 +46,12 @@ sb_patch_available db 0
 sb_patch_clock dd 0
 sb_patch_limit dd 0
 sb_patch_base dw 0
-; Set when a single-cycle block starts a stream. The output interrupt that
-; follows the start does not signal the block.
+; Set when a single-cycle block starts a stream: the block does not signal
+; until the game has run. 1: the output interrupt that follows the start does
+; not signal. 2: no signal until SB_HOLD_FRAMES of output have played since
+; sb_hold_clock, the output position when the start write returned.
 sb_single_hold db 0
+sb_hold_clock dd 0
+SB_HOLD_FRAMES equ 128
 %endif
 %endif

@@ -361,6 +361,18 @@ audio_irq:
 %ifdef RESIDENT_AUDIO
     cmp byte [sb_single_hold], 0
     je .tick
+    cmp byte [sb_single_hold], 2
+    jne .held
+    ; An interrupt that was pending when the start write returned, or that
+    ; was taken inside it, comes with no time passed. A later one can signal.
+    mov eax, [periods]
+    shl eax, OUTPUT_SHIFT
+    sub eax, [sb_hold_clock]
+    cmp eax, SB_HOLD_FRAMES
+    jl .ticked
+    mov byte [sb_single_hold], 0
+    jmp .tick
+.held:
     mov byte [sb_single_hold], 0
     jmp .ticked
 .tick:
