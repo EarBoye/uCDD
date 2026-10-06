@@ -48,6 +48,8 @@ sb_patch:
     shl ax, 2
     mov cl, [ess_half]
     shr ax, cl
+    ; Keep whole frames at half rate.
+    and ax, 0fffch
     test byte [sound_card], 1
     jz .offset
     shr ax, 2
