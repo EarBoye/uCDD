@@ -73,6 +73,11 @@ sb_patch:
     mov byte [sb_patch_active], 1
     call mix_half
     mov byte [sb_patch_active], 0
+    ; A card cannot interrupt inside the write that starts a block. Programs
+    ; that detect the IRQ clear their flag after that write. The first block
+    ; of a stream signals from an output interrupt.
+    cmp byte [sb_single_hold], 0
+    jne .restore
     call virtual_irq_tick
 .restore:
     popf

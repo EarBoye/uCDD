@@ -46,5 +46,8 @@ sb_patch_available db 0
 sb_patch_clock dd 0
 sb_patch_limit dd 0
 sb_patch_base dw 0
+; Set when a single-cycle block starts a stream. The output interrupt that
+; follows the start does not signal the block.
+sb_single_hold db 0
 %endif
 %endif
