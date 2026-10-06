@@ -20,15 +20,26 @@ sb_patch:
     pushf
     cli
     call output_clock
-    add eax, 32
     cmp byte [sb_patch_available], 2
     je .initial
+    add eax, 32
     mov byte [sb_patch_available], 0
     cmp eax, [sb_patch_clock]
     jae .restore
     mov eax, [sb_patch_clock]
+    ; The last block must end in the half that sb_patch_base names. After a
+    ; late interrupt it ends in the other half.
+    mov edx, [periods]
+    inc edx
+    shl edx, OUTPUT_SHIFT
+    cmp eax, edx
+    jb .restore
     jmp .scheduled
 .initial:
+    ; Start in the half mixed last: one period after the output position. A
+    ; shorter lead is in the half that plays now, and the write passes the end
+    ; of the ring.
+    add eax, PERIOD_FRAMES
     mov byte [sb_patch_available], 0
     inc eax
     and al, 0feh
