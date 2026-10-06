@@ -69,7 +69,26 @@ sb_patch:
     mov di, ax
     mov es, [output_segment]
     mov byte [sb_patch_active], 1
+    ; The patch is added to output that already holds the filter's response to
+    ; the earlier input. Mix it from a clear filter, then join the two states.
+    push dword [sb_filter_state]
+    push dword [sb_filter_state+4]
+    push dword [sb_filter_state+8]
+    push dword [sb_filter_state+12]
+    xor eax, eax
+    mov [sb_filter_state], eax
+    mov [sb_filter_state+4], eax
+    mov [sb_filter_state+8], eax
+    mov [sb_filter_state+12], eax
     call mix_half
+    pop eax
+    add [sb_filter_state+12], eax
+    pop eax
+    add [sb_filter_state+8], eax
+    pop eax
+    add [sb_filter_state+4], eax
+    pop eax
+    add [sb_filter_state], eax
     mov byte [sb_patch_active], 0
     ; A card cannot interrupt inside the write that starts a block. Programs
     ; that detect the IRQ clear their flag after that write. The first block

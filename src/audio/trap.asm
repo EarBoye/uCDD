@@ -1166,17 +1166,23 @@ port_callback:
 .duration:
     mov [game_exit_frame], eax
 .duration_ready:
+    mov al, [sb_filter_legacy]
     mov byte [sb_filter_legacy], 0
     cmp byte [dsp_command], 0a0h
-    jae .filter_ready
+    jae .filter_clear
     cmp byte [sb_input], 0
-    jne .filter_ready
+    jne .filter_clear
     mov byte [sb_filter_legacy], 1
-.filter_ready:
+    ; A block that follows a filtered block is the same output stream. Keep the
+    ; filter state: the response to the last block has not ended.
+    test al, al
+    jnz .filter_ready
+.filter_clear:
     mov dword [sb_filter_state], 0
     mov dword [sb_filter_state+4], 0
     mov dword [sb_filter_state+8], 0
     mov dword [sb_filter_state+12], 0
+.filter_ready:
     mov byte [sb_tail_mode], 0
     mov byte [sb_tail_valid], 0
     mov dword [sb_tail_consumed], 0
