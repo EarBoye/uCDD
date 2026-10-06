@@ -24,7 +24,7 @@ for gaps and steps.
 | `cli-patterns` | Tested on hardware, benefit only partly confirmed |
 | `disk-irq-direct` | In every tested build, not tested alone |
 | `split-word-io` | In every tested build, not tested alone |
-| `single-cycle-start` | Three fixes for single-cycle playback. Emulators only |
+| `single-cycle-start` | Four fixes for single-cycle playback. Emulators only |
 | `cue-far-buffer` | Emulators only: 111 CUE sheets against the old parser, and a mixed-mode image mounted, read and played under FreeDOS. Now part of `fixes`, because the driver segment is full without it |
 
 ## The output period decides which games have sound
@@ -44,6 +44,30 @@ A larger period costs less CPU time on every card, and on the ES1868 it
 is what makes Sound Blaster Pro output work at all. The combined build was
 tested at 256. Measured in an emulator: Doom with a virtual SB Pro is
 silent at 256 and has sound at 128.
+
+## Slow CPUs
+
+Measured in QEMU with an instruction-counted clock, SB16, unmodified
+0.9.3b. Every instruction takes the same time there, so a real 386, where
+a multiply is slow, does worse than these figures. "CPU taken" is the
+share of a counting loop's passes lost over five seconds.
+
+| Speed | Period | CPU taken, nothing playing | CPU taken, CD audio playing |
+| --- | --- | --- | --- |
+| 128 ns per instruction (7.8 MIPS, a fast 386) | 32 | 18.5 % | 32.8 % |
+| | 64 | 6.0 % | 26.5 % |
+| | 128 | 6.1 % | 22.7 % |
+| | 256 | 3.7 % | 21.0 % |
+| 256 ns per instruction (3.9 MIPS, a 386SX) | 256 | 6.0 % | 81.2 % |
+
+At 256 ns per instruction a Sound Blaster detection sequence (reset,
+version, one-byte block) does not finish with the driver loaded. This is
+the same on unmodified 0.9.3b and is not investigated. With a 32-frame
+period the measurement itself did not finish at that speed.
+
+At 128 ns per instruction and a 32-frame period, the port trap lasts
+longer than one output period. The last fix in `single-cycle-start` is
+for that case.
 
 ## Not solved
 

@@ -11,10 +11,11 @@ It adds changes found while testing on real hardware (Pentium MMX 233,
 - CD audio refills keep running with a 256-frame output period
 - Native ESS AudioDrive output, with an optional half-rate mode
 
-And three found with an emulator test rig, all in single-cycle playback:
+And these, found with an emulator test rig, all in single-cycle playback:
 
 - With an output period above 32 frames, a new sound wrote past the end of the output buffer and lost its first few milliseconds
 - A very short block interrupted before the game could run, which made Sierra's driver reject the card (King's Quest V)
+- The same on a slow CPU, where the port write itself lasts longer than an output period
 - A click where one block followed another close to the end of an output period
 
 This branch, `fixes`, combines all of these. Each change is also on its
