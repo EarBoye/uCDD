@@ -38,7 +38,7 @@ refusal is silent: the game gets no sound and no interrupt.
 | 32 (default) | 1.5 ms | none known |
 | 64 | 2.9 ms | none known |
 | 128 | 5.8 ms | 256-frame blocks above 44.1 kHz |
-| 256 | 11.6 ms | DMX on a virtual SB Pro (Doom, Heretic, Hexen: 128 stereo frames at 11.1 kHz is 11.5 ms). Any 256-frame block at 22.2 kHz or faster, which includes the Apogee Sound System at its 44 kHz setting |
+| 256 | 11.6 ms | DMX on a virtual SB Pro (Doom, Heretic, Hexen: 128 stereo frames at 11.1 kHz is 11.5 ms). Any 256-frame block at 22.2 kHz or faster. From its source, the Apogee Sound System uses 256-frame blocks, so its 44 kHz setting should fall below this too (not tested) |
 
 A larger period costs less CPU time on every card, and on the ES1868 it
 is what makes Sound Blaster Pro output work at all. The combined build was
