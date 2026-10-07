@@ -340,6 +340,28 @@ mix_half:
 .fast_dispatch:
 %endif
 .frame:
+%ifdef RESIDENT_AUDIO
+%ifdef VERIFY_MIX
+    inc dword [verify_calls]
+    cmp byte [sb_dac_enabled], 0
+    je .verify_dac
+    inc dword [verify_reasons+11*4]
+.verify_dac:
+    cmp byte [sb_patch_active], 0
+    je .verify_patch
+    inc dword [verify_reasons+12*4]
+.verify_patch:
+%endif
+    call mix_run_select
+    jc .frame_loop
+%ifdef VERIFY_MIX
+    cmp byte [verify_stage], 0
+    je mix_verify_begin
+%else
+    jmp ax
+%endif
+.frame_loop:
+%endif
     xor edx, edx
     xor esi, esi
     cmp byte [sb_dac_enabled], 0
@@ -803,8 +825,17 @@ mix_half:
     and bx, 16383
 %endif
     dec cx
+%ifdef RESIDENT_AUDIO
+    jnz .frame_loop
+%else
     jnz .frame
+%endif
 .half_complete:
+%ifdef VERIFY_MIX
+    cmp byte [verify_stage], 0
+    jne mix_verify_stage
+.half_resume:
+%endif
     mov [cd_position], bx
     mov [game_phase], ebp
     call sb_tail_prepare
@@ -881,6 +912,10 @@ sb_filter:
     ret
 
 sb_tail_start_bytes dw 0
+
+%ifdef RESIDENT_AUDIO
+%include "audio/mix_run.asm"
+%endif
 
 %include "audio/direct_sample.asm"
 
