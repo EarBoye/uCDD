@@ -1358,6 +1358,21 @@ port_callback:
     inc ecx
     xor edx, edx
     div ecx
+    ; The position moves one period at a time, so after each lap it rests on
+    ; the first unit of the buffer until the next period is mixed. A real
+    ; channel is hardly ever read there. HMI's mixer follows the position and
+    ; takes what lies behind it as played: read at the very start, it clears
+    ; the first frames of the buffer, which are not mixed yet. Report the
+    ; last unit of the lap before instead.
+    test dx, dx
+    jnz .lap_ready
+    test eax, eax
+    jz .lap_ready
+    cmp byte [sb_single], 0
+    jne .lap_ready
+    mov dx, cx
+    dec dx
+.lap_ready:
     mov bx, [si+DMA_COUNT]
     sub bx, dx
     jmp .snapshot
