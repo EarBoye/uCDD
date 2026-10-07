@@ -52,6 +52,8 @@ def main():
                         help='Reflect flat segments to real mode as segment A000, not 0.')
     parser.add_argument('--inject-register', action='store_true',
                         help='Recognise PUSHF, POP reg, CLI and mark the flags image in the register.')
+    parser.add_argument('--verify-mix', action='store_true',
+                        help='Test build: check every mix_run half against the general loop.')
     parser.add_argument('--audio-period-frames', type=int, choices=(32, 64, 128, 256),
                         default=32, help='Set the resident audio output period for testing.')
     args = parser.parse_args()
@@ -76,6 +78,8 @@ def main():
                 defines.append('FLAT_SINK=1')
             if args.inject_register:
                 defines.append('INJECT_REG=1')
+            if args.verify_mix:
+                defines.append('VERIFY_MIX=1')
             assemble_resident_host(tuple(defines),
                                    profile=args.profile_host)
         else:

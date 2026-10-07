@@ -56,6 +56,9 @@ audio_activate:
     mov word [audio_error_text], cd_work_memory_message
     call cd_work_allocate
     jc .cleanup
+%ifdef VERIFY_MIX
+    call verify_allocate
+%endif
     mov word [audio_error_text], xms_memory_message
 %ifdef EMS_QUEUE
     cmp byte [memory_mode], 0
