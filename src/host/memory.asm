@@ -59,10 +59,12 @@ dpmi_memory_info:
     mov [edi+4], edx
     mov [edi+8], edx
     mov [edi+20], edx
+    ; Total unlocked pages. Nothing here is ever paged out, but 0 reads as no
+    ; memory at all: WarCraft's DOS/4GW then asks for 1344K more.
+    mov [edi+16], edx
     shl edx, 12
     mov [edi], edx
     mov dword [edi+12], 0fc00h
-    mov dword [edi+16], 0
     mov dword [edi+32], 0
     jmp mon_dpmi.success
 
