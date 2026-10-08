@@ -92,7 +92,7 @@ virtual_irq_tick:
     cmp byte [sb_tail_mode], 0
     je .render_position
     mov eax, [sb_tail_consumed]
-    jmp .byte_position
+    jmp .lap_check
 .render_position:
     movzx ecx, word [game_rate]
     mul ecx
@@ -100,6 +100,14 @@ virtual_irq_tick:
     div ecx
     mov cl, [game_frame_shift]
     shl eax, cl
+.lap_check:
+    ; While the position rests on the start of a lap, the DMA count reports
+    ; the last unit of the lap before (see dma_lap_start). The interrupt for
+    ; the end of that lap waits until the next period moves the position on,
+    ; so a program that adds whole laps from its handler to the DMA count
+    ; never sees the lap twice.
+    call dma_lap_start
+    jc .done
 %ifdef WSS_INPUT
     cmp byte [game_source], 1
     jne .block_position
@@ -134,6 +142,43 @@ virtual_irq_tick:
     mov al, [guest_irq_bit]
     mov [virtual_pic_request], al
 .done:
+    ret
+
+; EAX = bytes since the stream started, SI = its DMA channel. CF set while a
+; looping stream rests exactly on the start of a lap after the first.
+dma_lap_start:
+    cmp byte [game_active], 0
+    je .no
+    cmp byte [sb_single], 0
+    jne .no
+    cmp byte [sb_paused], 0
+    jne .no
+    push eax
+    push ecx
+    push edx
+    cmp si, dma16
+    jne .units
+    shr eax, 1
+.units:
+    movzx ecx, word [si+DMA_COUNT]
+    inc ecx
+    xor edx, edx
+    div ecx
+    test edx, edx
+    jnz .not_lap
+    test eax, eax
+    jz .not_lap
+    pop edx
+    pop ecx
+    pop eax
+    stc
+    ret
+.not_lap:
+    pop edx
+    pop ecx
+    pop eax
+.no:
+    clc
     ret
 
 virtual_irq_take:

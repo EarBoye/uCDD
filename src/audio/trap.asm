@@ -1363,12 +1363,15 @@ port_callback:
     ; channel is hardly ever read there. HMI's mixer follows the position and
     ; takes what lies behind it as played: read at the very start, it clears
     ; the first frames of the buffer, which are not mixed yet. Report the
-    ; last unit of the lap before instead.
+    ; last unit of the lap before instead. The interrupt for the end of that
+    ; lap is held back for as long (virtual_irq_tick), so the two agree.
     test dx, dx
     jnz .lap_ready
     test eax, eax
     jz .lap_ready
     cmp byte [sb_single], 0
+    jne .lap_ready
+    cmp byte [sb_paused], 0
     jne .lap_ready
     mov dx, cx
     dec dx
