@@ -283,6 +283,11 @@ mon_iret:
     call dpmi_sti_arrival
     cmp byte [ebp+dpmi_sti_shadow], 0
     je .shadow_done
+    ; With nothing to deliver, the instruction after STI can run natively.
+    ; The shadow stays recorded: an IRQ that arrives while the client still
+    ; stands on that instruction finds it here again and is held as before.
+    call dpmi_irq_waiting
+    jnc .no_irq
     DPMI_STEP_NORMAL
     mov ebx, esp
     call dpmi_sti_arrival
@@ -365,21 +370,8 @@ mon_iret:
     mov byte [ebp+dpmi_vif], 1
     jmp .shadow_done
 .armed_pending:
-    movzx eax, word [ebp+dpmi_pic_mask]
-    not eax
-    and ax, [ebp+dpmi_pending_irqs]
-    jnz .armed_step
-    cmp byte [ebp+dpmi_sti_sb_held], 0
-    jne .armed_step
-%ifdef RESIDENT_HOST
-    mov esi, [ebp+resident_audio_request]
-    test esi, esi
-    jz .no_irq
-    cmp byte [esi], 0
-    je .no_irq
-%else
-    jmp .no_irq
-%endif
+    call dpmi_irq_waiting
+    jnc .no_irq
 .armed_step:
     ; Let the region run on once more before stepping. Stepping costs a
     ; few hundred instructions per client instruction, so a region that
@@ -445,6 +437,31 @@ mon_iret:
     pop ecx
     pop eax
     iretd
+
+; CF when an IRQ or the audio driver waits for the client's IF.
+dpmi_irq_waiting:
+    push eax
+    movzx eax, word [ebp+dpmi_pic_mask]
+    not eax
+    and ax, [ebp+dpmi_pending_irqs]
+    jnz .waiting
+    cmp byte [ebp+dpmi_sti_sb_held], 0
+    jne .waiting
+%ifdef RESIDENT_HOST
+    mov eax, [ebp+resident_audio_request]
+    test eax, eax
+    jz .none
+    cmp byte [eax], 0
+    jne .waiting
+%endif
+.none:
+    pop eax
+    clc
+    ret
+.waiting:
+    pop eax
+    stc
+    ret
 
 dpmi_client_init:
     call dpmi_debug_reset
