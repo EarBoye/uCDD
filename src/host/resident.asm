@@ -152,7 +152,14 @@ resident_host_init:
     mov ax, resident_pending
     call monitor_irq_callback
     mov si, resident_ports
+%ifdef NO_REFILL_HINT
+    ; Only the retrace hint reads the last three ports (3DAh, 40h, 43h). Without
+    ; it, trapping them only slows down every game that polls the retrace or
+    ; reads the timer.
+    mov di, resident_port_count-3
+%else
     mov di, resident_port_count
+%endif
 .port:
     lodsw
     mov dx, ax
@@ -619,6 +626,21 @@ host_stack_segment dw 0
 HOST_PROTECTED
 host_protected_start:
 resident_refill_schedule:
+%ifdef NO_REFILL_HINT
+    ; Called on every return to the client. Without the hint there is nothing
+    ; to do unless a refill is pending.
+    push esi
+    mov esi, [ebp+resident_refill_pending]
+    test esi, esi
+    jz .idle
+    cmp byte [esi], 0
+    jne .pending
+.idle:
+    pop esi
+    ret
+.pending:
+    pop esi
+%endif
     pushad
     cmp byte [ebp+dpmi_sti_shadow], 0
     jne .done
