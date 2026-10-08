@@ -381,6 +381,16 @@ mon_iret:
     jmp .no_irq
 %endif
 .armed_step:
+    ; Let the region run on once more before stepping. Stepping costs a
+    ; few hundred instructions per client instruction, so a region that
+    ; ends normally (most of them, within microseconds) reaches its POPF or
+    ; STI far sooner without it. Only a region still open at the next entry
+    ; (the next IRQ, or a trap inside the region) is stepped, as before.
+    cmp byte [ebp+dpmi_armed_pass], 0
+    jne .armed_stepping
+    mov byte [ebp+dpmi_armed_pass], 1
+    jmp .no_irq
+.armed_stepping:
     call dpmi_hardware_room
     jc .no_irq
     call dpmi_clear_vif
@@ -439,6 +449,7 @@ mon_iret:
 dpmi_client_init:
     call dpmi_debug_reset
     mov byte [ebp+dpmi_tf_armed], 0
+    mov byte [ebp+dpmi_armed_pass], 0
     mov dword [ebp+dpmi_cli_site], -1
     lea edi, [ebp+dpmi_cli_linear]
     xor eax, eax

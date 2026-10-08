@@ -1730,6 +1730,7 @@ dpmi_tf_inject:
     mov ax, [ebx+64]
     mov [ebp+dpmi_tf_ss], ax
     mov byte [ebp+dpmi_tf_armed], 1
+    mov byte [ebp+dpmi_armed_pass], 0
     popad
     clc
     ret
@@ -1776,6 +1777,7 @@ dpmi_tf_inject:
     mov ax, [ebx+64]
     mov [ebp+dpmi_tf_ss], ax
     mov byte [ebp+dpmi_tf_armed], 1
+    mov byte [ebp+dpmi_armed_pass], 0
     popad
     clc
     ret
@@ -1812,6 +1814,7 @@ dpmi_tf_inject:
     mov ax, [ebx+64]
     mov [ebp+dpmi_tf_ss], ax
     mov byte [ebp+dpmi_tf_armed], 1
+    mov byte [ebp+dpmi_armed_pass], 0
     popad
     clc
     ret
@@ -1896,6 +1899,7 @@ dpmi_cli_site_check:
     mov ax, [ebx+64]
     mov [ebp+dpmi_tf_ss], ax
     mov byte [ebp+dpmi_tf_armed], 2
+    mov byte [ebp+dpmi_armed_pass], 0
     mov dword [ebp+dpmi_quiet_steps], DPMI_QUIET_STEPS
     popad
     stc
@@ -2084,6 +2088,8 @@ dpmi_tf_esp dd 0
 dpmi_tf_mask dd 0
 dpmi_tf_ss dw 0
 dpmi_tf_armed db 0
+; Returns to the client with an IRQ pending inside the armed region.
+dpmi_armed_pass db 0
 DPMI_CLI_SITES equ 256
 dpmi_cli_site dd -1
 dpmi_cli_linear times DPMI_CLI_SITES dd 0
