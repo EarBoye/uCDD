@@ -152,7 +152,14 @@ resident_host_init:
     mov ax, resident_pending
     call monitor_irq_callback
     mov si, resident_ports
+%ifdef NO_REFILL_HINT
+    ; Only the retrace hint reads the last three ports (3DAh, 40h, 43h). Without
+    ; it, trapping them only slows down every game that polls the retrace or
+    ; reads the timer.
+    mov di, resident_port_count-3
+%else
     mov di, resident_port_count
+%endif
 .port:
     lodsw
     mov dx, ax
