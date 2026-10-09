@@ -640,6 +640,8 @@ done_drive db '?',':',13,10,'$'
 %include "notice.inc"
 ; Command buffers use the zero-filled DOS save area. A command instance never
 ; installs, and installation reads its arguments before it prepares the units.
+; Installation writes only up to mount_tracks+TRACK_CONTROL; the audio
+; activation code sits after that (INSTALL_SCRATCH in driver.asm).
 arguments equ sda_save
 full_path equ arguments+128
 mount_tracks equ full_path+INFO_TRACKS
