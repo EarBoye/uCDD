@@ -372,6 +372,8 @@ port_callback:
     je .master_pair
     cmp bl, 28h
     je .cd_pair
+    cmp bl, 26h
+    je .fm_pair
     cmp bl, 4
     jne .volume16
     mov bx, 32h
@@ -381,6 +383,9 @@ port_callback:
     jmp .volume_pair
 .cd_pair:
     mov bx, 36h
+    jmp .volume_pair
+.fm_pair:
+    mov bx, 34h
 .volume_pair:
     mov ah, al
     and al, 0f0h
@@ -396,8 +401,6 @@ port_callback:
     cmp bl, 37h
     ja .done
     and bl, 0feh
-    cmp bl, 34h
-    je .done
     mov al, [virtual_mixer+bx]
     and al, 0f0h
     mov ah, [virtual_mixer+bx+1]
@@ -409,14 +412,22 @@ port_callback:
     jmp .volume_update
 .cd_view:
     cmp bl, 36h
-    jne .voice_view
+    jne .fm_view
     mov [virtual_mixer+28h], al
+    jmp .volume_update
+.fm_view:
+    cmp bl, 34h
+    jne .voice_view
+    mov [virtual_mixer+26h], al
     jmp .volume_update
 .voice_view:
     mov [virtual_mixer+4], al
 .volume_update:
 %ifdef MOUNTED_AUDIO
     call cd_gain_update
+%endif
+%ifdef RESIDENT_AUDIO
+    call fm_update
 %endif
 .voice_gain:
     call sb_pcm_update
