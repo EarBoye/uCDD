@@ -95,8 +95,16 @@ mix_half:
     cmp dword [game_physical], 0
     jne .frame
 %endif
+    ; The shortcuts store 16-bit stereo frames at the mixing rate: the SB16,
+    ; the WSS codec, and the ESS at full rate. The rate test below leaves out
+    ; an ESS whose clock could not be trimmed to 44.1 kHz.
     cmp byte [sound_card], 0
+    je .fast_card
+    cmp byte [sound_card], 2
     jne .frame
+    cmp byte [ess_half], 0
+    jne .frame
+.fast_card:
     cmp byte [sb_patch_active], 0
     jne .frame
     cmp dword [cd_step], 65536

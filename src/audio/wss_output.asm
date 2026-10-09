@@ -162,9 +162,9 @@ ess_native db 0
 ; Auto-initialize DAC, demand transfer of four bytes, 16-bit signed stereo.
 ess_table:
     db 0b8h,04h, 0b9h,02h, 0b6h,00h, 0b7h,71h, 0b7h,0bch
-; 795.5 kHz / 18 = 44194 Hz, taken as 44100: the chip has no closer rate and
-; the 0.2% is not audible. Filter clock 7.16 MHz / 5. One interrupt for each
-; period.
+; 795.5 kHz / 18 = 44194 Hz. The ES1868 and later adjust their clock to make
+; it 44100 Hz (register BAh bit 6); ess_setup sets that, or else tells the mixer
+; the real rate. Filter clock 7.16 MHz / 5. One interrupt for each period.
     db 0a1h,0eeh, 0a2h,0fbh
     db 0a4h,(-PERIOD_BYTES) & 0ffh, 0a5h,((-PERIOD_BYTES) >> 8) & 0ffh
 ; Half rate: 795.5 kHz / 36. The mixer averages each pair of frames.
@@ -185,9 +185,21 @@ ess_write:
 ; AL=register. Keep the bits of CH and set the bits of CL.
 ess_modify:
     mov bl, al
+    call ess_read
+    jc .done
+    and al, ch
+    or al, cl
+    mov ah, al
+    mov al, bl
+    jmp ess_write
+.done:
+    ret
+; AL=register. Returns AL=value, CF set on failure. Keeps BX and CX.
+ess_read:
+    push ax
     mov al, 0c0h
     call dsp_write
-    mov al, bl
+    pop ax
     call dsp_write
     jc .done
     push cx
@@ -202,15 +214,48 @@ ess_modify:
     jz .fail
     sub dx, 4
     call physical_read
-    and al, ch
-    or al, cl
-    mov ah, al
-    mov al, bl
-    jmp ess_write
+    clc
+    ret
 .fail:
     stc
 .done:
     ret
+%ifdef RESIDENT_AUDIO
+; The sample rate generator divides 795.5 kHz, so 44.1 and 22.05 kHz come out
+; at 44194 and 22097 Hz. Chips from the ES1868 on can trim their clock to make
+; them exact: BAh bit 6. If the bit does not follow writes, the mixer is told
+; the real rate instead, as for the SB Pro, so games and disc audio keep time.
+ess_rate_adjust:
+%ifdef TEST_ESS_NO_TRIM
+    jmp .real_rate
+%endif
+    mov al, 0bah
+    mov cx, 2000h
+    call ess_modify
+    jc .real_rate
+    mov al, 0bah
+    call ess_read
+    jc .real_rate
+    test al, 40h
+    jnz .real_rate
+    mov al, 0bah
+    mov cx, 2040h
+    call ess_modify
+    jc .real_rate
+    mov al, 0bah
+    call ess_read
+    jc .real_rate
+    test al, 40h
+    jz .real_rate
+    ret
+.real_rate:
+    mov dword [output_rate], ESS_RATE
+    mov dword [cd_step], (44100*65536)/ESS_RATE
+    mov dword [cd_step_remainder], (44100*65536) % ESS_RATE
+    ret
+; 14.31818 MHz / 18 / 18
+ESS_RATE equ 44192
+%endif
 ess_setup:
     ; Reset with bit 1 set to clear the FIFO, then enable the extended commands.
     mov al, 3
@@ -227,6 +272,9 @@ ess_setup:
 .rate:
     mov cl, 4
     call ess_list
+%ifdef RESIDENT_AUDIO
+    call ess_rate_adjust
+%endif
     ; Stereo, then the interrupt and DMA request enables.
     mov al, 0a8h
     mov cx, 0f401h

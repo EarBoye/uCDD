@@ -332,6 +332,7 @@ port_callback:
     mov byte [sb_single], 0
     mov byte [sb_input], 0
     mov byte [sb_speaker], 1
+    mov byte [sb_speaker_flag], 1
     mov byte [sb_filter_legacy], 0
     mov byte [game_active], 0
     mov byte [game_start_pending], 0
@@ -609,13 +610,18 @@ port_callback:
     mov byte [reply_count], 2
     jmp .done
 .speaker_off:
+    mov byte [sb_speaker_flag], 0
+    ; On DSP 4.xx the speaker commands only set the flag that D8h reports.
+    cmp byte [virtual_dsp_version], 4
+    jae .done
     mov byte [sb_speaker], 0
     jmp .done
 .speaker_on:
     mov byte [sb_speaker], 1
+    mov byte [sb_speaker_flag], 1
     jmp .done
 .speaker_status:
-    mov al, [sb_speaker]
+    mov al, [sb_speaker_flag]
     neg al
     jmp .one_reply
 .test_read:
@@ -1231,6 +1237,10 @@ port_callback:
     jae .filter_clear
     cmp byte [sb_input], 0
     jne .filter_clear
+    ; The switchable 3.2 kHz output filter belongs to the SB and SB Pro. The
+    ; SB16's output filter follows the sample rate, for legacy commands too.
+    cmp byte [virtual_dsp_version], 4
+    jae .filter_clear
     mov byte [sb_filter_legacy], 1
     ; A block that follows a filtered block is the same output stream. Keep the
     ; filter state: the response to the last block has not ended.

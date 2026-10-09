@@ -20,6 +20,8 @@ sb_input db 0
 sb_finished db 0
 sb_paused db 0
 sb_speaker db 1
+; What D8h reports. It differs from sb_speaker only on DSP 4.xx.
+sb_speaker_flag db 1
 sb_pcm_gain dd 32768,32768
 sb_filter_legacy db 0
 sb_filter_bypass db 0

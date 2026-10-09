@@ -80,6 +80,9 @@ def main():
                 defines.append('INJECT_REG=1')
             if args.verify_mix:
                 defines.append('VERIFY_MIX=1')
+            import os
+            for extra in os.environ.get('UCDD_DEFINES', '').split():
+                defines.append(extra)
             assemble_resident_host(tuple(defines),
                                    profile=args.profile_host)
         else:
