@@ -1232,7 +1232,20 @@ pvd times 192 db 0
     times 1024 db 0
 stack_top:
 sda_save:
+%ifdef RESIDENT_AUDIO
+; Installation copies its command line here and sets three header fields of
+; the mount buffer (helper.asm: arguments, full_path, mount_tracks) before it
+; activates the audio. The activation code follows those bytes. It runs once,
+; before any DOS state is swapped into this buffer, and the units are placed
+; after it (see units_base), so it costs no resident memory of its own.
+INSTALL_SCRATCH equ (128 + INFO_TRACKS + TRACK_CONTROL + 1 + 15) & ~15
+    times INSTALL_SCRATCH db 0
+%include "audio/resident_init.asm"
+activation_end:
+    times 4096+MAX_UNITS*UNIT_SIZE+16-(activation_end-sda_save) db 0
+%else
     times 4096+MAX_UNITS*UNIT_SIZE+16 db 0
+%endif
 
 install:
     cld
@@ -1264,6 +1277,14 @@ install:
     mov di, sda_save+15
     add di, cx
     and di, 0fff0h
+%ifdef RESIDENT_AUDIO
+    mov ax, activation_end+15
+    and ax, 0fff0h
+    cmp di, ax
+    jae .units_placed
+    mov di, ax
+.units_placed:
+%endif
     mov [units_base], di
     push ds
     pop es

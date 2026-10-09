@@ -170,5 +170,3 @@ audio_abort:
     retf
 
 audio_detach_failed db 0
-
-%include "audio/resident_init.asm"
