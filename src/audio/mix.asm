@@ -95,15 +95,18 @@ mix_half:
     cmp dword [game_physical], 0
     jne .frame
 %endif
-    ; The shortcuts store 16-bit stereo frames at the mixing rate: the SB16,
-    ; the WSS codec, and the ESS at full rate. The rate test below leaves out
-    ; an ESS whose clock could not be trimmed to 44.1 kHz.
+    ; The shortcuts store 16-bit stereo frames: the SB16, the WSS codec and the
+    ; ESS. The rate test below leaves out an ESS whose clock could not be
+    ; trimmed to 44.1 kHz. At half rate only silence and disc audio alone are
+    ; short cut, and only for whole pairs of frames.
     cmp byte [sound_card], 0
     je .fast_card
     cmp byte [sound_card], 2
     jne .frame
     cmp byte [ess_half], 0
-    jne .frame
+    je .fast_card
+    test cl, 1
+    jnz .frame
 .fast_card:
     cmp byte [sb_patch_active], 0
     jne .frame
@@ -121,11 +124,16 @@ mix_half:
     jne .cd_only
     movzx eax, cx
     add [game_mix_frame], eax
+    cmp byte [ess_half], 0
+    jne .silence_ready
     shl cx, 1
+.silence_ready:
     xor ax, ax
     rep stosw
     jmp .half_complete
 .cd_only:
+    cmp byte [ess_half], 0
+    jne .cd_half
     cmp dword [cd_gain], 256
     ja .fast_frame
     cmp dword [cd_gain+4], 256
@@ -145,7 +153,42 @@ mix_half:
     dec cx
     jnz .cd_only_frame
     jmp .half_complete
+.cd_half:
+    ; The mean of each two frames, as mix_run_store_half makes it. A gain of
+    ; 256 or less keeps every sample inside 16 bits, so nothing needs clipping.
+    cmp dword [cd_gain], 256
+    ja .frame
+    cmp dword [cd_gain+4], 256
+    ja .frame
+    movzx eax, cx
+    add [game_mix_frame], eax
+    shr cx, 1
+.cd_half_frame:
+    movsx eax, word [gs:bx]
+    movsx edx, word [gs:bx+4]
+    imul eax, [cd_gain]
+    imul edx, [cd_gain]
+    sar eax, 9
+    sar edx, 9
+    add eax, edx
+    sar eax, 1
+    stosw
+    movsx eax, word [gs:bx+2]
+    movsx edx, word [gs:bx+6]
+    imul eax, [cd_gain+4]
+    imul edx, [cd_gain+4]
+    sar eax, 9
+    sar edx, 9
+    add eax, edx
+    sar eax, 1
+    stosw
+    add bx, 8
+    dec cx
+    jnz .cd_half_frame
+    jmp .half_complete
 .fast_active:
+    cmp byte [ess_half], 0
+    jne .frame
     cmp byte [game_source], 0
     jne .frame
     cmp byte [sb_single], 0
