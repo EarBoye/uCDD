@@ -78,6 +78,23 @@ pro_start:
     clc
     ret
 .mono:
+    ; A DSP 2.00 or later loops the block by itself (1Ch). A DSP 1.xx plays
+    ; one block per command, restarted from the interrupt, with a short gap.
+    mov byte [sb_mono_auto], 0
+    mov al, 0e1h
+    call dsp_write
+    jc .stop_failed
+    call dsp_read
+    jc .stop_failed
+    ; The port calls do not keep AH. The minor version is read and dropped.
+    push ax
+    call dsp_read
+    pop ax
+    jc .stop_failed
+    cmp al, 2
+    jb .mono_dma
+    mov byte [sb_mono_auto], 1
+.mono_dma:
     xor bx, bx
     mov cx, RING_BYTES/8-1
     mov ah, 58h
@@ -88,6 +105,16 @@ pro_start:
     call dsp_write
     mov al, 0d1h
     call dsp_write
+    cmp byte [sb_mono_auto], 0
+    je .mono_single
+    mov al, 48h
+    call sb_mono_next.size
+    mov al, 1ch
+    call dsp_write
+    jc .stop_failed
+    clc
+    ret
+.mono_single:
     call sb_mono_next
     jc .stop_failed
     clc
@@ -136,6 +163,8 @@ output_prepare:
 
 sb_mono_next:
     mov al, 14h
+; AL=command, followed by the block length.
+.size:
     call dsp_write
     mov al, (PERIOD_BYTES/8-1) & 0ffh
     call dsp_write
@@ -223,3 +252,25 @@ pro_stop:
 pro_registers db 22h,04h,0eh
 pro_saved times 3 db 0
 pro_priming db 0
+sb_mono_auto db 0
+
+; Returns AL=a byte from the DSP, CF set if none came.
+dsp_read:
+    push cx
+    mov cx, 65535
+    mov dx, [sb_base]
+    add dx, 0eh
+.wait:
+    call physical_read
+    test al, 80h
+    jnz .ready
+    loop .wait
+    pop cx
+    stc
+    ret
+.ready:
+    sub dx, 4
+    call physical_read
+    pop cx
+    clc
+    ret

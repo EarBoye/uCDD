@@ -467,6 +467,8 @@ audio_irq:
     call physical_read
     cmp byte [sound_card], 3
     jne .acknowledged
+    cmp byte [sb_mono_auto], 0
+    jne .acknowledged
     call sb_mono_next
     jmp .acknowledged
 .wss:
