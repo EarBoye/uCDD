@@ -20,34 +20,59 @@ audio_activate:
     call cd_memory_low
     jc .cleanup
     call sb_model
-    mov bx, RING_PARAS*2
+    ; The part of the ring the card plays: all of it for 16-bit output, a
+    ; quarter for the SB Pro, an eighth for the SB 2.0, half for the ESS at
+    ; half rate. Always a power of two.
+    mov bx, RING_PARAS
     cmp byte [sound_card], 3
     jne .pro_size
     shr bx, 1
 .pro_size:
     test byte [sound_card], 1
-    jz .allocate_dma
+    jz .half_size
     shr bx, 2
-.allocate_dma:
+.half_size:
+    mov cl, [ess_half]
+    shr bx, cl
     mov word [audio_error_text], dma_memory_message
+    push bx
+    ; The SB Pro start plays one byte from just past the ring (pro_start).
+    cmp byte [sound_card], 1
+    jne .allocate
+    inc bx
+.allocate:
     mov ah, 48h
     int 21h
+    pop bx
+    jc .cleanup
+    ; DMA cannot cross a 64 KB page. A block that does is replaced by one of
+    ; twice the size, and the ring starts at a multiple of its size in it.
+    mov dx, ax
+    add dx, bx
+    dec dx
+    xor dx, ax
+    test dh, 0f0h
+%ifndef TEST_RING_CROSS
+    jz .dma_block
+%endif
+    mov es, ax
+    mov ah, 49h
+    int 21h
+    jc .cleanup
+    push bx
+    shl bx, 1
+    mov ah, 48h
+    int 21h
+    pop bx
     jc .cleanup
     mov [output_allocation], ax
-    cmp byte [sound_card], 3
-    jne .pro_align
-    add ax, RING_PARAS/8-1
-    and ax, ~(RING_PARAS/8-1)
+    dec bx
+    add ax, bx
+    not bx
+    and ax, bx
     jmp .dma_ready
-.pro_align:
-    cmp byte [sound_card], 1
-    jne .align_dma
-    add ax, RING_PARAS/4-1
-    and ax, ~(RING_PARAS/4-1)
-    jmp .dma_ready
-.align_dma:
-    add ax, RING_PARAS-1
-    and ax, ~(RING_PARAS-1)
+.dma_block:
+    mov [output_allocation], ax
 .dma_ready:
     mov [output_segment], ax
     mov word [audio_error_text], cd_half_memory_message
