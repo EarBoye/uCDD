@@ -402,6 +402,7 @@ audio_irq:
 %ifdef RESIDENT_AUDIO
 .ticked:
 %endif
+    call sb_silence_tick
 %ifdef OWN_HOST
     mov byte [cd_refill_pending], 0
     cmp byte [cd_started], 1

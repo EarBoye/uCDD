@@ -136,6 +136,21 @@ virtual_irq_tick:
 .done:
     ret
 
+; Command 80h: signal the 8-bit interrupt once the silence has played.
+sb_silence_tick:
+    cmp byte [sb_silence], 0
+    je .done
+    mov eax, [periods]
+    shl eax, OUTPUT_SHIFT
+    sub eax, [sb_silence_end]
+    js .done
+    mov byte [sb_silence], 0
+    or byte [virtual_dsp_irq], 1
+    mov al, [guest_irq_bit]
+    mov [virtual_pic_request], al
+.done:
+    ret
+
 virtual_irq_take:
     push ds
     push bx

@@ -422,6 +422,7 @@ mix_half:
 %ifdef OWN_HOST
 .mono_value:
 %endif
+    xor edx, [sb_sign8]
     sub edx, 128
     shl edx, 7
     mov esi, edx
@@ -447,7 +448,9 @@ mix_half:
     add dx, [game_offset]
     push eax
     mov si, dx
-    movsx edx, word [fs:si]
+    mov dx, [fs:si]
+    xor dx, [sb_sign16]
+    movsx edx, dx
     sar edx, 1
     pop eax
     add eax, 2
@@ -466,7 +469,9 @@ mix_half:
 .single16_right:
     add ax, [game_offset]
     mov si, ax
-    movsx esi, word [fs:si]
+    mov si, [fs:si]
+    xor si, [sb_sign16]
+    movsx esi, si
     pop edx
     sar esi, 1
     jmp .advance
@@ -530,6 +535,7 @@ mix_half:
     push eax
     mov si, dx
     movzx edx, byte [fs:si]
+    xor edx, [sb_sign8]
     sub edx, 128
     shl edx, 7
     pop eax
@@ -549,6 +555,7 @@ mix_half:
     add ax, [game_offset]
     mov si, ax
     movzx esi, byte [fs:si]
+    xor esi, [sb_sign8]
     sub esi, 128
     shl esi, 7
     pop edx
@@ -558,6 +565,8 @@ mix_half:
     mov si, ax
     movzx edx, byte [fs:si]
     movzx esi, byte [fs:si+1]
+    xor edx, [sb_sign8]
+    xor esi, [sb_sign8]
     sub edx, 128
     sub esi, 128
     shl edx, 7

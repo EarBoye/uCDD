@@ -39,6 +39,16 @@ sb_dac_head dw 0
 sb_dac_tail dw 0
 sb_dac_frame dd 0
 game_origin dd 0
+; XORed into every sample by the general mix loop: 80h for signed 8-bit data,
+; 8000h for unsigned 16-bit single-cycle data, otherwise zero.
+sb_sign8 dd 0
+sb_sign16 dw 0
+%ifdef VIRTUAL_IRQ
+; Command 80h: set while a silence plays, until the output clock reaches
+; sb_silence_end. Then the 8-bit interrupt is signalled.
+sb_silence db 0
+sb_silence_end dd 0
+%endif
 %ifdef RESIDENT_AUDIO
 game_physical dd 0
 sb_patch_active db 0

@@ -337,6 +337,7 @@ port_callback:
     mov byte [game_start_pending], 0
     mov dword [game_exit_frame], 0
 %ifdef VIRTUAL_IRQ
+    mov byte [sb_silence], 0
     call virtual_irq_reset
 %endif
     test al, al
@@ -557,6 +558,10 @@ port_callback:
     je .play
     cmp al, 0c4h
     je .play
+    cmp al, 0c0h
+    je .play
+    cmp al, 0c2h
+    je .play
     cmp al, 0b0h
     je .play
     cmp al, 0b2h
@@ -593,6 +598,10 @@ port_callback:
     je .test_read
     cmp al, 0f2h
     je .force_irq
+%ifdef VIRTUAL_IRQ
+    cmp al, 80h
+    je .rate
+%endif
     cmp al, 0e1h
     jne .unsupported
     mov ax, [virtual_dsp_version]
@@ -804,6 +813,10 @@ port_callback:
 .pcm_argument:
     cmp byte [dsp_command], 14h
     je .length
+%ifdef VIRTUAL_IRQ
+    cmp byte [dsp_command], 80h
+    je .silence
+%endif
     cmp byte [dsp_command], 24h
     je .length
     cmp byte [dsp_command], 40h
@@ -845,9 +858,6 @@ port_callback:
     jnz .unsupported
     cmp al, 30h
     je .stereo16
-    ; Unsigned and mono 16-bit data use auto-initialized DMA only.
-    test byte [dsp_command], 4
-    jz .unsupported
     test al, 10h
     jnz .signed16
     or byte [pending_format], 2
@@ -861,13 +871,15 @@ port_callback:
     mov byte [pending_frame_shift], 2
     jmp .argument_done
 .mono_mode:
-    cmp al, 20h
-    jne .mono
-    mov byte [pending_frame_shift], 1
-    jmp .argument_done
-.mono:
-    test al, al
+    test al, 0cfh
     jnz .unsupported
+    test al, 10h
+    jz .unsigned8
+    or byte [pending_format], 4
+.unsigned8:
+    test al, 20h
+    jz .argument_done
+    mov byte [pending_frame_shift], 1
     jmp .argument_done
 .set_time_constant:
     movzx ecx, al
@@ -885,6 +897,33 @@ port_callback:
 .time_mono:
     mov [game_rate], ax
     jmp .set_rate
+%ifdef VIRTUAL_IRQ
+.silence:
+    ; 80h: no output for the given number of samples less one at the current
+    ; rate, then the 8-bit interrupt. Signalled from the output interrupt.
+    cmp byte [arguments], 2
+    jne .silence_length
+    mov [block_low], al
+    jmp .argument_done
+.silence_length:
+    mov ah, al
+    mov al, [block_low]
+    movzx eax, ax
+    inc eax
+    imul eax, OUTPUT_RATE
+    movzx ecx, word [game_rate]
+    add eax, ecx
+    dec eax
+    xor edx, edx
+    div ecx
+    push eax
+    call output_clock
+    pop ecx
+    add eax, ecx
+    mov [sb_silence_end], eax
+    mov byte [sb_silence], 1
+    jmp .argument_done
+%endif
 .legacy_length:
     cmp byte [arguments], 2
     jne .legacy_high
@@ -916,6 +955,8 @@ port_callback:
     jmp .single
 .output_kind:
     cmp byte [dsp_command], 0b2h
+    je .single
+    cmp byte [dsp_command], 0c2h
     je .single
     cmp byte [dsp_command], 14h
     je .single
@@ -1116,6 +1157,16 @@ port_callback:
     mov [game_frame_shift], cl
     mov al, [pending_format]
     mov [game_format], al
+    mov dword [sb_sign8], 0
+    mov word [sb_sign16], 0
+    test al, 4
+    jz .sign8_ready
+    mov byte [sb_sign8], 80h
+.sign8_ready:
+    test al, 2
+    jz .sign16_ready
+    mov byte [sb_sign16+1], 80h
+.sign16_ready:
     mov al, 1
     cmp cl, 2
     je .wide_irq
@@ -1125,14 +1176,18 @@ port_callback:
     inc al
 .irq_bit:
     mov [game_irq_bit], al
+    ; CH: DMA units per frame as a shift. A mono frame is one unit on either
+    ; channel, a byte on 8-bit DMA and a word on 16-bit DMA.
+    mov ch, cl
+    sub ch, al
+    inc ch
     mov dword [game_origin], 0
     cmp byte [sb_single], 0
     je .origin_ready
+    test ch, ch
+    jnz .origin_ready
     mov di, [game_dma]
-    cmp byte [pending_frame_shift], 0
-    jne .origin_ready
     mov eax, [di+DMA_POSITION]
-    shr eax, cl
     shl eax, 16
     mov [game_origin], eax
 .origin_ready:
@@ -1141,8 +1196,8 @@ port_callback:
     mov [game_limit], ebx
     cmp byte [sb_single], 0
     je .ring_ready
-    cmp byte [pending_frame_shift], 0
-    je .ring_ready
+    test ch, ch
+    jz .ring_ready
     mov dword [game_limit], 0
 .ring_ready:
     mov byte [sb_dac_enabled], 0
@@ -1710,7 +1765,7 @@ game_frame_shift db 0
 game_source db 0
 pending_frame_shift db 0
 game_irq_bit db 1
-; Bit 0: 16-bit mono. Bit 1: unsigned 16-bit.
+; Bit 0: 16-bit mono. Bit 1: unsigned 16-bit. Bit 2: signed 8-bit.
 game_format db 0
 pending_format db 0
 game_block_bytes dd 4096
