@@ -26,6 +26,7 @@ for gaps and steps.
 | `split-word-io` | In every tested build, not tested alone |
 | `single-cycle-start` | Four fixes for single-cycle playback. Emulators only |
 | `cue-far-buffer` | Emulators only: 111 CUE sheets against the old parser, and a mixed-mode image mounted, read and played under FreeDOS. Now part of `fixes`, because the driver segment is full without it |
+| `wss-stop-vector` | The WSS and ESS stop put the old IRQ handler back on the wrong vector. It read `sb_irq` after `lds` had moved DS to the handler's segment, so it hooked vector (garbage + 8) and left the IRQ vector pointing into the program. Under MS-DOS 7.1 with the card on IRQ 7, that vector was 08h: the timer went to the IRQ 7 handler, which sends no end-of-interrupt for it, and the machine stopped taking interrupts after the UCDDSET Test (no keyboard). The freeze was seen on the real PC. The cause was traced in 86Box (ES1868, P55T2P4, MS-DOS 7.1, JemmEx), which freezes the same way; the fixed build passes there at IRQ 5 and 7, with the Test run twice. Not yet run on the real PC. The resident driver reaches this code only when activation fails or on removal |
 
 ## The output period decides which games have sound
 

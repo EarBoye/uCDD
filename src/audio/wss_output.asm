@@ -112,10 +112,11 @@ wss_stop:
     mov dx, 21h
     mov al, [saved_pic]
     call physical_write
+    ; Read the IRQ before LDS changes DS to the old handler's segment.
     push ds
-    lds dx, [old_irq]
     mov al, [sb_irq]
     add al, 8
+    lds dx, [old_irq]
     mov ah, 25h
     int 21h
     pop ds
