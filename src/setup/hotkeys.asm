@@ -283,6 +283,8 @@ key_capture:
     movzx dx, byte [bx+ITEM_PARAM]
     call key_name
     jc .reserved
+    call disc_key
+    jc .disc_used
     call key_conflict
     jc .used
     mov di, dx
@@ -292,6 +294,9 @@ key_capture:
     ret
 .reserved:
     mov word [status], reserved_key_message
+    ret
+.disc_used:
+    mov word [status], disc_used_message
     ret
 .used:
     mov word [status], used_key_message
@@ -460,6 +465,7 @@ unknown_key_text db '?',0
 press_message db 'Press the new key. Press Esc to cancel.',0
 reserved_key_message db 'You cannot use this key as a hotkey.',0
 used_key_message db 'Another hotkey uses this key.',0
+disc_used_message db 'The disc keys use this key. Change the disc keys first.',0
 disc_keys_message db 'A hotkey uses one of these keys. Change that hotkey first.',0
 modifier_message db 'Select one or more modifier keys.',0
 

@@ -15,11 +15,18 @@ config_path_init:
     xor al, al
     mov cx, 32767
     cld
+    ; An environment with no variables: MS-DOS copies it as two zero bytes
+    ; before the count, which the loop handles. One zero byte is handled too.
+    cmp byte [es:di], 0
+    jne .environment
+    cmp byte [es:di+1], 0
+    jne .counted
 .environment:
     repne scasb
     jne .bad
     cmp byte [es:di], 0
     jne .environment
+.counted:
     cmp word [es:di+1], 1
     jb .bad
     add di, 3

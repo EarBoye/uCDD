@@ -39,6 +39,15 @@ wss_start:
     mov ax, ((PERIOD_FRAMES-1) >> 8)*256+14
     call indexed_write
 .dma:
+    cmp byte [ess_native], 0
+    jne .prepare
+    ; A codec interrupt left from before would be taken as soon as the IRQ
+    ; is unmasked. Clear it first; the ESS reset above has done the same.
+    mov dx, [sb_base]
+    add dx, 6
+    xor al, al
+    call physical_write
+.prepare:
     call output_prepare
     cli
     xor bx, bx

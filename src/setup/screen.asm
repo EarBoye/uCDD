@@ -78,26 +78,67 @@
 %endmacro
 
 screen_start:
-    mov ax, 3
+    push es
+    mov ax, 40h
+    mov es, ax
+    mov ah, 0fh
     int 10h
-    ; Bit 7 of an attribute selects a bright background, not blinking.
+    mov [screen_old_mode], al
+    mov al, [es:84h]
+    mov [screen_old_rows], al
+    ; A monochrome adapter (MDA, Hercules) has mode 7 and its text at B000h.
+    mov word [screen_segment], 0b800h
+    mov ax, 3
+    cmp byte [screen_old_mode], 7
+    jne .mode
+    mov word [screen_segment], 0b000h
+    mov ax, 7
+.mode:
+    int 10h
+    ; Bit 7 of an attribute selects a bright background, not blinking. An
+    ; EGA or VGA BIOS takes the call; a CGA or MDA has it in the 6845 mode
+    ; control port, whose value the BIOS keeps at 40:65h.
     mov ax, 1003h
     xor bx, bx
     int 10h
+    mov ah, 12h
+    mov bl, 10h
+    int 10h
+    cmp bl, 10h
+    jne .cursor
+    mov dx, [es:63h]
+    add dx, 4
+    mov al, [es:65h]
+    and al, ~20h
+    out dx, al
+.cursor:
     mov ah, 1
     mov cx, 2000h
     int 10h
     mov byte [screen_active], 1
+    pop es
     ret
 
+; Put the text mode back as it was: 25 lines, or the 43 or 50 lines of the
+; small font. A graphics mode is not restored.
 screen_stop:
     cmp byte [screen_active], 0
     je .done
-    mov ax, 3
+    mov al, [screen_old_mode]
+    cmp al, 7
+    je .restore
+    cmp al, 3
+    jbe .restore
+    mov al, 3
+.restore:
+    xor ah, ah
     int 10h
-    mov ax, 1003h
-    mov bx, 1
+    cmp byte [screen_old_rows], 42
+    jb .active
+    mov ax, 1112h
+    xor bl, bl
     int 10h
+.active:
     mov byte [screen_active], 0
 .done:
     ret
@@ -121,8 +162,7 @@ put_text:
     push di
     push es
     push dx
-    mov ax, 0b800h
-    mov es, ax
+    mov es, [screen_segment]
     call screen_offset
     mov ah, bl
 .next:
@@ -156,10 +196,7 @@ put_repeat:
     push cx
     push di
     push es
-    push ax
-    mov ax, 0b800h
-    mov es, ax
-    pop ax
+    mov es, [screen_segment]
     call screen_offset
     mov ah, bl
     add dl, cl
@@ -234,8 +271,7 @@ draw_box:
 ; Clear the screen. Draw the box, its shadow, the title, and the status.
 form_frame:
     push es
-    mov ax, 0b800h
-    mov es, ax
+    mov es, [screen_segment]
     xor di, di
     mov ax, A_SCREEN*256+' '
     mov cx, 2000
@@ -882,6 +918,9 @@ box_columns db 0
 fader_halves db 0
 fader_column db 0
 screen_active db 0
+screen_segment dw 0b800h
+screen_old_mode db 3
+screen_old_rows db 24
 changed db 0
 status dw empty_text
 choice_old dw 0

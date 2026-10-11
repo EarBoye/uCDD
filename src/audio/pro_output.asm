@@ -49,10 +49,16 @@ pro_start:
     xor al, al
     call dsp_write
     jc .stop_failed
+    ; The interrupt comes after one sample at the reset rate. Each turn of
+    ; the loop reads a port, so the wait is at least 65535 bus cycles on any
+    ; CPU; a plain counting loop would run out on a fast one.
     mov cx, 65535
+    mov dx, [sb_base]
+    add dx, 0ch
 .prime:
     cmp byte [pro_priming], 0
     je .start
+    call physical_read
     loop .prime
     call pro_stop
     stc
@@ -214,6 +220,18 @@ pro_dma:
 pro_stop:
     cmp byte [sb_running], 0
     je .done
+    ; Mask the IRQ first. A block end during the reset would otherwise run
+    ; the handler, which writes DSP commands on a DSP 1.xx.
+    pushf
+    cli
+    mov dx, 21h
+    call physical_read
+    mov cl, [sb_irq]
+    mov ah, 1
+    shl ah, cl
+    or al, ah
+    call physical_write
+    popf
     call physical_reset
     mov al, 0d3h
     call dsp_write

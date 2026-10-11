@@ -137,8 +137,7 @@ blaster_build:
     cmp al, 'T'
     je .copy
     xor ah, ah
-    cmp di, blaster_value+BLASTER_MAX-12
-    jae .skip_field
+    mov [field_start], di
     mov al, ' '
     stosb
 .copy:
@@ -150,10 +149,15 @@ blaster_build:
     inc si
     test ah, ah
     jnz .copy
-    stosb
-    jmp .copy
-.skip_field:
+    ; Keep room for " T", the type, and the terminator. A field that does
+    ; not fit is dropped whole, with its space.
+    cmp di, blaster_value+BLASTER_MAX-4
+    jb .store
+    mov di, [field_start]
     mov ah, 1
+    jmp .copy
+.store:
+    stosb
     jmp .copy
 .type:
     mov ax, ' T'
@@ -304,5 +308,6 @@ env_entry dw 0
 env_end dw 0
 env_old dw 0
 blaster_length dw 0
+field_start dw 0
 blaster_name db 'BLASTER='
 blaster_value times BLASTER_MAX db 0
