@@ -10,6 +10,7 @@ It adds changes found while testing on real hardware (Pentium MMX 233,
 - More interrupt-flag patterns recognised, and a larger table of learned sites
 - CD audio refills keep running with a 256-frame output period
 - Native ESS AudioDrive output, with an optional half-rate mode
+- A PCI disk controller on any IRQ no longer freezes DOS/4GW games. UCDDSET finds the PCI disk controllers at every `UCDD -install`, shows them in a Disk row, warns when one shares an IRQ with a sound card setting, and takes an IRQ by hand for a controller it cannot find
 
 And these, found with an emulator test rig, all in single-cycle playback:
 
@@ -25,8 +26,13 @@ message.
 The build line used for testing is:
 
 ```console
-python scripts/build.py --resident-audio --audio-period-frames 256 --no-refill-hint --disk-irq-direct --split-word-io --inject-register --flat-sink
+python scripts/build.py --resident-audio --audio-period-frames 256 --no-refill-hint
 ```
+
+The disk IRQ handling and the word I/O, interrupt-flag and flat-pointer fixes
+are now in every resident-audio build. The older build line, with
+`--disk-irq-direct --split-word-io --inject-register --flat-sink`, still works
+and gives the same driver.
 
 The period is a trade: 256 frames costs the least CPU time but leaves some
 games without sound. See "The output period decides which games have

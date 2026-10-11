@@ -27,6 +27,7 @@ start:
     mov di, config_default
     mov cx, CONFIG_SIZE
     rep movsb
+    call disk_scan
     cmp byte [handoff], 0
     je .load
     call handoff_check
@@ -72,6 +73,13 @@ install_settings:
     mov si, config_data
     mov cx, CONFIG_SIZE
     rep movsb
+    ; A driver with the tag takes the disk IRQ mask after the record. An older
+    ; driver has other data there.
+    cmp dword [es:di], 'uDSK'
+    jne .tagless
+    call disk_mask
+    mov [es:di+4], ax
+.tagless:
     push cs
     pop es
     call blaster_update
@@ -84,6 +92,7 @@ install_settings:
     call print_text
     mov si, period_line
     call print_text
+    call disk_report
     mov ax, 4c00h
     int 21h
 .failed:
@@ -96,6 +105,7 @@ install_settings:
     call print_text
     mov si, blaster_failed_end
     call print_text
+    call disk_report
     mov ax, 4c00h
     int 21h
 
@@ -244,7 +254,7 @@ handoff_check:
     add eax, edx
     cmp eax, ebx
     jb .bad
-    add eax, CONFIG_SIZE
+    add eax, CONFIG_SIZE+6
     cmp eax, ecx
     ja .bad
     les di, [handoff_pointer]
@@ -320,9 +330,11 @@ main_draw:
     mov dx, 0704h
     mov si, physical_label
     call put_text
+    call disk_draw
     mov dx, 0904h
     mov cx, 69
     mov al, 0fah
+    mov bl, A_BOX
     call put_repeat
     mov dx, 0b04h
     mov si, virtual_label
@@ -550,27 +562,28 @@ model_changed:
     clc
     ret
 
-MAIN_ITEMS equ 18
+MAIN_ITEMS equ 19
 main_items:
-    item 7,16,21,0, NONE,5,NONE,1, format_choice,choice_popup,choice_cycle,model_choice
-    item 7,41,3,0, NONE,6,0,2, format_choice,choice_popup,choice_cycle,port_choice
-    item 7,49,3,0, NONE,7,1,3, format_choice,choice_popup,choice_cycle,irq_choice
-    item 7,57,3,0, NONE,8,2,4, format_choice,choice_popup,choice_cycle,dma8_choice
-    item 7,67,3,0, NONE,9,3,NONE, format_choice,choice_popup,choice_cycle,dma16_choice
-    item 11,16,21,0, 0,10,NONE,6, format_choice,choice_popup,choice_cycle,virtual_model_choice
-    item 11,41,3,0, 1,10,5,7, format_choice,choice_popup,choice_cycle,virtual_port_choice
-    item 11,49,3,0, 2,11,6,8, format_choice,choice_popup,choice_cycle,virtual_irq_choice
-    item 11,57,3,0, 3,11,7,9, format_choice,choice_popup,choice_cycle,virtual_dma8_choice
-    item 11,67,3,0, 4,11,8,NONE, format_choice,choice_popup,choice_cycle,virtual_dma16_choice
-    item 12,41,3,0, 6,12,NONE,11, format_choice,choice_popup,choice_cycle,wss_port_choice
-    item 12,49,3,0, 7,12,10,NONE, format_choice,choice_popup,choice_cycle,wss_irq_choice
-    item 20,5,9,0, 10,NONE,NONE,13, format_button,hotkeys_screen,0,hotkeys_label
-    item 20,18,7,0, 10,NONE,12,14, format_button,mixer_screen,0,mixer_label
-    item 20,31,8,0, 10,NONE,13,15, format_button,detect_action,0,detect_label
-    item 20,43,6,0, 10,NONE,14,16, format_button,test_action,0,test_label
-    item 20,55,6,0, 10,NONE,15,17, format_button,save_action,0,save_label
-    item 20,65,8,0, 10,NONE,16,NONE, format_button,cancel_action,0,cancel_label
-main_notes dw 0,0,0,0,0
+    item 7,16,21,0, NONE,6,NONE,1, format_choice,choice_popup,choice_cycle,model_choice
+    item 7,41,3,0, NONE,7,0,2, format_choice,choice_popup,choice_cycle,port_choice
+    item 7,49,3,0, NONE,5,1,3, format_choice,choice_popup,choice_cycle,irq_choice
+    item 7,57,3,0, NONE,9,2,4, format_choice,choice_popup,choice_cycle,dma8_choice
+    item 7,67,3,0, NONE,10,3,NONE, format_choice,choice_popup,choice_cycle,dma16_choice
+    item 8,49,3,0, 2,8,NONE,NONE, format_choice,choice_popup,choice_cycle,disk_irq_choice
+    item 11,16,21,0, 0,11,NONE,7, format_choice,choice_popup,choice_cycle,virtual_model_choice
+    item 11,41,3,0, 1,11,6,8, format_choice,choice_popup,choice_cycle,virtual_port_choice
+    item 11,49,3,0, 5,12,7,9, format_choice,choice_popup,choice_cycle,virtual_irq_choice
+    item 11,57,3,0, 3,12,8,10, format_choice,choice_popup,choice_cycle,virtual_dma8_choice
+    item 11,67,3,0, 4,12,9,NONE, format_choice,choice_popup,choice_cycle,virtual_dma16_choice
+    item 12,41,3,0, 7,13,NONE,12, format_choice,choice_popup,choice_cycle,wss_port_choice
+    item 12,49,3,0, 8,13,11,NONE, format_choice,choice_popup,choice_cycle,wss_irq_choice
+    item 20,5,9,0, 11,NONE,NONE,14, format_button,hotkeys_screen,0,hotkeys_label
+    item 20,18,7,0, 11,NONE,13,15, format_button,mixer_screen,0,mixer_label
+    item 20,31,8,0, 11,NONE,14,16, format_button,detect_action,0,detect_label
+    item 20,43,6,0, 11,NONE,15,17, format_button,test_action,0,test_label
+    item 20,55,6,0, 11,NONE,16,18, format_button,save_action,0,save_label
+    item 20,65,8,0, 11,NONE,17,NONE, format_button,cancel_action,0,cancel_label
+main_notes dw 0,0,0,0,0,disk_note
     dw virtual_note,virtual_note,virtual_note,virtual_note,virtual_note,wss_note,wss_note
     dw 0,0,0,0,0,0
 model_choice:
@@ -679,6 +692,7 @@ setup_usage_message db 'UCDDSET sets the sound cards, hotkeys, and volumes for u
 %include "setup/config_file.asm"
 %include "setup/blaster.asm"
 %include "setup/detect.asm"
+%include "setup/disk.asm"
 %include "audio/speaker.asm"
 %include "config_path.asm"
 setup_end:

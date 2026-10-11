@@ -105,8 +105,28 @@ resident_host_init:
     add eax, ecx
     mov [cs:resident_game_vector], eax
     push edx
+    cmp dword [ds:bp+8], 34464443h
+    jne .version3
+    ; CDF4 points to the disk IRQ mask. Never the timer, keyboard, cascade,
+    ; RTC, coprocessor, or the sound card's own IRQ.
+    push bx
+    push cx
+    mov bx, [ds:bp+20]
+    mov dx, [ds:bx]
+    and dx, 0def8h
+    movzx cx, byte [cs:dpmi_audio_irq]
+    cmp cx, 15
+    ja .disk_mask
+    btr dx, cx
+.disk_mask:
+    mov [cs:dpmi_disk_mask], dx
+    pop cx
+    pop bx
+    jmp .version3_fields
+.version3:
     cmp dword [ds:bp+8], 33464443h
     jne .version2
+.version3_fields:
     movzx edx, word [ds:bp+18]
     add edx, ecx
     mov [cs:resident_refill_clock], edx

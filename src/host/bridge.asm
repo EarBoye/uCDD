@@ -442,14 +442,12 @@ dpmi_bridge_stubs:
 %assign irq 0
 %rep 16
 dpmi_bridge_irq_%+irq:
-%ifdef DISK_IRQ_DIRECT
-%if irq >= 14
-    ; Hard disk IRQs always go to the real-mode handler. A PCI controller holds
-    ; its level-triggered request until that handler runs.
-    jmp far [cs:dpmi_bridge_vectors+irq*4]
-%endif
-%endif
     pushf
+    ; Disk controller IRQs always go to the real-mode handler. A PCI controller
+    ; holds its level-triggered request until that handler runs, and a client
+    ; waiting in a real-mode call for the disk could never take it.
+    test word [cs:dpmi_disk_mask], 1<<irq
+    jnz .chain
     call dpmi_bridge_blocked
 %if irq = 6 || irq >= 8 && irq <= 11 || irq >= 14
     ; The CD refill can wait for the disk and RTC IRQs.
@@ -579,6 +577,9 @@ dpmi_bridge_real_return:
     iret
 
 dpmi_bridge_mask dw 0
+; The disk IRQs. IRQ 14 and 15 unless the driver passes the mask that UCDDSET
+; found (CDF4, see host/resident.asm).
+dpmi_disk_mask dw 0c000h
 dpmi_bridge_installed db 0
 dpmi_bridge_vectors times 16 dd 0
 dpmi_bridge_entry dd 0

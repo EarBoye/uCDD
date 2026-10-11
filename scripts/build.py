@@ -44,14 +44,21 @@ def main():
                         help='Build host counters in build/profile. Use with --resident-audio.')
     parser.add_argument('--no-refill-hint', action='store_true',
                         help='Test build: ignore the retrace hint for deferred CD refills.')
+    # The disk IRQ handling is always built: UCDDSET finds the IRQs at
+    # installation. The option is kept so that older build commands still work.
     parser.add_argument('--disk-irq-direct', action='store_true',
-                        help='Always pass IRQ 14 and 15 to the real-mode handler.')
-    parser.add_argument('--split-word-io', action='store_true',
-                        help='Run a rejected word port access as two byte accesses.')
-    parser.add_argument('--flat-sink', action='store_true',
-                        help='Reflect flat segments to real mode as segment A000, not 0.')
-    parser.add_argument('--inject-register', action='store_true',
-                        help='Recognise PUSHF, POP reg, CLI and mark the flags image in the register.')
+                        help=argparse.SUPPRESS)
+    # These fixes are on by default. The --no- options build without one, to
+    # test it on its own.
+    parser.add_argument('--split-word-io', action='store_true', help=argparse.SUPPRESS)
+    parser.add_argument('--no-split-word-io', dest='split_word_io_off', action='store_true',
+                        help='Reject a word port access to the virtual card, as 0.9.3 does.')
+    parser.add_argument('--flat-sink', action='store_true', help=argparse.SUPPRESS)
+    parser.add_argument('--no-flat-sink', dest='flat_sink_off', action='store_true',
+                        help='Reflect flat segments to real mode as segment 0, as 0.9.3 does.')
+    parser.add_argument('--inject-register', action='store_true', help=argparse.SUPPRESS)
+    parser.add_argument('--no-inject-register', dest='inject_register_off', action='store_true',
+                        help='Do not recognise the flags image in a register (PUSHF, POP reg, CLI).')
     parser.add_argument('--verify-mix', action='store_true',
                         help='Test build: check every mix_run half against the general loop.')
     parser.add_argument('--audio-period-frames', type=int, choices=(32, 64, 128, 256),
@@ -70,13 +77,11 @@ def main():
             defines = [f'OUTPUT_SHIFT={args.audio_period_frames.bit_length()-1}']
             if args.no_refill_hint:
                 defines.append('NO_REFILL_HINT=1')
-            if args.disk_irq_direct:
-                defines.append('DISK_IRQ_DIRECT=1')
-            if args.split_word_io:
+            if not args.split_word_io_off:
                 defines.append('SPLIT_WORD_IO=1')
-            if args.flat_sink:
+            if not args.flat_sink_off:
                 defines.append('FLAT_SINK=1')
-            if args.inject_register:
+            if not args.inject_register_off:
                 defines.append('INJECT_REG=1')
             if args.verify_mix:
                 defines.append('VERIFY_MIX=1')

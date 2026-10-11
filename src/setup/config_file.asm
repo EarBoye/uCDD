@@ -112,6 +112,10 @@ config_valid:
     jc .done
     call hotkeys_valid
     jc .done
+    movzx ax, byte [config_disk_irq]
+    mov si, disk_irq_values
+    call value_listed
+    jc .done
     cmp byte [config_cd_volume], 100
     ja .bad
     cmp byte [config_game_volume], 100

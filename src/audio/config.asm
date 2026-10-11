@@ -35,4 +35,12 @@ virtual_wss_base dw 530h
 virtual_wss_irq db 11
 ; UCDDSET sets the DSP version reply: minor in the high byte.
 virtual_dsp_version dw 0504h
-    db 0
+; IRQ of a disk controller that the PCI scan does not find, or 0. The byte was
+; padding, so every older UCDD.CFG reads as 0.
+config_disk_irq db 0
+config_size_check equ 1 / (($-config_data) = CONFIG_SIZE)
+; Not in UCDD.CFG. UCDDSET -INSTALL writes the disk IRQ mask here when it finds
+; the tag: IRQ 14 and 15, the IRQs of PCI disk controllers, and config_disk_irq.
+; Those IRQs go straight to the real-mode handler (see host/bridge.asm).
+config_disk_tag db 'uDSK'
+config_disk_mask dw 0c000h
