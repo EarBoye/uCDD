@@ -76,13 +76,12 @@ speaker_test:
     jc .failed
     mov ax, 40h
     mov es, ax
-    mov bx, [es:6ch]
+    mov ebx, [es:6ch]
 .wait:
     cmp dword [periods], 28*PERIOD_SCALE
     jae .stop
-    mov ax, [es:6ch]
-    sub ax, bx
-    cmp ax, 55
+    call ticks_since
+    cmp eax, 55
     jb .wait
 .failed:
     mov byte [fault], 1
@@ -93,6 +92,8 @@ speaker_test:
     mov byte [ess_native], 0
     mov al, [speaker_model]
     mov [sound_card], al
+    cmp word [output_allocation], 0
+    je .restore
     mov es, [output_allocation]
     mov ah, 49h
     int 21h
@@ -120,6 +121,16 @@ speaker_test:
     pop es
     pop ds
     popad
+    ret
+
+; ES 40h, EBX a BIOS tick count read earlier. Return EAX the ticks since,
+; across the reset at midnight.
+ticks_since:
+    mov eax, [es:6ch]
+    sub eax, ebx
+    jnc .done
+    add eax, 1800b0h
+.done:
     ret
 
 mix_half:

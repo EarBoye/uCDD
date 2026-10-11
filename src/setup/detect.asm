@@ -471,6 +471,10 @@ det_dma_program:
     add eax, DET_BYTES
 .fits:
     mov [det_linear], eax
+    ; The address and count pairs go through one flip-flop. No interrupt
+    ; handler may program the controller in between.
+    pushf
+    cli
     mov al, bl
     or al, 4
     out 0ah, al
@@ -500,6 +504,7 @@ det_dma_program:
     out dx, al
     mov al, bl
     out 0ah, al
+    popf
     pop ax
     ret
 
@@ -507,6 +512,8 @@ det_dma_program:
 det_dma_done:
     push ax
     mov bl, al
+    pushf
+    cli
     out 0ch, al
     movzx dx, bl
     shl dx, 1
@@ -519,6 +526,7 @@ det_dma_done:
     mov al, bl
     or al, 4
     out 0ah, al
+    popf
     pop ax
     cmp cx, 0ffffh
     je .done
@@ -571,20 +579,19 @@ det_unhook:
 ; Wait up to three timer ticks for an interrupt.
 det_wait:
     push es
-    push bx
+    push ebx
     mov ax, 40h
     mov es, ax
-    mov bx, [es:6ch]
+    mov ebx, [es:6ch]
 .loop:
     sti
     cmp byte [det_hit], 0
     jne .done
-    mov ax, [es:6ch]
-    sub ax, bx
-    cmp ax, 3
+    call ticks_since
+    cmp eax, 3
     jb .loop
 .done:
-    pop bx
+    pop ebx
     pop es
     ret
 

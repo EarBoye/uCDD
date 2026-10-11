@@ -16,7 +16,38 @@ start:
     pop ds
     push cs
     pop es
+    ; The rest needs a 386. Only 8086 instructions up to the check. An 8086
+    ; pushes SP after the decrement; a 286 keeps the IOPL and NT flags clear
+    ; in real mode; in V86 mode (PE set) there is a 386 by definition.
+    pushf
+    pop bx
+    push sp
+    pop ax
+    cmp ax, sp
+    jne .old_cpu
+    smsw ax
+    test al, 1
+    jnz .cpu_ok
+    mov ax, bx
+    or ax, 7000h
+    push ax
+    popf
+    pushf
+    pop ax
+    and ax, 7000h
+    jz .old_cpu
+.cpu_ok:
+    push bx
+    popf
     cld
+    ; Ctrl+C or Ctrl+Break in a DOS call, and a drive error on UCDD.CFG:
+    ; the program keeps control. DOS puts the old handlers back at exit.
+    mov dx, break_handler
+    mov ax, 2523h
+    int 21h
+    mov dx, critical_handler
+    mov ax, 2524h
+    int 21h
     call command_line
     call config_path_init
     jnc .path_ready
@@ -57,6 +88,18 @@ start:
 .cancel:
     mov ax, 4c01h
     int 21h
+.old_cpu:
+    mov dx, cpu_message
+    jmp exit_error
+
+; Return to the DOS call that found Ctrl+C or Ctrl+Break.
+break_handler:
+    iret
+
+; Fail the DOS call. config_load and config_save report the failure.
+critical_handler:
+    mov al, 3
+    iret
 
 exit_error:
     mov ah, 9
@@ -440,6 +483,10 @@ test_action:
 .free:
     call config_derive
     mov si, listen_message
+    cmp byte [sound_card], 3
+    jne .listen
+    mov si, listen_mono_message
+.listen:
     call status_now
     mov bx, (setup_end-$$+15)/16+64+16
     mov es, [psp]
@@ -657,6 +704,7 @@ save_message db 'The settings cannot be saved.',0
 confirm_message db 'Exit without saving? Press Y to exit. Press a different key to stay.',0
 fixed_message db 'The selected card does not use this setting.',0
 listen_message db 'A tone plays on the left speaker, then on the right speaker.',0
+listen_mono_message db 'A tone plays twice. This card has a mono output.',0
 test_message db 'Test complete.',0
 test_error db 'The test failed. Check the sound card and its settings.',0
 resident_test_message db 'The uCDD audio driver uses the card. Start DOS without UCDD -install.',0
@@ -669,6 +717,7 @@ saved_message db 'The settings are saved.',13,10,'$'
 restart_message db 'The settings are saved. Restart DOS to use them.',13,10,'$'
 handoff_message db 'Use UCDD -install to install the driver.',13,10,'$'
 path_message db 'The program directory cannot be read.',13,10,'$'
+cpu_message db 'UCDDSET needs a 386 or later processor.',13,10,'$'
 setup_usage_message db 'UCDDSET sets the sound cards, hotkeys, and volumes for uCDD.',13,10,13,10
     db 'UCDDSET saves the settings in UCDD.CFG.',13,10
     db 'UCDD -install loads them and sets BLASTER for the virtual card.',13,10,'$'

@@ -312,6 +312,23 @@ audio_irq:
     mov ds, ax
     cmp byte [audio_irq_busy], 0
     jne .nested
+    ; IRQ 7 is where the 8259 delivers a spurious interrupt: a request that
+    ; went away before it was acknowledged. Its in-service bit stays clear,
+    ; and it takes no end-of-interrupt.
+    cmp byte [sb_irq], 7
+    jne .owned_irq
+    push dx
+    mov dx, 20h
+    mov al, 0bh
+    call physical_write
+    call physical_read
+    mov ah, al
+    mov al, 0ah
+    call physical_write
+    pop dx
+    test ah, 80h
+    jz .spurious
+.owned_irq:
     mov byte [audio_irq_busy], 1
     mov [irq_ss], ss
     mov [irq_sp], sp
@@ -510,6 +527,10 @@ audio_irq.nested:
     pop ax
     pop ds
     jmp far [cs:old_irq]
+audio_irq.spurious:
+    pop ax
+    pop ds
+    iret
 
 audio_irq_mask:
     mov dx, 21h
