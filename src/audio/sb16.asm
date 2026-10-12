@@ -313,6 +313,8 @@ audio_irq:
     pop dx
     test ah, 80h
     jz .spurious
+    ; The check above used AX: the stack switch below needs CS in it.
+    mov ax, cs
 .owned_irq:
     mov byte [audio_irq_busy], 1
     mov [irq_ss], ss
