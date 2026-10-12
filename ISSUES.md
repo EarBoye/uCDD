@@ -291,7 +291,15 @@ DPMI host:
   had it. The mark is on the virtual path alone now. Also found: the
   default-vector stub that brings a client's INT 21h or INT 31h to the host
   kept the client's direction flag, and the services copy with string
-  instructions; the flag is cleared at the stub's entry.
+  instructions; the flag is cleared at the stub's entry. Also found: the
+  stray-EOI mark of the specification pass stood on the label that both
+  hardware vectors and register-only BIOS and DOS reflections (INT 10h, 11h,
+  12h, 16h, 1Ah and a few INT 21h functions) reach, so a real-mode handler
+  that ran during such a reflected call, a key arriving while a client
+  polled INT 16h without its own keyboard handler for one, lost its EOI and
+  left its IRQ in service at the controller. The mark is on the hardware
+  path alone now. The client init after the mode switch clears the
+  direction flag before its fills instead of trusting the VCPI server's.
 - A real-mode callback of a suspended parent (a mouse event handler armed
   before the parent started a child program) ended the child. The stub
   returns to its caller with the registers unchanged when the slot is not

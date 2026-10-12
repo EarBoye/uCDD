@@ -305,7 +305,7 @@ dpmi_dos_translate:
     cmp al, 8
     jb .hardware
     call dpmi_register_interrupt
-    jnc .hardware
+    jnc .registers_only
     mov ax, [ebx+4]
     test ax, ax
     jz .ds_ready
@@ -400,10 +400,14 @@ dpmi_dos_translate:
     jmp dpmi_error
 .hardware:
     call dpmi_pic_reflect
-    mov dword [edi+34], 0
     ; The EOI went out when the IRQ was queued. The handler's own is stray.
+    ; Only for a hardware vector: a BIOS or DOS service reflected with its
+    ; registers alone joins below, and a real-mode handler that runs during
+    ; it owes the controller its EOI.
     mov al, 1
     call resident_stray_eoi_mark
+.registers_only:
+    mov dword [edi+34], 0
     jmp .reflect
 
 ; Carry clear if the supported service has no segment-pointer inputs.

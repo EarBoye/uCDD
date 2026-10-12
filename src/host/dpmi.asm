@@ -576,6 +576,9 @@ dpmi_irq_waiting:
     ret
 
 dpmi_client_init:
+    ; Entered straight from the VCPI switch: the direction flag is the
+    ; server's, and the fills below store forward.
+    cld
     call dpmi_debug_reset
     mov byte [ebp+dpmi_tf_armed], 0
     mov byte [ebp+dpmi_armed_pass], 0
