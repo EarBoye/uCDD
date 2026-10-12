@@ -427,6 +427,11 @@ mon_iret:
     lea edi, [ebp+mon_rm_regs]
     mov dword [edi+32], 2
     mov dword [edi+46], 0
+%ifdef RESIDENT_HOST
+    mov al, 1
+    call resident_delivered_mark
+    mov eax, edx
+%endif
     call mon_real_int
     xor al, al
     call resident_stray_eoi_mark
@@ -884,7 +889,12 @@ dpmi_dispatch:
     jne .far_call
 .interrupt:
     movzx eax, byte [ebx+24]
+    ; An INT to a hardware vector whose IRQ the host holds in service chains
+    ; to the real-mode handler: the host's EOI at the queue covers its own.
+    call dpmi_pic_real_int
     call mon_real_int_copy
+    xor al, al
+    call resident_stray_eoi_mark
     jmp .stack_done
 .far_call:
     call dpmi_pic_real_chain

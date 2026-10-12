@@ -100,7 +100,27 @@ for that case.
   tested in 86Box; it plays without uCDD. Not investigated.
 - Doom with the physical and the virtual card both on IRQ 7 (ES1688 in
   86Box): the effects turn into a constant wash in most runs, on every
-  build; at 5/5 they are normal. Not investigated.
+  build; at 5/5 they are normal. Fixed after 36d0925 and confirmed in the
+  rig (0 washed runs of 10 at 7/7 against 3 of 10 before; the record shows
+  the one misattributed EOI per run forwarded instead): the virtual PIC set its
+  in-service bit when the interrupt was taken, before the game's handler
+  ran, and credited any non-specific EOI arriving in between to the virtual
+  card when the physical in-service register was empty. The DPMI host ends
+  every IRQ it queues at the controller before the handler runs, so the
+  register is empty during a protected-mode timer handler; its EOI after a
+  chain to the real-mode vector (or its 0300h call to INT 08h, whose BIOS
+  EOI was not marked) ended the virtual service while the virtual
+  interrupt was still held. DMX's IRQ 7 handler then read the in-service
+  register, saw no bit 7, took the interrupt for a spurious one and never
+  acknowledged it; the driver raised no further interrupt, so DMX never
+  retired its channels and sounds piled up. On IRQ 5 DMX has no such
+  filter. Now a delivered mark (set by the real-mode jump or by the host's
+  delivery, CDF6) gates the attribution, a 0300h call to an in-service
+  hardware vector is treated as a chain, and a signalled interrupt that is
+  neither requested nor in service for two periods is raised again. The
+  fixed build runs Doom's timedemo about one percent slower in 86Box
+  (1650 against 1635 realtics), also at 5/5; the EOI round trips did not
+  rise, so the cause is not known. Left as is.
 - A protected-mode handler for INT 1Ch misses the ticks that arrive while
   the CD refill runs inside DOS, about 8 percent with CD audio playing: the
   stub chains to the BIOS vector then, since the client cannot run. A game

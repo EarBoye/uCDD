@@ -107,6 +107,34 @@ dpmi_pic_reflect:
     popad
     ret
 
+; EAX=real interrupt number of a 0300h call. A hardware vector whose IRQ the
+; host holds in service: end the host's service and mark the handler's EOI
+; stray, as the chain from a protected-mode handler does (dpmi_pic_reflect).
+dpmi_pic_real_int:
+    pushad
+    mov edx, eax
+    sub al, [ebp+mon_master]
+    cmp al, 8
+    jb .irq
+    mov eax, edx
+    sub al, [ebp+mon_slave]
+    cmp al, 8
+    jae .done
+    add eax, 8
+.irq:
+    movzx eax, al
+    btr [ebp+dpmi_pic_service], eax
+    jnc .done
+    cmp eax, 8
+    jb .mark
+    and byte [ebp+dpmi_pic_service], 0fbh
+.mark:
+    mov al, 1
+    call resident_stray_eoi_mark
+.done:
+    popad
+    ret
+
 ; An IRET call to a real IRQ vector transfers ownership of its EOI.
 dpmi_pic_real_chain:
     cmp al, 2
@@ -234,7 +262,7 @@ dpmi_pic_io:
     or al, [ebp+dpmi_pic_service+ebx]
     movzx eax, al
     bsf eax, eax
-    jz .forward
+    jz .plain_forward
     jmp .eoi
 .specific:
     and eax, 7
@@ -242,9 +270,42 @@ dpmi_pic_io:
     lea ecx, [ebx*8]
     add ecx, eax
     bt [ebp+dpmi_pic_service], ecx
-    jnc .forward
+    jnc .plain_forward
     btr [ebp+dpmi_pic_service], ecx
     jmp .success
+.plain_forward:
+%ifdef RESIDENT_HOST
+    ; A non-specific EOI on the master that is not the host's goes to the
+    ; driver's virtual PIC, through a real-mode call. The cases that end
+    ; there without a virtual interrupt to end are decided here instead: the
+    ; stray EOI of a handler whose IRQ the host ended at the queue, and an
+    ; EOI with no virtual interrupt in service or none delivered yet, which
+    ; is the controller's (virtual_pic_write).
+    test ebx, ebx
+    jnz .forward
+    cmp byte [esp+28], 20h
+    jne .forward
+    mov esi, [ebp+resident_audio_request]
+    test esi, esi
+    jz .forward
+    mov ecx, [ebp+resident_stray_eoi]
+    jecxz .delivered_check
+    cmp byte [ecx], 0
+    je .delivered_check
+    mov byte [ecx], 0
+    jmp .success
+.delivered_check:
+    cmp byte [esi+1], 0
+    je .controller
+    mov ecx, [ebp+resident_delivered]
+    jecxz .forward
+    cmp byte [ecx], 0
+    jne .forward
+.controller:
+    mov al, 20h
+    out dx, al
+    jmp .success
+%endif
 .mode:
     mov [ebp+dpmi_pic_read_mode+ebx], al
     mov [esp+28], al

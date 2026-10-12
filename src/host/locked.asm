@@ -159,6 +159,17 @@ dpmi_raw_segs dd 0
 dpmi_deliver_reflected:
     mov byte [ebp+dpmi_deliver_keep_vif], 1
 dpmi_deliver_hardware:
+%ifdef RESIDENT_HOST
+    ; The virtual Sound Blaster interrupt reaches the client's handler here.
+    movzx eax, byte [ebp+dpmi_guest_vector]
+    imul eax, 6
+    lea eax, [ebp+mon_vectors+eax]
+    cmp eax, esi
+    jne .marked
+    mov al, 1
+    call resident_delivered_mark
+.marked:
+%endif
     movzx ecx, byte [ebp+dpmi_deliver_keep_vif]
     mov byte [ebp+dpmi_deliver_keep_vif], 0
     call dpmi_locked_capture
