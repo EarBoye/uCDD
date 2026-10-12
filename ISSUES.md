@@ -278,11 +278,14 @@ Left as they are, with the reason:
   request register.
 - The resident image still carries 2.3 KB of one-shot activation code; the
   units could be placed before it.
-- Real-mode INT 1Ch, 23h and 24h are not reflected to a protected-mode
-  handler (DPMI 0.9, section 2.4.2): a client's timer-tick hook never runs,
-  and a critical error during a reflected DOS call reaches the DOS prompt
-  with the client current. This needs new stubs and a bridge entry, and is
-  left for a change of its own.
+- Real-mode INT 1Ch, 23h and 24h reach a protected-mode handler the client
+  installed (DPMI 0.9, section 2.4.2; the same in 1.0). Three stubs in the
+  IVT enter the bridge with bit 9 of the entry word set; the handler runs
+  on the locked stack with the client's interrupt flag unchanged, and an
+  INT 24h handler's AL goes back to DOS. Without a handler, during a CD
+  refill, or at the bridge or stack depth limit, the stub chains to the
+  vector it replaced. A suspended parent's handler does not run while a
+  child runs. Assembly only; the test plan is in the commit.
 - A 0300h call to an IRQ vector that the host holds in service lets the
   real handler's EOI reach the driver; the stray-EOI mark covers the
   queued and chained paths only.
