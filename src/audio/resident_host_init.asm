@@ -7,11 +7,20 @@ own_host_install:
     xor di, di
     xor al, al
     mov cx, 32767
+    ; An empty environment is two zero bytes, or one on some DOS versions
+    ; (as config_path_init).
+    cmp byte [es:di], 0
+    jne .environment
+    cmp byte [es:di+1], 0
+    jne .counted
 .environment:
     repne scasb
     jne .bad
     cmp byte [es:di], 0
     jne .environment
+.counted:
+    cmp word [es:di+1], 1
+    jb .bad
     add di, 3
     push ds
     push es

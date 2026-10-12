@@ -32,6 +32,7 @@ sda_pointer dd 0
 sda_size dw 0
 indos_pointer dd 0
 old_int24 dd 0
+old_int23 dd 0
 unit_pointer dw 0
 control_op dw 0
 control_result dw 0
@@ -426,7 +427,7 @@ read_sectors:
     shl edx, 11
     add edx, ebx
     cmp edx, 100000h
-    ja .range
+    ja request_error
     mov dx, bx
     and dx, 15
     shr ebx, 4
@@ -1182,6 +1183,12 @@ dos_enter:
     mov [cs:old_int24], eax
     mov word [es:24h*4], critical_error
     mov [es:24h*4+2], cs
+    ; With BREAK=ON, DOS checks for Ctrl+C in these calls too. The default
+    ; INT 23h handler would end the current process, which is the resident.
+    mov eax, [es:23h*4]
+    mov [cs:old_int23], eax
+    mov word [es:23h*4], break_ignore
+    mov [es:23h*4+2], cs
     popf
     pop es
     pop ds
@@ -1199,6 +1206,8 @@ dos_leave:
     cli
     mov eax, [cs:old_int24]
     mov [es:24h*4], eax
+    mov eax, [cs:old_int23]
+    mov [es:23h*4], eax
     popf
     mov bx, [cs:caller_psp]
     mov ah, 50h
@@ -1218,6 +1227,9 @@ dos_leave:
 
 critical_error:
     mov al, 3
+    iret
+
+break_ignore:
     iret
 
 %include "mdm.asm"
@@ -1468,6 +1480,15 @@ install_audio_error:
     mov dx, trap_resident_message
     mov ah, 9
     int 21h
+    mov es, [resident_psp]
+    mov ax, [es:2ch]
+    test ax, ax
+    jz .environment_freed
+    mov word [es:2ch], 0
+    mov es, ax
+    mov ah, 49h
+    int 21h
+.environment_freed:
 %ifdef OWN_HOST
     cmp word [relocated_entry+2], 0
     je .in_place

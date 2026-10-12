@@ -19,6 +19,8 @@ sb_single db 0
 sb_input db 0
 sb_finished db 0
 sb_paused db 0
+; DAh/D9h arrived while the stream was paused.
+sb_exit_pending db 0
 sb_speaker db 1
 ; What D8h reports. It differs from sb_speaker only on DSP 4.xx.
 sb_speaker_flag db 1

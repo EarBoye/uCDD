@@ -318,6 +318,11 @@ port_callback:
     mov byte [fault], 1
 %endif
     jmp .done
+; A refused DSP command or argument ends its argument sequence, so that the
+; bytes the game writes next are read as commands again.
+.command_unsupported:
+    mov byte [arguments], 0
+    jmp .unsupported
 .reset:
     mov byte [sb_id_value], 0aah
     mov byte [sb_id_phase], 0
@@ -329,6 +334,7 @@ port_callback:
 %endif
     mov byte [sb_finished], 0
     mov byte [sb_paused], 0
+    mov byte [sb_exit_pending], 0
     mov byte [sb_single], 0
     mov byte [sb_input], 0
     mov byte [sb_speaker], 1
@@ -615,7 +621,7 @@ port_callback:
     je .rate
 %endif
     cmp al, 0e1h
-    jne .unsupported
+    jne .command_unsupported
     mov ax, [virtual_dsp_version]
     mov [reply], ax
     mov byte [reply_count], 2
@@ -665,7 +671,10 @@ port_callback:
     mov [game_mix_frame], eax
     mov byte [sb_paused], 0
     mov byte [game_active], 1
-    jmp .done
+    cmp byte [sb_exit_pending], 0
+    je .done
+    mov byte [sb_exit_pending], 0
+    jmp .exit_block
 .exit8:
     cmp byte [game_irq_bit], 2
     je .done
@@ -675,7 +684,14 @@ port_callback:
     jne .done
 .exit_block:
     cmp byte [game_active], 0
+    jne .exit_active
+    ; The DSP latches the request while the stream is paused: the block ends
+    ; after the resume.
+    cmp byte [sb_paused], 0
     je .done
+    mov byte [sb_exit_pending], 1
+    jmp .done
+.exit_active:
     cmp dword [game_exit_frame], 0
     jne .done
     cmp byte [sb_tail_mode], 0
@@ -813,7 +829,7 @@ port_callback:
     cmp byte [dsp_command], 0e2h
     jne .invert_argument
     call sb_identify
-    jc .unsupported
+    jc .command_unsupported
     jmp .argument_done
 .invert_argument:
     cmp byte [dsp_command], 0e0h
@@ -844,16 +860,19 @@ port_callback:
     jne .play_argument
     cmp byte [arguments], 2
     jne .rate_low
-    mov [game_rate+1], al
+    mov [rate_pending+1], al
     jmp .argument_done
 .rate_low:
-    mov [game_rate], al
+    mov [rate_pending], al
 .set_rate:
-    cmp word [game_rate], 4000
-    jb .unsupported
+    ; The rate is checked before it replaces game_rate, which divides later.
+    cmp word [rate_pending], 4000
+    jb .command_unsupported
     ; Games can request a little more than the documented 45000 Hz.
-    cmp word [game_rate], 48000
-    ja .unsupported
+    cmp word [rate_pending], 48000
+    ja .command_unsupported
+    mov ax, [rate_pending]
+    mov [game_rate], ax
     movzx eax, word [game_rate]
     shl eax, 16
     xor edx, edx
@@ -872,7 +891,7 @@ port_callback:
     jne .mono_mode
 .format16:
     test al, 0cfh
-    jnz .unsupported
+    jnz .command_unsupported
     cmp al, 30h
     je .stereo16
     test al, 10h
@@ -889,7 +908,7 @@ port_callback:
     jmp .argument_done
 .mono_mode:
     test al, 0cfh
-    jnz .unsupported
+    jnz .command_unsupported
     test al, 10h
     jz .unsigned8
     or byte [pending_format], 4
@@ -906,13 +925,13 @@ port_callback:
     xor edx, edx
     div ecx
     cmp eax, 65535
-    ja .unsupported
+    ja .command_unsupported
     mov [legacy_rate], ax
     test byte [virtual_mixer+0eh], 2
     jz .time_mono
     shr ax, 1
 .time_mono:
-    mov [game_rate], ax
+    mov [rate_pending], ax
     jmp .set_rate
 %ifdef VIRTUAL_IRQ
 .silence:
@@ -964,6 +983,7 @@ port_callback:
     jmp .legacy_format
 .validate_start:
     mov byte [sb_finished], 0
+    mov byte [sb_exit_pending], 0
     mov byte [sb_single], 0
     mov byte [sb_input], 0
     cmp byte [dsp_command], 24h
@@ -1012,12 +1032,12 @@ port_callback:
     mov bl, [si+DMA_MODE]
     and bl, 0efh
     cmp bl, 45h
-    jne .unsupported
+    jne .command_unsupported
 .direction_ready:
     cmp byte [sb_single], 0
     je .block_length
     cmp ax, [si+DMA_COUNT]
-    ja .unsupported
+    ja .command_unsupported
 .block_length:
     movzx edx, ax
     inc edx
@@ -1038,7 +1058,7 @@ port_callback:
     shl eax, cl
     dec eax
     test edx, eax
-    jnz .unsupported
+    jnz .command_unsupported
     jmp .buffer_address
 .short_block:
     ; A short block must last two output periods.
@@ -1049,21 +1069,21 @@ port_callback:
     movzx ecx, word [game_rate]
     imul ecx, PERIOD_FRAMES*2
     cmp eax, ecx
-    jb .unsupported
+    jb .command_unsupported
 .large_block:
     cmp ebx, 512
-    jb .unsupported
+    jb .command_unsupported
     cmp ebx, 32768
-    ja .unsupported
+    ja .command_unsupported
     mov cl, [pending_frame_shift]
     mov eax, 1
     shl eax, cl
     dec eax
     test ebx, eax
-    jnz .unsupported
+    jnz .command_unsupported
     test edx, eax
     jz .block_aligned
-    jmp .unsupported
+    jmp .command_unsupported
 .block_aligned:
     cmp edx, ebx
     je .buffer_address
@@ -1083,7 +1103,7 @@ port_callback:
     movzx ecx, word [game_rate]
     imul ecx, PERIOD_FRAMES*2
     cmp eax, ecx
-    jb .unsupported
+    jb .command_unsupported
     jmp .buffer_address
 .single_buffer:
     movzx ebx, word [si+DMA_COUNT]
@@ -1092,7 +1112,7 @@ port_callback:
     jne .single_size
     shl ebx, 1
     cmp ebx, 65536
-    ja .unsupported
+    ja .command_unsupported
 .single_size:
     test byte [si+DMA_MODE], 10h
     jnz .buffer_address
@@ -1102,11 +1122,11 @@ port_callback:
     shl eax, 1
 .single_position:
     cmp eax, ebx
-    ja .unsupported
+    ja .command_unsupported
     neg eax
     add eax, ebx
     cmp edx, eax
-    ja .unsupported
+    ja .command_unsupported
 .buffer_address:
     movzx eax, word [si+DMA_ADDRESS]
     cmp si, dma16
@@ -1126,11 +1146,11 @@ port_callback:
     cmp si, dma16
     je .word_window
     cmp eax, 65536
-    ja .unsupported
+    ja .command_unsupported
     jmp .address_limit
 .word_window:
     cmp eax, 131072
-    ja .unsupported
+    ja .command_unsupported
 .address_limit:
     cmp byte [sb_single], 0
     je .linear_limit
@@ -1140,7 +1160,7 @@ port_callback:
     and eax, 15
     add eax, ebx
     cmp eax, 65536
-    ja .unsupported
+    ja .command_unsupported
 .linear_limit:
     mov eax, ecx
     add eax, ebx
@@ -1148,24 +1168,24 @@ port_callback:
 %ifdef OWN_HOST
     jbe .low_source
     cmp byte [host_backend], 1
-    jne .unsupported
+    jne .command_unsupported
     cmp ecx, 100000h
-    jb .unsupported
+    jb .command_unsupported
     cmp eax, 1000000h
-    ja .unsupported
+    ja .command_unsupported
     cmp byte [sb_single], 1
-    jne .unsupported
+    jne .command_unsupported
     cmp byte [pending_frame_shift], 0
-    jne .unsupported
+    jne .command_unsupported
     cmp byte [sb_input], 0
-    jne .unsupported
+    jne .command_unsupported
     mov [game_physical], ecx
     jmp .source_ready
 .low_source:
     mov dword [game_physical], 0
 .source_ready:
 %else
-    ja .unsupported
+    ja .command_unsupported
 %endif
     mov [game_dma], si
     mov esi, ecx
@@ -1816,6 +1836,7 @@ dma16 db 0,1,0,0
     db 59h
 dsp_command db 0
 arguments db 0
+rate_pending dw 0
 block_low db 0
 legacy_block dw 0
 legacy_rate dw 22050

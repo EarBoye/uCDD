@@ -87,11 +87,71 @@ for that case.
 - A 512-frame output period is not usable.
 - A flat pointer passed to a reflected real-mode service no longer
   corrupts memory, but the service still cannot return data to the client.
-- `UCDD -install` stops with "UCDDSET.EXE cannot be started" when DOS has
-  no upper memory to link (FreeDOS refuses INT 21h AX=5803h). Seen in
-  DOSBox-X until JemmEx was given `I=D000-EFFF`.
 - Sierra's AUDBLAST.DRV waits 2048 loop passes for its test interrupt.
   That is too short for any card on a fast CPU, so King's Quest V still
   needs the wait patched, with or without this driver.
 - Protected-mode games cannot be tested in DOSBox-X: the host uses the
   debug registers, which that emulator does not act on.
+
+## Fixed after a review of UCDD.EXE
+
+A review of the whole driver source (five independent readings of the
+driver, the port trap and card emulation, the mixer and CD streaming, the
+host IRQ path, and the DPMI services) found these. All are fixed in
+`disk-irq-detect` and checked by assembly only so far; none has run on
+hardware or in an emulator yet.
+
+- A disc hotkey (MDM list, or eject and insert of a single image) bound the
+  new disc for CD audio from the timer tick and from the request entry, and
+  the seek-cache warm in that path read the image through DOS with the
+  game's PSP and without saving the DOS state. With the game's file open on
+  the same handle number its file pointer moved; from a request that came
+  through DOS, DOS was re-entered without the SDA swap. The bind now runs
+  inside `dos_enter`, and the timer does not switch discs while the BIOS
+  disk code runs.
+- With `BREAK=ON`, Ctrl+C or Ctrl+Break during a CD read reached the
+  default INT 23h handler with the resident's PSP current, which ended the
+  resident. `dos_enter` now points INT 23h at an `iret` and `dos_leave`
+  puts it back, as it already did for INT 24h.
+- A refused DSP command or argument (a rate outside 4000 to 48000 Hz, a
+  block shorter than two output periods, an unsupported mode byte) left the
+  argument counter set, so the bytes the game wrote next were taken as
+  arguments. The counter is cleared now. The refusal of a short block that
+  "The output period decides which games have sound" describes was never
+  silent for the DSP command stream.
+- A refused rate was already stored, and a rate of 0 later divided in the
+  silence command and the single-cycle block start. The rate is checked
+  first now.
+- DAh/D9h (exit auto-initialize) was dropped while the stream was paused
+  with D0h/D5h. It is held and applied at the resume, as the DSP does.
+- `UCDD -unmount NAME.CUE` never matched, because the mount stores the name
+  of the BIN file. The unmount resolves a CUE sheet the same way.
+- `UCDD -install` failed with "UCDDSET.EXE cannot be started" on a DOS
+  that cannot link UMBs (no `DOS=UMB`, or FreeDOS). The UMBs are unlinked
+  only when they are linked, and a refusal is not an error.
+- The interpolation of the last CD frame of a half read one frame past the
+  data loaded when the output rate is above 44100 Hz (SB 2.0, ESS); two
+  frames are loaded past the take now.
+- The spurious IRQ 7 check in the physical interrupt handler put the PIC
+  read register back to IRR whatever the game had selected (visible under
+  EMM386 only).
+- An installation that failed with the trap code kept in memory did not
+  free its environment block.
+- The internal host loader did not accept the one-zero-byte empty
+  environment that `config_path_init` accepts.
+- A read request whose transfer address ends above 1 MiB returns general
+  failure (0Ch), not sector not found.
+- UCDDSET: the Disk row text stops before the IRQ field.
+- README: `-units` applies to the data-only driver; the audio driver takes
+  one drive.
+
+Not changed, by design or because a safe change needs more than a review:
+
+- The virtual WSS codec raises its interrupts through the DPMI host only.
+  A real-mode game on the virtual WSS codec waits for an interrupt that
+  never comes. Delivering it in real mode needs the slave PIC in the
+  real-mode virtual PIC, which emulates one master input today.
+- The 8237 emulation accepts the single and auto-initialize modes that
+  Sound Blaster drivers program (49h, 59h, 45h, 55h). Demand and block
+  modes set the fault byte.
+

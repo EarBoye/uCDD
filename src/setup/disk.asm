@@ -297,6 +297,8 @@ disk_found_describe:
     mov si, disk_more_text
     call copy_text
 .done:
+    ; The text starts at column 17 and the IRQ field at column 49.
+    mov byte [disk_found_text+31], 0
     ret
 
 ; Main screen: the Disk row and a warning above the output line.

@@ -491,6 +491,12 @@ mdm_timer:
     les bx, [indos_pointer]
     cmp word [es:bx-1], 0
     jne .done
+%ifdef RESIDENT_AUDIO
+    ; A disc change reads the image through DOS (mdm_bind). Not while the
+    ; BIOS disk code is running.
+    cmp byte [cd_bios_busy], 0
+    jne .done
+%endif
     mov byte [busy], 1
     mov [old_ss], ss
     mov [old_sp], sp
@@ -511,7 +517,8 @@ mdm_timer:
     popad
     iret
 
-; Called with the driver lock and stack. No DOS or image I/O is required.
+; Called with the driver lock and stack. The disc change itself needs no DOS
+; or image I/O; binding the new disc for CD audio does (mdm_bind).
 mdm_switch:
     pushf
     cli
@@ -600,7 +607,7 @@ mdm_switch:
     mov si, [unit_pointer]
     mov byte [si+CHANGED], 0ffh
 %ifdef RESIDENT_AUDIO
-    call audio_bind
+    call mdm_bind
 %endif
     jmp .done
 .rollback:
@@ -638,7 +645,7 @@ mdm_switch:
     mov [si+SECTORS], eax
     mov byte [si+CHANGED], 0ffh
 %ifdef RESIDENT_AUDIO
-    call audio_bind
+    call mdm_bind
 %endif
     jmp .done
 .single_eject:
@@ -655,3 +662,18 @@ mdm_switch:
     popad
     popf
     ret
+
+%ifdef RESIDENT_AUDIO
+; Bind the disc for CD audio. audio_bind warms the seek cache, which reads the
+; image through DOS, so the handles must be looked up in the resident PSP and
+; the DOS state of an interrupted call must be saved: dos_enter does both. The
+; callers hold the driver lock with InDOS and the critical error flag clear,
+; or run inside a request that came through DOS itself.
+mdm_bind:
+    sti
+    call dos_enter
+    call audio_bind
+    call dos_leave
+    cli
+    ret
+%endif

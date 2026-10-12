@@ -323,7 +323,12 @@ audio_irq:
     call physical_write
     call physical_read
     mov ah, al
+%ifdef VIRTUAL_IRQ
+    ; Put back the read register the game selected.
+    mov al, [physical_pic_read]
+%else
     mov al, 0ah
+%endif
     call physical_write
     pop dx
     test ah, 80h

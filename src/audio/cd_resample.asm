@@ -29,7 +29,10 @@ cd_begin_resampled:
     shr eax, 16
     shl eax, 2
     mov [cd_take_bytes], eax
-    add eax, 4
+    ; Two frames more than the half consumes: the interpolation of the last
+    ; frame reads the frame after it, which can be at the take itself when the
+    ; output rate is above 44100 Hz.
+    add eax, 8
     mov edi, eax
     mov ebx, [cd_consumed]
     mov ecx, [cd_length]

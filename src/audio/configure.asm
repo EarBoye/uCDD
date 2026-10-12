@@ -58,10 +58,14 @@ config_run_setup:
     mov ax, 5801h
     int 21h
     jc .restore_failed
+    ; Unlink the UMBs so that UCDDSET loads low. A DOS without UMBs refuses
+    ; the call, and then there is nothing to unlink.
+    cmp byte [setup_umb], 0
+    je .umb_ready
     xor bx, bx
     mov ax, 5803h
     int 21h
-    jc .restore_failed
+.umb_ready:
     mov [setup_exec+4], cs
     mov [setup_exec+8], cs
     mov [setup_exec+12], cs
@@ -102,9 +106,12 @@ config_run_setup:
     mov bx, [setup_strategy]
     mov ax, 5801h
     int 21h
+    cmp byte [setup_umb], 0
+    je .restored
     movzx bx, byte [setup_umb]
     mov ax, 5803h
     int 21h
+.restored:
     ret
 
 setup_exec dw 0, setup_tail, 0, setup_fcb, 0, setup_fcb, 0

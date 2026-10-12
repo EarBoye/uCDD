@@ -182,6 +182,18 @@ command_entry:
     mov ax, 6000h
     int 21h
     jc bad_image
+    ; A CUE sheet is mounted under the name of its BIN file. Resolve the name
+    ; the way the mount does, so that the two compare.
+    mov si, named_path
+    mov di, full_path
+    mov cx, 128
+    rep movsb
+    call prepare_image
+    jc bad_image
+    mov si, full_path
+    mov di, named_path
+    mov cx, 128
+    rep movsb
 .enumerate:
     xor bx, bx
     mov ax, 1500h
