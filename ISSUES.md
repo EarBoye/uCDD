@@ -95,6 +95,16 @@ for that case.
   needs the wait patched, with or without this driver.
 - Protected-mode games cannot be tested in DOSBox-X: the host uses the
   debug registers, which that emulator does not act on.
+- Witchaven's Smacker intro (SMACKPLY.EXE) freezes on its first frame with
+  the audio driver installed, silent, at 7/7 and at 5/5, on every build
+  tested in 86Box; it plays without uCDD. Not investigated.
+- Doom with the physical and the virtual card both on IRQ 7 (ES1688 in
+  86Box): the effects turn into a constant wash in most runs, on every
+  build; at 5/5 they are normal. Not investigated.
+- A protected-mode handler for INT 1Ch misses the ticks that arrive while
+  the CD refill runs inside DOS, about 8 percent with CD audio playing: the
+  stub chains to the BIOS vector then, since the client cannot run. A game
+  that times itself on INT 1Ch runs that much slower while CD audio plays.
 
 ## Fixed after a review of UCDD.EXE
 
@@ -285,7 +295,16 @@ Left as they are, with the reason:
   INT 24h handler's AL goes back to DOS. Without a handler, during a CD
   refill, or at the bridge or stack depth limit, the stub chains to the
   vector it replaced. A suspended parent's handler does not run while a
-  child runs. Assembly only; the test plan is in the commit.
+  child runs. In the 86Box rig (MS-DOS 7.1, MSCDEX 2.25, a raw DPMI test
+  client): a 16-bit client's INT 1Ch handler gets 18 ticks a second (0
+  before), the vector under the stub reads as the original, and the IVT is
+  back after exit; a 32-bit client's INT 24h handler runs for an open on an
+  empty A: with the client's selectors and no DOS prompt, and its fail and
+  retry answers are honoured; a child without a handler freezes the
+  parent's counter and a child with one counts on its own; Ctrl+C reaches
+  a protected-mode INT 23h handler. Two gaps found there are fixed on top
+  (see below): the carry of an INT 23h handler, and a client that DOS ends
+  from real mode.
 - A 0300h call to an IRQ vector that the host holds in service lets the
   real handler's EOI reach the driver; the stray-EOI mark covers the
   queued and chained paths only.
