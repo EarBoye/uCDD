@@ -284,6 +284,14 @@ Virtual PIC:
 
 DPMI host:
 
+- Found by the data-flow pass: the delivered mark of the IRQ 7 fix sat on
+  a join label that the ordinary IRQ reflection also reaches, so a timer or
+  keyboard interrupt reflected to real mode while the virtual interrupt was
+  held marked it delivered, and the next EOI could end it before the client
+  had it. The mark is on the virtual path alone now. Also found: the
+  default-vector stub that brings a client's INT 21h or INT 31h to the host
+  kept the client's direction flag, and the services copy with string
+  instructions; the flag is cleared at the stub's entry.
 - A real-mode callback of a suspended parent (a mouse event handler armed
   before the parent started a child program) ended the child. The stub
   returns to its caller with the registers unchanged when the slot is not

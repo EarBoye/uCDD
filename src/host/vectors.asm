@@ -367,13 +367,14 @@ dpmi_reflect:
     test edx, edx
     jnz .bad_gate
     mov [ebp+dpmi_reflect_vector], al
+    ; The gate keeps the client's direction flag; the services copy forward.
+    cld
     cmp al, 31h
     je dpmi_dispatch
     cmp al, 21h
     jne .other
     jmp dpmi_dos.host
 .other:
-    cld
     jmp dpmi_dos_translate
 .bad_gate:
     sub dword [esp+40], 2

@@ -422,16 +422,17 @@ mon_iret:
     cmp word [esi+4], 0
     jne .sb_inject
     mov byte [ebp+dpmi_sti_sb_held], 0
+%ifdef RESIDENT_HOST
+    ; The virtual interrupt reaches the real-mode handler. Only here: the
+    ; .pic_only path below joins .real_irq with another IRQ's vector.
+    mov al, 1
+    call resident_delivered_mark
+%endif
 .real_irq:
     mov eax, edx
     lea edi, [ebp+mon_rm_regs]
     mov dword [edi+32], 2
     mov dword [edi+46], 0
-%ifdef RESIDENT_HOST
-    mov al, 1
-    call resident_delivered_mark
-    mov eax, edx
-%endif
     call mon_real_int
     xor al, al
     call resident_stray_eoi_mark
