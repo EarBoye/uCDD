@@ -117,7 +117,10 @@ for that case.
   filter. Now a delivered mark (set by the real-mode jump or by the host's
   delivery, CDF6) gates the attribution, a 0300h call to an in-service
   hardware vector is treated as a chain, and a signalled interrupt that is
-  neither requested nor in service for two periods is raised again.
+  neither requested nor in service for two periods is raised again. The
+  fixed build runs Doom's timedemo about one percent slower in 86Box
+  (1650 against 1635 realtics), also at 5/5; the EOI round trips did not
+  rise, so the cause is not known. Left as is.
 - A protected-mode handler for INT 1Ch misses the ticks that arrive while
   the CD refill runs inside DOS, about 8 percent with CD audio playing: the
   stub chains to the BIOS vector then, since the client cannot run. A game
