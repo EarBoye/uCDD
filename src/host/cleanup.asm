@@ -39,6 +39,13 @@ dpmi_ivt_cleanup:
     add eax, dpmi_callback_stubs
     mov ecx, 16*6
     call dpmi_ivt_restore_range
+    ; After an end by DOS the client's blocks are free already: the vectors
+    ; into free blocks are the ones to restore then.
+    movzx ebx, word [ebp+dpmi_psp]
+    cmp byte [ebp+dpmi_terminated], 0
+    je .owner_ready
+    xor ebx, ebx
+.owner_ready:
     movzx edi, word [ebp+dpmi_first_mcb]
 .mcb:
     test edi, edi
@@ -56,8 +63,7 @@ dpmi_ivt_cleanup:
     add edx, edi
     cmp edx, 10000h
     ja .main_block
-    mov ax, [ebp+dpmi_psp]
-    cmp [esi+1], ax
+    cmp [esi+1], bx
     jne .next_mcb
     lea eax, [esi+16]
     movzx ecx, word [esi+3]
@@ -74,8 +80,7 @@ dpmi_ivt_cleanup:
     movzx esi, word [ebp+dpmi_psp]
     dec esi
     shl esi, 4
-    mov ax, [ebp+dpmi_psp]
-    cmp [esi+1], ax
+    cmp [esi+1], bx
     jne .typed
     lea eax, [esi+16]
     movzx ecx, word [esi+3]
@@ -88,8 +93,7 @@ dpmi_ivt_cleanup:
     jne .next
     lea esi, [ebp+dpmi_ldt+edi*8]
     call dpmi_descriptor_base
-    mov dx, [ebp+dpmi_psp]
-    cmp [eax-15], dx
+    cmp [eax-15], bx
     jne .next
     movzx ecx, byte [esi+6]
     and ecx, 0fh

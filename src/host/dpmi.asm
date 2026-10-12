@@ -180,7 +180,15 @@ dpmi_entry:
     jz .no_environment
     mov word [es:2ch], 2fh
 .no_environment:
+    ; DOS jumps to PSP:0Ah once it has ended the process. Point it at the
+    ; host's hook, so that an end from real mode still releases the client
+    ; (dpmi_terminate_hook). The normal exit puts the address back.
+    mov eax, [es:0ah]
+    mov [dpmi_terminate_address], eax
+    mov word [es:0ah], dpmi_terminate_hook
+    mov [es:0ch], cs
     pop es
+    mov byte [dpmi_terminated], 0
     mov byte [dpmi_exit_code], 1
     call dpmi_bridge_real_allocate
     jc .exit
@@ -228,6 +236,8 @@ dpmi_entry:
     mov es, [dpmi_psp]
     mov ax, [dpmi_environment]
     mov [es:2ch], ax
+    mov eax, [dpmi_terminate_address]
+    mov [es:0ah], eax
     mov al, [dpmi_exit_code]
 %ifdef RESIDENT_HOST
     cmp byte [dpmi_nested_depth], 0
@@ -240,6 +250,94 @@ dpmi_entry:
     int 21h
 .bad:
     stc
+    retf
+
+; DOS ends a client from real mode when an INT 24h handler answers abort,
+; when an INT 23h handler asks for it, or when real-mode code runs a
+; termination call. The client's PSP:0Ah brings DOS here then: the process
+; is gone, its memory is freed, the parent's PSP is current and the parent's
+; stack is loaded, but the host still holds the client's state. Release it
+; as dpmi_finish and the end of dpmi_entry do, through protected mode, on the
+; host's own stack, then go on to the address DOS would have jumped to.
+dpmi_terminate_hook:
+    pushf
+    pop word [cs:dpmi_terminate_flags]
+    cli
+    mov [cs:dpmi_terminate_stack], sp
+    mov [cs:dpmi_terminate_stack+2], ss
+    mov ax, cs
+    mov ds, ax
+    cmp byte [dpmi_active], 0
+    je dpmi_terminate_real.released
+    mov byte [dpmi_terminated], 1
+%ifdef RESIDENT_HOST
+    cmp byte [dpmi_nested_depth], 0
+    je .host_stack
+    mov ss, ax
+    mov sp, dpmi_nested_real_top
+    jmp .stack_ready
+.host_stack:
+    mov ss, [host_stack_segment]
+    mov sp, HOST_STACK_BYTES
+%else
+    mov ss, [dpmi_entry_segment]
+    mov sp, 2048
+%endif
+.stack_ready:
+    mov [dpmi_terminate_return_frame+12], sp
+    mov [dpmi_terminate_return_frame+16], ss
+    mov [dpmi_terminate_return_frame+4], ax
+    mov [dpmi_terminate_return_frame+20], ax
+    mov [dpmi_terminate_return_frame+24], ax
+    mov [dpmi_terminate_return_frame+28], ax
+    mov [dpmi_terminate_return_frame+32], ax
+    and byte [mon_gdt+24+5], 0fdh
+    mov edi, [mon_base]
+    lea eax, [edi+dpmi_terminate_pm]
+    mov [mon_switch+16], eax
+    mov esi, [mon_real_base]
+    add esi, mon_switch
+    mov ax, 0de0ch
+    int 67h
+    ud2
+dpmi_terminate_real:
+    mov byte [mon_running], 0
+    mov byte [dpmi_active], 0
+    ; A stub still in some vector returns to its caller from now on.
+    mov word [dpmi_callback_live], 0
+    ; DOS freed the bridge segment and the large stack with the client's
+    ; other blocks.
+    mov word [dpmi_bridge_real_segment], 0
+    mov word [dpmi_large_stack_segment], 0
+    mov byte [dpmi_large_stack_busy], 0
+.released:
+    ; The restore of a parent brings back its own copies of these.
+    mov ebx, [dpmi_terminate_address]
+    mov edx, [dpmi_terminate_stack]
+    mov cx, [dpmi_terminate_flags]
+    ; With the client released before the hook ran, only the jump is left.
+    cmp byte [dpmi_terminated], 0
+    je .leave
+    mov byte [dpmi_terminated], 0
+%ifdef RESIDENT_HOST
+    cmp byte [dpmi_nested_depth], 0
+    je .leave
+    call dpmi_nested_restore
+    call dpmi_nested_pic_restore
+%endif
+.leave:
+    ; DOS put the hook into the INT 22h vector from the PSP. Leave the
+    ; address the PSP stood for there, as the normal exit does.
+    xor ax, ax
+    mov es, ax
+    mov [es:22h*4], ebx
+    ror edx, 16
+    mov ss, dx
+    ror edx, 16
+    mov sp, dx
+    push cx
+    popf
+    push ebx
     retf
 
 %ifdef RESIDENT_HOST
@@ -971,6 +1069,17 @@ dpmi_dos:
     MON_IRETD
 
 dpmi_finish:
+    lea esp, [ebp+mon_kernel_stack_top]
+    call dpmi_client_release
+    cmp byte [ebp+dpmi_release_failed], 0
+    je .cleanup_ready
+    mov byte [ebp+dpmi_exit_code], 1
+.cleanup_ready:
+    jmp mon_leave
+
+; Release the client's state on the kernel stack: the return frame of
+; monitor_run, the switch entry and the memory, including the stubs.
+dpmi_client_release:
     mov byte [ebp+dpmi_sti_shadow], 0
     mov byte [ebp+dpmi_callback_sti], 0
     mov byte [ebp+dpmi_sti_sb_held], 0
@@ -986,15 +1095,34 @@ dpmi_finish:
     rep movsd
     lea eax, [ebp+mon_kernel_stack_top]
     mov [ebp+mon_tss+4], eax
-    mov esp, eax
     lea eax, [ebp+mon_enter]
     mov [ebp+mon_switch+16], eax
-    call dpmi_memory_cleanup
-    cmp byte [ebp+dpmi_release_failed], 0
-    je .cleanup_ready
-    mov byte [ebp+dpmi_exit_code], 1
-.cleanup_ready:
-    jmp mon_leave
+    jmp dpmi_memory_cleanup
+
+; DOS ended the client from real mode (dpmi_terminate_hook). The frame of
+; monitor_run is lost with the process, so the release returns to the hook.
+dpmi_terminate_pm:
+    mov ax, 10h
+    mov ds, ax
+    mov es, ax
+    mov ss, ax
+    mov ebp, edi
+    lea esp, [ebp+mon_kernel_stack_top]
+    call dpmi_debug_host_save
+    call dpmi_client_release
+    call dpmi_debug_host_restore
+    lea esp, [ebp+dpmi_terminate_return_frame]
+    cmp byte [ebp+mon_vcpi_flags_slot], 0
+    je .return_ready
+    mov word [esp-2], 0
+    sub esp, 2
+.return_ready:
+    sub esp, ebp
+    add esp, [ebp+mon_real_base]
+    clts
+    mov ax, 0de0ch
+    call far [ebp+mon_server]
+    ud2
 
 %include "host/descriptors.asm"
 %include "host/memory.asm"
@@ -1044,6 +1172,14 @@ dpmi_client_flags dw 0
 dpmi_client_cs dw 0
 dpmi_client_ds dw 0
 dpmi_client_ss dw 0
+; The address DOS jumps to after the client's end (PSP:0Ah), the stack and
+; the flags DOS brought to the hook, and the mark of an end by DOS.
+dpmi_terminate_address dd 0
+dpmi_terminate_stack dd 0
+dpmi_terminate_flags dw 0
+dpmi_terminated db 0
+    times 32 db 0
+dpmi_terminate_return_frame dd dpmi_terminate_real,0,23002h,0,0,0,0,0,0
 
 HOST_PROTECTED
 dpmi_error_frame times 60 db 0
