@@ -1,3 +1,65 @@
+# Fork changes (`fixes` branch, unreleased)
+
+These changes are on top of Beta 0.9.3b. ISSUES.md records how each was
+tested; the ones marked hardware ran on a Pentium MMX 233 with an ESS
+ES1868, the rest in emulators (QEMU, DOSBox-X, 86Box with MS-DOS 7.1 and
+JemmEx).
+
+## Requirements
+
+- Microsoft EMM386 is no longer supported. JEMMEX 5.86 or 5.87 was already required for CD-Audio; its port-trap interface reaches the DMA controller, which EMM386's does not.
+
+## Disc images and the CD driver
+
+- Mount discs with non-standard root directory headers (Hexen, Duke Nukem 3D Atomic). Hardware.
+- Clamp a volume space larger than the image instead of refusing it, for data tracks ripped from mixed-mode discs.
+- Keep CD audio refills running with a 256-frame output period. Hardware.
+- Switch discs from the hotkeys without re-entering DOS with the game's PSP and without the DOS state swap. A game with a file open on the same handle number no longer loses its file position.
+- Park INT 23h during CD reads, so that Ctrl+C or Ctrl+Break with BREAK=ON does not end the resident driver.
+- Unmount by CUE sheet name; `-unmount NAME.CUE` matches a mount made from that sheet.
+- Install without `DOS=UMB` or on FreeDOS; a DOS that cannot link UMBs no longer fails the install.
+- MSCDEX details: interleave size and skip are ignored, Read Long takes Red Book addresses, Stop and Seek on a unit without audio return done, Eject works while the driver's own audio is bound, audio channel control accepts every mapping, the volume size is the disc up to the lead-out, the track control byte carries ADR 1, the raw sector size is 2352, a bad request length is error 5, a transfer address above 1 MiB returns general failure, and the media-changed answer stays "changed" after the mounting helper's own query until the redirector reads the disc.
+- Fix memory corruption after exit when a game passes a protected-mode pointer to MSCDEX: a flat segment is reflected to real mode as segment A000h, not 0. Hardware.
+- Find the PCI disk controllers at `UCDD -install` through the PCI BIOS and pass their IRQs to DOS directly, with IRQ 14 and 15 and an IRQ set by hand in UCDDSET. A DOS/4GW game no longer freezes at its banner on a machine whose disk controller uses another IRQ. `UCDDPCI=OFF` skips the scan.
+
+## Sound card emulation and output
+
+- Native ESS AudioDrive output through the chip's extended mode at 44.1 kHz, with a half-rate model that costs less CPU time. Register BAh is written only on an ES1868 or ES1878. Hardware, ES1868.
+- Single-cycle playback: a new sound no longer writes past the output buffer at large output periods, very short blocks are accepted (Sierra's driver test in King's Quest V), the same on a slow CPU, and a click between two close blocks is gone.
+- DSP command parsing: a refused command or argument clears the argument counter; a rate is checked before it is stored, so a rate of 0 no longer divides; exit auto-initialize while paused is applied at the resume; 41h/42h set the rate of the legacy commands too; A0h and A8h are accepted; 20h answers 80h, F8h answers 0, F3h raises the 16-bit interrupt; the status ports read 7Fh/FFh in the undefined bits; the SB16 stop resets the DSP.
+- Virtual mixer: FM register 26h starts at FFh like its 5-bit twins, so a driver that saves and restores the mixer no longer leaves the FM volume at the lowest step.
+- 8237 emulation: the command, master clear, all-mask and status registers of both controllers are trapped. Master clear and all-mask keep the owned channel virtual and the output ring unmasked, and stop and resume the stream as the controller would; write-only registers read FFh.
+- Virtual PIC: the rotate forms of the end-of-interrupt commands, set priority, special mask mode and poll are accepted; after an ICW1 the ICW2 to ICW4 bytes are counted off instead of being written to the mask. An EOI from a real-mode handler whose interrupt the DPMI host had already ended is no longer taken for the game's own.
+- Virtual PIC: an EOI is credited to the virtual Sound Blaster interrupt only once that interrupt has reached the game's handler. Doom's effects no longer turn into a wash with the physical and the virtual card on IRQ 7. A signalled interrupt left unacknowledged for two periods is raised again.
+- The mixer is faster on a 386: unity-gain variants, inlined interpolation, doubleword moves. Bit-identical output, checked with the `--verify-mix` build.
+- WSS: the board register's IRQ codes follow the documented table; the codec start no longer fails when the calibration bit is never seen set; the ESS mixer registers the start writes are put back at the stop.
+- The interpolation of the last CD frame of a half no longer reads one frame past the data loaded at output rates above 44.1 kHz.
+- More interrupt-flag patterns recognised (the flags image in a register), and a larger, hashed table of learned sites. Hardware, benefit partly confirmed.
+
+## DPMI host
+
+- A program's protected-mode handlers for INT 1Ch, 23h and 24h are called for the real-mode timer tick, Ctrl+Break and critical errors, as DPMI 0.9 section 2.4.2 asks. An INT 24h handler's answer and an INT 23h handler's carry go back to DOS.
+- A program that DOS ends from real mode (a critical error answered with Abort, an INT 23h handler asking for the end) is released: the host hooks the program's terminate address, frees its state and vectors, and the next DPMI program starts. Before, the host stayed busy until reboot.
+- INT 20h and INT 21h AH=00h or 31h from a program end it as AH=4Ch does, instead of ending the DOS process under the host.
+- A real-mode callback of a suspended parent program (a mouse handler armed before a child started) no longer ends the child.
+- The hardware PIC masks a child program leaves behind are put back when it exits.
+- 0800h maps a physical range below 1 MiB to itself instead of refusing it.
+- INT 2Fh AX=1686h answers AX=0 in protected mode; a 0302h procedure is entered with interrupts off; software INT 0 to 7 reach a protected-mode handler with virtual interrupts off; exceptions 1, 3, 4 and 5 without a handler are reflected as real-mode interrupts; the return from a real-mode callback honours the ES:(E)DI the program returns with.
+- Spurious IRQ 7 and 15 are dropped by the real-mode bridge stubs (IRQ 7 unless the virtual Sound Blaster is on it); the PIC read register is put back after the in-service probes; the spurious cascade EOI is specific.
+- Less time on a 386: the pending test comes before the controller reads, the general protection fault decoder fetches four code bytes with one page walk, the real-mode transfer copies doublewords, and the plain EOIs with nothing virtual to end are answered in the host.
+
+## UCDDSET
+
+- A **Program** button writes the physical IRQ and DMA channels into a jumperless Sound Blaster 16 (DSP 4.xx) through mixer registers 80h and 81h and reads them back.
+- A **Disk** row shows the PCI disk controllers found at install, takes an IRQ by hand for one the BIOS does not report, and warns when a controller shares an IRQ with a sound card setting.
+- The WSS and ESS stop put the old IRQ handler back on the right vector. Under MS-DOS 7.1 with the card on IRQ 7 the wrong vector was the timer's, and the machine stopped taking interrupts after Test.
+- A review of the setup program: the SB Pro start waits for its priming interrupt by port reads instead of loop turns; the SB Pro stop masks the IRQ before the DSP reset; the real-mode handler checks the in-service bit for IRQ 7; INT 23h and 24h handlers, so Ctrl+Break no longer ends the program with vectors hooked; a kept BLASTER field is bounded; MDA, Hercules and CGA adapters get the right video segment and mode, and the previous text mode and line count come back on exit; a CPU check before 386 instructions; the detection's 8237 programming runs with interrupts off.
+- The Disk row text stops before the IRQ field.
+
+## Build
+
+- `--audio-period-frames`, `--no-refill-hint`, `--verify-mix` and `--profile-host` as described in BUILDING.md. The flat sink, register flags image and word I/O split are in every resident-audio build.
+
 # Beta 0.9.3b
 
 ## Changes in 0.9.3b
