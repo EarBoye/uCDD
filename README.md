@@ -19,9 +19,9 @@ And these, found with an emulator test rig, all in single-cycle playback:
 - The same on a slow CPU, where the port write itself lasts longer than an output period
 - A click where one block followed another close to the end of an output period
 
-This branch, `fixes`, combines all of these. Each change is also on its
-own branch, based on the author's `main`, with test notes in the commit
-message.
+This branch, `fixes`, holds all of these. The changes were made on branches
+of their own, based on the author's `main`, and folded into `fixes`; the
+commit messages carry the test notes.
 
 The build line used for testing is:
 

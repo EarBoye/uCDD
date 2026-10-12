@@ -13,9 +13,12 @@ SB Pro, ES688, recorded audio). Test programs play known signals and run
 the detection code of real game drivers; the recorded output is checked
 for gaps and steps.
 
-## Branches
+## Changes
 
-| Branch | State |
+Each change was made on a branch of its own and folded into `fixes`. The
+branch names stay as the names of the changes.
+
+| Change | State |
 | --- | --- |
 | `disc-header-tolerance` | Tested on hardware |
 | `flat-pointer-reflection` | Tested on hardware |
@@ -98,8 +101,8 @@ for that case.
 A review of the whole driver source (five independent readings of the
 driver, the port trap and card emulation, the mixer and CD streaming, the
 host IRQ path, and the DPMI services) found these. All are fixed in
-`disk-irq-detect` and checked by assembly only so far; none has run on
-hardware or in an emulator yet.
+`fixes` and checked by assembly only so far; none has run on hardware or in
+an emulator yet.
 
 - A disc hotkey (MDM list, or eject and insert of a single image) bound the
   new disc for CD audio from the timer tick and from the request entry, and
