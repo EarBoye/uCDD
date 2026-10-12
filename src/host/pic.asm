@@ -107,6 +107,34 @@ dpmi_pic_reflect:
     popad
     ret
 
+; EAX=real interrupt number of a 0300h call. A hardware vector whose IRQ the
+; host holds in service: end the host's service and mark the handler's EOI
+; stray, as the chain from a protected-mode handler does (dpmi_pic_reflect).
+dpmi_pic_real_int:
+    pushad
+    mov edx, eax
+    sub al, [ebp+mon_master]
+    cmp al, 8
+    jb .irq
+    mov eax, edx
+    sub al, [ebp+mon_slave]
+    cmp al, 8
+    jae .done
+    add eax, 8
+.irq:
+    movzx eax, al
+    btr [ebp+dpmi_pic_service], eax
+    jnc .done
+    cmp eax, 8
+    jb .mark
+    and byte [ebp+dpmi_pic_service], 0fbh
+.mark:
+    mov al, 1
+    call resident_stray_eoi_mark
+.done:
+    popad
+    ret
+
 ; An IRET call to a real IRQ vector transfers ownership of its EOI.
 dpmi_pic_real_chain:
     cmp al, 2

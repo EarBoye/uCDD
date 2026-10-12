@@ -105,13 +105,21 @@ resident_host_init:
     add eax, ecx
     mov [cs:resident_game_vector], eax
     push edx
-    cmp dword [ds:bp+8], 35464443h
-    jne .version4
+    cmp dword [ds:bp+8], 36464443h
+    jne .version5
+    ; CDF6 adds the delivered byte (resident_delivered_mark).
+    movzx edx, word [ds:bp+24]
+    add edx, ecx
+    mov [cs:resident_delivered], edx
+.version5_fields:
     ; CDF5 adds the stray EOI byte (resident_stray_eoi_mark).
     movzx edx, word [ds:bp+22]
     add edx, ecx
     mov [cs:resident_stray_eoi], edx
     jmp .version4_fields
+.version5:
+    cmp dword [ds:bp+8], 35464443h
+    je .version5_fields
 .version4:
     cmp dword [ds:bp+8], 34464443h
     jne .version3
@@ -847,6 +855,21 @@ resident_stray_eoi dd 0
 resident_stray_eoi_mark:
     push esi
     mov esi, [ebp+resident_stray_eoi]
+    test esi, esi
+    jz .done
+    mov [esi], al
+.done:
+    pop esi
+    ret
+; The driver's virtual_pic_delivered byte (CDF6), or 0 with an older driver.
+resident_delivered dd 0
+; AL=1 when the host delivers the virtual Sound Blaster interrupt to the
+; client's handler, in protected mode or through the real-mode vector. The
+; driver's virtual PIC credits an EOI to the virtual interrupt only after
+; that (virtual_pic_write).
+resident_delivered_mark:
+    push esi
+    mov esi, [ebp+resident_delivered]
     test esi, esi
     jz .done
     mov [esi], al

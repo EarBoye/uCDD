@@ -686,10 +686,14 @@ mon_irq:
 %ifdef HOST_DPMI
     cmp word [esi+4], 0
     jne .virtual_protected
-    mov eax, edx
     lea edi, [ebp+mon_rm_regs]
     mov dword [edi+32], 2
     mov dword [edi+46], 0
+%ifdef RESIDENT_HOST
+    mov al, 1
+    call resident_delivered_mark
+%endif
+    mov eax, edx
     call mon_real_int
     jmp .done
 .virtual_protected:

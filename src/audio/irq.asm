@@ -125,12 +125,30 @@ virtual_irq_tick:
 .sb:
 %endif
     cmp byte [virtual_dsp_irq], 0
-    jne .done
+    jne .signalled
     mov al, [game_irq_bit]
     mov [virtual_dsp_irq], al
+.raise:
+    mov byte [virtual_irq_stale], 0
     mov al, [guest_irq_bit]
     mov [virtual_pic_request], al
 .done:
+    ret
+.signalled:
+    ; The interrupt was delivered and ended but never acknowledged (no 22Eh
+    ; or 22Fh read): a handler that took it for a spurious one. A card holds
+    ; its request until the acknowledge; raise it again after a whole period
+    ; with nothing requested or in service, so one refused interrupt does
+    ; not stop the stream for good.
+    mov al, [virtual_pic_request]
+    or al, [virtual_pic_service]
+    jnz .fresh
+    inc byte [virtual_irq_stale]
+    cmp byte [virtual_irq_stale], 2
+    jae .raise
+    ret
+.fresh:
+    mov byte [virtual_irq_stale], 0
     ret
 
 ; Command 80h: signal the 8-bit interrupt once the silence has played.
@@ -167,6 +185,7 @@ virtual_irq_take:
     test al, [guest_irq_priority]
     jnz .done
     mov byte [virtual_pic_request], 0
+    mov byte [virtual_pic_delivered], 0
     mov al, [guest_irq_bit]
     mov [virtual_pic_service], al
     inc bx
@@ -260,7 +279,7 @@ virtual_pic_write:
     cmp al, 20h
     je .eoi
     cmp al, [guest_eoi]
-    je .virtual_eoi
+    je .guest_eoi
     cmp ah, 60h
     je .physical
 .fault:
@@ -291,12 +310,25 @@ virtual_pic_write:
     ; through without a look at the in-service register.
     cmp byte [virtual_pic_service], 0
     je .physical_eoi
+    ; A virtual interrupt taken but not yet delivered is not in service for
+    ; the game: an EOI from another handler meanwhile is not its own. The
+    ; DPMI host ends the IRQs it queues at the controller before their
+    ; handlers run, so the in-service register cannot tell that case apart.
+    cmp byte [virtual_pic_delivered], 0
+    je .physical_eoi
     call physical_pic_isr
     test al, [guest_irq_higher]
     jnz .physical_eoi
 .virtual_eoi:
     mov byte [virtual_pic_service], 0
+    mov byte [virtual_pic_delivered], 0
     ret
+.guest_eoi:
+    ; A specific EOI for the guest line ends the virtual interrupt once it
+    ; is delivered; before that it is the hardware line's.
+    cmp byte [virtual_pic_delivered], 0
+    je .physical
+    jmp .virtual_eoi
 .physical_eoi:
     mov al, 20h
     jmp .physical
@@ -333,6 +365,12 @@ physical_pic_initial db 0ffh
 physical_irq_bit db 20h
 pic_visible_bits db 0dfh
 physical_pic_read db 0ah
+; Set when the virtual interrupt reaches the game's handler (the real-mode
+; jump in audio_irq, or the DPMI host's delivery), cleared by its EOI.
+virtual_pic_delivered db 0
+; Periods during which a signalled interrupt sat unacknowledged with nothing
+; requested or in service.
+virtual_irq_stale db 0
 
 
 ; CDF2 exposes these offsets to the protected host.
