@@ -10,7 +10,7 @@ It adds changes found while testing on real hardware (Pentium MMX 233,
 - More interrupt-flag patterns recognised, and a larger table of learned sites
 - CD audio refills keep running with a 256-frame output period
 - Native ESS AudioDrive output, with an optional half-rate mode
-- A PCI disk controller on any IRQ no longer freezes DOS/4GW games. UCDDSET finds the PCI disk controllers at every `UCDD -install`, shows them in a Disk row, warns when one shares an IRQ with a sound card setting, and takes an IRQ by hand for a controller it cannot find
+- A PCI disk controller on any IRQ no longer freezes DOS/4GW games. `UCDD -install` finds the PCI disk controllers through the PCI BIOS and passes their IRQs to DOS directly. UCDDSET shows them in a Disk row, warns when one shares an IRQ with a sound card setting, and takes an IRQ by hand for a controller the BIOS does not report
 
 And these, found with an emulator test rig, all in single-cycle playback:
 

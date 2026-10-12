@@ -32,7 +32,7 @@ The older options `--flat-sink`, `--inject-register`, `--split-word-io`, and `--
 There is no build option for these. A PCI disk controller holds its level-triggered request until its real-mode handler runs. When a protected-mode game waits in a real-mode call for that disk, the request must go to the handler directly, or the game freezes (DOS/4GW games, at their banner). The driver does this for:
 
 - IRQ 14 and 15,
-- the IRQ of every PCI mass storage controller (class 01h) with an interrupt pin, which UCDDSET finds through the PCI BIOS at each `UCDD -install`,
+- the IRQ of every PCI mass storage controller (class 01h) with an interrupt pin, which `UCDD -install` finds through the PCI BIOS (INT 1Ah B101h, B108h, B109h) before the audio starts; an interrupt line of 0 or FFh, and an IDE controller with both channels in compatibility mode, are skipped,
 - the IRQ set by hand in the Disk row of UCDDSET, kept in the last byte of UCDD.CFG (0 for none; that byte was always 0 before).
 
 The IRQ of the physical card is never passed. UCDDSET warns when a disk controller uses the IRQ of the physical card, the virtual Sound Blaster, or the virtual WSS codec. A machine without a PCI BIOS uses IRQ 14, IRQ 15, and the IRQ set by hand.

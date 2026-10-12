@@ -58,7 +58,6 @@ start:
     mov di, config_default
     mov cx, CONFIG_SIZE
     rep movsb
-    call disk_scan
     cmp byte [handoff], 0
     je .load
     call handoff_check
@@ -73,6 +72,8 @@ start:
     cmp al, LOAD_OK
     je install_settings
 .menu:
+    ; The Disk row shows what the PCI scan finds. The driver scans for itself.
+    call disk_scan
     call main_menu
     jc .cancel
     cmp byte [handoff], 0
@@ -116,13 +117,6 @@ install_settings:
     mov si, config_data
     mov cx, CONFIG_SIZE
     rep movsb
-    ; A driver with the tag takes the disk IRQ mask after the record. An older
-    ; driver has other data there.
-    cmp dword [es:di], 'uDSK'
-    jne .tagless
-    call disk_mask
-    mov [es:di+4], ax
-.tagless:
     push cs
     pop es
     call blaster_update
@@ -135,7 +129,6 @@ install_settings:
     call print_text
     mov si, period_line
     call print_text
-    call disk_report
     mov ax, 4c00h
     int 21h
 .failed:
@@ -148,7 +141,6 @@ install_settings:
     call print_text
     mov si, blaster_failed_end
     call print_text
-    call disk_report
     mov ax, 4c00h
     int 21h
 
@@ -297,7 +289,7 @@ handoff_check:
     add eax, edx
     cmp eax, ebx
     jb .bad
-    add eax, CONFIG_SIZE+6
+    add eax, CONFIG_SIZE
     cmp eax, ecx
     ja .bad
     les di, [handoff_pointer]
@@ -741,6 +733,7 @@ setup_usage_message db 'UCDDSET sets the sound cards, hotkeys, and volumes for u
 %include "setup/config_file.asm"
 %include "setup/blaster.asm"
 %include "setup/detect.asm"
+%include "disk_scan.asm"
 %include "setup/disk.asm"
 %include "audio/speaker.asm"
 %include "config_path.asm"

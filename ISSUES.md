@@ -26,7 +26,7 @@ branch names stay as the names of the changes.
 | `ess-native-output` | Tested on hardware, ES1868 only. The half-rate alignment fix on top is tested in an emulator only |
 | `cli-patterns` | Tested on hardware, benefit only partly confirmed |
 | `disk-irq-direct` | In every tested build, not tested alone. Replaced by `disk-irq-detect` |
-| `disk-irq-detect` | Emulators only: PCI scan (QEMU with an AHCI controller on IRQ 11, DOSBox-X with and without a PCI bus), the mask in the driver and the host, the UCDDSET Disk row and warnings, old and new UCDDSET and UCDD mixed, Doom timedemo. The freeze it prevents needs a PCI controller that uses its IRQ in DOS, so that part needs real hardware and is not tested yet |
+| `disk-irq-detect` | Emulators only, in the first form: PCI scan (QEMU with an AHCI controller on IRQ 11, DOSBox-X with and without a PCI bus), the mask in the driver and the host, the UCDDSET Disk row and warnings, old and new UCDDSET and UCDD mixed, Doom timedemo. The scan has since moved from UCDDSET into `UCDD -install` (the driver learns the machine's controllers itself; UCDDSET keeps the Disk row and the IRQ set by hand), which is checked by assembly only so far. The freeze it prevents needs a PCI controller that uses its IRQ in DOS, so that part needs real hardware and is not tested yet |
 | `split-word-io` | In every tested build, not tested alone |
 | `single-cycle-start` | Four fixes for single-cycle playback. Emulators only |
 | `cue-far-buffer` | Emulators only: 111 CUE sheets against the old parser, and a mixed-mode image mounted, read and played under FreeDOS. Now part of `fixes`, because the driver segment is full without it |

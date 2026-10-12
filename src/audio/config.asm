@@ -39,8 +39,8 @@ virtual_dsp_version dw 0504h
 ; padding, so every older UCDD.CFG reads as 0.
 config_disk_irq db 0
 config_size_check equ 1 / (($-config_data) = CONFIG_SIZE)
-; Not in UCDD.CFG. UCDDSET -INSTALL writes the disk IRQ mask here when it finds
-; the tag: IRQ 14 and 15, the IRQs of PCI disk controllers, and config_disk_irq.
-; Those IRQs go straight to the real-mode handler (see host/bridge.asm).
-config_disk_tag db 'uDSK'
+; Not in UCDD.CFG. UCDD -install scans the PCI BIOS (disk_scan.asm) and sets
+; the mask: IRQ 14 and 15, the IRQs of PCI disk controllers, and
+; config_disk_irq. Those IRQs go straight to the real-mode handler (see
+; host/bridge.asm).
 config_disk_mask dw 0c000h
