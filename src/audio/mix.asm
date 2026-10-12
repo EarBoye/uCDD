@@ -124,12 +124,13 @@ mix_half:
     jne .cd_only
     movzx eax, cx
     add [game_mix_frame], eax
+    ; A frame is one doubleword; at half rate two frames make one.
     cmp byte [ess_half], 0
-    jne .silence_ready
-    shl cx, 1
+    je .silence_ready
+    shr cx, 1
 .silence_ready:
-    xor ax, ax
-    rep stosw
+    xor eax, eax
+    rep stosd
     jmp .half_complete
 .cd_only:
     cmp byte [ess_half], 0
@@ -140,6 +141,26 @@ mix_half:
     ja .fast_frame
     movzx eax, cx
     add [game_mix_frame], eax
+    cmp dword [cd_gain], 256
+    jne .cd_only_frame
+    cmp dword [cd_gain+4], 256
+    jne .cd_only_frame
+    ; Unity gain halves each sample. Both halves of the doubleword are
+    ; shifted at once and their sign bits put back, which is the arithmetic
+    ; shift of each one: .cd_full_copy does the same.
+.cd_only_unity:
+    mov eax, [gs:bx]
+    mov edx, eax
+    and edx, 80008000h
+    shr eax, 1
+    and eax, 7fff7fffh
+    or eax, edx
+    mov [es:di], eax
+    add bx, 4
+    add di, 4
+    dec cx
+    jnz .cd_only_unity
+    jmp .half_complete
 .cd_only_frame:
     movsx eax, word [gs:bx]
     imul eax, [cd_gain]
@@ -1013,11 +1034,11 @@ sb_tail_prepare:
     cmp eax, [game_block_bytes]
     jne .done
     mov eax, [game_step]
-    imul eax, PERIOD_FRAMES*2
+    shl eax, OUTPUT_SHIFT+1
     cmp eax, [game_limit]
     ja .done
     mov eax, [game_step]
-    imul eax, PERIOD_FRAMES
+    shl eax, OUTPUT_SHIFT
     add eax, 65535
     shr eax, 16
     mov cl, [game_frame_shift]
@@ -1045,7 +1066,7 @@ sb_tail_prepare:
     cmp dword [game_exit_frame], 0
     jne .done
     mov eax, [game_step]
-    imul eax, PERIOD_FRAMES
+    shl eax, OUTPUT_SHIFT
     add eax, [game_phase]
     cmp eax, [game_limit]
     jbe .done
@@ -1063,12 +1084,17 @@ sb_tail_prepare:
     mov es, [sb_tail_segment]
     mov di, [sb_tail_offset]
     mov cx, dx
-.copy:
-    mov al, [fs:si]
-    mov [es:di], al
-    inc si
-    inc di
-    loop .copy
+    ; A doubleword at a time, then the odd bytes. The string moves read DS,
+    ; so the game's segment takes its place for the copy.
+    push ds
+    push fs
+    pop ds
+    shr cx, 2
+    rep movsd
+    mov cx, dx
+    and cx, 3
+    rep movsb
+    pop ds
     add [sb_tail_consumed], edx
     mov byte [sb_tail_valid], 1
 .done:

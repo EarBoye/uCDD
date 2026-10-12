@@ -157,6 +157,26 @@ mix_run_select:
     jz .source_ready
     mov word [mix_run_sign], 8000h
 .source_ready:
+    ; A PCM gain of 32768 in both channels leaves every sample as it is: the
+    ; variant of the source without the gain step, when it has one.
+    cmp dword [sb_pcm_gain], 32768
+    jne .scaled
+    cmp dword [sb_pcm_gain+4], 32768
+    jne .scaled
+    push di
+    mov di, mix_run_unity_sources
+.unity_source:
+    cmp si, [di]
+    je .unity_found
+    add di, 4
+    cmp di, mix_run_unity_sources_end
+    jb .unity_source
+    pop di
+    jmp .scaled
+.unity_found:
+    mov si, [di+2]
+    pop di
+.scaled:
     mov [mix_run_source], si
     xor si, si
     cmp byte [cd_valid], 0
@@ -164,15 +184,26 @@ mix_run_select:
     ; A disc at the output rate needs no interpolation and no phase.
     mov si, mix_run_disc_rate
     cmp dword [cd_fraction], 0
-    jne .middle_ready
+    jne .disc_gain
     cmp dword [cd_step], 65536
-    jne .middle_ready
+    jne .disc_gain
     cmp dword [cd_step_remainder], 0
-    jne .middle_ready
+    jne .disc_gain
     mov eax, [cd_step_error]
     cmp eax, [output_rate]
-    jae .middle_ready
+    jae .disc_gain
     mov si, mix_run_disc
+.disc_gain:
+    ; A disc gain of 256 in both channels only halves the samples: the
+    ; variants with the suffix _unity.
+    cmp dword [cd_gain], 256
+    jne .middle_ready
+    cmp dword [cd_gain+4], 256
+    jne .middle_ready
+    cmp si, mix_run_disc
+    mov si, mix_run_disc_unity
+    je .middle_ready
+    mov si, mix_run_disc_rate_unity
     jmp .middle_ready
 .no_disc:
     test bh, bh
@@ -245,13 +276,14 @@ mix_run_idle:
     je .pro
     cmp byte [ess_half], 0
     jne .half
-    shl cx, 1
-    rep stosw
+    ; A frame is one doubleword.
+    rep stosd
     jmp mix_half.half_complete
 .half:
     mov [pro_pair_left], eax
     mov [pro_pair_right], eax
-    rep stosw
+    shr cx, 1
+    rep stosd
     jmp mix_half.half_complete
 .pro:
     mov [pro_pair_left], eax
@@ -313,21 +345,30 @@ mix_run_wrap:
 %%done:
 %endmacro
 
-; Sources. Each leaves the frame in EDX and ESI.
+; Sources. Each leaves the frame in EDX and ESI. The set with the suffix
+; _unity, for a PCM gain of 32768 in both channels, leaves out the gain
+; step: (x*32768)>>15 is x while x takes 17 bits, and a sample here is a
+; 16-bit one halved, or that through sb_filter, whose gain stays below 1.5.
+; %1 is the suffix, %2 whether the gain applies.
+%macro MIX_RUN_SOURCES 2
+%if %2
 mix_run_constant:
     mov edx, [mix_run_level]
     mov esi, [mix_run_level+4]
     jmp [mix_run_next]
+%endif
 
 ; Silence into a filter that still rings.
-mix_run_filter:
+mix_run_filter%1:
     xor edx, edx
     xor esi, esi
     call sb_filter
+%if %2
     MIX_RUN_GAIN
+%endif
     jmp [mix_run_next]
 
-mix_run_mono8:
+mix_run_mono8%1:
     mov eax, ebp
     shr eax, 16
     add ax, [sb_tail_read_offset]
@@ -337,10 +378,12 @@ mix_run_mono8:
     shl edx, 7
     mov esi, edx
     MIX_RUN_ADVANCE
+%if %2
     MIX_RUN_GAIN
+%endif
     jmp [mix_run_next]
 
-mix_run_mono8_filter:
+mix_run_mono8_filter%1:
     mov eax, ebp
     shr eax, 16
     add ax, [sb_tail_read_offset]
@@ -365,8 +408,63 @@ mix_run_mono8_filter:
     mov [sb_filter_state+4], eax
     mov [sb_filter_state+12], eax
     mov esi, edx
+%if %2
     MIX_RUN_GAIN
+%endif
     jmp [mix_run_next]
+
+mix_run_stereo8%1:
+    MIX_RUN_STEREO8
+%if %2
+    MIX_RUN_GAIN
+%endif
+    jmp [mix_run_next]
+
+mix_run_stereo8_filter%1:
+    MIX_RUN_STEREO8
+    call sb_filter
+%if %2
+    MIX_RUN_GAIN
+%endif
+    jmp [mix_run_next]
+
+mix_run_mono16%1:
+    mov eax, ebp
+    shr eax, 16
+    shl ax, 1
+    add ax, [sb_tail_read_offset]
+    mov si, ax
+    mov dx, [fs:si]
+    xor dx, [mix_run_sign]
+    movsx edx, dx
+    sar edx, 1
+    mov esi, edx
+    MIX_RUN_ADVANCE
+%if %2
+    MIX_RUN_GAIN
+%endif
+    jmp [mix_run_next]
+
+mix_run_stereo16%1:
+    mov eax, ebp
+    shr eax, 16
+    shl ax, 2
+    add ax, [sb_tail_read_offset]
+    mov si, ax
+    mov dx, [fs:si]
+    mov ax, [fs:si+2]
+    xor dx, [mix_run_sign]
+    xor ax, [mix_run_sign]
+    movsx edx, dx
+    movsx esi, ax
+    sar edx, 1
+    sar esi, 1
+    MIX_RUN_ADVANCE
+%if %2
+    MIX_RUN_GAIN
+%endif
+    jmp [mix_run_next]
+%endmacro
 
 %macro MIX_RUN_STEREO8 0
     mov eax, ebp
@@ -383,94 +481,116 @@ mix_run_mono8_filter:
     MIX_RUN_ADVANCE
 %endmacro
 
-mix_run_stereo8:
-    MIX_RUN_STEREO8
-    MIX_RUN_GAIN
-    jmp [mix_run_next]
+MIX_RUN_SOURCES , 1
+MIX_RUN_SOURCES _unity, 0
 
-mix_run_stereo8_filter:
-    MIX_RUN_STEREO8
-    call sb_filter
-    MIX_RUN_GAIN
-    jmp [mix_run_next]
+; Each source with a gain step and its variant without one.
+mix_run_unity_sources:
+    dw mix_run_filter, mix_run_filter_unity
+    dw mix_run_mono8, mix_run_mono8_unity
+    dw mix_run_mono8_filter, mix_run_mono8_filter_unity
+    dw mix_run_stereo8, mix_run_stereo8_unity
+    dw mix_run_stereo8_filter, mix_run_stereo8_filter_unity
+    dw mix_run_mono16, mix_run_mono16_unity
+    dw mix_run_stereo16, mix_run_stereo16_unity
+mix_run_unity_sources_end:
 
-mix_run_mono16:
-    mov eax, ebp
-    shr eax, 16
-    shl ax, 1
-    add ax, [sb_tail_read_offset]
-    mov si, ax
-    mov dx, [fs:si]
-    xor dx, [mix_run_sign]
-    movsx edx, dx
-    sar edx, 1
-    mov esi, edx
-    MIX_RUN_ADVANCE
-    MIX_RUN_GAIN
-    jmp [mix_run_next]
+; Middles. MIX_RUN_CD_SCALE register, channel: the disc sample scaled by the
+; channel's gain, (x*gain)>>9. The variants with the suffix _unity serve a
+; gain of 256 in both channels, where that is x>>1.
+%macro MIX_RUN_CD_SCALE 3
+%if %3
+    sar %1, 1
+%else
+    imul %1, [cd_gain+%2]
+    sar %1, 9
+%endif
+%endmacro
 
-mix_run_stereo16:
-    mov eax, ebp
-    shr eax, 16
-    shl ax, 2
-    add ax, [sb_tail_read_offset]
-    mov si, ax
-    mov dx, [fs:si]
-    mov ax, [fs:si+2]
-    xor dx, [mix_run_sign]
-    xor ax, [mix_run_sign]
-    movsx edx, dx
-    movsx esi, ax
-    sar edx, 1
-    sar esi, 1
-    MIX_RUN_ADVANCE
-    MIX_RUN_GAIN
-    jmp [mix_run_next]
-
-; Middles.
-mix_run_disc_rate:
-    movsx eax, word [gs:bx]
-    call cd_interpolate
-    imul eax, [cd_gain]
-    sar eax, 9
-    add edx, eax
-    movsx eax, word [gs:bx+2]
-    add bx, 2
-    call cd_interpolate
-    sub bx, 2
-    imul eax, [cd_gain+4]
-    sar eax, 9
-    add esi, eax
+; Disc audio at another rate than the output's: the general loop's
+; cd_interpolate and phase step, in line. %1 is the suffix, %2 whether the
+; gain is unity.
+%macro MIX_RUN_DISC_RATE 2
+mix_run_disc_rate%1:
+    ; cd_interpolate multiplies by half the phase: a difference of two
+    ; samples takes 17 bits. With a half of zero it has nothing to add.
+    mov eax, [cd_fraction]
+    shr eax, 1
+    jz %%whole
+    mov [mix_run_fraction], eax
+    ; The frame waits on the stack: each channel takes two registers.
     push edx
+    push esi
+    movsx edx, word [gs:bx+4]
+    movsx eax, word [gs:bx]
+    sub edx, eax
+    imul edx, [mix_run_fraction]
+    sar edx, 15
+    add eax, edx
+    MIX_RUN_CD_SCALE eax, 0, %2
+    movsx esi, word [gs:bx+6]
+    movsx edx, word [gs:bx+2]
+    sub esi, edx
+    imul esi, [mix_run_fraction]
+    sar esi, 15
+    add edx, esi
+    MIX_RUN_CD_SCALE edx, 4, %2
+    pop esi
+    add esi, edx
+    pop edx
+    add edx, eax
+%%phase:
+    ; The disc's phase for the next frame: the error against the output rate
+    ; first, since it carries into the frame count.
+    mov eax, [cd_step_error]
+    add eax, [cd_step_remainder]
+    sub eax, [output_rate]
+    jae %%carry
+    add eax, [output_rate]
+    mov [cd_step_error], eax
     mov eax, [cd_fraction]
     add eax, [cd_step]
-    mov edx, [cd_step_error]
-    add edx, [cd_step_remainder]
-    cmp edx, [output_rate]
-    jb .phase
-    sub edx, [output_rate]
+    jmp %%advance
+%%carry:
+    mov [cd_step_error], eax
+    mov eax, [cd_fraction]
+    add eax, [cd_step]
     inc eax
-.phase:
-    mov [cd_step_error], edx
-    mov edx, eax
-    and edx, 65535
-    mov [cd_fraction], edx
+%%advance:
+    ; The high word of cd_fraction is zero: every writer masks it.
+    mov [cd_fraction], ax
     shr eax, 16
     shl ax, 2
     add bx, ax
-    pop edx
     jmp mix_run_clip
-
-mix_run_disc:
+%%whole:
     movsx eax, word [gs:bx]
-    imul eax, [cd_gain]
-    sar eax, 9
+    MIX_RUN_CD_SCALE eax, 0, %2
     add edx, eax
     movsx eax, word [gs:bx+2]
-    imul eax, [cd_gain+4]
-    sar eax, 9
+    MIX_RUN_CD_SCALE eax, 4, %2
+    add esi, eax
+    jmp %%phase
+%endmacro
+
+MIX_RUN_DISC_RATE , 0
+MIX_RUN_DISC_RATE _unity, 1
+
+; Disc audio at the output rate.
+%macro MIX_RUN_DISC 2
+mix_run_disc%1:
+    movsx eax, word [gs:bx]
+    MIX_RUN_CD_SCALE eax, 0, %2
+    add edx, eax
+    movsx eax, word [gs:bx+2]
+    MIX_RUN_CD_SCALE eax, 4, %2
     add esi, eax
     add bx, 4
+    jmp mix_run_clip
+%endmacro
+
+MIX_RUN_DISC _unity, 1
+MIX_RUN_DISC , 0
 mix_run_clip:
     MIX_RUN_CLIP edx
     MIX_RUN_CLIP esi
@@ -567,6 +687,7 @@ mix_run_next dw 0
 mix_run_store dw 0
 mix_run_sign dw 0
 mix_run_level dd 0, 0
+mix_run_fraction dd 0
 
 %ifdef VERIFY_MIX
 %include "audio/mix_verify.asm"

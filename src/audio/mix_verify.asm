@@ -20,7 +20,7 @@ verify_bad_state dd 0
 verify_skipped dd 0         ; eligible, not on the interrupt stack
 verify_unchecked dd 0       ; eligible, no memory for the check
 verify_first times 32 db 0  ; first difference: see verify_compare
-verify_loops times 144 dd 0 ; checked halves by source, middle and store
+verify_loops times 512 dd 0 ; checked halves by source, middle and store
 verify_reasons times 16 dd 0 ; halves left to the general loop, by cause
 verify_seg dw 0             ; output and sum
 verify_high dw 0            ; image above the stack
@@ -280,7 +280,9 @@ verify_compare:
     loop .sample
 .good:
     inc dword [verify_checked]
-    ; Index: source*16 + middle*4 + store.
+    ; Index: source*32 + middle*4 + store. Source 0 is mix_run_idle, then
+    ; verify_sources in order; the middles are none, clip, disc, disc_rate,
+    ; disc_unity, disc_rate_unity.
     xor bx, bx
     cmp word [verify_handler], mix_run_idle
     je .source_found
@@ -290,12 +292,12 @@ verify_compare:
     cmp ax, [verify_sources+bx-2]
     je .source_found
     add bx, 2
-    cmp bx, 16
+    cmp bx, 30
     jbe .source
     jmp .leave
 .source_found:
     shr bx, 1
-    shl bx, 4
+    shl bx, 5
     mov ax, [mix_run_next]
     cmp ax, mix_run_clip
     jne .not_clip
@@ -309,6 +311,14 @@ verify_compare:
     jne .not_rate
     add bx, 12
 .not_rate:
+    cmp ax, mix_run_disc_unity
+    jne .not_unity
+    add bx, 16
+.not_unity:
+    cmp ax, mix_run_disc_rate_unity
+    jne .not_rate_unity
+    add bx, 20
+.not_rate_unity:
     mov ax, [mix_run_store]
     cmp ax, mix_run_store_word
     je .counted_loop
@@ -372,3 +382,6 @@ verify_compare:
 verify_sources:
     dw mix_run_constant, mix_run_filter, mix_run_mono8, mix_run_mono8_filter
     dw mix_run_stereo8, mix_run_stereo8_filter, mix_run_mono16, mix_run_stereo16
+    dw mix_run_filter_unity, mix_run_mono8_unity, mix_run_mono8_filter_unity
+    dw mix_run_stereo8_unity, mix_run_stereo8_filter_unity
+    dw mix_run_mono16_unity, mix_run_stereo16_unity

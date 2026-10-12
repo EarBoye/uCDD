@@ -17,13 +17,13 @@ cd_begin_resampled:
     pushad
     push es
     mov eax, [cd_step_remainder]
-    imul eax, PERIOD_FRAMES
+    shl eax, OUTPUT_SHIFT
     add eax, [cd_step_error]
     xor edx, edx
     div dword [output_rate]
     mov ebx, eax
     mov eax, [cd_step]
-    imul eax, PERIOD_FRAMES
+    shl eax, OUTPUT_SHIFT
     add eax, ebx
     add eax, [cd_fraction]
     shr eax, 16
