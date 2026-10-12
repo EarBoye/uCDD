@@ -152,7 +152,15 @@ dpmi_usable_selector:
 dpmi_client_segs times 4 dw 0
 dpmi_raw_segs dd 0
 
+; EBX=interrupt frame, ESI=protected vector of a real-mode INT 1Ch, 23h or
+; 24h that the bridge reflects. It takes the locked stack like a hardware
+; interrupt (DPMI 0.9, section 3.1.2) but keeps the virtual interrupt flag
+; (section 2.4.2).
+dpmi_deliver_reflected:
+    mov byte [ebp+dpmi_deliver_keep_vif], 1
 dpmi_deliver_hardware:
+    movzx ecx, byte [ebp+dpmi_deliver_keep_vif]
+    mov byte [ebp+dpmi_deliver_keep_vif], 0
     call dpmi_locked_capture
     call dpmi_stack_acquire
     push esi
@@ -175,6 +183,12 @@ dpmi_deliver_hardware:
     mov eax, [ebx+48]
     call dpmi_virtual_flags
     mov [edi+8], eax
+    ; A hardware handler starts with interrupts off. A reflected software
+    ; interrupt keeps the flag, so its handler starts with the client's image.
+    mov edx, 2
+    jecxz .image_ready
+    mov edx, eax
+.image_ready:
     mov eax, [ebx+52]
     mov [edi+12], eax
     mov eax, [ebx+56]
@@ -184,14 +198,14 @@ dpmi_deliver_hardware:
     sub edi, 12
     mov dword [edi], dpmi_locked_return
     mov dword [edi+4], 3bh
-    mov dword [edi+8], 2
+    mov [edi+8], edx
     jmp .framed
 .word_frame:
     ; A 16-bit handler returns with a 16-bit IRET.
     sub edi, 6
     mov word [edi], dpmi_locked_return
     mov word [edi+2], DPMI_STUB16
-    mov word [edi+4], 2
+    mov [edi+4], dx
 .framed:
     sub edi, DPMI_LOCK_BASE
     mov [ebx+52], edi
@@ -202,9 +216,13 @@ dpmi_deliver_hardware:
     mov [ebx+44], eax
     and word [ebx+48], 0feffh
     or word [ebx+48], 200h
+    test ecx, ecx
+    jnz .flag_ready
     mov word [ebp+dpmi_vif], 0
+.flag_ready:
     inc dword [ebp+dpmi_locked_depth]
     jmp mon_dpmi.done
+dpmi_deliver_keep_vif db 0
 
 dpmi_locked_return:
     int 0f4h
@@ -316,7 +334,6 @@ dpmi_stack_release:
     pop eax
     ret
 
-dpmi_stack_depth dd 0
 dpmi_stack_cursors times DPMI_LOCK_LEVELS dd 0
 
 dpmi_locked_abort:
@@ -330,6 +347,8 @@ dpmi_locked_ptes times DPMI_LOCK_PAGES dd 0
 dpmi_locked_cursor dd 4096
 HOST_REAL
 dpmi_locked_depth dd 0
+; The real-mode stubs of INT 1Ch, 23h and 24h read it (host/bridge.asm).
+dpmi_stack_depth dd 0
 HOST_PROTECTED
 dpmi_exception_sp dd 0
 dpmi_exception_cursor dd 0
