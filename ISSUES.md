@@ -100,8 +100,9 @@ for that case.
   tested in 86Box; it plays without uCDD. Not investigated.
 - Doom with the physical and the virtual card both on IRQ 7 (ES1688 in
   86Box): the effects turn into a constant wash in most runs, on every
-  build; at 5/5 they are normal. Cause found by reading, fix in the build
-  after 36d0925, not yet confirmed in the rig: the virtual PIC set its
+  build; at 5/5 they are normal. Fixed after 36d0925 and confirmed in the
+  rig (0 washed runs of 10 at 7/7 against 3 of 10 before; the record shows
+  the one misattributed EOI per run forwarded instead): the virtual PIC set its
   in-service bit when the interrupt was taken, before the game's handler
   ran, and credited any non-specific EOI arriving in between to the virtual
   card when the physical in-service register was empty. The DPMI host ends
