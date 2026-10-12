@@ -448,6 +448,43 @@ dpmi_bridge_irq_%+irq:
     ; waiting in a real-mode call for the disk could never take it.
     test word [cs:dpmi_disk_mask], 1<<irq
     jnz .chain
+%if irq = 7 || irq = 15
+    ; A spurious request arrives as IRQ 7 or 15 with nothing in service and
+    ; must not reach the client as an interrupt. The slave is not trapped and
+    ; answers directly. Port 20h goes through the driver, which replaces the
+    ; virtual card's bit, so the master is checked only when that bit is
+    ; another one.
+    push ax
+%if irq = 7
+    cmp byte [cs:dpmi_guest_irq], 7
+    je .requested
+    mov al, 0bh
+    out 20h, al
+    in al, 20h
+    mov ah, al
+    mov al, [cs:dpmi_pic_read_mode]
+    out 20h, al
+%else
+    mov al, 0bh
+    out 0a0h, al
+    in al, 0a0h
+    mov ah, al
+    mov al, [cs:dpmi_pic_read_mode+1]
+    out 0a0h, al
+%endif
+    test ah, 80h
+    jnz .requested
+%if irq = 15
+    ; Only the cascade is in service.
+    mov al, 62h
+    out 20h, al
+%endif
+    pop ax
+    popf
+    iret
+.requested:
+    pop ax
+%endif
     call dpmi_bridge_blocked
 %if irq = 6 || irq >= 8 && irq <= 11 || irq >= 14
     ; The CD refill can wait for the disk and RTC IRQs.

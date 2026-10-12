@@ -69,10 +69,32 @@ dpmi_nested_return:
     stc
     ret
 
+; The child's writes to the mask registers outlive its state. Put the parent's
+; shadow back, through the driver for the master as a client write goes, so
+; that the shadow and the hardware agree again.
+dpmi_nested_pic_restore:
+    pushf
+    push eax
+    push ecx
+    push edx
+    cli
+    mov dx, 21h
+    mov al, [cs:dpmi_nested_pic_mask]
+    mov ecx, 4
+    call far [cs:resident_port]
+    mov al, [cs:dpmi_nested_pic_mask+1]
+    out 0a1h, al
+    pop edx
+    pop ecx
+    pop eax
+    popf
+    ret
+
 dpmi_nested_depth db 0
 dpmi_nested_action db 0
 dpmi_nested_error db 0
 dpmi_nested_switch_ip dd 0
+dpmi_nested_pic_mask dw 0
     times 32 db 0
 dpmi_nested_return_frame dd dpmi_nested_return,0,23002h,0,0,0,0,0,0
     times 512 db 0
@@ -217,6 +239,9 @@ dpmi_nested_pm:
     rep movsb
     call dpmi_flush
     call dpmi_bridge_install_vectors
+    ; The real-mode side puts this mask back into the controllers.
+    mov ax, [ebp+dpmi_pic_mask]
+    mov [ebp+dpmi_nested_pic_mask], ax
     movzx ebx, byte [ebp+dpmi_nested_depth]
     shl ebx, 8
     add ebx, NEST_TABLE

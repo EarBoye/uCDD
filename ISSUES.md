@@ -144,6 +144,25 @@ hardware or in an emulator yet.
 - UCDDSET: the Disk row text stops before the IRQ field.
 - README: `-units` applies to the data-only driver; the audio driver takes
   one drive.
+- DPMI host: a real-mode callback of a suspended parent (a mouse event
+  handler armed before the parent started a child program) ended the child.
+  The stub now returns to its caller with the registers unchanged when the
+  slot is not the running client's. The decision between an interrupt frame
+  and a far call is made from the IVT and the shape of the flags word, so
+  it is a heuristic; the parent's slots are kept off limits to the child.
+- DPMI host: INT 20h and INT 21h AH=00h or AH=31h from a client ended the
+  DOS process under the host and leaked its memory. They end the client as
+  AH=4Ch does.
+- DPMI host: 0800h maps a physical range below 1 MiB to itself instead of
+  refusing it; 0801h accepts such an address.
+- DPMI host: the hardware PIC masks a child left behind are put back to the
+  parent's when the child exits.
+- The virtual PIC, in the host and in the driver, accepts the rotate forms
+  of the end-of-interrupt commands, set priority, special mask mode and
+  poll, which faulted the client before. ICW1 still does.
+- DPMI host: the slave PIC read register is put back after the spurious
+  IRQ 15 check, and the real-mode bridge stubs drop a spurious IRQ 15, and
+  a spurious IRQ 7 unless the virtual Sound Blaster is on IRQ 7.
 
 Not changed, by design or because a safe change needs more than a review:
 
@@ -154,4 +173,12 @@ Not changed, by design or because a safe change needs more than a review:
 - The 8237 emulation accepts the single and auto-initialize modes that
   Sound Blaster drivers program (49h, 59h, 45h, 55h). Demand and block
   modes set the fault byte.
+- DPMI host: a real-mode callback cannot be entered while another is
+  active in the same client (status 14); software INT 08h to 0Fh and 70h
+  to 77h from protected mode raise a general protection fault; LDT
+  selectors must have RPL 3; the host image is mapped user-writable at
+  linear E0000000h.
+- With the virtual Sound Blaster on IRQ 7, a spurious IRQ 7 that arrives
+  while a client is in a real-mode call still reaches its handler. The
+  driver's trap hides the physical bit from the stubs.
 

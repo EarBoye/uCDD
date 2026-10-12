@@ -192,12 +192,35 @@ dpmi_pic_io:
     jz .read
     test dl, 1
     jnz .mask
+    ; ICW1 starts an initialisation, which the host does not emulate.
+    test al, 10h
+    jnz .failure
+    cmp al, 0ch
+    jne .command
+    ; Poll: the next read answers like the request register.
+    mov al, 0ah
+.command:
     cmp al, 0ah
     je .mode
     cmp al, 0bh
     je .mode
     mov ah, al
     and ah, 0f8h
+    ; Set priority, and special mask mode: the host keeps its own priorities,
+    ; and the physical controller serves the mixer as well.
+    cmp ah, 0c0h
+    je .success
+    cmp al, 40h
+    je .success
+    cmp al, 48h
+    je .success
+    cmp al, 68h
+    je .success
+    ; The rotate forms end the service like their plain forms, and the
+    ; controller gets the plain form.
+    and ah, 7fh
+    and al, 7fh
+    mov [esp+28], al
     cmp ah, 60h
     je .specific
     cmp al, 20h
@@ -219,6 +242,7 @@ dpmi_pic_io:
     jmp .success
 .mode:
     mov [ebp+dpmi_pic_read_mode+ebx], al
+    mov [esp+28], al
     jmp .forward
 .mask:
     mov [ebp+dpmi_pic_mask+ebx], al
@@ -343,4 +367,7 @@ dpmi_pic_backend:
 
 dpmi_pic_service dd 0
 dpmi_pic_mask dw 0ffffh
+HOST_REAL
+; The real-mode IRQ stubs put the selected register back after a read.
 dpmi_pic_read_mode dw 0a0ah
+HOST_PROTECTED

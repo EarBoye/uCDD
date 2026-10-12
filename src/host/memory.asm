@@ -519,8 +519,6 @@ dpmi_physical_map:
     movzx edx, word [ebx+24]
     shl edx, 16
     mov dx, [ebx+32]
-    cmp edx, 100000h
-    jb dpmi_bad_value
     movzx eax, word [ebx+12]
     shl eax, 16
     mov ax, [ebx+8]
@@ -529,6 +527,15 @@ dpmi_physical_map:
     mov ecx, edx
     add ecx, eax
     jc dpmi_bad_value
+    cmp edx, 100000h
+    jae .extended
+    ; The first megabyte is in every page table as VCPI set it up, so its
+    ; linear address is its physical one. Nothing is recorded: 0801h knows
+    ; such an address. A range that crosses into extended memory is refused.
+    cmp ecx, 100000h
+    ja dpmi_bad_value
+    jmp mon_dpmi.success
+.extended:
     mov ecx, edx
     and ecx, 4095
     add eax, ecx
@@ -546,6 +553,8 @@ dpmi_physical_unmap:
     movzx eax, word [ebx+24]
     shl eax, 16
     mov ax, [ebx+32]
+    cmp eax, 100000h
+    jb mon_dpmi.success
     and eax, 0fffff000h
     mov esi, dpmi_blocks
     mov ecx, DPMI_BLOCK_COUNT

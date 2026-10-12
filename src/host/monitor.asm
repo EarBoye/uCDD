@@ -534,6 +534,18 @@ mon_irq_%+irq:
 %else
     out 0a0h, al
     in al, 0a0h
+%ifdef HOST_DPMI
+    ; Put back the register the client selected. A later IN from A0h then
+    ; answers as the client expects.
+    push eax
+    call .base
+.base:
+    pop eax
+    sub eax, .base
+    mov al, [cs:eax+dpmi_pic_read_mode+1]
+    out 0a0h, al
+    pop eax
+%endif
 %endif
     test al, 80h
     pop eax

@@ -260,6 +260,8 @@ dpmi_dos_tile_room:
     ret
 
 dpmi_dos_translate:
+    cmp byte [ebp+dpmi_reflect_vector], 20h
+    je dpmi_dos.terminate_zero
     cmp byte [ebp+dpmi_reflect_vector], 21h
     jne .ordinary
     mov byte [ebp+dpmi_dos_via21], 1

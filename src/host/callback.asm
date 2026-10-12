@@ -22,7 +22,13 @@ dpmi_callback_allocate:
     mov ecx, 16
 .slot:
     cmp word [edi], 0
-    je .found
+    jne .next
+    ; A parent's stub in this slot is still in the IVT. Leave it alone.
+    mov edx, 16
+    sub edx, ecx
+    bt [ebp+dpmi_callback_inherited], edx
+    jnc .found
+.next:
     add edi, 20
     loop .slot
     add esp, 12
@@ -62,6 +68,7 @@ dpmi_callback_allocate:
     xor edx, edx
     mov ecx, 20
     div ecx
+    bts [ebp+dpmi_callback_live], eax
     imul eax, 6
     add eax, dpmi_callback_stubs
     mov [ebx+28], ax
@@ -91,6 +98,7 @@ dpmi_callback_free:
     jnz .bad
     cmp eax, 16
     jae .bad
+    mov ecx, eax
     imul eax, 20
     lea edi, [ebp+dpmi_callbacks+eax]
     cmp byte [ebp+dpmi_callback_active], 0
@@ -103,6 +111,7 @@ dpmi_callback_free:
     mov ax, [edi]
     test ax, ax
     jz .bad
+    btr [ebp+dpmi_callback_live], ecx
     pushad
     movzx eax, word [ebx+28]
     add eax, [ebp+mon_real_base]
@@ -380,17 +389,20 @@ dpmi_callback_stubs:
 dpmi_callback_enter:
     pushf
     cli
+    pop word [cs:dpmi_callback_regs+32]
+    mov [cs:dpmi_callback_regs+28], eax
+    pop word [cs:dpmi_callback_index]
+    mov ax, [cs:dpmi_callback_index]
+    bt [cs:dpmi_callback_live], ax
+    jnc .foreign
     cmp byte [cs:dpmi_callback_active], 0
     jne .nested
-    pop word [cs:dpmi_callback_regs+32]
     mov [cs:dpmi_callback_regs], edi
     mov [cs:dpmi_callback_regs+4], esi
     mov [cs:dpmi_callback_regs+8], ebp
     mov [cs:dpmi_callback_regs+16], ebx
     mov [cs:dpmi_callback_regs+20], edx
     mov [cs:dpmi_callback_regs+24], ecx
-    mov [cs:dpmi_callback_regs+28], eax
-    pop word [cs:dpmi_callback_index]
     mov [cs:dpmi_callback_regs+34], es
     mov [cs:dpmi_callback_regs+36], ds
     mov [cs:dpmi_callback_regs+38], fs
@@ -427,6 +439,43 @@ dpmi_callback_enter:
     mov ax, 0de0ch
     int 67h
     ud2
+.foreign:
+    ; The slot belongs to a suspended parent client, or to a client that has
+    ; ended, so its handler cannot run. Return to the caller at once with
+    ; every register as it was. The stack holds an IRET frame when a vector
+    ; points at this stub or when the word above the return address reads as
+    ; a flags image; otherwise the caller made a far call.
+    mov [cs:dpmi_callback_regs], edi
+    mov [cs:dpmi_callback_regs+8], ebp
+    mov [cs:dpmi_callback_regs+24], ecx
+    mov [cs:dpmi_callback_regs+34], es
+    mov ax, cs
+    shl eax, 16
+    mov ax, [cs:dpmi_callback_index]
+    imul ax, ax, 6
+    add ax, dpmi_callback_stubs
+    xor di, di
+    mov es, di
+    mov cx, 256
+    cld
+    repne scasd
+    je .foreign_frame
+    mov bp, sp
+    mov ax, [bp+4]
+    and ax, 802ah
+    cmp ax, 2
+.foreign_frame:
+    mov es, [cs:dpmi_callback_regs+34]
+    mov ecx, [cs:dpmi_callback_regs+24]
+    mov ebp, [cs:dpmi_callback_regs+8]
+    mov edi, [cs:dpmi_callback_regs]
+    mov eax, [cs:dpmi_callback_regs+28]
+    jne .foreign_call
+    iret
+.foreign_call:
+    push word [cs:dpmi_callback_regs+32]
+    popf
+    retf
 dpmi_callback_real_return:
     and byte [cs:dpmi_callback_regs+33], 0feh
     push word [cs:dpmi_callback_regs+32]
@@ -443,6 +492,11 @@ dpmi_callback_real_return:
 
 dpmi_callback_active db 0
 dpmi_callback_index dw 0
+; Slots with a stub in use: one bit per slot. The live mask is the running
+; client's own slots. The inherited mask holds the slots of its suspended
+; parents, whose stubs stay in the IVT while a child runs.
+dpmi_callback_live dw 0
+dpmi_callback_inherited dw 0
 dpmi_callback_regs times 50 db 0
 dpmi_callback_resume dd 0
 dpmi_callback_return_frame times 36 db 0

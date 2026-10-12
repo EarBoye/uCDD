@@ -208,6 +208,8 @@ dpmi_entry:
     sti
     call monitor_run
     mov byte [dpmi_active], 0
+    ; A stub still in some vector returns to its caller from now on.
+    mov word [dpmi_callback_live], 0
 %ifdef RESIDENT_HOST
     cmp byte [dpmi_nested_depth], 0
     je .free_stack
@@ -231,6 +233,7 @@ dpmi_entry:
     cmp byte [dpmi_nested_depth], 0
     je .terminate
     call dpmi_nested_restore
+    call dpmi_nested_pic_restore
 .terminate:
 %endif
     mov ah, 4ch
@@ -498,6 +501,18 @@ dpmi_client_init:
     lea edi, [ebp+dpmi_callbacks]
     mov ecx, 16*20/4
     rep stosd
+%ifdef RESIDENT_HOST
+    ; The stubs of the suspended parents stay in the IVT. Their slots are
+    ; off limits, so that none of their vectors reaches a handler of this
+    ; client.
+    cmp byte [ebp+dpmi_nested_depth], 0
+    je .slots_free
+    mov ax, [ebp+dpmi_callback_inherited]
+    or ax, [ebp+dpmi_callback_live]
+.slots_free:
+    mov [ebp+dpmi_callback_inherited], ax
+%endif
+    mov word [ebp+dpmi_callback_live], 0
     mov byte [ebp+dpmi_vif], 1
     mov byte [ebp+dpmi_step_active], 0
     mov byte [ebp+dpmi_first_exception], 0ffh
@@ -742,10 +757,18 @@ dpmi_dispatch:
     mov ax, [ebx+36]
     cmp al, 0
     jne .copy_stack
+    ; A DOS termination call in real mode would end the process under the host.
+    cmp byte [ebx+24], 20h
+    je dpmi_bad_value
     cmp byte [ebx+24], 21h
     jne .copy_stack
-    cmp byte [edi+29], 4ch
+    mov al, [edi+29]
+    cmp al, 4ch
     je dpmi_bad_value
+    cmp al, 31h
+    je dpmi_bad_value
+    test al, al
+    jz dpmi_bad_value
 .copy_stack:
     push dword [edi+46]
     call dpmi_large_stack_prepare
@@ -916,9 +939,19 @@ dpmi_dos:
     mov ax, [ebx+36]
     mov [ebp+dpmi_last_dos], ax
     HOST_COUNT dos, 0
-    cmp byte [esp+37], 4ch
-    jne dpmi_dos_translate
+    ; Reflected to real mode, a termination call would end the DOS process
+    ; under the host. A client cannot stay resident, so AH=31h ends it like
+    ; AH=4Ch. AH=00h ends it with code 0, as INT 20h does.
     mov al, [esp+36]
+    cmp byte [esp+37], 4ch
+    je .terminate
+    cmp byte [esp+37], 31h
+    je .terminate
+    cmp byte [esp+37], 0
+    jne dpmi_dos_translate
+.terminate_zero:
+    xor al, al
+.terminate:
     mov [ebp+dpmi_exit_code], al
     mov word [ebp+mon_status], 0
     jmp dpmi_finish

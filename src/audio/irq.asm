@@ -220,23 +220,46 @@ virtual_pic_read:
 virtual_pic_write:
     cmp dx, 21h
     je .mask
+    ; ICW1 starts an initialisation, which is not emulated.
+    test al, 10h
+    jnz .fault
+    cmp al, 0ch
+    jne .command
+    ; Poll: the next read answers like the request register.
+    mov al, 0ah
+.command:
     cmp al, 0ah
     je .select
     cmp al, 0bh
     je .select
+    mov ah, al
+    and ah, 0f8h
+    ; Set priority, and special mask mode: the physical controller keeps its
+    ; own, as it serves the mixer as well.
+    cmp ah, 0c0h
+    je .done
+    cmp al, 40h
+    je .done
+    cmp al, 48h
+    je .done
+    cmp al, 68h
+    je .done
+    ; The rotate forms end the service like their plain forms.
+    and ah, 7fh
+    and al, 7fh
     cmp al, 20h
     je .eoi
     cmp al, [guest_eoi]
     je .virtual_eoi
-    mov ah, al
-    and ah, 0f8h
     cmp ah, 60h
     je .physical
+.fault:
 %ifdef MOUNTED_AUDIO
     mov byte [fault], 5
 %else
     mov byte [fault], 1
 %endif
+.done:
     ret
 .select:
     mov [physical_pic_read], al
