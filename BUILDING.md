@@ -17,7 +17,7 @@ For a CD driver without resident audio, omit `--resident-audio`.
 These options apply with `--resident-audio`.
 
 - `--audio-period-frames N`: set the output period to 32, 64, 128, or 256 frames. The default is 32. A larger period makes fewer interrupts and costs less CPU time, with more delay: 256 frames is 5.8 ms at 44.1 kHz. The driver refuses a game's auto-initialize block that lasts less than two periods, so a larger period also leaves more games without sound: 256 frames needs blocks of 11.6 ms, 128 frames needs 5.8 ms.
-- `--no-refill-hint`: test option. Refill the CD queue whenever a refill is due, without waiting for the display retrace.
+- `--no-refill-hint`: refill the CD queue whenever a refill is due, without waiting for the display retrace. Without it the retrace and timer ports are trapped, and a protected-mode game that polls the retrace pays for every poll: keep this option on any machine below a Pentium.
 
 These fixes are in every resident-audio build. Each has a `--no-` option to build without it, for testing:
 

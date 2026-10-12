@@ -288,6 +288,12 @@ port_callback:
     je .flip_reset
     cmp dx, 0eh
     je .clear_mask
+    cmp dx, 8
+    je .dma_command
+    cmp dx, 0dh
+    je .master_clear
+    cmp dx, 0fh
+    je .all_mask
     cmp dx, 0ah
     je .mask
     cmp dx, 0bh
@@ -530,6 +536,80 @@ port_callback:
 .unowned_dma:
     call dma_unowned_write
     jmp .done
+.dma_command:
+    ; The command register is the controller's. Its disable bit would stop
+    ; the output ring too.
+    call dma_ring_controller
+    jnc .command_write
+    and al, 0fbh
+.command_write:
+    call dma_shared_write
+    jmp .done
+.master_clear:
+    ; Master clear resets the flip-flop and masks every channel. The owned
+    ; channel follows in the emulation; the output ring's channel is unmasked
+    ; again right after.
+    mov byte [si+DMA_FLIP], 0
+    mov byte [si+DMA_MASK], 4
+    call dma_shared_write
+    call dma_ring_controller
+    jnc .done
+    mov al, [sb_dma8]
+    cmp byte [sound_card], 0
+    jne .ring_channel
+    mov al, [sb_dma16]
+    and al, 3
+.ring_channel:
+    push dx
+    mov dx, 0ah
+    call dma_shared_write
+    pop dx
+    jmp .done
+.all_mask:
+    ; The all-mask register sets the four mask bits at once. Each bit goes
+    ; the way of a single-mask write, so that the owned channel stays
+    ; virtual and the output ring's channel stays protected.
+    mov bx, [guest_dma8]
+    cmp si, dma8
+    je .all_mask_channel
+    mov bx, [guest_dma16]
+    sub bl, 4
+.all_mask_channel:
+    mov ah, al
+    xor cl, cl
+.all_mask_bit:
+    mov al, cl
+    test ah, 1
+    jz .all_mask_value
+    or al, 4
+.all_mask_value:
+    cmp cl, bl
+    jne .all_mask_other
+    and al, 4
+    mov [si+DMA_MASK], al
+    jmp .all_mask_next
+.all_mask_other:
+    push ax
+    push bx
+    push cx
+    call dma_unowned_write
+    pop cx
+    pop bx
+    pop ax
+.all_mask_next:
+    shr ah, 1
+    inc cl
+    cmp cl, 4
+    jb .all_mask_bit
+%ifdef WSS_INPUT
+    cmp si, dma8
+    jne .done
+    cmp byte [si+DMA_MASK], 0
+    jne .done
+    jmp .wss_arm
+%else
+    jmp .done
+%endif
 .page:
     mov [si+DMA_PAGE], al
     jmp .done
@@ -620,6 +700,17 @@ port_callback:
     cmp al, 80h
     je .rate
 %endif
+    ; Input modes of the SB Pro: nothing to set up for output.
+    cmp al, 0a0h
+    je .done
+    cmp al, 0a8h
+    je .done
+    cmp al, 20h
+    je .direct_input
+    cmp al, 0f8h
+    je .zero_reply
+    cmp al, 0f3h
+    je .force_irq16
     cmp al, 0e1h
     jne .command_unsupported
     mov ax, [virtual_dsp_version]
@@ -646,6 +737,20 @@ port_callback:
 .one_reply:
     mov [reply], al
     mov byte [reply_count], 1
+    jmp .done
+.direct_input:
+    ; Direct ADC: silence.
+    mov al, 80h
+    jmp .one_reply
+.zero_reply:
+    xor al, al
+    jmp .one_reply
+.force_irq16:
+%ifdef VIRTUAL_IRQ
+    or byte [virtual_dsp_irq], 2
+    mov al, [guest_irq_bit]
+    mov [virtual_pic_request], al
+%endif
     jmp .done
 .force_irq:
 %ifdef VIRTUAL_IRQ
@@ -873,6 +978,20 @@ port_callback:
     ja .command_unsupported
     mov ax, [rate_pending]
     mov [game_rate], ax
+    ; The DSP has one rate: a legacy command that follows plays at it. The
+    ; time constant form counts both channels of a stereo stream.
+    cmp byte [dsp_command], 40h
+    jne .rate_command
+    mov ax, [legacy_pending]
+    jmp .legacy_rate_store
+.rate_command:
+    test byte [virtual_mixer+0eh], 2
+    jz .legacy_rate_store
+    cmp ax, 32768
+    jae .legacy_rate_store
+    shl ax, 1
+.legacy_rate_store:
+    mov [legacy_rate], ax
     movzx eax, word [game_rate]
     shl eax, 16
     xor edx, edx
@@ -926,7 +1045,7 @@ port_callback:
     div ecx
     cmp eax, 65535
     ja .command_unsupported
-    mov [legacy_rate], ax
+    mov [legacy_pending], ax
     test byte [virtual_mixer+0eh], 2
     jz .time_mono
     shr ax, 1
@@ -1353,15 +1472,63 @@ port_callback:
     je .dma_read
     cmp dx, 2
     je .dma_read
+    cmp dx, 8
+    je .dma_status
     cmp dx, 83h
-    jne .unsupported
+    je .page_read
+    ; The other controller registers are write-only: the bus reads FFh.
+    cmp dx, 10h
+    jb .reset_read
+    jmp .unsupported
+.page_read:
     mov al, [si+DMA_PAGE]
+    jmp .result
+.dma_status:
+    ; The controller's status, with the output ring's channel hidden and the
+    ; owned channel's terminal count from the emulation.
+    push dx
+    cmp si, dma16
+    jne .status_port
+    mov dx, 0d0h
+.status_port:
+    call physical_read
+    pop dx
+    call dma_ring_controller
+    jnc .status_owned
+    mov cl, [sb_dma8]
+    cmp byte [sound_card], 0
+    jne .status_hide
+    mov cl, [sb_dma16]
+    and cl, 3
+.status_hide:
+    mov ah, 11h
+    shl ah, cl
+    not ah
+    and al, ah
+.status_owned:
+    mov bx, [guest_dma8]
+    cmp si, dma8
+    je .status_channel
+    mov bx, [guest_dma16]
+    sub bl, 4
+.status_channel:
+    mov cl, bl
+    mov ah, 11h
+    shl ah, cl
+    not ah
+    and al, ah
+    cmp byte [si+3], 0
+    je .result
+    mov ah, 1
+    shl ah, cl
+    or al, ah
     jmp .result
 .reset_read:
     mov al, 0ffh
     jmp .result
 .ready:
-    xor al, al
+    ; Only bit 7 is defined; a card reads the other bits as set.
+    mov al, 7fh
     jmp .result
 .status:
 %ifdef VIRTUAL_IRQ
@@ -1370,10 +1537,10 @@ port_callback:
     call emm_irq_ack
 %endif
 %endif
-    xor al, al
+    mov al, 7fh
     cmp byte [reply_count], 0
     je .result
-    mov al, 80h
+    mov al, 0ffh
     jmp .result
 .status16:
 %ifdef VIRTUAL_IRQ
@@ -1382,7 +1549,7 @@ port_callback:
     call emm_irq_ack
 %endif
 %endif
-    xor al, al
+    mov al, 0ffh
     jmp .result
 .reply:
     mov al, [reply]
@@ -1638,6 +1805,27 @@ dma_unowned_write:
 
 %include "audio/direct_write.asm"
 
+; CF set when the controller of SI carries the physical output ring.
+dma_ring_controller:
+%ifdef RESIDENT_AUDIO
+    cmp byte [sb_running], 0
+    je .no
+    cmp byte [sound_card], 0
+    je .high_ring
+    cmp si, dma8
+    jne .no
+    stc
+    ret
+.high_ring:
+    cmp si, dma16
+    jne .no
+    stc
+    ret
+.no:
+%endif
+    clc
+    ret
+
 dma_shared_write:
     push dx
     cmp si, dma16
@@ -1664,9 +1852,9 @@ dma_port:
     je .address
     cmp dx, [guest_dma_ports+8]
     je .count
-    cmp dx, 0d4h
+    cmp dx, 0d0h
     jb .done
-    cmp dx, 0dch
+    cmp dx, 0deh
     ja .done
     test dl, 1
     jnz .done
@@ -1821,7 +2009,9 @@ virtual_mixer:
     db 0ffh
     times 22h-5 db 0
     db 0ffh
-    times 28h-23h db 0
+    times 26h-23h db 0
+    db 0ffh
+    db 0
     db 0ffh
     times 30h-29h db 0
     times 8 db 0f8h
@@ -1837,6 +2027,7 @@ dma16 db 0,1,0,0
 dsp_command db 0
 arguments db 0
 rate_pending dw 0
+legacy_pending dw 0
 block_low db 0
 legacy_block dw 0
 legacy_rate dw 22050

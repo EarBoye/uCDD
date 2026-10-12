@@ -44,7 +44,9 @@ wss_block_origin dd 0
 wss_gain dd 0,0
 wss_guest_irq dw 11
 wss_irq_event dw 0ffffh
-wss_irqs db 5,7,9,10,11,12,14,15
+; Board register bits 5 to 3: none, 7, 9, 10, 11, 5, and two reserved codes.
+; 0FFh is none: no interrupt is raised for it.
+wss_irqs db 0ffh,7,9,10,11,5,0ffh,0ffh
 wss_rates dw 8000,5510,16000,11025,27420,18900,32000,22050
     dw 0,37800,0,44100,48000,33075,9600,6615
 wss_attenuation:

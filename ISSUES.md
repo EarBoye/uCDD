@@ -196,3 +196,66 @@ Not changed, by design or because a safe change needs more than a review:
   while a client is in a real-mode call still reaches its handler. The
   driver's trap hides the physical bit from the stubs.
 
+## Checked against the specifications
+
+A second review read the code against the reference documents in
+`docs/references` (the Sound Blaster programming reference, the ES1868,
+ES1887 and ES1888 data sheets, the 8237A and 8259A data sheets, DPMI 0.9
+and 1.0, VCPI, XMS, EMS 4.0, the MSCDEX 2.1 driver specification, ECMA-119
+and Ralf Brown's list), and costed the hot paths with the i386 clock counts.
+Fixed in `fixes`, checked by assembly only unless the test notes say more:
+
+- Virtual PIC: an EOI from a real-mode handler that the DPMI host had
+  already ended at the controller was taken for the game's own, and cleared
+  the virtual in-service state while the game's handler ran. The host now
+  marks that EOI as spent (CDF5 block). An EOI with nothing virtual in
+  service goes through without a read of the in-service register, which
+  spares three port traps on every interrupt of every device. After an
+  ICW1 the ICW2 to ICW4 bytes are counted off instead of being written to
+  the mask.
+- 8237: the command, master clear, all-mask and status registers of both
+  controllers are trapped. Master clear and all-mask keep the owned
+  channel virtual and the output ring's channel unmasked; the status read
+  hides the ring's channel and shows the owned channel's terminal count;
+  the write-only registers read as FFh.
+- Sound Blaster: the virtual mixer's FM register 26h starts at FFh, as its
+  5-bit twins 34h/35h do (a driver that saved and restored the mixer left
+  the physical FM volume at the lowest step); 41h/42h set the rate of the
+  legacy commands too, and a refused time constant leaves it alone; A0h
+  and A8h are accepted, 20h answers 80h, F8h answers 0, F3h raises the
+  16-bit interrupt; the status ports read 7Fh/FFh in the undefined bits;
+  the SB16 stop resets the DSP.
+- ESS: register BAh is written only on an ES1868 or ES1878 (mixer 40h
+  identification); the analog control write changes bits 1 and 0 only;
+  the mixer registers the start writes (14h, 22h, 26h) are put back at
+  the stop.
+- WSS: the board register's IRQ codes follow the documented table (none,
+  7, 9, 10, 11, 5); the codec start no longer fails when the calibration
+  bit is never seen set.
+- MSCDEX: a volume space larger than the image is clamped, not refused
+  (data tracks ripped from mixed-mode discs); interleave size and skip are
+  ignored; Read Long takes Red Book addresses; Stop and Seek on a unit
+  without audio return done; Eject works with the driver's own audio
+  bound; audio channel control accepts every mapping, with inputs 2 and 3
+  as silence; the volume size is the disc up to the lead-out; the track
+  control byte carries ADR 1; the raw sector size is 2352; a bad request
+  length is error 5; a volume descriptor's version is checked only for the
+  primary one; the media-changed answer stays "changed" after the mounting
+  helper's own query until the redirector reads the disc.
+- The CD filter owner is taken from DOS (AH=62h), not from an SDA offset.
+- 386 time: the SDA swap moves dwords; the physical IRQ handler writes the
+  saved mask back instead of reading it again.
+
+Left as they are, with the reason:
+
+- The virtual mixer is a CT1745 on every model, and a DSP reset leaves the
+  speaker on. Both are leniencies that games have relied on.
+- A single-cycle command during an auto-initialize stream starts at once
+  from the buffer start; the DSP would finish the block first. No game is
+  known to use that stop method.
+- The virtual PIC keeps fixed priorities: the rotate and set-priority
+  commands are accepted without effect, and the poll command reads the
+  request register.
+- The resident image still carries 2.3 KB of one-shot activation code; the
+  units could be placed before it.
+

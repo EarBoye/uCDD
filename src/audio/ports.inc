@@ -13,8 +13,9 @@
 %endif
 %endmacro
     trap_range 2,2
+    trap_range 8,1
     trap_range 0ah,3
-    trap_range 0eh,1
+    trap_range 0dh,3
 %ifdef MDM_SUPPORT
     trap_range 60h,1
 %endif
@@ -25,10 +26,13 @@
     trap_range 8bh,1
     trap_range 0c4h,1
     trap_range 0c6h,1
+    trap_range 0d0h,1
     trap_range 0d4h,1
     trap_range 0d6h,1
     trap_range 0d8h,1
+    trap_range 0dah,1
     trap_range 0dch,1
+    trap_range 0deh,1
 %ifdef PORT_MIXER_LABEL
 PORT_MIXER_LABEL:
 %endif

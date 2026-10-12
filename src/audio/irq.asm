@@ -220,9 +220,22 @@ virtual_pic_read:
 virtual_pic_write:
     cmp dx, 21h
     je .mask
-    ; ICW1 starts an initialisation, which is not emulated.
+    ; ICW1 starts an initialisation, which is not emulated. The ICW2 to ICW4
+    ; bytes that follow on port 21h are not mask writes: count them off.
     test al, 10h
-    jnz .fault
+    jz .not_icw1
+    mov ah, 1
+    test al, 2
+    jnz .single
+    inc ah
+.single:
+    test al, 1
+    jz .icw_counted
+    inc ah
+.icw_counted:
+    mov [pic_icw_pending], ah
+    jmp .fault
+.not_icw1:
     cmp al, 0ch
     jne .command
     ; Poll: the next read answers like the request register.
@@ -267,14 +280,22 @@ virtual_pic_write:
     call physical_write
     ret
 .eoi:
-    call physical_pic_isr
+%ifdef RESIDENT_AUDIO
+    ; The DPMI host ended this interrupt at the controller before it ran the
+    ; real-mode handler, so the handler's EOI is spent (CDF5).
+    cmp byte [sb_stray_eoi], 0
+    je .eoi_live
+    mov byte [sb_stray_eoi], 0
+    ret
+.eoi_live:
+%endif
+    ; With no virtual interrupt in service the EOI is the hardware's. A
+    ; non-specific EOI with nothing in service does nothing, so it can go
+    ; through without a look at the in-service register.
     cmp byte [virtual_pic_service], 0
-    je .hardware_service
+    je .physical_eoi
+    call physical_pic_isr
     test al, [guest_irq_higher]
-    jnz .physical_eoi
-    jmp .virtual_eoi
-.hardware_service:
-    test al, al
     jnz .physical_eoi
 .virtual_eoi:
     mov byte [virtual_pic_service], 0
@@ -283,6 +304,11 @@ virtual_pic_write:
     mov al, 20h
     jmp .physical
 .mask:
+    cmp byte [pic_icw_pending], 0
+    je .mask_write
+    dec byte [pic_icw_pending]
+    ret
+.mask_write:
     mov [virtual_pic_mask], al
     mov ah, [guest_irq_bit]
     not ah
@@ -301,6 +327,11 @@ virtual_pic_write:
 
 virtual_dsp_irq db 0
 virtual_pic_mask db 0ffh
+; ICW bytes still to come on port 21h after an ICW1.
+pic_icw_pending db 0
+%ifdef RESIDENT_AUDIO
+sb_stray_eoi db 0
+%endif
 virtual_pic_request db 0
 virtual_pic_service db 0
 virtual_block_seen dd 0

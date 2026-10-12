@@ -279,6 +279,8 @@ sb_stop:
     mov dx, [sb_base]
     add dx, 0fh
     call physical_read
+    ; Leave the DSP reset, not paused in auto-initialize mode.
+    call physical_reset
     mov al, [saved_pic]
     mov dx, 21h
     call physical_write
@@ -550,14 +552,10 @@ audio_irq_mask:
     ret
 
 audio_irq_unmask:
+    ; Nothing else writes the mask while the handler runs with interrupts
+    ; off, so the value read at the mask goes back as it was.
     mov dx, 21h
-    call physical_read
-    mov ah, [audio_irq_mask_bit]
-    not ah
-    and al, ah
-    mov ah, [audio_irq_old_mask]
-    and ah, [audio_irq_mask_bit]
-    or al, ah
+    mov al, [audio_irq_old_mask]
     mov byte [audio_irq_mask_bit], 0
     call physical_write
     ret

@@ -32,6 +32,8 @@
     movzx bx, al
     movzx ax, byte [wss_irqs+bx]
     mov [wss_guest_irq], ax
+    cmp al, 16
+    jae .done
     test byte [wss_board], 40h
     jz .done
     mov [wss_irq_event], ax

@@ -138,12 +138,12 @@ interrupt:
     mov ax, 8101h
     jmp .done
 .bad_length:
-    mov ax, 810ch
+    mov ax, 8105h
     jmp .done
 .return_only_status:
     cmp bp, 0fffbh
     ja .restore
-    mov ax, 810ch
+    mov ax, 8105h
     jmp .done
 .success:
     mov ax, 0100h
@@ -219,6 +219,14 @@ ioctl_input:
     call ioctl_buffer
     jc request_error
     movzx bx, byte [es:di]
+    ; A changed disc has been reported once (CHANGED 0FEh): another request
+    ; than the media check means the redirector has re-read the disc.
+    cmp bl, 9
+    je .changed_kept
+    cmp byte [si+CHANGED], 0feh
+    jne .changed_kept
+    mov byte [si+CHANGED], 1
+.changed_kept:
     cmp bl, 1
     je audio_request
     cmp bl, 4
@@ -289,17 +297,32 @@ ioctl_input:
     jne audio_request
     jmp request_ok
 .sector_size:
+    mov ax, 2048
     cmp byte [es:di+1], 0
+    je .sector_store
+    cmp byte [es:di+1], 1
     jne request_unknown
-    mov word [es:di+2], 2048
+    mov ax, 2352
+.sector_store:
+    mov [es:di+2], ax
     jmp request_ok
 .changed:
+    ; The helper that mounted the image asks first; the answer stays
+    ; "changed" for the redirector until it makes another request.
     mov al, [si+CHANGED]
+    cmp al, 0feh
+    jne .changed_answer
+    mov al, 0ffh
+.changed_answer:
     mov [es:di+1], al
-    mov byte [si+CHANGED], 1
+    cmp al, 0ffh
+    jne request_ok
+    mov byte [si+CHANGED], 0feh
     jmp request_ok
 .size:
-    mov eax, [si+SECTORS]
+    ; The size of the disc up to the lead-out, not of the data track.
+    mov eax, [si+DISC_SECTORS]
+    sub eax, [si+ORIGIN]
     mov [es:di+1], eax
     jmp request_ok
 .disc:
@@ -331,6 +354,7 @@ ioctl_input:
     imul bx, ax, TRACK_SIZE
     add bx, si
     mov al, [bx+TRACKS+TRACK_CONTROL]
+    or al, 1
     mov [es:di+6], al
     mov eax, [bx+TRACKS+TRACK_START]
     sub eax, [si+ORIGIN]
@@ -366,7 +390,17 @@ ioctl_output:
     cmp byte [si+LOCKED], 0
     jne request_error
     cmp dword [si+AUDIO_ENTRY], 0
+    je .eject_ready
+%ifdef RESIDENT_AUDIO
+    cmp word [si+AUDIO_ENTRY], cd_request
     jne request_error
+    mov ax, cs
+    cmp [si+AUDIO_ENTRY+2], ax
+    jne request_error
+%else
+    jmp request_error
+%endif
+.eject_ready:
     call dos_enter
     call eject_unit
     call dos_leave
@@ -388,7 +422,15 @@ ioctl_output:
 
 audio_request:
     cmp dword [si+AUDIO_ENTRY], 0
-    je request_unknown
+    jne .entry
+    ; Without CD audio a stop is ignored and a seek has nothing to move.
+    mov al, [fs:bp+2]
+    cmp al, 85h
+    je request_ok
+    cmp al, 83h
+    je request_ok
+    jmp request_unknown
+.entry:
     call far [si+AUDIO_ENTRY]
     ret
 
@@ -401,17 +443,37 @@ read_sectors:
     mov word [fs:bp+18], 0
     cmp word [si+HANDLE], 0ffffh
     je request_not_ready
-    cmp byte [fs:bp+13], 0
-    jne request_unknown
+    ; A read after a reported disc change: the redirector has seen it.
+    cmp byte [si+CHANGED], 0feh
+    jne .changed_seen
+    mov byte [si+CHANGED], 1
+.changed_seen:
     cmp byte [fs:bp+24], 0
     jne request_unknown
-    ; A zero skip is contiguous for any interleave size.
-    cmp byte [fs:bp], 27
-    jb .interleave_ok
-    cmp byte [fs:bp+26], 0
-    jne request_unknown
-.interleave_ok:
+    ; Interleave size and skip are ignored: the driver reads contiguously.
     mov eax, [fs:bp+20]
+    cmp byte [fs:bp+13], 0
+    je .address_ready
+    cmp byte [fs:bp+13], 1
+    jne request_unknown
+    ; Red Book: frame, second, minute, 0.
+    test eax, 0ff000000h
+    jnz .range
+    movzx ebx, al
+    cmp bl, 75
+    jae .range
+    movzx edx, ah
+    cmp dl, 60
+    jae .range
+    shr eax, 16
+    movzx eax, al
+    imul eax, 60
+    add eax, edx
+    imul eax, 75
+    add eax, ebx
+    sub eax, 150
+    jc .range
+.address_ready:
     movzx edx, cx
     add edx, eax
     jc .range
@@ -747,9 +809,9 @@ control:
     mov word [control_result], 0
     jmp .done
 .filter:
-    les bx, [sda_pointer]
-    mov ax, [es:bx+10h]
-    mov [cd_filter_owner], ax
+    mov ah, 62h
+    int 21h
+    mov [cd_filter_owner], bx
     mov eax, [path_pointer]
     mov [cd_filter_hook], eax
     mov word [control_result], 0
@@ -995,12 +1057,14 @@ mount_image:
     jne .reject
     cmp byte [pvd+5], '1'
     jne .reject
-    cmp byte [pvd+6], 1
-    jne .reject
-    cmp byte [pvd], 1
-    je .primary
     cmp byte [pvd], 255
     je .reject
+    cmp byte [pvd], 1
+    jne .next_descriptor
+    cmp byte [pvd+6], 1
+    jne .reject
+    jmp .primary
+.next_descriptor:
     inc dword [descriptor_sector]
     mov eax, [descriptor_sector]
     cmp eax, [candidate_sectors]
@@ -1012,10 +1076,8 @@ mount_image:
     mov eax, [pvd+80]
     cmp eax, 18
     jb .reject
-    mov edx, [candidate_file_total]
-    sub edx, [candidate_file_origin]
-    cmp eax, edx
-    ja .reject
+    ; A volume space larger than the image is common on a data track ripped
+    ; from a mixed-mode disc: the limit below clamps it.
     mov edx, [pvd+84]
     xchg dl, dh
     rol edx, 16
@@ -1168,6 +1230,10 @@ dos_enter:
     mov di, sda_save
     mov cx, [cs:sda_size]
     cld
+    shr cx, 2
+    rep movsd
+    mov cx, [cs:sda_size]
+    and cx, 3
     rep movsb
     mov ah, 62h
     int 21h
@@ -1218,6 +1284,10 @@ dos_leave:
     les di, [sda_pointer]
     mov cx, [sda_size]
     cld
+    shr cx, 2
+    rep movsd
+    mov cx, [sda_size]
+    and cx, 3
     rep movsb
     pop es
     pop ds

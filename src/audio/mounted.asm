@@ -271,13 +271,19 @@ cd_request:
     jne .done
     cmp cx, 9
     jb .done
-    cmp byte [es:di+1], 0
-    jne .done
-    cmp byte [es:di+3], 1
-    jne .done
+    ; The outputs keep their own channels; an input of 2 or 3 is silence, as
+    ; the specification allows for a drive that cannot route channels.
     mov al, [es:di+2]
+    cmp byte [es:di+1], 2
+    jb .left_level
+    xor al, al
+.left_level:
     mov [cd_volume], al
     mov al, [es:di+4]
+    cmp byte [es:di+3], 2
+    jb .right_level
+    xor al, al
+.right_level:
     mov [cd_volume+1], al
     call cd_gain_update
     jmp .ok

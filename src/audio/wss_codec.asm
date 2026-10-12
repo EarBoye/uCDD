@@ -39,6 +39,8 @@ wss_calibrate:
     call physical_write
     call wss_ready
     jc .done
+    ; The calibration may be over before it is seen: a wait that ends with
+    ; the bit still clear goes on to the check below.
     mov cx, 65535
 .assert:
     mov al, 11
@@ -46,8 +48,6 @@ wss_calibrate:
     test al, 20h
     jnz .active
     loop .assert
-    stc
-    ret
 .active:
     mov cx, 65535
 .wait:

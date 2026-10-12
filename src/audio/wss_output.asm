@@ -111,6 +111,7 @@ wss_stop:
     je .codec_status
     ; A reset returns the chip to Sound Blaster compatibility mode.
     call physical_reset
+    call ess_mixer_restore
     jmp .stopped
 .codec_status:
     mov dx, [sb_base]
@@ -239,6 +240,10 @@ ess_rate_adjust:
 %ifdef TEST_ESS_NO_TRIM
     jmp .real_rate
 %endif
+    ; Only the ES1868 documents register BAh. Other chips keep the rate the
+    ; data sheets give.
+    call ess_identify
+    jc .real_rate
     mov al, 0bah
     mov cx, 2000h
     call ess_modify
@@ -265,7 +270,64 @@ ess_rate_adjust:
     ret
 ; 14.31818 MHz / 18 / 18
 ESS_RATE equ 44192
+
+; CF clear for an ES1868 or ES1878: four reads of mixer register 40h give
+; 18h, 68h or 78h, and the configuration address.
+ess_identify:
+    mov al, 40h
+    call wss_read
+    mov ah, al
+    mov al, 40h
+    call wss_read
+    mov bl, al
+    mov al, 40h
+    call wss_read
+    mov al, 40h
+    call wss_read
+    cmp ah, 18h
+    jne .other
+    cmp bl, 68h
+    je .known
+    cmp bl, 78h
+    je .known
+.other:
+    stc
+    ret
+.known:
+    clc
+    ret
 %endif
+
+; The mixer registers the start writes. A reset does not touch the mixer, so
+; the stop puts them back.
+ess_mixer_save:
+    xor bx, bx
+.register:
+    mov al, [ess_registers+bx]
+    call wss_read
+    mov [ess_saved+bx], al
+    inc bx
+    cmp bx, 3
+    jb .register
+    mov byte [ess_saved_valid], 1
+    ret
+ess_mixer_restore:
+    cmp byte [ess_saved_valid], 0
+    je .done
+    mov byte [ess_saved_valid], 0
+    xor bx, bx
+.register:
+    mov al, [ess_registers+bx]
+    mov ah, [ess_saved+bx]
+    call indexed_write
+    inc bx
+    cmp bx, 3
+    jb .register
+.done:
+    ret
+ess_registers db 14h,22h,26h
+ess_saved times 3 db 0
+ess_saved_valid db 0
 ess_setup:
     ; Reset with bit 1 set to clear the FIFO, then enable the extended commands.
     mov al, 3
@@ -285,9 +347,10 @@ ess_setup:
 %ifdef RESIDENT_AUDIO
     call ess_rate_adjust
 %endif
-    ; Stereo, then the interrupt and DMA request enables.
+    ; Stereo: only bits 1 and 0 change. Then the interrupt and DMA request
+    ; enables.
     mov al, 0a8h
-    mov cx, 0f401h
+    mov cx, 0fc01h
     call ess_modify
     mov al, 0b1h
     mov cx, 0f50h
@@ -295,6 +358,7 @@ ess_setup:
     mov al, 0b2h
     call ess_modify
     jc ess_modify.done
+    call ess_mixer_save
     ; Audio 1 play volume in the mixer.
     mov ax, 0ff14h
     call indexed_write

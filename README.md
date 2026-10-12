@@ -81,7 +81,8 @@ Copy `UCDD.EXE` and `UCDDSET.EXE` into one directory and run `UCDDSET`.
   </tr>
 </table>
 
-- **Physical** is the card in the machine. μCDD plays the mix on it. For a Plug and Play WSS codec, enter the WSS base address, four ports below the codec index port. For an ESS AudioDrive, select **ESS AudioDrive** and enter its Sound Blaster base address, IRQ, and DMA Low channel. μCDD then plays 44.1 kHz 16-bit stereo through the chip's extended mode; the DMA High channel is not used. **ESS AudioDrive (fast)** plays at 22.05 kHz and takes less CPU time. **Detect** does not identify an ESS chip. Select the ESS model by hand. Only the ES1868 was tested.
+- **Physical** is the card in the machine. μCDD plays the mix on it. For a Plug and Play WSS codec, enter the WSS base address, four ports below the codec index port. For an ESS AudioDrive, select **ESS AudioDrive** and enter its Sound Blaster base address, IRQ, and DMA Low channel. μCDD then plays 44.1 kHz 16-bit stereo through the chip's extended mode; the DMA High channel is not used. **ESS AudioDrive (fast)** plays at 22.05 kHz and takes less CPU time. **Detect** does not identify an ESS chip. Select the ESS model by hand. Only the ES1868 was tested. The driver trims the ES1868's clock to an exact 44.1 kHz (register BAh, which it touches only on an ES1868 or ES1878); other ESS chips run at the rate their data sheets give, 44194 Hz, and the mixer is told so. The ES688 and ES1688 are not known to report the interrupt source bit the driver relies on.
+- A physical **WSS codec** or ESS card must be on IRQ 5 or 7; the driver handles the master interrupt controller only.
 - **Virtual** is what games see: a Sound Blaster (SB16, SB Pro, or SB 1.5/2.0, which report DSP 4.05, 3.02, or 2.01) and a WSS codec. The WSS codec uses the DMA Low channel of the virtual Sound Blaster, and a game can move its IRQ through the WSS board register. Where possible, match the virtual model to the physical card. For example, a virtual SB Pro on an SB Pro-compatible card keeps the game sound in 8-bit stereo and avoids a 16-bit conversion.
 - **Detect** reads the physical card from the hardware. `BLASTER` only fills in values that the tests cannot find. **Test** plays a tone on each speaker. Both need DOS without the μCDD audio driver.
 
@@ -92,6 +93,8 @@ CONFIG.SYS:
 DOS=HIGH,UMB
 DEVICE=C:\JEMMEX\JEMMEX.EXE
 ```
+
+JEMMEX options to avoid: `NOVCPI` (the audio driver's host is a VCPI client and cannot start without it), `SB` (it maps the first 4 MB into the page table the host shares with JEMMEX), and `NOEMS` if protected-mode games need more than the 8 MB pool it leaves. `UCDD -install -ems` needs an EMS page frame.
 
 AUTOEXEC.BAT:
 ```dos
@@ -113,7 +116,7 @@ Do not load the audio driver for games that use ADPCM sound. ADPCM is not suppor
 
 ### Installation
 
-Install once per boot, before the redirector. `UCDD -install -units 2` creates two empty drives (1 to 4) with the data-only driver; the resident audio driver supports one drive and refuses more. Restart DOS to change the unit count. `LH` loads the resident driver into upper memory when UMBs are available (requires ~50KB of upper memory).
+Install once per boot, before the redirector. `UCDD -install -units 2` creates two empty drives (1 to 4) with the data-only driver; the resident audio driver supports one drive and refuses more. Restart DOS to change the unit count. `LH` loads the resident driver into upper memory when UMBs are available. The driver, its buffers and the internal host take about 55 KB of upper memory in five blocks; each block falls back to conventional memory on its own.
 
 ```dos
 UCDD -mount C:\IMAGES\GAME.CUE
