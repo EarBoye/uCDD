@@ -282,8 +282,10 @@ Left as they are, with the reason:
 - With no UMBs, the host's gateway and stack sit just above the installer
   image, which leaves a hole of about 19 KB after the driver stays
   resident. The driver's image would have to shrink before the host starts.
-- The host does not check what the VCPI server mapped at linear
-  3E0000h-3FFFFFh before it places its own pages there. JEMMEX leaves those
-  entries free; EMM386 and JEMMEX with `SB` map them to memory, and the
-  driver has run under EMM386 that way.
+- Microsoft EMM386 is no longer supported. Its port-trap interface cannot
+  reach the DMA controller, so the 8237 emulation could not protect the
+  output ring, and its backend added a second code path to every trap. The
+  host now refuses to start when the VCPI server has filled the page table
+  entries it uses (JEMMEX with option `SB`); it reports "The internal DPMI
+  host did not start".
 

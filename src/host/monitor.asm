@@ -210,6 +210,11 @@ monitor_init:
     int 67h
     test ah, ah
     jnz .bad
+    ; The host puts its own pages at 3E0000h-3FFFFFh (entries 3E0h-3FFh of
+    ; page table 0). A server that filled those entries (JEMMEX with option
+    ; SB maps the first 4 MB) must keep them, so the host cannot run.
+    cmp di, 0f80h
+    ja .bad
     mov [mon_server], ebx
     mov ax, 0de0ah
     int 67h

@@ -204,24 +204,6 @@ port_callback:
     push fs
     push cs
     pop ds
-%ifdef RESIDENT_AUDIO
-    mov dword [ss:ebp+12], 0
-    jmp .data_ready
-.emm_entry:
-    pushad
-    mov ebp, esp
-    push ds
-    push es
-    push fs
-    mov dword [ss:ebp+12], 1
-    inc byte [emm_in_callback]
-    call emm_pic_sync
-%endif
-.data_ready:
-%ifdef RESIDENT_AUDIO
-    mov [callback_port], dx
-    mov [callback_value], al
-%endif
     inc dword [port_calls]
     test cl, 18h
     jnz .wide
@@ -1136,16 +1118,6 @@ port_callback:
     mov si, dma16
     mov cl, 1
 .dma_selected:
-%ifdef RESIDENT_AUDIO
-    cmp byte [host_backend], 2
-    jne .dma_state_ready
-    cmp dword [ss:ebp+12], 1
-    jne .dma_state_ready
-    cmp word [host_emm_min_port], 100h
-    jb .dma_state_ready
-    call emm_dma_snapshot
-.dma_state_ready:
-%endif
     cmp byte [sb_input], 0
     je .direction_ready
     mov bl, [si+DMA_MODE]
@@ -1286,8 +1258,6 @@ port_callback:
     cmp eax, 0a0000h
 %ifdef OWN_HOST
     jbe .low_source
-    cmp byte [host_backend], 1
-    jne .command_unsupported
     cmp ecx, 100000h
     jb .command_unsupported
     cmp eax, 1000000h
@@ -1421,14 +1391,11 @@ port_callback:
     je .hold_ready
     mov byte [sb_single_hold], 1
 .hold_ready:
-    cmp dword [ss:ebp+12], 1
-    je .patch_deferred
     test bl, bl
     jnz .patch
     call sb_patch_initial
 .patch:
     call sb_patch
-.patch_deferred:
 %endif
 %ifdef WSS_INPUT
     cmp byte [game_source], 1
@@ -1533,9 +1500,6 @@ port_callback:
 .status:
 %ifdef VIRTUAL_IRQ
     and byte [virtual_dsp_irq], 0feh
-%ifdef RESIDENT_AUDIO
-    call emm_irq_ack
-%endif
 %endif
     mov al, 7fh
     cmp byte [reply_count], 0
@@ -1545,9 +1509,6 @@ port_callback:
 .status16:
 %ifdef VIRTUAL_IRQ
     and byte [virtual_dsp_irq], 0fdh
-%ifdef RESIDENT_AUDIO
-    call emm_irq_ack
-%endif
 %endif
     mov al, 0ffh
     jmp .result
@@ -1686,21 +1647,9 @@ port_callback:
     call virtual_pic_read
 %endif
 .result:
-%ifdef RESIDENT_AUDIO
-    cmp dword [ss:ebp+12], 1
-    jne .real_result
-    mov [ss:ebp+28], al
-    jmp .done
-.real_result:
-%endif
     mov [ss:bp+28], al
 .done:
 %ifdef RESIDENT_AUDIO
-    cmp dword [ss:ebp+12], 1
-    jne .hold_clock
-    dec byte [emm_in_callback]
-    jmp .restore
-.hold_clock:
     ; Time the hold from the end of the write that started the block. On a
     ; slow CPU this trap lasts longer than an output period.
     cmp byte [sb_single_hold], 1
@@ -1733,10 +1682,6 @@ sb_identify:
     and al, 0ch
     cmp al, 4
     jne .reply
-%ifdef RESIDENT_AUDIO
-    cmp dword [ss:ebp+12], 1
-    je .failed
-%endif
     cmp byte [game_active], 0
     jne .failed
     cmp byte [si+DMA_PAGE], 10h
@@ -1883,101 +1828,6 @@ dma_port:
 .done:
     ret
 
-%ifdef RESIDENT_AUDIO
-emm_pic_sync:
-    cmp word [host_emm_min_port], 100h
-    jb .done
-    push ax
-    mov al, [guest_irq_bit]
-    cmp al, [physical_irq_bit]
-    je .restore_ax
-    push bx
-    push dx
-    mov dx, 21h
-    call physical_read
-    mov ah, al
-    xor ah, [emm_pic_mask_shadow]
-    and ah, [guest_irq_bit]
-    jz .save
-    mov bl, [guest_irq_bit]
-    not bl
-    and [virtual_pic_mask], bl
-    not bl
-    and bl, al
-    or [virtual_pic_mask], bl
-.save:
-    mov [emm_pic_mask_shadow], al
-    pop dx
-    pop bx
-.restore_ax:
-    pop ax
-.done:
-    ret
-
-emm_irq_ack:
-    cmp byte [host_backend], 2
-    jne .done
-    cmp dword [ss:ebp+12], 1
-    jne .done
-    cmp word [host_emm_min_port], 100h
-    jb .done
-    mov byte [virtual_pic_service], 0
-.done:
-    ret
-
-emm_dma_snapshot:
-    push ax
-    push bx
-    push dx
-    cmp si, dma16
-    je .high
-    mov bx, [guest_dma8]
-    mov dx, 0ch
-    xor al, al
-    call physical_write
-    mov dx, bx
-    shl dx, 1
-    jmp .ports_ready
-.high:
-    mov bx, [guest_dma16]
-    sub bx, 4
-    mov dx, 0d8h
-    xor al, al
-    call physical_write
-    mov dx, bx
-    shl dx, 2
-    add dx, 0c0h
-.ports_ready:
-    call physical_read
-    mov [si+DMA_ADDRESS], al
-    call physical_read
-    mov [si+DMA_ADDRESS+1], al
-    inc dx
-    cmp si, dma16
-    jne .count_ready
-    inc dx
-.count_ready:
-    call physical_read
-    mov [si+DMA_COUNT], al
-    call physical_read
-    mov [si+DMA_COUNT+1], al
-    cmp si, dma16
-    je .high_page
-    mov dx, [guest_dma_ports+4]
-    jmp .page_ready
-.high_page:
-    mov dx, [guest_dma_ports+10]
-.page_ready:
-    call physical_read
-    mov [si+DMA_PAGE], al
-    mov byte [si+DMA_MASK], 0
-    mov dword [si+DMA_POSITION], 0
-    pop dx
-    pop bx
-    pop ax
-    ret
-
-%endif
 
 trap_ports:
 %include "audio/ports.inc"
@@ -2036,8 +1886,6 @@ reply_count db 0
 sb_id_value db 0aah
 sb_id_phase db 0
 %ifdef RESIDENT_AUDIO
-callback_port dw 0
-callback_value db 0
 %endif
 %ifdef WSS_INPUT
 %include "audio/wss_state.inc"

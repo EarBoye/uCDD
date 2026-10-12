@@ -52,19 +52,11 @@ guest_ports_init:
 .port:
     lodsw
     test ax, ax
-    jz .emm
+    jz .ports_ready
     call guest_port_translate
     mov [si-2], ax
     jmp .port
-.emm:
-    mov si, host_emm_ports_full
-    mov cx, host_emm_full_count+host_emm_high_count
-.emm_port:
-    mov ax, [si]
-    call guest_port_translate
-    mov [si], ax
-    add si, 4
-    loop .emm_port
+.ports_ready:
 %ifndef OWN_HOST
     mov si, pm_trap_ports
     mov cx, pm_port_count

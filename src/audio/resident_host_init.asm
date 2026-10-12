@@ -91,18 +91,6 @@ own_host_install:
     mov di, own_host_active
     mov al, [sb_irq]
     xor ah, ah
-    cmp byte [host_backend], 2
-    jne .host_mode_ready
-    cmp byte [host_emm_seen], 1
-    jne .host_mode_ready
-    cmp word [host_emm_version], 0200h
-    jb .host_mode_ready
-    cmp byte [host_emm_caps], 6
-    jne .host_mode_ready
-    cmp word [host_emm_min_port], 0
-    jne .host_mode_ready
-    mov ah, 1
-.host_mode_ready:
     cmp byte [keep_vcpi], 0
     je .vcpi_ready
     or ah, 2

@@ -9,9 +9,6 @@ virtual_irq_init:
     call physical_read
     mov [virtual_pic_mask], al
     mov [physical_pic_initial], al
-%ifdef RESIDENT_AUDIO
-    mov [emm_pic_mask_shadow], al
-%endif
     mov cl, [sb_irq]
     mov al, 1
     shl al, cl
@@ -320,9 +317,6 @@ virtual_pic_write:
     not ah
     and al, ah
     or al, [audio_irq_mask_bit]
-%ifdef RESIDENT_AUDIO
-    mov [emm_pic_mask_shadow], al
-%endif
     jmp .physical
 
 virtual_dsp_irq db 0
@@ -340,9 +334,6 @@ physical_irq_bit db 20h
 pic_visible_bits db 0dfh
 physical_pic_read db 0ah
 
-%ifdef RESIDENT_AUDIO
-emm_pic_mask_shadow db 0ffh
-%endif
 
 ; CDF2 exposes these offsets to the protected host.
 cdf2_service_check equ 1 / ((virtual_pic_service-virtual_pic_request) = 1)

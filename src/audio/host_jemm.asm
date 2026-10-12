@@ -360,11 +360,14 @@ host_irq_remove:
 
 bits 16
 host_gate_slot dd 0
+; The host calls this when a client starts or ends (AL 1 or 0). JEMMEX keeps
+; the traps in place for every mode, so there is nothing to do.
+host_client_traps:
+    clc
+    retf
 host_remove:
     cmp byte [host_installed], 0
     je .ok
-    cmp byte [host_backend], 2
-    je host_emm_remove
     mov ax, 1a0bh
     call far [host_api_entry]
     jc .failed
