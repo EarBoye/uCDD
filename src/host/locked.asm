@@ -280,6 +280,14 @@ dpmi_locked_done:
     mov ax, [esi+16]
     call dpmi_stack_target
     jc dpmi_locked_abort
+    ; A return to the bridge keeps the carry of the handler's flags image:
+    ; an INT 23h handler answers DOS with it (dpmi_bridge_done).
+    xor edx, edx
+    cmp dword [esi], dpmi_bridge_return
+    jne .carry_ready
+    mov edx, [esp+48]
+    and edx, 1
+.carry_ready:
     lea edi, [esp+40]
     mov ecx, 5
     cld
@@ -287,6 +295,7 @@ dpmi_locked_done:
     dec dword [ebp+dpmi_locked_depth]
     mov eax, [esp+48]
     call dpmi_restore_flags
+    or eax, edx
     mov [esp+48], eax
     call dpmi_stack_release
     jmp mon_dpmi.done

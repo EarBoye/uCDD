@@ -116,6 +116,7 @@ dpmi_bridge_install:
     mov dword [ebp+dpmi_bridge_depth], 0
     mov word [ebp+dpmi_bridge_mask], 0
     mov byte [ebp+dpmi_bridge_int_hooks], 0
+    mov byte [ebp+dpmi_bridge_retf], 0
     popad
 dpmi_bridge_install_vectors:
     pushad
@@ -488,6 +489,17 @@ dpmi_bridge_done:
     mov eax, [ebx+bridge_frame.locked_depth]
     cmp [ebp+dpmi_locked_depth], eax
     jne dpmi_locked_abort
+    ; An INT 23h handler that returns with the carry set asks DOS to end the
+    ; program; DOS reads that from a RETF with the carry set, an IRET means
+    ; continue. The carry of the handler's flags image came back with the
+    ; frame (dpmi_locked_done) and goes to the real-mode return.
+    mov byte [ebp+dpmi_bridge_retf], 0
+    cmp word [ebx+bridge_frame.vector], 223h
+    jne .carry_ready
+    test byte [esp+48], 1
+    jz .carry_ready
+    mov byte [ebp+dpmi_bridge_retf], 1
+.carry_ready:
     ; An INT 24h handler answers DOS in AL (0 ignore, 1 retry, 2 abort,
     ; 3 fail). Its AL replaces the one the stub's entry stack holds.
     cmp word [ebx+bridge_frame.vector], 224h
@@ -780,9 +792,20 @@ dpmi_bridge_real_return:
     pop ds
     popad
     add sp, 2
+    cmp byte [cs:dpmi_bridge_retf], 0
+    jne .abort
     iret
+.abort:
+    ; An INT 23h handler asked for the end of the program: return to DOS with
+    ; a RETF and the carry set, the flags word left on the stack.
+    mov byte [cs:dpmi_bridge_retf], 0
+    stc
+    retf
 
 dpmi_bridge_mask dw 0
+; Set when the return to DOS from a reflected INT 23h is a RETF with the
+; carry set (dpmi_bridge_done). Every return clears it.
+dpmi_bridge_retf db 0
 ; The disk IRQs. IRQ 14 and 15 unless the driver passes the mask that UCDDSET
 ; found (CDF4, see host/resident.asm).
 dpmi_disk_mask dw 0c000h
