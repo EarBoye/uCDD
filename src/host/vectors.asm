@@ -447,6 +447,11 @@ dpmi_default_vectors:
     iret
 %endrep
 
+; EBX=interrupt frame, ESI=protected vector of a software INT 00h-07h. Its
+; handler starts with virtual interrupts disabled (DPMI 0.9, section 2.4.2);
+; the flags image on its stack holds the state from before the interrupt.
+dpmi_deliver_interrupt_disabled:
+    mov byte [ebp+dpmi_deliver_disabled], 1
 ; EBX=interrupt frame, ESI=protected vector.
 dpmi_deliver_interrupt:
     push esi
@@ -454,7 +459,7 @@ dpmi_deliver_interrupt:
     mov ax, [esi+4]
     call dpmi_code_target
     pop esi
-    jc dpmi_bad_selector
+    jc .bad_vector
     push esi
     mov ax, [ebx+56]
     call dpmi_descriptor
@@ -507,6 +512,14 @@ dpmi_deliver_interrupt:
     mov [ebx+40], eax
     mov ax, [esi+4]
     mov [ebx+44], ax
+    cmp byte [ebp+dpmi_deliver_disabled], 0
+    je .flags_ready
+    mov byte [ebp+dpmi_deliver_disabled], 0
+    ; As after a CLI: the host sees the IRET or STI that enables them again.
+    cmp byte [ebp+dpmi_vif], 0
+    je .flags_ready
+    call dpmi_clear_vif
+.flags_ready:
     cmp byte [ebp+dpmi_step_active], 1
     jne .untraced
     or word [ebx+48], 300h
@@ -518,7 +531,10 @@ dpmi_deliver_interrupt:
     jmp mon_dpmi.done
 .bad:
     pop esi
+.bad_vector:
+    mov byte [ebp+dpmi_deliver_disabled], 0
     jmp dpmi_bad_selector
+dpmi_deliver_disabled db 0
 
 dpmi_software_interrupt:
     mov eax, [ebx+40]

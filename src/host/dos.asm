@@ -263,7 +263,7 @@ dpmi_dos_translate:
     cmp byte [ebp+dpmi_reflect_vector], 20h
     je dpmi_dos.terminate_zero
     cmp byte [ebp+dpmi_reflect_vector], 21h
-    jne .ordinary
+    jne .multiplex
     mov byte [ebp+dpmi_dos_via21], 1
     movzx eax, word [ebx+28]
     or eax, 10000h
@@ -284,6 +284,16 @@ dpmi_dos_translate:
 .dos16:
     cmp byte [ebp+dpmi_client16], 0
     jne dpmi_dos16
+    jmp .ordinary
+.multiplex:
+    ; INT 2Fh AX=1686h asks whether the caller runs in protected mode under
+    ; DPMI: AX=0 (DPMI 0.9, section 7). Reflected, real mode would say no.
+    cmp byte [ebp+dpmi_reflect_vector], 2fh
+    jne .ordinary
+    cmp word [ebx+36], 1686h
+    jne .ordinary
+    mov word [ebx+36], 0
+    jmp mon_dpmi.success
 .ordinary:
     call dpmi_dos_frame
     mov al, [ebp+dpmi_reflect_vector]
@@ -307,17 +317,23 @@ dpmi_dos_translate:
     ; untranslated pointer would land in segment 0. Give such calls the
     ; graphics segment, where a stray write does no harm.
     test byte [esi+6], 80h
-    jz .ds_base
-    mov eax, 0a000h
-    jmp .ds_ready
-.ds_base:
+    jnz .ds_sink
 %endif
     call dpmi_descriptor_base
     cmp eax, 100000h
-    jae dpmi_dos.unsupported
+    jae .ds_sink
     test al, 0fh
-    jnz dpmi_dos.unsupported
+    jnz .ds_sink
     shr eax, 4
+    jmp .ds_ready
+.ds_sink:
+    ; Segment registers are undefined after a reflection (DPMI 0.9, section
+    ; 2.4.1), so a base that no real-mode segment reaches must not fail it.
+%ifdef FLAT_SINK
+    mov eax, 0a000h
+%else
+    xor eax, eax
+%endif
 .ds_ready:
     mov [edi+36], ax
     mov ax, [ebx]
@@ -331,17 +347,23 @@ dpmi_dos_translate:
     ; untranslated pointer would land in segment 0. Give such calls the
     ; graphics segment, where a stray write does no harm.
     test byte [esi+6], 80h
-    jz .es_base
-    mov eax, 0a000h
-    jmp .es_ready
-.es_base:
+    jnz .es_sink
 %endif
     call dpmi_descriptor_base
     cmp eax, 100000h
-    jae dpmi_dos.unsupported
+    jae .es_sink
     test al, 0fh
-    jnz dpmi_dos.unsupported
+    jnz .es_sink
     shr eax, 4
+    jmp .es_ready
+.es_sink:
+    ; Segment registers are undefined after a reflection (DPMI 0.9, section
+    ; 2.4.1), so a base that no real-mode segment reaches must not fail it.
+%ifdef FLAT_SINK
+    mov eax, 0a000h
+%else
+    xor eax, eax
+%endif
 .es_ready:
     mov [edi+34], ax
 .reflect:
@@ -353,6 +375,8 @@ dpmi_dos_translate:
     mov word [edi+32], 202h
     movzx eax, byte [ebp+dpmi_reflect_vector]
     call mon_real_int
+    xor al, al
+    call resident_stray_eoi_mark
     cmp byte [ebp+dpmi_reflect_vector], 10h
     jne .registers
     cmp word [ebx+36], 1130h
@@ -377,6 +401,9 @@ dpmi_dos_translate:
 .hardware:
     call dpmi_pic_reflect
     mov dword [edi+34], 0
+    ; The EOI went out when the IRQ was queued. The handler's own is stray.
+    mov al, 1
+    call resident_stray_eoi_mark
     jmp .reflect
 
 ; Carry clear if the supported service has no segment-pointer inputs.

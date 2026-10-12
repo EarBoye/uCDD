@@ -278,6 +278,10 @@ dpmi_callback_done:
     push dword 13
     jmp mon_exception
 .valid_gate:
+    ; The procedure returns with ES:(E)DI at the real-mode call structure to
+    ; restore, which can be its own copy (DPMI 0.9, section 11.4).
+    push es
+    push edi
     mov ax, 10h
     mov ds, ax
     mov es, ax
@@ -288,12 +292,21 @@ dpmi_callback_done:
     movzx eax, word [ebp+dpmi_callback_index]
     imul eax, 20
     lea ebx, [ebp+dpmi_callbacks+eax]
+    pop edx
+    pop eax
+    DPMI_OFFSET16 edx, dx
+    mov ecx, 50
+    xor edi, edi
+    call dpmi_buffer
+    jnc .structure
+    ; Fall back on the structure the procedure was given.
     mov ax, [ebx+8]
     mov edx, [ebx+12]
     mov ecx, 50
     xor edi, edi
     call dpmi_buffer
     jc dpmi_callback_abort
+.structure:
     mov esi, eax
     lea edi, [ebp+dpmi_callback_regs]
     mov ecx, 50

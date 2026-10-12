@@ -243,6 +243,19 @@ Fixed in `fixes`, checked by assembly only unless the test notes say more:
   primary one; the media-changed answer stays "changed" after the mounting
   helper's own query until the redirector reads the disc.
 - The CD filter owner is taken from DOS (AH=62h), not from an SDA offset.
+- DPMI host: INT 2Fh AX=1686h answers AX=0 in protected mode; a 0302h
+  procedure is entered with interrupts off; software INT 0 to 7 reach a
+  protected-mode handler with virtual interrupts off; exceptions 1, 3, 4
+  and 5 without a handler are reflected as real-mode interrupts instead of
+  ending the client; a reflected interrupt with a data segment that no
+  real-mode segment reaches gets the sink segment instead of failing; the
+  return from a real-mode callback honours the ES:(E)DI the client returns
+  with; the master in-service probes put the read register back; the
+  spurious cascade EOI is specific.
+- DPMI host, 386 time: the pending test comes before the controller reads
+  in dpmi_pic_next; the interrupt-flag site table is hashed; the general
+  protection fault decoder fetches four code bytes with one page walk; the
+  real-mode transfer copies doublewords.
 - 386 time: the SDA swap moves dwords; the physical IRQ handler writes the
   saved mask back instead of reading it again.
 
@@ -258,4 +271,19 @@ Left as they are, with the reason:
   request register.
 - The resident image still carries 2.3 KB of one-shot activation code; the
   units could be placed before it.
+- Real-mode INT 1Ch, 23h and 24h are not reflected to a protected-mode
+  handler (DPMI 0.9, section 2.4.2): a client's timer-tick hook never runs,
+  and a critical error during a reflected DOS call reaches the DOS prompt
+  with the client current. This needs new stubs and a bridge entry, and is
+  left for a change of its own.
+- A 0300h call to an IRQ vector that the host holds in service lets the
+  real handler's EOI reach the driver; the stray-EOI mark covers the
+  queued and chained paths only.
+- With no UMBs, the host's gateway and stack sit just above the installer
+  image, which leaves a hole of about 19 KB after the driver stays
+  resident. The driver's image would have to shrink before the host starts.
+- The host does not check what the VCPI server mapped at linear
+  3E0000h-3FFFFFh before it places its own pages there. JEMMEX leaves those
+  entries free; EMM386 and JEMMEX with `SB` map them to memory, and the
+  driver has run under EMM386 that way.
 

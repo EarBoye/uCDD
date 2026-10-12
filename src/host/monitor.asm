@@ -501,9 +501,7 @@ mon_shared_%+vector:
     cmp esp, eax
     je .exception
 %endif
-    mov al, 0bh
-    out 20h, al
-    in al, 20h
+    call mon_master_isr
     test al, 1 << (vector & 7)
     pop eax
 %if (vector & 7) == 7
@@ -527,11 +525,10 @@ mon_shared_%+vector:
 mon_irq_%+irq:
 %if irq == 7 || irq == 15
     push eax
-    mov al, 0bh
 %if irq == 7
-    out 20h, al
-    in al, 20h
+    call mon_master_isr
 %else
+    mov al, 0bh
     out 0a0h, al
     in al, 0a0h
 %ifdef HOST_DPMI
@@ -561,9 +558,30 @@ mon_irq_%+irq:
 %assign irq irq+1
 %endrep
 
-mon_spurious_slave:
+; AL=the master's in-service register. Keep the other registers.
+mon_master_isr:
     push eax
-    mov al, 20h
+    mov al, 0bh
+    out 20h, al
+    in al, 20h
+    mov [ss:esp], al
+%ifdef HOST_DPMI
+    ; Put back the register the client selected. A later IN from 20h then
+    ; answers as the client expects.
+    call .base
+.base:
+    pop eax
+    sub eax, .base
+    mov al, [cs:eax+dpmi_pic_read_mode]
+    out 20h, al
+%endif
+    pop eax
+    ret
+
+mon_spurious_slave:
+    ; Only the cascade is in service on the master.
+    push eax
+    mov al, 62h
     out 20h, al
     pop eax
 mon_spurious_master:
@@ -896,9 +914,10 @@ mon_real_transfer:
     mov [ebp+mon_rm_target], edi
     mov esi, edi
     lea edi, [ebp+mon_rm_regs]
-    mov ecx, 50
+    mov ecx, 12
     cld
-    rep movsb
+    rep movsd
+    movsw
     ; A client flags image can carry an injected TF.
     and byte [ebp+mon_rm_regs+33], 0feh
     mov dword [ebp+mon_return], mon_real_callback
@@ -937,8 +956,9 @@ mon_resume:
 .stack_ready:
     lea esi, [ebp+mon_rm_regs]
     mov edi, [esp]
-    mov ecx, 50
-    rep movsb
+    mov ecx, 12
+    rep movsd
+    movsw
 %ifdef RESIDENT_HOST
     mov al, [ebp+dpmi_audio_irq]
     cmp al, [ebp+dpmi_guest_irq]
@@ -1101,6 +1121,7 @@ mon_exception:
 %ifdef HOST_DPMI
     cmp byte [ebp+dpmi_active], 0
     je .fault
+    mov dword [ebp+mon_gp_count], 0
     mov ebx, esp
     mov ax, [esp+52]
     cmp ax, 23h
@@ -1372,7 +1393,16 @@ mon_exception:
     jnc .unhandled
     lea esi, [ebp+mon_vectors+eax]
     cmp word [esi+4], 0
-    je .unhandled
+    jne .deliver
+    ; With no handler, exceptions 1, 3, 4 and 5 go to the real-mode vector,
+    ; as they would in real mode (DPMI 0.9, section 10.4). 0 and 7 end the
+    ; client, as 6 and the faults from 8 up do.
+    mov edx, 3ah
+    bt edx, ecx
+    jnc .unhandled
+    mov ebx, esp
+    jmp dpmi_software_interrupt
+.deliver:
     mov edi, esp
     add edi, 44
     mov ecx, 10
@@ -1383,7 +1413,9 @@ mon_exception:
     loop .debug_frame
     add esp, 8
     mov ebx, esp
-    jmp dpmi_deliver_interrupt
+    ; Every vector here is 00h-07h: the handler starts with virtual
+    ; interrupts disabled.
+    jmp dpmi_deliver_interrupt_disabled
 .unhandled:
 %endif
     mov eax, cr2
@@ -1439,18 +1471,50 @@ dpmi_cr0_read:
     stc
     ret
 
-; EBX=exception frame, EDI=instruction offset. Keep other registers.
+; EBX=exception frame, EDI=instruction offset. Keep other registers. The
+; first fetch of an instruction takes four bytes at once when they lie in one
+; page, and the later fetches read them from mon_gp_bytes.
 mon_gp_fetch:
     pushad
+    cmp edi, [ebp+mon_gp_count]
+    jae .fetch
+    movzx eax, byte [ebp+mon_gp_bytes+edi]
+    jmp .done
+.fetch:
     mov ax, [ebx+52]
     mov edx, [ebx+48]
     add edx, edi
     jc .bad
     mov ecx, 1
+    test edi, edi
+    jnz .length
+    mov esi, edx
+    and esi, 4095
+    cmp esi, 4096-4
+    ja .length
+    mov ecx, 4
+.length:
     mov edi, 2
     call dpmi_code_buffer
+    jnc .read
+    cmp ecx, 4
+    jne .bad
+    ; The segment ends inside the four bytes.
+    mov ecx, 1
+    mov ax, [ebx+52]
+    call dpmi_code_buffer
     jc .bad
+.read:
+    cmp ecx, 4
+    jne .byte
+    mov eax, [eax]
+    mov [ebp+mon_gp_bytes], eax
+    mov dword [ebp+mon_gp_count], 4
+    movzx eax, al
+    jmp .done
+.byte:
     movzx eax, byte [eax]
+.done:
     mov [esp+28], eax
     popad
     clc
@@ -1459,6 +1523,8 @@ mon_gp_fetch:
     popad
     stc
     ret
+mon_gp_count dd 0
+mon_gp_bytes dd 0
 %endif
 
 mon_exit:
@@ -1539,6 +1605,9 @@ mon_far_callback:
     push word [cs:mon_rm_regs+32]
     popf
     pushf
+    ; The procedure starts with interrupts disabled, as after an INT (DPMI
+    ; 0.9, section 11.3). Its IRET loads the flags from the structure again.
+    cli
     call far [cs:mon_rm_regs+42]
     jmp mon_callback_done
 %ifdef HOST_DPMI

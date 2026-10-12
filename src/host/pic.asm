@@ -32,11 +32,12 @@ dpmi_pic_queue:
 
 ; EAX=next IRQ, carry set if no eligible request. Other registers stay intact.
 dpmi_pic_next:
+    ; Nothing pending is the common case. Leave before the controller reads.
+    cmp word [ebp+dpmi_pending_irqs], 0
+    je .idle
     pushad
     call dpmi_hardware_room
     jc .none
-    cmp word [ebp+dpmi_pending_irqs], 0
-    je .none
     mov dx, 20h
     call dpmi_pic_read_isr
     movzx ebx, al
@@ -83,6 +84,7 @@ dpmi_pic_next:
     ret
 .none:
     popad
+.idle:
     stc
     ret
 
@@ -124,6 +126,9 @@ dpmi_pic_real_chain:
     jne .next
 .chain:
     btr [ebp+dpmi_pic_service], ebx
+    ; The host sent the EOI when it queued the IRQ. The handler's is stray.
+    mov al, 1
+    call resident_stray_eoi_mark
     cmp ebx, 8
     jb .restored
     and byte [ebp+dpmi_pic_service], 0fbh

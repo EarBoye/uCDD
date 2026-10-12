@@ -1851,20 +1851,28 @@ dpmi_cli_site_check:
     jc .step
     call dpmi_descriptor_base
     add eax, [ebx+48]
-    xor ecx, ecx
+    ; A site takes the first free slot from the one its address hashes to,
+    ; so a known site is found in a few probes. Freed and evicted slots leave
+    ; gaps in the runs, so the whole table is searched before a site counts
+    ; as new.
+    mov ecx, eax
+    shr ecx, 2
+    and ecx, DPMI_CLI_SITES-1
+    mov esi, ecx
 .find:
     cmp [ebp+dpmi_cli_linear+ecx*4], eax
     je .found
     inc ecx
-    cmp ecx, DPMI_CLI_SITES
-    jb .find
-    xor ecx, ecx
+    and ecx, DPMI_CLI_SITES-1
+    cmp ecx, esi
+    jne .find
 .empty:
     cmp dword [ebp+dpmi_cli_linear+ecx*4], 0
     je .replace
     inc ecx
-    cmp ecx, DPMI_CLI_SITES
-    jb .empty
+    and ecx, DPMI_CLI_SITES-1
+    cmp ecx, esi
+    jne .empty
     mov edx, DPMI_CLI_SITES
 .evict:
     movzx ecx, byte [ebp+dpmi_cli_next]

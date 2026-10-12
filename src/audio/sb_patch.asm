@@ -231,9 +231,12 @@ sb_dos_vector:
 sb_game_vector dd 0
 sb_host_guest_irq dw guest_irq
 sb_host_ports dw trap_ports
-    dd 34464443h
+    dd 35464443h
     dw cd_deferred_refill, cd_refill_pending, virtual_pic_request, last_clock
     ; CDF4: the disk IRQs that go straight to the real-mode handler.
     dw config_disk_mask
+    ; CDF5: the host sets this byte before it runs a real-mode handler for an
+    ; interrupt it has already ended at the controller (see virtual_pic_write).
+    dw sb_stray_eoi
 sb_old_dos dd 0
 %endif

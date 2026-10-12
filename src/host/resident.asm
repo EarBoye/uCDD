@@ -105,8 +105,17 @@ resident_host_init:
     add eax, ecx
     mov [cs:resident_game_vector], eax
     push edx
+    cmp dword [ds:bp+8], 35464443h
+    jne .version4
+    ; CDF5 adds the stray EOI byte (resident_stray_eoi_mark).
+    movzx edx, word [ds:bp+22]
+    add edx, ecx
+    mov [cs:resident_stray_eoi], edx
+    jmp .version4_fields
+.version4:
     cmp dword [ds:bp+8], 34464443h
     jne .version3
+.version4_fields:
     ; CDF4 points to the disk IRQ mask. Never the timer, keyboard, cascade,
     ; RTC, coprocessor, or the sound card's own IRQ.
     push bx
@@ -829,6 +838,21 @@ resident_pending:
 resident_audio_request dd 0
 resident_refill_clock dd 0
 resident_refill_last dd 0
+; The driver's sb_stray_eoi byte (CDF5), or 0 with an older driver.
+resident_stray_eoi dd 0
+; AL=1 before the host runs the real-mode handler of an IRQ whose EOI it has
+; already sent (dpmi_pic_queue, dpmi_bridge_defer), AL=0 when that handler has
+; returned. The driver's virtual PIC swallows one non-specific EOI while the
+; byte is 1, instead of taking it for the virtual Sound Blaster's.
+resident_stray_eoi_mark:
+    push esi
+    mov esi, [ebp+resident_stray_eoi]
+    test esi, esi
+    jz .done
+    mov [esi], al
+.done:
+    pop esi
+    ret
 resident_audio_take:
     mov esi, [ebp+resident_audio_request]
     test esi, esi

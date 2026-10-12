@@ -330,6 +330,8 @@ mon_iret:
     mov dword [edi+32], 2
     mov dword [edi+46], 0
     call mon_real_int
+    xor al, al
+    call resident_stray_eoi_mark
     jmp .shadow_done
 .sb_inject:
     mov byte [ebp+dpmi_sti_sb_held], 0
@@ -352,6 +354,9 @@ mon_iret:
     jne .pic_protected
     mov [ebp+dpmi_reflect_vector], dl
     call dpmi_pic_reflect
+    ; The EOI went out when the IRQ was queued. The handler's own is stray.
+    mov al, 1
+    call resident_stray_eoi_mark
     jmp .real_irq
 .pic_protected:
     mov ebx, esp
@@ -786,6 +791,8 @@ dpmi_dispatch:
 .far_call:
     call dpmi_pic_real_chain
     call mon_real_far_copy
+    xor al, al
+    call resident_stray_eoi_mark
 .stack_done:
     call dpmi_large_stack_restore
     jmp mon_dpmi.success
