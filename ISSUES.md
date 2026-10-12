@@ -214,7 +214,10 @@ Fixed in `fixes`, checked by assembly only unless the test notes say more:
   ICW1 the ICW2 to ICW4 bytes are counted off instead of being written to
   the mask.
 - 8237: the command, master clear, all-mask and status registers of both
-  controllers are trapped. Master clear and all-mask keep the owned
+  controllers are trapped (rig: a write to the slave all-mask register
+  during playback first stopped the stream, because the per-channel write
+  went to port 0Fh; fixed, and the master and slave all-mask now stop and
+  resume the stream as the controller would). Master clear and all-mask keep the owned
   channel virtual and the output ring's channel unmasked; the status read
   hides the ring's channel and shows the owned channel's terminal count;
   the write-only registers read as FFh.
@@ -243,6 +246,10 @@ Fixed in `fixes`, checked by assembly only unless the test notes say more:
   primary one; the media-changed answer stays "changed" after the mounting
   helper's own query until the redirector reads the disc.
 - The CD filter owner is taken from DOS (AH=62h), not from an SDA offset.
+- The mixer speedups are bit-identical: the --verify-mix build gives 0 bad
+  samples and 0 bad state on SB Pro and SB 2.0, with and without a game
+  stream, at default and changed volumes (once the harness left the fast
+  path's scratch dword out of its state sum).
 - DPMI host: INT 2Fh AX=1686h answers AX=0 in protected mode; a 0302h
   procedure is entered with interrupts off; software INT 0 to 7 reach a
   protected-mode handler with virtual interrupts off; exceptions 1, 3, 4
@@ -285,7 +292,8 @@ Left as they are, with the reason:
 - Microsoft EMM386 is no longer supported. Its port-trap interface cannot
   reach the DMA controller, so the 8237 emulation could not protect the
   output ring, and its backend added a second code path to every trap. The
-  host now refuses to start when the VCPI server has filled the page table
-  entries it uses (JEMMEX with option `SB`); it reports "The internal DPMI
-  host did not start".
+  host refuses to start when the VCPI server has filled the page table
+  entries it uses, with "The internal DPMI host did not start". JEMMEX 5.86
+  reports the same first free entry (444h) with and without option `SB`,
+  so the refusal was not seen in the rig; it stands as a guard.
 

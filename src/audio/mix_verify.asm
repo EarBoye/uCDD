@@ -216,7 +216,10 @@ verify_copy:
     ret
 
 ; EAX=a sum over the resident image that depends on every byte's place.
+; mix_run_fraction is scratch of the fast path that the general loop never
+; writes, so it is taken out of the sum first.
 verify_sum:
+    mov dword [mix_run_fraction], 0
     push ebx
     push cx
     push si

@@ -571,10 +571,14 @@ port_callback:
     mov [si+DMA_MASK], al
     jmp .all_mask_next
 .all_mask_other:
+    ; dma_unowned_write takes a single-mask write: port 0Ah, not 0Fh.
     push ax
     push bx
     push cx
+    push dx
+    mov dx, 0ah
     call dma_unowned_write
+    pop dx
     pop cx
     pop bx
     pop ax
