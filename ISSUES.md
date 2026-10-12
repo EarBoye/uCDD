@@ -210,6 +210,13 @@ Sound card emulation:
   at 7/7 happened to survive it. The handler loads CS again before the
   switch. The hardware tests all ran with the card on IRQ 5, so no real-PC
   run has had this fault.
+- The single-cycle block patch, reached from the port trap when a game
+  starts a block, ran the mixer's string stores with the game's direction
+  flag: the JemmEx trap entry clears only IF and TF in the game's flags
+  image. A game with the direction flag set at that DSP write would have had
+  the patch written backwards through the output ring and past its start.
+  Found by the data-flow pass after the IRQ 7 stack fault; `sb_patch` clears
+  the flag under its own flag save now.
 - A refused DSP command or argument left the argument counter set, so the
   bytes the game wrote next were taken as arguments. Rig: E1h after a
   refused short block replies 04.05, no reply before.

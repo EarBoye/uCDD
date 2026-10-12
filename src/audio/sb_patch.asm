@@ -19,6 +19,9 @@ sb_patch:
     push es
     pushf
     cli
+    ; From the port trap this runs with the game's direction flag; the mixer
+    ; stores forward.
+    cld
     call output_clock
     cmp byte [sb_patch_available], 2
     je .initial
