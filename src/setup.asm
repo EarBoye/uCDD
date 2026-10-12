@@ -601,19 +601,19 @@ model_changed:
     clc
     ret
 
-MAIN_ITEMS equ 19
+MAIN_ITEMS equ 20
 main_items:
     item 7,16,21,0, NONE,6,NONE,1, format_choice,choice_popup,choice_cycle,model_choice
     item 7,41,3,0, NONE,7,0,2, format_choice,choice_popup,choice_cycle,port_choice
     item 7,49,3,0, NONE,5,1,3, format_choice,choice_popup,choice_cycle,irq_choice
     item 7,57,3,0, NONE,9,2,4, format_choice,choice_popup,choice_cycle,dma8_choice
-    item 7,67,3,0, NONE,10,3,NONE, format_choice,choice_popup,choice_cycle,dma16_choice
-    item 8,49,3,0, 2,8,NONE,NONE, format_choice,choice_popup,choice_cycle,disk_irq_choice
+    item 7,67,3,0, NONE,19,3,NONE, format_choice,choice_popup,choice_cycle,dma16_choice
+    item 8,49,3,0, 2,8,NONE,19, format_choice,choice_popup,choice_cycle,disk_irq_choice
     item 11,16,21,0, 0,11,NONE,7, format_choice,choice_popup,choice_cycle,virtual_model_choice
     item 11,41,3,0, 1,11,6,8, format_choice,choice_popup,choice_cycle,virtual_port_choice
     item 11,49,3,0, 5,12,7,9, format_choice,choice_popup,choice_cycle,virtual_irq_choice
     item 11,57,3,0, 3,12,8,10, format_choice,choice_popup,choice_cycle,virtual_dma8_choice
-    item 11,67,3,0, 4,12,9,NONE, format_choice,choice_popup,choice_cycle,virtual_dma16_choice
+    item 11,67,3,0, 19,12,9,NONE, format_choice,choice_popup,choice_cycle,virtual_dma16_choice
     item 12,41,3,0, 7,13,NONE,12, format_choice,choice_popup,choice_cycle,wss_port_choice
     item 12,49,3,0, 8,13,11,NONE, format_choice,choice_popup,choice_cycle,wss_irq_choice
     item 20,5,9,0, 11,NONE,NONE,14, format_button,hotkeys_screen,0,hotkeys_label
@@ -622,9 +622,10 @@ main_items:
     item 20,43,6,0, 11,NONE,15,17, format_button,test_action,0,test_label
     item 20,55,6,0, 11,NONE,16,18, format_button,save_action,0,save_label
     item 20,65,8,0, 11,NONE,17,NONE, format_button,cancel_action,0,cancel_label
+    item 8,60,9,0, 4,10,5,NONE, format_button,program_action,0,program_label
 main_notes dw 0,0,0,0,0,disk_note
     dw virtual_note,virtual_note,virtual_note,virtual_note,virtual_note,wss_note,wss_note
-    dw 0,0,0,0,0,0
+    dw 0,0,0,0,0,0,program_note
 model_choice:
     choice sound_card,1,model_list,text_model,model_changed
 port_choice:
@@ -733,6 +734,7 @@ setup_usage_message db 'UCDDSET sets the sound cards, hotkeys, and volumes for u
 %include "setup/config_file.asm"
 %include "setup/blaster.asm"
 %include "setup/detect.asm"
+%include "setup/program.asm"
 %include "disk_scan.asm"
 %include "setup/disk.asm"
 %include "audio/speaker.asm"
