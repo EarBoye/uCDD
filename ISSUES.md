@@ -26,7 +26,7 @@ branch names stay as the names of the changes.
 | `ess-native-output` | Tested on hardware, ES1868 only. The half-rate alignment fix on top is tested in an emulator only |
 | `cli-patterns` | Tested on hardware, benefit only partly confirmed |
 | `disk-irq-direct` | In every tested build, not tested alone. Replaced by `disk-irq-detect` |
-| `disk-irq-detect` | Emulators only, in the first form: PCI scan (QEMU with an AHCI controller on IRQ 11, DOSBox-X with and without a PCI bus), the mask in the driver and the host, the UCDDSET Disk row and warnings, old and new UCDDSET and UCDD mixed, Doom timedemo. The scan has since moved from UCDDSET into `UCDD -install` (the driver learns the machine's controllers itself; UCDDSET keeps the Disk row and the IRQ set by hand), which is checked by assembly only so far. The freeze it prevents needs a PCI controller that uses its IRQ in DOS, so that part needs real hardware and is not tested yet |
+| `disk-irq-detect` | Emulators only, in the first form: PCI scan (QEMU with an AHCI controller on IRQ 11, DOSBox-X with and without a PCI bus), the mask in the driver and the host, the UCDDSET Disk row and warnings, old and new UCDDSET and UCDD mixed, Doom timedemo. The scan has since moved from UCDDSET into `UCDD -install` (the driver learns the machine's controllers itself; UCDDSET keeps the Disk row and the IRQ set by hand) and was run again in the rig: QEMU with the AHCI controller prints "Disk controller IRQs go to DOS directly: 11 14 15" and the driver and host masks read 11 14 15; `UCDDPCI=OFF` gives 14 15; DOSBox-X with and without a PCI bus prints nothing, and a manual IRQ 9 gives 9 14 15; the UCDDSET Disk row shows "PCI on IRQ 11" and warns about the virtual WSS on IRQ 11. The freeze it prevents needs a PCI controller that uses its IRQ in DOS, so that part needs real hardware and is not tested yet |
 | `split-word-io` | In every tested build, not tested alone |
 | `single-cycle-start` | Four fixes for single-cycle playback. Emulators only |
 | `cue-far-buffer` | Emulators only: 111 CUE sheets against the old parser, and a mixed-mode image mounted, read and played under FreeDOS. Now part of `fixes`, because the driver segment is full without it |
@@ -101,8 +101,19 @@ for that case.
 A review of the whole driver source (five independent readings of the
 driver, the port trap and card emulation, the mixer and CD streaming, the
 host IRQ path, and the DPMI services) found these. All are fixed in
-`fixes` and checked by assembly only so far; none has run on hardware or in
-an emulator yet.
+`fixes`. Checked in the emulator rig (FreeDOS, JemmEx, SHSUCDX in QEMU and
+DOSBox-X), each against the build before the review (0f81195): the hotkey
+disc change and the eject and insert of one image with twelve handles open
+on one file (the file position no longer jumps to 0); E1h after a refused
+short block at 256 frames (replies 04.05, no reply before); D0h, DAh, D4h
+on an auto-initialize stream (the block ends after the resume, looped
+before); `UCDD -install` without `DOS=UMB` (installs, failed before); Doom
+timedemo under the host unchanged. Not covered: Ctrl+Break with BREAK=ON
+(FreeDOS does not run the break check in those calls, so this needs
+MS-DOS), and the DPMI host changes beyond the Doom regression (a parent
+callback during a child program, a client ending with INT 20h); the
+Batman Forever and Toshinden programs were not at hand. Nothing has run on
+the real PC yet.
 
 - A disc hotkey (MDM list, or eject and insert of a single image) bound the
   new disc for CD audio from the timer tick and from the request entry, and
