@@ -930,6 +930,10 @@ resident_vga_previous db 0
 resident_vga_ready db 0
 resident_vga_tick dd 0
 resident_vga_clock dd 0
+; The monitor's port callback for the virtual card's ports in protected
+; mode: EDX=port, CL=width in bytes, CH=1 for a write, EAX=the value written;
+; EBP=the host base. Carry clear with EAX=the answer, whether decided here or
+; by the driver through .callback; carry set (.bad) refuses the access.
 resident_io:
     cmp cl, 1
     je .narrow
@@ -1154,6 +1158,11 @@ resident_io:
     jz .bad
     cmp dx, [ebp+resident_mixer_ports]
     jne .bad
+; Joined from .regular when the access is none of the fast ports, from each
+; fast port when the driver must see this access (a hold of 1 in progress, a
+; read where a write was expected or the reverse), and from .word for the
+; mixer word write. EAX, EDX, CL and CH as at entry; the driver's answer comes
+; back in the real-mode register block.
 .callback:
     lea edi, [ebp+mon_rm_regs]
     mov [edi+28], eax

@@ -315,6 +315,10 @@ audio_irq:
     jz .spurious
     ; The check above used AX: the stack switch below needs CS in it.
     mov ax, cs
+; Joined from the entry (card not on IRQ 7) and from the IRQ 7 check above.
+; On both paths: interrupts off, DS=CS, AX=CS, the interrupted code's SS:SP
+; still loaded with its DS and AX pushed on it, DX as the interrupted code
+; left it. Nothing before this label may leave anything else in AX.
 .owned_irq:
     mov byte [audio_irq_busy], 1
     mov [irq_ss], ss
@@ -343,6 +347,10 @@ audio_irq:
     mov dx, [sb_base]
     add dx, 0fh
     call physical_read
+; Joined from the SB16 path above and from .pro_audio, .wss and .codec below,
+; once the card's own interrupt is acknowledged. On every path: the handler's
+; stack with PUSHAD, ES and FS saved, DS=CS, DF clear, the IRQ masked at the
+; controller; ES and DI are not set yet.
 .acknowledged:
 %ifdef RESIDENT_AUDIO
     call sb_patch
@@ -427,6 +435,9 @@ audio_irq:
 .refill_ready:
 %endif
 %endif
+; Joined from the mixing paths through .refill_ready and from .pro (the SB
+; Pro priming interrupt, nothing mixed). On both: the handler's stack as at
+; .acknowledged, DS=CS, the IRQ masked; AL and DX are free.
 .eoi:
     DRV_TSC_END pirq
     mov al, 20h
@@ -501,6 +512,10 @@ audio_irq:
     xor al, al
     call physical_write
     jmp .acknowledged
+; Joined from the SB16, .pro_audio, .wss and .codec checks when the interrupt
+; is another device's on the shared line. The handler's stack as at
+; .acknowledged; the card is not acknowledged and nothing is counted, and the
+; old handler gets the interrupt with every register as it was.
 .unowned:
     cli
     call audio_irq_unmask

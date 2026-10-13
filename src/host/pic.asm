@@ -273,6 +273,10 @@ dpmi_pic_io:
     jnc .plain_forward
     btr [ebp+dpmi_pic_service], ecx
     jmp .success
+; Joined from the non-specific EOI when the host has nothing in service on the
+; controller (BSF found no bit) and from .eoi when the bit named is not the
+; host's. EBX=0 for the master, 1 for the slave; [ESP+28] holds the command
+; byte, with the rotate bit taken off, for the forward.
 .plain_forward:
 %ifdef RESIDENT_HOST
     ; A non-specific EOI on the master that is not the host's goes to the

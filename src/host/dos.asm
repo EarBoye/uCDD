@@ -406,6 +406,10 @@ dpmi_dos_translate:
     ; it owes the controller its EOI.
     mov al, 1
     call resident_stray_eoi_mark
+; Joined from .hardware (an IRQ vector, its EOI marked) and from the services
+; reflected with their registers alone (dpmi_register_interrupt), which must
+; not be marked. On both: EDI=the real-mode register block, EBX=the client's
+; frame.
 .registers_only:
     mov dword [edi+34], 0
     jmp .reflect

@@ -189,6 +189,12 @@ game_elapsed:
 .done:
     ret
 
+; The JemmEx port trap entry (far call): DX=port, CL=the access kind and
+; width, AL or AX=the value written. DS, ES and FS are unknown; the flags are
+; the game's with IF and TF clear and DF as the game left it (sb_patch and the
+; mixer clear it under their own saves); the stack is the caller's. BP indexes
+; the PUSHAD frame: [ss:bp+28] is the AL returned to the game. Every answer
+; joins at .result or .done.
 port_callback:
 %ifdef RESIDENT_AUDIO
     cmp byte [cs:callback_set], 0
@@ -1651,6 +1657,9 @@ port_callback:
 .pic_read:
     call virtual_pic_read
 %endif
+; .result: joined from every read and every register answer with AL=the value
+; for the game. .done: joined from .result and from the writes that answer
+; nothing. On both: the trap's frame as at entry, DS=CS.
 .result:
     mov [ss:bp+28], al
 .done:

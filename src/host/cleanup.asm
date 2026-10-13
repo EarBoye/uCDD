@@ -45,6 +45,8 @@ dpmi_ivt_cleanup:
     cmp byte [ebp+dpmi_terminated], 0
     je .owner_ready
     xor ebx, ebx
+; EBX=the MCB owner whose blocks hold the client's vectors: its PSP while the
+; client lives, 0 (free) once DOS has ended it and released the blocks.
 .owner_ready:
     movzx edi, word [ebp+dpmi_first_mcb]
 .mcb:

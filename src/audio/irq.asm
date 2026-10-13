@@ -166,6 +166,12 @@ sb_silence_tick:
 .done:
     ret
 
+; Far entry (RETF). Called with CS pushed from sb_patch's hold check, and by
+; the host's real-mode call through the CDF pointer block (the host takes the
+; virtual interrupt before it delivers it). DS is unknown on entry and set to
+; CS here; BX, CX and DX are saved. AX=1 when the virtual interrupt went into
+; service, 0 when it was masked, already in service, not requested, or a
+; higher line is in service at the controller.
 virtual_irq_take:
     push ds
     push bx
@@ -295,6 +301,11 @@ virtual_pic_write:
 .physical:
     call physical_write
     ret
+; OCW2 on port 20h with an EOI code, from a real-mode game's write through
+; port_callback or forwarded by the host (dpmi_pic_eoi .plain_forward decides
+; the cases with nothing virtual to end before it calls down). AL=the command
+; byte, DX=20h, DS=CS. .guest_eoi below is the specific EOI for the guest
+; line and shares .virtual_eoi and .physical with this path.
 .eoi:
 %ifdef RESIDENT_AUDIO
     ; The DPMI host ended this interrupt at the controller before it ran the

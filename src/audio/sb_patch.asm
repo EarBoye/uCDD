@@ -10,6 +10,11 @@ sb_patch_initial:
 .done:
     ret
 
+; Called from audio_irq at .acknowledged (the handler's stack, interrupts
+; off, DS=CS) and from port_callback at a block start (the trap's stack, the
+; game's interrupt and direction flags, DS=CS). Every register it uses is
+; saved; the flags go under its own PUSHF, so the CLI and CLD below do not
+; leak to either caller.
 sb_patch:
     cmp byte [sb_patch_available], 0
     je .done
@@ -103,6 +108,8 @@ sb_patch:
     cmp byte [sb_single_hold], 0
     jne .restore
     call virtual_irq_tick
+; Joined from every exit after the PUSHAD, PUSH ES and PUSHF above; .done
+; and .clear leave before them and return directly.
 .restore:
     popf
     pop es

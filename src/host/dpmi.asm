@@ -428,6 +428,11 @@ mon_iret:
     mov al, 1
     call resident_delivered_mark
 %endif
+; Joined from .audio_ready (the virtual Sound Blaster interrupt, its delivered
+; mark set above) and from .irq_vector (another IRQ to a real-mode handler,
+; its stray-EOI mark set there). On both: the kernel stack with the client's
+; frame at ESP, EDX=the real-mode vector, ESI=its mon_vectors entry, EBP=the
+; host base. Nothing after this label may assume which of the two it is.
 .real_irq:
     mov eax, edx
     lea edi, [ebp+mon_rm_regs]
@@ -1115,6 +1120,9 @@ dpmi_client_release:
 
 ; DOS ended the client from real mode (dpmi_terminate_hook). The frame of
 ; monitor_run is lost with the process, so the release returns to the hook.
+; Entered from the VCPI switch the hook set up: interrupts off, EDI=the
+; host's linear base, the segment registers and stack are the switch's until
+; the flat selectors and the kernel stack are loaded below.
 dpmi_terminate_pm:
     mov ax, 10h
     mov ds, ax

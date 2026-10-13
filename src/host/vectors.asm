@@ -335,6 +335,11 @@ dpmi_exception_done:
     mov word [ebp+mon_status], 1
     jmp dpmi_finish
 
+; Entered through the interrupt gate of the default-vector stubs (INT 21h,
+; INT 31h and the reflected services). Nothing of the host's is in a register:
+; EBP is recomputed from .base and DS and ES loaded below. The client's flags
+; are kept until the gate is known good, then DF is cleared, and every service
+; dispatched from here copies forward.
 dpmi_reflect:
     DPMI_DEBUG_STOP
     pushad

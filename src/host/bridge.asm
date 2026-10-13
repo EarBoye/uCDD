@@ -785,6 +785,10 @@ dpmi_bridge_enter:
     int 67h
     ud2
 
+; Real-mode end of a bridged call, for every reflected interrupt and
+; callback: the bridge's real-mode stack with the registers to restore and
+; then the INT frame. The RETF form below is only for a reflected INT 23h
+; whose handler asked for the end of the program.
 dpmi_bridge_real_return:
     pop gs
     pop fs

@@ -239,6 +239,11 @@ dpmi_locked_return:
     int 0f4h
     ud2
 
+; Entered through the interrupt gate of INT F4h when a client handler IRETs
+; to dpmi_locked_return. Nothing of the host's is in a register: EBP is
+; recomputed from .base and DS and ES loaded below; the gate's frame sits
+; above the pushes (EIP at [ESP+40], CS at [ESP+44]). Any frame that is not
+; the stub's return is an abort.
 dpmi_locked_done:
     DPMI_DEBUG_STOP
     pushad
