@@ -209,6 +209,32 @@ verify-mix build or byte-identical in the DSP test output:
   the exact-rate path), about eleven passes a second instead of three, no
   dropouts; the Pentium is unchanged.
 
+**On the real PC** (ECS P5HX-A, Pentium MMX 233, ES1868 at half rate,
+Promise Ultra133, measured 13 Oct 2026 with the HWLOG scripts) the picture
+is different from the emulator's, and 86Box does not model the cause. The
+driver costs 11 to 13 percent on memory copies, fills and video fills and
+11 to 19 percent in Doom and Quake with or without sound, but only 1.5
+percent on a register loop. The output stream is the cost: the ESS card
+streams by demand-mode ISA DMA all the time, and on this chipset each DMA
+byte takes about a microsecond of the bus. With no driver loaded and the
+card streaming silence, the same memory tests lose 8 to 10 percent at
+22.05 kHz 16-bit stereo (88 KB/s) and 18 to 21 percent at 44.1 kHz (176
+KB/s); a test build that installs the driver and then stops the output
+costs 0 to 3 percent in the same tests, Doom without sound 2.7 percent
+instead of 18.7. The audio interrupts themselves take 1.6 percent of the
+CPU. The gains worth having on this machine are therefore in the stream,
+not the code: stopping the output while nothing plays (no game DMA, no
+disc audio) would give a soundless game the no-output figures, at the
+price of a start delay for the next sound; the half-rate "fast" model
+already halves the bus time against 44.1 kHz. Neither is done.
+
+The ES1868 clock trim had never been applied on real hardware before the
+ESS identification fix (13 Oct 2026): `ess_identify` rewrote the mixer
+index before each of its four reads, which restarts the chip's answer
+(the real chip gives 18h 18h 18h 18h that way and 18h 68h with the index
+written once), and then kept the first byte in AH across a port read that
+loads AX. Every ESS ran the interpolating path.
+
 Not worth changing: the CLI and STI path; a virtual ESS model (the
 capture and mix are the same whatever the game believes it talks to); the
 mixer for MMX (a few percent of the mixer's share, in a full segment).

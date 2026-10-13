@@ -275,15 +275,16 @@ ESS_RATE equ 44192
 ; of the mixer data port give 18h, 68h or 78h, and the configuration
 ; address. The index is written once because writing it again may restart
 ; the sequence; the real ES1868 answers 18h 68h to this order.
+; physical_read loads AX (the QPI call), so the first byte is held in CL.
 ess_identify:
     mov al, 40h
     call wss_read
-    mov ah, al
+    mov cl, al
     call physical_read
     mov bl, al
     call physical_read
     call physical_read
-    cmp ah, 18h
+    cmp cl, 18h
     jne .other
     cmp bl, 68h
     je .known
