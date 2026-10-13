@@ -271,19 +271,18 @@ ess_rate_adjust:
 ; 14.31818 MHz / 18 / 18
 ESS_RATE equ 44192
 
-; CF clear for an ES1868 or ES1878: four reads of mixer register 40h give
-; 18h, 68h or 78h, and the configuration address.
+; CF clear for an ES1868 or ES1878: with index 40h written once, four reads
+; of the mixer data port give 18h, 68h or 78h, and the configuration
+; address. The index is written once because writing it again may restart
+; the sequence; the real ES1868 answers 18h 68h to this order.
 ess_identify:
     mov al, 40h
     call wss_read
     mov ah, al
-    mov al, 40h
-    call wss_read
+    call physical_read
     mov bl, al
-    mov al, 40h
-    call wss_read
-    mov al, 40h
-    call wss_read
+    call physical_read
+    call physical_read
     cmp ah, 18h
     jne .other
     cmp bl, 68h
