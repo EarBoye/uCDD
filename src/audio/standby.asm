@@ -111,6 +111,10 @@ audio_reconsider:
 ; hotkeys, and the timer and BIOS disk hooks stay: they do nothing while
 ; nothing is bound.
 audio_release:
+    ; Cleared first: sb_stop puts the old vector back through INT 21h, and
+    ; sb_dos_vector must let that call through (it takes a set of the guest
+    ; vector for a game's while the driver is engaged).
+    mov byte [audio_engaged], 0
     call sb_stop
     call virtual_irq_reset
     mov byte [virtual_pic_service], 0
@@ -131,6 +135,8 @@ audio_engage:
     call mix_half
     call trap_engage
     jc .failed
+    ; sb_start hooks the vector through INT 21h while the byte is still
+    ; clear, so the call reaches DOS.
     call sb_start
     jc .failed
     call host_wake

@@ -83,9 +83,14 @@ mdm_mount:
     cmp word [control_result], 0
     jne .rollback
 %ifdef RESIDENT_AUDIO
-    ; mount_image bound this member when it carries CD audio.
-    cmp word [cd_handle], 0ffffh
-    je .audio_counted
+    ; mount_image stops after the checks for a list member (control_op 7),
+    ; so the candidate fields say whether audio_bind would bind it: a raw
+    ; image or more than one track.
+    cmp word [candidate_stride], 2352
+    je .audio_member
+    cmp word [candidate_count], 1
+    jbe .audio_counted
+.audio_member:
     mov byte [mdm_audio], 1
 .audio_counted:
 %endif
