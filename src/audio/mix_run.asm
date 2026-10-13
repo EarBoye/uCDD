@@ -229,13 +229,43 @@ mix_run_select:
     mov [mix_run_next], si
     mov bx, mix_run_enter
     cmp si, ax
-    jne .entry_ready
+    jne .fused
     cmp word [mix_run_source], mix_run_constant
-    jne .entry_ready
+    jne .fused
     mov eax, [mix_run_level]
     or eax, [mix_run_level+4]
-    jnz .entry_ready
+    jnz .fused
     mov bx, mix_run_idle
+    jmp .entry_ready
+.fused:
+    ; The common chains as one loop each (mix_run_fused_table): the same
+    ; samples and state as the chain, without the jumps between its pieces.
+    push di
+    mov di, mix_run_fused_table
+.fused_row:
+    mov ax, [mix_run_source]
+    cmp ax, [di]
+    jne .fused_next
+    cmp si, [di+2]
+    jne .fused_next
+    mov ax, [mix_run_store]
+    cmp ax, [di+4]
+    jne .fused_next
+    cmp word [di], mix_run_constant
+    jne .fused_found
+    ; The constant source only as silence.
+    mov eax, [mix_run_level]
+    or eax, [mix_run_level+4]
+    jnz .fused_next
+.fused_found:
+    mov bx, [di+6]
+    jmp .fused_done
+.fused_next:
+    add di, 8
+    cmp di, mix_run_fused_table_end
+    jb .fused_row
+.fused_done:
+    pop di
 .entry_ready:
     mov ax, bx
     pop si
@@ -681,6 +711,119 @@ mix_run_store_mono:
     dec cx
     jz mix_half.half_complete
     jmp [mix_run_source]
+
+; Fused loops. Each is a chain from the tables above written out as one
+; loop: the source frame, the disc frame added, the store. The clip is left
+; out: a halved 8-bit sample and a halved disc sample cannot leave 16 bits.
+; The halved outputs keep pro_pair_left and pro_pair_right as the chain's
+; store does, so the state matches.
+%macro MIX_RUN_DISC_UNITY_ADD 0
+    movsx eax, word [gs:bx]
+    sar eax, 1
+    add edx, eax
+    movsx eax, word [gs:bx+2]
+    sar eax, 1
+    add esi, eax
+    add bx, 4
+%endmacro
+
+; %1 suffix, %2 disc added.
+%macro MIX_RUN_FUSED_S8_WORD 2
+mix_run_fused_s8%1_word:
+    movzx eax, cx
+    add [game_mix_frame], eax
+%%frame:
+    MIX_RUN_STEREO8
+%if %2
+    MIX_RUN_DISC_UNITY_ADD
+%endif
+    mov [es:di], dx
+    mov [es:di+2], si
+    add di, 4
+    dec cx
+    jnz %%frame
+    jmp mix_half.half_complete
+%endmacro
+
+%macro MIX_RUN_FUSED_S8_HALF 2
+mix_run_fused_s8%1_half:
+    movzx eax, cx
+    add [game_mix_frame], eax
+%%pair:
+    MIX_RUN_STEREO8
+%if %2
+    MIX_RUN_DISC_UNITY_ADD
+%endif
+    mov [pro_pair_left], edx
+    mov [pro_pair_right], esi
+    MIX_RUN_STEREO8
+%if %2
+    MIX_RUN_DISC_UNITY_ADD
+%endif
+    add edx, [pro_pair_left]
+    add esi, [pro_pair_right]
+    sar edx, 1
+    sar esi, 1
+    mov [es:di], dx
+    mov [es:di+2], si
+    add di, 4
+    sub cx, 2
+    jnz %%pair
+    jmp mix_half.half_complete
+%endmacro
+
+MIX_RUN_FUSED_S8_WORD , 0
+MIX_RUN_FUSED_S8_WORD _disc, 1
+MIX_RUN_FUSED_S8_HALF , 0
+MIX_RUN_FUSED_S8_HALF _disc, 1
+
+; Silence with the disc at unity gain into a halved output: each output
+; frame is the mean of two halved disc frames. Both channels of a frame
+; travel in one doubleword: a halved sample offset by 16384 is 0 to 32767,
+; so two of them add without a carry into the other channel, and the sum
+; halves the same way, to the mean offset by 16384. The offset comes off
+; as 32768 through the sign bit, which is exact for every value; 16384
+; through bit 14 would not be (.cd_full_copy in mix_half takes the offset
+; off the same way).
+mix_run_fused_cd_half:
+    movzx eax, cx
+    add [game_mix_frame], eax
+.pair:
+    mov eax, [gs:bx]
+    mov edx, [gs:bx+4]
+    shr eax, 1
+    shr edx, 1
+    and eax, 7fff7fffh
+    and edx, 7fff7fffh
+    xor eax, 40004000h
+    xor edx, 40004000h
+    add eax, edx
+    shr eax, 1
+    and eax, 7fff7fffh
+    add eax, 40004000h
+    xor eax, 80008000h
+    mov [es:di], eax
+    add bx, 8
+    add di, 4
+    sub cx, 2
+    jnz .pair
+    ; The chain's store leaves the first frame of the last pair behind.
+    movsx eax, word [gs:bx-8]
+    sar eax, 1
+    mov [pro_pair_left], eax
+    movsx eax, word [gs:bx-6]
+    sar eax, 1
+    mov [pro_pair_right], eax
+    jmp mix_half.half_complete
+
+; source, next, store, loop.
+mix_run_fused_table:
+    dw mix_run_stereo8_unity, mix_run_store_word, mix_run_store_word, mix_run_fused_s8_word
+    dw mix_run_stereo8_unity, mix_run_disc_unity, mix_run_store_word, mix_run_fused_s8_disc_word
+    dw mix_run_stereo8_unity, mix_run_store_half, mix_run_store_half, mix_run_fused_s8_half
+    dw mix_run_stereo8_unity, mix_run_disc_unity, mix_run_store_half, mix_run_fused_s8_disc_half
+    dw mix_run_constant, mix_run_disc_unity, mix_run_store_half, mix_run_fused_cd_half
+mix_run_fused_table_end:
 
 mix_run_source dw 0
 mix_run_next dw 0
