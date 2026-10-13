@@ -196,16 +196,19 @@ verify-mix build or byte-identical in the DSP test output:
   status reads that acknowledge interrupts, the DMA flip-flop reset): the
   accesses crossing into the driver fell from 7.4 to 3.4 per interrupt,
   Doom 0.4 percent faster.
-- The common mixer chains run as single loops: the 8-bit stereo source
-  with and without the disc into a word or a halved store, and silence
-  with the disc into a halved store. The CD-only exact-rate case fell from
-  13.3k to 8.8k cycles per interrupt on the Pentium, from 33 to 26 percent
-  of the 386 and 17 to 12.5 of the 486 from the hard disk. Doom's mixing
-  fell 8 percent: its chain was shorter than estimated, and the gain is
-  the jumps between the pieces.
+- The common mixer chains run as single loops: the 8-bit stereo and mono
+  sources with and without the disc into a word or a halved store, and
+  silence with the disc into a halved store. The CD-only exact-rate case
+  fell from 13.3k to 8.8k cycles per interrupt on the Pentium, from 33 to
+  26 percent of the 386 and 17 to 12.5 of the 486 from the hard disk; a
+  mono stream alone from 19 to 16 percent of the 386, with the disc from
+  38 to 26 (RAM disk). Doom's mixing fell 8 percent: its chain was
+  shorter than estimated, and the gain is the jumps between the pieces.
 - The timer refill reads 16 KB per pass instead of up to 128 KB, since
-  the foreground program waits for the whole pass: on the 386 with an ISA
-  disk that was most of a tenth of a second at a time (pending the rig).
+  the foreground program waits for the whole pass. On the 386 with an ISA
+  disk the longest wait fell from 170 to 200 ms to 30 to 37 ms (17 ms on
+  the exact-rate path), about eleven passes a second instead of three, no
+  dropouts; the Pentium is unchanged.
 
 Not worth changing: the CLI and STI path; a virtual ESS model (the
 capture and mix are the same whatever the game believes it talks to); the
