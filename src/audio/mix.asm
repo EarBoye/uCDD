@@ -177,10 +177,16 @@ mix_half:
 .cd_half:
     ; The mean of each two frames, as mix_run_store_half makes it. A gain of
     ; 256 or less keeps every sample inside 16 bits, so nothing needs clipping.
+    ; At unity gain mix_run has the faster loop (mix_run_fused_cd_half).
     cmp dword [cd_gain], 256
     ja .frame
     cmp dword [cd_gain+4], 256
     ja .frame
+    cmp dword [cd_gain], 256
+    jne .cd_half_scaled
+    cmp dword [cd_gain+4], 256
+    je .frame
+.cd_half_scaled:
     movzx eax, cx
     add [game_mix_frame], eax
     shr cx, 1
