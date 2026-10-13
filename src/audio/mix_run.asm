@@ -777,6 +777,68 @@ MIX_RUN_FUSED_S8_WORD _disc, 1
 MIX_RUN_FUSED_S8_HALF , 0
 MIX_RUN_FUSED_S8_HALF _disc, 1
 
+; The 8-bit mono source at unity gain: mix_run_mono8_unity's frame.
+%macro MIX_RUN_MONO8 0
+    mov eax, ebp
+    shr eax, 16
+    add ax, [sb_tail_read_offset]
+    mov si, ax
+    movzx edx, byte [fs:si]
+    sub edx, 128
+    shl edx, 7
+    mov esi, edx
+    MIX_RUN_ADVANCE
+%endmacro
+
+%macro MIX_RUN_FUSED_M8_WORD 2
+mix_run_fused_m8%1_word:
+    movzx eax, cx
+    add [game_mix_frame], eax
+%%frame:
+    MIX_RUN_MONO8
+%if %2
+    MIX_RUN_DISC_UNITY_ADD
+%endif
+    mov [es:di], dx
+    mov [es:di+2], si
+    add di, 4
+    dec cx
+    jnz %%frame
+    jmp mix_half.half_complete
+%endmacro
+
+%macro MIX_RUN_FUSED_M8_HALF 2
+mix_run_fused_m8%1_half:
+    movzx eax, cx
+    add [game_mix_frame], eax
+%%pair:
+    MIX_RUN_MONO8
+%if %2
+    MIX_RUN_DISC_UNITY_ADD
+%endif
+    mov [pro_pair_left], edx
+    mov [pro_pair_right], esi
+    MIX_RUN_MONO8
+%if %2
+    MIX_RUN_DISC_UNITY_ADD
+%endif
+    add edx, [pro_pair_left]
+    add esi, [pro_pair_right]
+    sar edx, 1
+    sar esi, 1
+    mov [es:di], dx
+    mov [es:di+2], si
+    add di, 4
+    sub cx, 2
+    jnz %%pair
+    jmp mix_half.half_complete
+%endmacro
+
+MIX_RUN_FUSED_M8_WORD , 0
+MIX_RUN_FUSED_M8_WORD _disc, 1
+MIX_RUN_FUSED_M8_HALF , 0
+MIX_RUN_FUSED_M8_HALF _disc, 1
+
 ; Silence with the disc at unity gain into a halved output: each output
 ; frame is the mean of two halved disc frames. Both channels of a frame
 ; travel in one doubleword: a halved sample offset by 16384 is 0 to 32767,
@@ -823,6 +885,10 @@ mix_run_fused_table:
     dw mix_run_stereo8_unity, mix_run_store_half, mix_run_store_half, mix_run_fused_s8_half
     dw mix_run_stereo8_unity, mix_run_disc_unity, mix_run_store_half, mix_run_fused_s8_disc_half
     dw mix_run_constant, mix_run_disc_unity, mix_run_store_half, mix_run_fused_cd_half
+    dw mix_run_mono8_unity, mix_run_store_word, mix_run_store_word, mix_run_fused_m8_word
+    dw mix_run_mono8_unity, mix_run_disc_unity, mix_run_store_word, mix_run_fused_m8_disc_word
+    dw mix_run_mono8_unity, mix_run_store_half, mix_run_store_half, mix_run_fused_m8_half
+    dw mix_run_mono8_unity, mix_run_disc_unity, mix_run_store_half, mix_run_fused_m8_disc_half
 mix_run_fused_table_end:
 
 mix_run_source dw 0
