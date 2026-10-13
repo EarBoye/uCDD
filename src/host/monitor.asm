@@ -844,6 +844,25 @@ mon_real_int_copy:
 mon_real_int_start:
     mov byte [ebp+mon_rm_kind], 0
     mov [ebp+mon_int_opcode+1], al
+%ifdef HOST_PROFILE
+    cmp byte [ebp+host_profile_depth_bridge], 0
+    jne .profile_classed
+    mov byte [ebp+host_profile_bridge_class], 9
+    cmp al, [ebp+mon_master]
+    jne .profile_not_timer
+    mov byte [ebp+host_profile_bridge_class], 7
+    jmp .profile_classed
+.profile_not_timer:
+    push eax
+    mov ah, al
+    mov al, [ebp+dpmi_audio_irq]
+    add al, [ebp+mon_master]
+    cmp al, ah
+    pop eax
+    jne .profile_classed
+    mov byte [ebp+host_profile_bridge_class], 8
+.profile_classed:
+%endif
 %ifdef HOST_DPMI
     push esi
     call dpmi_bridge_real_vector
@@ -865,6 +884,11 @@ mon_real_far_copy:
     push ecx
 mon_real_far_start:
     mov [ebp+mon_rm_kind], al
+%ifdef HOST_PROFILE
+    cmp byte [ebp+host_profile_depth_bridge], 0
+    jne mon_real_transfer
+    mov byte [ebp+host_profile_bridge_class], 10
+%endif
 mon_real_transfer:
     HOST_COUNT bridge, 0
     HOST_TSC_BEGIN_NESTED bridge
@@ -1001,6 +1025,13 @@ mon_resume:
     pop dword [ebp+mon_tss+4]
     pop dword [ebp+mon_resume_sp]
     pop dword [ebp+mon_switch+16]
+%ifdef HOST_PROFILE
+    ; The class slot gets the same span as the total, from the same start.
+    cmp byte [ebp+host_profile_depth_bridge], 1
+    jne .profile_inner
+    HOST_TSC_END bridge, class_bridge
+.profile_inner:
+%endif
     HOST_TSC_END_NESTED bridge, 5
     add esp, 40
     ret

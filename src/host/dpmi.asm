@@ -1219,14 +1219,18 @@ host_profile_samples times 4*2 dd 0
     ; Cycle slots, 12 bytes each (cycles dq, passes dd): 0 other exceptions
     ; through .advance, 1 CLI, 2 STI, 3 IN, 4 OUT, 5 the bridge
     ; (mon_real_transfer to the return from mon_resume, outermost only),
-    ; 6 a hardware IRQ entry through its .done.
+    ; 6 a hardware IRQ entry through its .done. The bridge again by what it
+    ; carries, outermost only: 7 the timer vector, 8 the physical audio IRQ
+    ; vector, 9 another interrupt, 10 a far call (port callback, take,
+    ; refill).
     db 'CYC1'
-host_profile_cycles times 7*3 dd 0
+host_profile_cycles times 11*3 dd 0
 host_profile_t0_exc dq 0
 host_profile_t0_bridge dq 0
 host_profile_t0_hwirq dq 0
 host_profile_class db 0
 host_profile_depth_bridge db 0
+host_profile_bridge_class db 0
     align 4
 host_profile_end:
 %else

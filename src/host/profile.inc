@@ -51,6 +51,8 @@
     sbb edx, [ebp+host_profile_t0_%1+4]
 %ifidn %2, class
     movzx ecx, byte [ebp+host_profile_class]
+%elifidn %2, class_bridge
+    movzx ecx, byte [ebp+host_profile_bridge_class]
 %else
     mov ecx, %2
 %endif
