@@ -56,7 +56,12 @@ cd_timer:
 %endif
     mov ss, ax
     mov sp, cd_stack_top
-    mov byte [cd_background_reads], 32
+    ; Reads per pass. The refill runs inside the timer interrupt, so the
+    ; program in the foreground waits for the whole pass: 16 KB is a few
+    ; milliseconds on a Pentium and about 15 ms on a 386 with an ISA disk,
+    ; where 128 KB held it for the better part of a tenth of a second. At
+    ; 18.2 passes a second this still refills faster than the disc plays.
+    mov byte [cd_background_reads], 4
     sti
     cld
     call cd_foreground
