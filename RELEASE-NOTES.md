@@ -50,7 +50,6 @@ JemmEx).
 
 ## UCDDSET
 
-- A **Program** button writes the physical IRQ and DMA channels into a jumperless Sound Blaster 16 (DSP 4.xx) through mixer registers 80h and 81h and reads them back.
 - A **Disk** row shows the PCI disk controllers found at install, takes an IRQ by hand for one the BIOS does not report, and warns when a controller shares an IRQ with a sound card setting.
 - The WSS and ESS stop put the old IRQ handler back on the right vector. Under MS-DOS 7.1 with the card on IRQ 7 the wrong vector was the timer's, and the machine stopped taking interrupts after Test.
 - A review of the setup program: the SB Pro start waits for its priming interrupt by port reads instead of loop turns; the SB Pro stop masks the IRQ before the DSP reset; the real-mode handler checks the in-service bit for IRQ 7; INT 23h and 24h handlers, so Ctrl+Break no longer ends the program with vectors hooked; a kept BLASTER field is bounded; MDA, Hercules and CGA adapters get the right video segment and mode, and the previous text mode and line count come back on exit; a CPU check before 386 instructions; the detection's 8237 programming runs with interrupts off.

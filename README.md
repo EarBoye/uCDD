@@ -26,7 +26,7 @@ Tested in emulators:
 - Single-cycle playback: a new sound no longer loses its first milliseconds at large output periods, and very short blocks are accepted (King's Quest V's driver test).
 - A review of the whole driver and a second pass against the hardware and interface specifications in `docs/references`, with the fixes listed in ISSUES.md: DOS re-entry from the disc hotkeys, Ctrl+Break during CD reads, DSP command parsing, the 8237 and 8259 emulation, MSCDEX details, the DPMI host's handling of program exits, callbacks, faults and the INT 1Ch/23h/24h handlers of protected-mode programs.
 - Doom's effects turning into a wash with the physical and the virtual card on IRQ 7: fixed.
-- UCDDSET: a review of the setup program, and a **Program** button that sets a jumperless Sound Blaster 16.
+- UCDDSET: a review of the setup program.
 
 Microsoft EMM386 is no longer supported; JEMMEX was already required.
 
@@ -53,7 +53,7 @@ The original README follows, updated where the fork changed things.
 
 - 386 or later, DOS 5 or later, and a CD redirector: [SHSUCDX](http://adoxa.altervista.org/shsucdx/) or MSCDEX.
 - For CD-Audio: [JEMMEX](https://github.com/Baron-von-Riedesel/Jemm) 5.86 or 5.87, which provides the XMS, VCPI and port-trap services the audio driver needs, including the port-trap callback interface changed in 5.87pre1. HIMEM alone does not provide these, and Microsoft EMM386 is not supported: its port-trap interface cannot reach the DMA controller, so a game could take over the physical audio transfer.
-- A Sound Blaster (1.5/2.0, Pro, or 16), a Windows Sound System codec, or an ESS AudioDrive. **Initialize the card before `UCDD -install`.** μCDD does not configure it. Set the jumpers, or run the card's Plug and Play or setup utility (CTCM, UNISOUND, and so on) first. A jumperless Sound Blaster 16 without Plug and Play can be set from UCDDSET with **Program**.
+- A Sound Blaster (1.5/2.0, Pro, or 16), a Windows Sound System codec, or an ESS AudioDrive. **Initialize the card before `UCDD -install`.** μCDD does not configure it. Set the jumpers, or run the card's Plug and Play or setup utility (CTCM, UNISOUND, and so on) first. UNISOUND also sets the jumperless Sound Blaster 16 boards without Plug and Play (CT2230, CT2290, CT2291).
 
 **Protected-mode game support is incomplete.**
 
@@ -87,7 +87,7 @@ Copy `UCDD.EXE` and `UCDDSET.EXE` into one directory and run `UCDDSET`.
 - A physical **WSS codec** or ESS card must be on IRQ 5 or 7; the driver handles the master interrupt controller only.
 - **Disk** shows the PCI disk controllers that `UCDD -install` found and lets you add the IRQ of one the BIOS does not report. UCDDSET warns when a controller shares an IRQ with a sound card setting. See BUILDING.md for what the driver does with these IRQs.
 - **Virtual** is what games see: a Sound Blaster (SB16, SB Pro, or SB 1.5/2.0, which report DSP 4.05, 3.02, or 2.01) and a WSS codec. The WSS codec uses the DMA Low channel of the virtual Sound Blaster, and a game can move its IRQ through the WSS board register. Where possible, match the virtual model to the physical card. For example, a virtual SB Pro on an SB Pro-compatible card keeps the game sound in 8-bit stereo and avoids a 16-bit conversion.
-- **Detect** reads the physical card from the hardware. `BLASTER` only fills in values that the tests cannot find. **Test** plays a tone on each speaker. **Program** writes the IRQ and DMA channels shown into a jumperless Sound Blaster 16 (DSP 4.xx, such as the CT2290 and CT2291) through mixer registers 80h and 81h, so the card listens where the settings say; it checks for a DSP 4.xx at the port first and reads the registers back. A Plug and Play SB16 is set by its PnP utility instead. All three need DOS without the μCDD audio driver.
+- **Detect** reads the physical card from the hardware. `BLASTER` only fills in values that the tests cannot find. **Test** plays a tone on each speaker. Both need DOS without the μCDD audio driver.
 
 `UCDDSET` saves to `UCDD.CFG`. `UCDD -install` runs `UCDDSET`, which copies the settings into the driver and sets `BLASTER` for the virtual Sound Blaster. Other `BLASTER` fields, such as `P330`, are kept. If `UCDD.CFG` is missing or from an older version, the `UCDDSET` menu opens first. Changes take effect at the next boot.
 
