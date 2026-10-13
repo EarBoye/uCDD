@@ -3,8 +3,8 @@
 
 ; UCDD.CFG contents. At installation, UCDDSET checks the file and copies the
 ; complete record into the driver.
-CONFIG_VERSION equ 2
-CONFIG_SIZE equ 36
+CONFIG_VERSION equ 3
+CONFIG_SIZE equ 37
 HOTKEY_COUNT equ 5
 config_data db 'uCDD',CONFIG_VERSION
 sound_card db 0
@@ -38,6 +38,11 @@ virtual_dsp_version dw 0504h
 ; IRQ of a disk controller that the PCI scan does not find, or 0. The byte was
 ; padding, so every older UCDD.CFG reads as 0.
 config_disk_irq db 0
+; 1 keeps the physical output and the traps on at all times. 0 lets the
+; driver step aside while no disc is bound for CD audio and the physical card
+; can stand in for the virtual one (audio/standby.asm). Version 3 added the
+; byte; a version 2 file reads as 0.
+config_audio_always db 0
 config_size_check equ 1 / (($-config_data) = CONFIG_SIZE)
 ; Not in UCDD.CFG. UCDD -install scans the PCI BIOS (disk_scan.asm) and sets
 ; the mask: IRQ 14 and 15, the IRQs of PCI disk controllers, and

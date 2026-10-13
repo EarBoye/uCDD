@@ -735,12 +735,12 @@ control:
     call dos_enter
     call mount_image
     call dos_leave
-    jmp .done
+    jmp .reconsider
 .mdm_mount:
     call dos_enter
     call mdm_mount
     call dos_leave
-    jmp .done
+    jmp .reconsider
 .mdm_name:
     call mdm_name
     jmp .done
@@ -748,8 +748,13 @@ control:
     call dos_enter
     call eject_unit
     call dos_leave
-    jc .done
+    jc .reconsider
     mov word [control_result], 0
+.reconsider:
+%ifdef RESIDENT_AUDIO
+    ; A mount or an eject may change whether the driver has anything to add.
+    call audio_reconsider
+%endif
     jmp .done
 .query:
     xor ax, ax

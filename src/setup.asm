@@ -395,6 +395,9 @@ main_draw:
     mov si, [output_texts+bx]
     mov bl, A_BOX
     call put_text
+    mov dx, 1104h
+    mov si, driver_label
+    call put_text
     mov dx, 0f04h
     mov si, applications_text
     call put_text
@@ -601,7 +604,7 @@ model_changed:
     clc
     ret
 
-MAIN_ITEMS equ 19
+MAIN_ITEMS equ 20
 main_items:
     item 7,16,21,0, NONE,6,NONE,1, format_choice,choice_popup,choice_cycle,model_choice
     item 7,41,3,0, NONE,7,0,2, format_choice,choice_popup,choice_cycle,port_choice
@@ -616,17 +619,34 @@ main_items:
     item 11,67,3,0, 4,12,9,NONE, format_choice,choice_popup,choice_cycle,virtual_dma16_choice
     item 12,41,3,0, 7,13,NONE,12, format_choice,choice_popup,choice_cycle,wss_port_choice
     item 12,49,3,0, 8,13,11,NONE, format_choice,choice_popup,choice_cycle,wss_irq_choice
-    item 20,5,9,0, 11,NONE,NONE,14, format_button,hotkeys_screen,0,hotkeys_label
-    item 20,18,7,0, 11,NONE,13,15, format_button,mixer_screen,0,mixer_label
-    item 20,31,8,0, 11,NONE,14,16, format_button,detect_action,0,detect_label
-    item 20,43,6,0, 11,NONE,15,17, format_button,test_action,0,test_label
-    item 20,55,6,0, 11,NONE,16,18, format_button,save_action,0,save_label
-    item 20,65,8,0, 11,NONE,17,NONE, format_button,cancel_action,0,cancel_label
+    item 17,17,36,0, 11,14,NONE,NONE, format_choice,choice_popup,choice_cycle,standby_choice
+    item 20,5,9,0, 13,NONE,NONE,15, format_button,hotkeys_screen,0,hotkeys_label
+    item 20,18,7,0, 13,NONE,14,16, format_button,mixer_screen,0,mixer_label
+    item 20,31,8,0, 13,NONE,15,17, format_button,detect_action,0,detect_label
+    item 20,43,6,0, 13,NONE,16,18, format_button,test_action,0,test_label
+    item 20,55,6,0, 13,NONE,17,19, format_button,save_action,0,save_label
+    item 20,65,8,0, 13,NONE,18,NONE, format_button,cancel_action,0,cancel_label
 main_notes dw 0,0,0,0,0,disk_note
     dw virtual_note,virtual_note,virtual_note,virtual_note,virtual_note,wss_note,wss_note
+    dw standby_note
     dw 0,0,0,0,0,0
 model_choice:
     choice sound_card,1,model_list,text_model,model_changed
+standby_choice:
+    choice config_audio_always,1,standby_list,text_standby,0
+standby_list:
+    mov si, standby_values
+    ret
+standby_values db 2
+    dw 0,1
+text_standby:
+    push bx
+    mov bx, ax
+    shl bx, 1
+    mov si, [standby_names+bx]
+    pop bx
+    jmp copy_text
+standby_names dw standby_auto_text,standby_always_text
 port_choice:
     choice sb_base,2,port_list,text_hex3,0
 irq_choice:
@@ -679,6 +699,10 @@ table_header db 'Card'
 physical_label db 'Physical',0
 virtual_label db 'Virtual',0
 output_label db 'Output',0
+driver_label db 'Driver',0
+standby_auto_text db 'On while a mounted disc has CD audio',0
+standby_always_text db 'Always on',0
+standby_note db 'Steps aside until a disc with audio is mounted, if the cards match.',0
 sb16_name db 'Sound Blaster 16',0
 pro_name db 'Sound Blaster Pro',0
 wss_name db 'Windows Sound System',0

@@ -47,6 +47,7 @@ branches are gone; their names stay as the names of the changes.
 | Data-flow pass | After the IRQ 7 stack fault, a mechanical pass over every entry point and join label (register, segment, stack and flag state on each incoming path) across the driver's interrupt and trap side, its DOS side, the host's mode switches and stubs, and the host's protected-mode services. Five defects, listed under "Fixed after the reviews"; everything else traced came back sound. 86Box on the fixed head: Doom 7/7 three runs and one with a real-mode serial mouse driver, no wash; timedemo unchanged; Heretic and Wolf3D as before; verify-mix 0 bad; 16-bit and 32-bit INT 1Ch clients at 18 ticks a second; a new client after an INT 24h abort; a client polling INT 16h for 30 s with keys arriving leaves the keyboard working and nothing in service at the controller. That last harness did not reproduce the swallowed EOI on the build before the fix either, so the register-only reflection fix stands on reading, not on a reproduced failure. The join labels and entry points the pass visited carry a comment naming the register, segment, stack and flag state on each incoming path, so the next change there starts from the list instead of rederiving it |
 | Performance pass | Measured first, then changed: port traps answered in protected mode, the common mixer chains as single loops, a 16 KB refill budget. Each checked bit-identical with the `--verify-mix` build; the figures are under "Performance". 86Box on the Pentium, 386 and 486 templates, then the real PC |
 | ESS identification | The ES1868 was never recognised, so its clock trim never ran: the mixer index was rewritten before each identification read, which restarts the chip's answer, and the first byte was then lost to a port read. Found from the real PC's cycle counts; confirmed on the chip with a probe program and the fixed build |
+| `step-aside` | The driver stops its output, untraps the ports and puts the host to sleep while no mounted image is bound for CD audio and the physical card can stand in for the virtual one; it engages again at the next mount of a disc with audio. Decided only from the control entry (mount, MDM mount, eject) and at the end of the install. In test on the rig |
 | Program button | Added to UCDDSET for the jumperless Sound Blaster 16 boards, then dropped: UNISOUND sets those boards through the same registers and the README already requires the card set before install |
 
 ## The output period decides which games have sound
@@ -163,6 +164,15 @@ changed volumes.
 - The real-mode bridge only knows the IRQs it was told about: vectors a
   client points into UMB blocks are found at cleanup only when the UMB link
   is on.
+- While the driver has stepped aside (no disc bound for CD audio, cards
+  matching, "On while a mounted disc has CD audio" in UCDDSET) there is no
+  virtual card: a game set to the virtual WSS codec finds nothing, a game
+  that needs a DPMI host finds none unless it brings its own, and the state
+  changes only at a mount or an eject from the command line or UCDDPLAY.
+  An MDM list counts as an audio disc when any member has audio tracks. A
+  mount while a game runs does not switch, and a stepped-aside driver that
+  fails to engage at a mount (the card did not start) sets bit 7 of the
+  fault byte and leaves CD audio silent until the next mount.
 
 ## Performance
 

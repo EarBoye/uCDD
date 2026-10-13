@@ -34,6 +34,10 @@ mdm_move:
     dd 0
 mdm_old_key dd 0
 mdm_old_timer dd 0
+; Set at the list's mount when any member is bound for CD audio: the list
+; counts as an audio disc from then on, so a hotkey never changes whether the
+; driver has stepped aside (audio/standby.asm).
+mdm_audio db 0
 
 ; DS:DX contains the list name, count, image records and transient scratch.
 mdm_mount:
@@ -67,6 +71,7 @@ mdm_mount:
     cmp ax, 1
     jne .bad
     mov [mdm_handle], dx
+    mov byte [mdm_audio], 0
     mov eax, [mdm_input]
     xor edx, edx
     mov ecx, 128
@@ -77,6 +82,13 @@ mdm_mount:
     call mount_image
     cmp word [control_result], 0
     jne .rollback
+%ifdef RESIDENT_AUDIO
+    ; mount_image bound this member when it carries CD audio.
+    cmp word [cd_handle], 0ffffh
+    je .audio_counted
+    mov byte [mdm_audio], 1
+.audio_counted:
+%endif
     movzx bx, byte [mdm_count]
     shl bx, 1
     mov ax, [candidate]
@@ -215,6 +227,7 @@ mdm_release:
     push si
     xor bp, bp
     mov word [mdm_unit], 0
+    mov byte [mdm_audio], 0
     mov byte [mdm_count], 0
     mov byte [mdm_pending], 0
     mov byte [mdm_ejected], 0

@@ -36,9 +36,19 @@ config_load:
     cmp ax, 12
     je .old
     cmp ax, CONFIG_SIZE
+    je .size_ok
+    ; A version 2 file is one byte shorter; its missing byte reads as 0.
+    cmp ax, CONFIG_SIZE-1
     jne .invalid
+    cmp byte [file_buffer+4], CONFIG_VERSION-1
+    jne .invalid
+    mov byte [file_buffer+4], CONFIG_VERSION
+    mov byte [file_buffer+CONFIG_SIZE-1], 0
+    jmp .copy
+.size_ok:
     cmp byte [file_buffer+4], CONFIG_VERSION
     jne .invalid
+.copy:
     mov si, file_buffer
     mov di, config_data
     mov cx, CONFIG_SIZE
@@ -121,6 +131,8 @@ config_valid:
     cmp byte [config_game_volume], 100
     ja .bad
     cmp byte [config_master_volume], 100
+    ja .bad
+    cmp byte [config_audio_always], 1
     ja .bad
     movzx ax, byte [config_volume_step]
     mov si, step_values
