@@ -780,9 +780,11 @@ MIX_RUN_FUSED_S8_HALF _disc, 1
 ; Silence with the disc at unity gain into a halved output: each output
 ; frame is the mean of two halved disc frames. Both channels of a frame
 ; travel in one doubleword: a halved sample offset by 16384 is 0 to 32767,
-; so two of them add without a carry into the other channel, the sum halves
-; the same way, and the offset comes off at the end (.cd_full_copy in
-; mix_half does the first half of this).
+; so two of them add without a carry into the other channel, and the sum
+; halves the same way, to the mean offset by 16384. The offset comes off
+; as 32768 through the sign bit, which is exact for every value; 16384
+; through bit 14 would not be (.cd_full_copy in mix_half takes the offset
+; off the same way).
 mix_run_fused_cd_half:
     movzx eax, cx
     add [game_mix_frame], eax
@@ -798,7 +800,8 @@ mix_run_fused_cd_half:
     add eax, edx
     shr eax, 1
     and eax, 7fff7fffh
-    xor eax, 40004000h
+    add eax, 40004000h
+    xor eax, 80008000h
     mov [es:di], eax
     add bx, 8
     add di, 4
