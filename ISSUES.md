@@ -233,7 +233,12 @@ ESS identification fix (13 Oct 2026): `ess_identify` rewrote the mixer
 index before each of its four reads, which restarts the chip's answer
 (the real chip gives 18h 18h 18h 18h that way and 18h 68h with the index
 written once), and then kept the first byte in AH across a port read that
-loads AX. Every ESS ran the interpolating path.
+loads AX. Every ESS ran the interpolating path. With the fix the real
+PC's CD-alone mixing fell from 43.5k to 12.2k cycles per interrupt and
+the cost of disc audio over idle from 5.2 to 3.1 percent from the hard
+disk and 4.0 to 1.9 from a RAM disk; the hard-disk cases keep about 1.2
+points for the BIOS reads. A real ESS output start takes 0.66 ms, with
+the first audio interrupt 1.25 ms after the call.
 
 Not worth changing: the CLI and STI path; a virtual ESS model (the
 capture and mix are the same whatever the game believes it talks to); the
