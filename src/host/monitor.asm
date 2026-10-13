@@ -606,6 +606,7 @@ mon_irq:
     pop ebp
     sub ebp, .base
     inc dword [ebp+mon_irqs]
+    HOST_TSC_BEGIN hwirq
     HOST_COUNT irqentry, 0
 %ifdef HOST_DPMI
     lea ebx, [esp+8]
@@ -731,6 +732,7 @@ mon_irq:
     mov byte [ebp+mon_virtual_active], 1
 %endif
 .done:
+    HOST_TSC_END hwirq, 6
     pop es
     pop ds
     popad
@@ -842,6 +844,25 @@ mon_real_int_copy:
 mon_real_int_start:
     mov byte [ebp+mon_rm_kind], 0
     mov [ebp+mon_int_opcode+1], al
+%ifdef HOST_PROFILE
+    cmp byte [ebp+host_profile_depth_bridge], 0
+    jne .profile_classed
+    mov byte [ebp+host_profile_bridge_class], 9
+    cmp al, [ebp+mon_master]
+    jne .profile_not_timer
+    mov byte [ebp+host_profile_bridge_class], 7
+    jmp .profile_classed
+.profile_not_timer:
+    push eax
+    mov ah, al
+    mov al, [ebp+dpmi_audio_irq]
+    add al, [ebp+mon_master]
+    cmp al, ah
+    pop eax
+    jne .profile_classed
+    mov byte [ebp+host_profile_bridge_class], 8
+.profile_classed:
+%endif
 %ifdef HOST_DPMI
     push esi
     call dpmi_bridge_real_vector
@@ -863,8 +884,14 @@ mon_real_far_copy:
     push ecx
 mon_real_far_start:
     mov [ebp+mon_rm_kind], al
+%ifdef HOST_PROFILE
+    cmp byte [ebp+host_profile_depth_bridge], 0
+    jne mon_real_transfer
+    mov byte [ebp+host_profile_bridge_class], 10
+%endif
 mon_real_transfer:
     HOST_COUNT bridge, 0
+    HOST_TSC_BEGIN_NESTED bridge
     ; A raw switch can run client code inside this call. Keep the outer state.
     sub esp, 36
     push esi
@@ -998,6 +1025,14 @@ mon_resume:
     pop dword [ebp+mon_tss+4]
     pop dword [ebp+mon_resume_sp]
     pop dword [ebp+mon_switch+16]
+%ifdef HOST_PROFILE
+    ; The class slot gets the same span as the total, from the same start.
+    cmp byte [ebp+host_profile_depth_bridge], 1
+    jne .profile_inner
+    HOST_TSC_END bridge, class_bridge
+.profile_inner:
+%endif
+    HOST_TSC_END_NESTED bridge, 5
     add esp, 40
     ret
 
@@ -1013,6 +1048,10 @@ mon_exception:
 .base:
     pop ebp
     sub ebp, .base
+%ifdef HOST_PROFILE
+    mov byte [ebp+host_profile_class], 0
+%endif
+    HOST_TSC_BEGIN exc
 %ifdef HOST_DPMI
     lea ebx, [esp+8]
     call dpmi_locked_capture
@@ -1194,6 +1233,7 @@ mon_exception:
 %endif
     inc edi
 .decode:
+    HOST_TSC_CLASS al
     test al, 1
     jnz .width
     mov cl, 1
@@ -1293,6 +1333,7 @@ mon_exception:
 .dword:
     mov [esp+36], eax
 .advance:
+    HOST_TSC_END exc, class
     add [esp+48], edi
     pop es
     pop ds
@@ -1318,6 +1359,7 @@ mon_exception:
     jmp .advance
 %endif
 .cli:
+    HOST_TSC_CLASS 0fah
 %ifdef HOST_DPMI
     ; A POPF just before this CLI loaded an injected TF image. Deliver
     ; pending IRQs first; the CLI faults again.
@@ -1365,6 +1407,7 @@ mon_exception:
 %endif
     jmp .advance
 .sti:
+    HOST_TSC_CLASS 0fbh
 %ifdef HOST_DPMI
     mov ebx, esp
     call dpmi_tf_loaded

@@ -85,7 +85,10 @@ These options apply with `--resident-audio`.
 Test builds:
 
 - `--verify-mix`: check every mixer half against the general loop and count mismatches; for checking the mixer fast paths, not for use.
-- `--profile-host`: build host counters in `build/profile`.
+- `--profile-host`: event counters and cycle counts in the host, written to `build/profile`. The counters sit in a block tagged `uCDprof` in the host image (extended memory): twelve event dwords from offset 16 (step, decode, gp, cli, dpmi, dos, bridge, allocate, page, flush, irqentry, refill), then the step samples, then the tag `CYC1` at offset 96 and eleven cycle slots of 12 bytes (8 of cycles, 4 of passes) from offset 100: other exceptions, CLI, STI, IN, OUT, the real-mode bridge (outermost pass), a hardware IRQ entry, then the bridge again by what it carries: the timer vector, the physical audio IRQ vector, another interrupt, a far call.
+- `--profile-driver`: cycle counts in the resident driver, written to `build/profile`. The block is tagged `uCDDprof` in the resident image: a version byte, a zero, the block size, then seven slots of 12 bytes from offset 12: the physical interrupt handler, mix_half from it, the disc half load and filter, the CD refill from the timer and the deferred refill, the INT 21h read of the image, the XMS writes into the queue, the port callback.
+
+Both cycle counters use RDTSC, so those builds need a Pentium or later; the normal build is unchanged by them.
 
 These fixes are in every resident-audio build. Each has a `--no-` option to
 build without it, for comparison with 0.9.3:

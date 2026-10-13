@@ -371,6 +371,7 @@ virtual_pic_delivered db 0
 ; Periods during which a signalled interrupt sat unacknowledged with nothing
 ; requested or in service.
 virtual_irq_stale db 0
+DRV_PROFILE_DATA
 
 
 ; CDF2 exposes these offsets to the protected host.

@@ -325,6 +325,7 @@ audio_irq:
     push es
     push fs
     cld
+    DRV_TSC_BEGIN pirq
     call audio_irq_mask
     cmp byte [sound_card], 2
     je .wss
@@ -381,7 +382,9 @@ audio_irq:
     mov cl, [ess_half]
     shr ax, cl
     xor [next_half], ax
+    DRV_TSC_BEGIN mix
     call mix_half
+    DRV_TSC_END mix
 %ifdef VIRTUAL_IRQ
 %ifdef RESIDENT_AUDIO
     cmp byte [sb_single_hold], 0
@@ -425,6 +428,7 @@ audio_irq:
 %endif
 %endif
 .eoi:
+    DRV_TSC_END pirq
     mov al, 20h
     mov dx, 20h
     call physical_write

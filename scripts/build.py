@@ -42,6 +42,8 @@ def main():
                         help='Build resident audio with the internal DPMI host.')
     parser.add_argument('--profile-host', action='store_true',
                         help='Build host counters in build/profile. Use with --resident-audio.')
+    parser.add_argument('--profile-driver', action='store_true',
+                        help='Build driver cycle counters (RDTSC, Pentium or later) in build/profile. Use with --resident-audio.')
     parser.add_argument('--no-refill-hint', action='store_true',
                         help='Test build: ignore the retrace hint for deferred CD refills.')
     # The disk IRQ handling is always built: UCDDSET finds the IRQs at
@@ -66,9 +68,9 @@ def main():
     args = parser.parse_args()
     if args.audio_period_frames != 32 and not args.resident_audio:
         parser.error('--audio-period-frames requires --resident-audio.')
-    if args.profile_host:
+    if args.profile_host or args.profile_driver:
         if not args.resident_audio:
-            parser.error('--profile-host requires --resident-audio.')
+            parser.error('--profile-host and --profile-driver require --resident-audio.')
         BUILD = BUILD / 'profile'
         BUILD.mkdir(parents=True, exist_ok=True)
     for source, name in [('src/ucdd.asm', 'UCDD.EXE'),
@@ -85,6 +87,8 @@ def main():
                 defines.append('INJECT_REG=1')
             if args.verify_mix:
                 defines.append('VERIFY_MIX=1')
+            if args.profile_driver:
+                defines.append('DRIVER_PROFILE=1')
             import os
             for extra in os.environ.get('UCDD_DEFINES', '').split():
                 defines.append(extra)

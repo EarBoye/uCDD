@@ -866,7 +866,9 @@ cd_pump:
 %endif
     mov dx, cd_stage
     mov ah, 3fh
+    DRV_TSC_BEGIN dosread
     int 21h
+    DRV_TSC_END dosread
 %ifdef EXTERNAL_CD_BUFFERS
     pop ds
 %endif
@@ -1007,9 +1009,15 @@ cd_write_chunk:
     mov ecx, CD_QUEUE_BYTES
     sub ecx, [cd_write_offset]
     cmp eax, ecx
+%ifdef DRIVER_PROFILE
+    jbe .whole
+%else
     jbe cd_queue_write
+%endif
     mov [cd_write_move], ecx
+    DRV_TSC_BEGIN xmsw
     call cd_queue_write
+    DRV_TSC_END xmsw
     cmp ax, 1
     jne .done
     mov eax, [cd_write_move]
@@ -1018,7 +1026,14 @@ cd_write_chunk:
     sub ecx, eax
     mov [cd_write_move], ecx
     mov dword [cd_write_offset], 0
+%ifdef DRIVER_PROFILE
+.whole:
+    DRV_TSC_BEGIN xmsw
     call cd_queue_write
+    DRV_TSC_END xmsw
+%else
+    call cd_queue_write
+%endif
 .done:
     ret
 cd_queue_write:
