@@ -225,9 +225,11 @@ ess_reply:
 .none:
     stc
     ret
-; What the physical ESS answered E7h with, low byte first; the ES1868's
-; values until a chip has answered.
+; What the physical ESS answered E7h with, low byte first, and the four
+; bytes of its mixer register 40h; the ES1868's values until a chip has
+; answered. The virtual ESS answers a game with them.
 ess_physical_id dw 8b68h
+ess_physical_mixer_id db 18h,68h,0,0
 ess_read:
     push ax
     mov al, 0c0h
@@ -302,10 +304,14 @@ ess_identify:
     mov al, 40h
     call wss_read
     mov cl, al
+    mov [ess_physical_mixer_id], al
     call physical_read
     mov bl, al
+    mov [ess_physical_mixer_id+1], al
     call physical_read
+    mov [ess_physical_mixer_id+2], al
     call physical_read
+    mov [ess_physical_mixer_id+3], al
     cmp cl, 18h
     jne .other
     cmp bl, 68h

@@ -395,6 +395,7 @@ port_callback:
     jmp .done
 .mixer_index:
     mov [virtual_mixer_index], al
+    mov byte [ess_id_phase], 0
     jmp .done
 .mixer_data:
     movzx bx, byte [virtual_mixer_index]
@@ -413,11 +414,25 @@ port_callback:
     mov [sb_filter_bypass], al
     jmp .done
 .mixer_volume:
-    cmp bl, 22h
-    je .master_pair
-    ; 14h is the ESS's full-width twin of 04h.
+    ; 14h is the ESS's full-width twin of 04h, on every model.
     cmp bl, 14h
     je .voice_pair
+    cmp byte [virtual_model], 4
+    jne .sb_registers
+    ; The ESS's other twins, four bits per channel like the SB Pro's: 32h
+    ; master, 36h FM, 38h CD, 3Eh line (stored only). On the SB16 those
+    ; numbers are its own per-channel registers.
+    cmp bl, 32h
+    je .master_pair
+    cmp bl, 36h
+    je .fm_pair
+    cmp bl, 38h
+    je .cd_pair
+    cmp bl, 3eh
+    je .done
+.sb_registers:
+    cmp bl, 22h
+    je .master_pair
     cmp bl, 28h
     je .cd_pair
     cmp bl, 26h
@@ -1754,6 +1769,20 @@ port_callback:
     jmp .result
 .mixer_value:
 %endif
+    cmp bx, 40h
+    jne .mixer_stored
+    cmp byte [virtual_model], 4
+    jne .mixer_stored
+    ; The physical chip's identification sequence, four reads after the
+    ; index write (which the host answers for a protected-mode game, so the
+    ; sequence also wraps after four).
+    movzx bx, byte [ess_id_phase]
+    mov al, [ess_physical_mixer_id+bx]
+    inc bl
+    and bl, 3
+    mov [ess_id_phase], bl
+    jmp .result
+.mixer_stored:
     mov al, [virtual_mixer+bx]
     jmp .result
 .dma_read:
@@ -2102,6 +2131,7 @@ pending_format db 0
 ; to BFh behind commands C6h/C7h, and whether B8h bit 0 is set.
 ess_extended db 0
 ess_started db 0
+ess_id_phase db 0
 ess_virtual_regs times 32 db 0
 game_block_bytes dd 4096
 game_exit_frame dd 0

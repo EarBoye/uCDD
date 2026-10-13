@@ -1114,6 +1114,9 @@ resident_io:
     movzx edi, byte [esi]
     cmp edi, 0fh
     je .data_reserved
+    ; 40h is the ESS identification sequence, which the driver keeps.
+    cmp edi, 40h
+    je .callback
     cmp edi, 82h
     jne .data_register
     mov esi, [ebp+resident_fast+4]
