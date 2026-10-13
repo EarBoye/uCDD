@@ -206,6 +206,28 @@ ess_modify:
 .done:
     ret
 ; AL=register. Returns AL=value, CF set on failure. Keeps BX and CX.
+; One DSP reply byte in AL; CF set when none comes within the wait.
+ess_reply:
+    push cx
+    mov cx, 65535
+    mov dx, [sb_base]
+    add dx, 0eh
+.wait:
+    call physical_read
+    test al, 80h
+    loopz .wait
+    pop cx
+    jz .none
+    sub dx, 4
+    call physical_read
+    clc
+    ret
+.none:
+    stc
+    ret
+; What the physical ESS answered E7h with, low byte first; the ES1868's
+; values until a chip has answered.
+ess_physical_id dw 8b68h
 ess_read:
     push ax
     mov al, 0c0h
@@ -335,6 +357,22 @@ ess_setup:
     jc ess_modify.done
     mov al, 0c6h
     call dsp_write
+    ; The chip's own identification (E7h: 68h, then 8xh with the version
+    ; code): the virtual ESS answers a game with it, so a game sees the chip
+    ; that is there, an ES688 as an ES688 and an ES1868 as an ES1868.
+    mov al, 0e7h
+    call dsp_write
+    jc .id_ready
+    call ess_reply
+    jc .id_ready
+    mov ah, al
+    call ess_reply
+    jc .id_ready
+    xchg al, ah
+    cmp al, 68h
+    jne .id_ready
+    mov [ess_physical_id], ax
+.id_ready:
     mov si, ess_table
     mov cx, 5
     call ess_list

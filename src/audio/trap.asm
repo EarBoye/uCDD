@@ -704,7 +704,10 @@ port_callback:
     ja .common_command
     jmp .time_constant
 .ess_identify:
-    mov word [reply], 8b68h
+    ; The physical chip's own answer (ess_setup), so the game sees the chip
+    ; in the machine; 68h 8Bh before any start.
+    mov ax, [ess_physical_id]
+    mov [reply], ax
     mov byte [reply_count], 2
     jmp .done
 .ess_extend:
