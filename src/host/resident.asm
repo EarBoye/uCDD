@@ -105,8 +105,28 @@ resident_host_init:
     add eax, ecx
     mov [cs:resident_game_vector], eax
     push edx
-    cmp dword [ds:bp+8], 36464443h
-    jne .version5
+    cmp dword [ds:bp+8], 37464443h
+    jne .version6
+    ; CDF7 adds the virtual card bytes the host answers itself (resident_io).
+    movzx edx, word [ds:bp+26]
+    add edx, ecx
+    mov [cs:resident_fast], edx
+    movzx edx, word [ds:bp+28]
+    add edx, ecx
+    mov [cs:resident_fast+4], edx
+    movzx edx, word [ds:bp+30]
+    add edx, ecx
+    mov [cs:resident_fast+8], edx
+    movzx edx, word [ds:bp+32]
+    add edx, ecx
+    mov [cs:resident_fast+12], edx
+    movzx edx, word [ds:bp+34]
+    add edx, ecx
+    mov [cs:resident_fast+16], edx
+    movzx edx, word [ds:bp+36]
+    add edx, ecx
+    mov [cs:resident_fast+20], edx
+.version6_fields:
     ; CDF6 adds the delivered byte (resident_delivered_mark).
     movzx edx, word [ds:bp+24]
     add edx, ecx
@@ -117,6 +137,9 @@ resident_host_init:
     add edx, ecx
     mov [cs:resident_stray_eoi], edx
     jmp .version4_fields
+.version6:
+    cmp dword [ds:bp+8], 36464443h
+    je .version6_fields
 .version5:
     cmp dword [ds:bp+8], 35464443h
     je .version5_fields
@@ -863,6 +886,10 @@ resident_stray_eoi_mark:
     ret
 ; The driver's virtual_pic_delivered byte (CDF6), or 0 with an older driver.
 resident_delivered dd 0
+; CDF7: the virtual card bytes answered in protected mode, or 0 at the first
+; with an older driver: the mixer index, the DSP interrupt bits, the reply
+; count, the mixer registers, the first DMA controller's state, the hold.
+resident_fast times 6 dd 0
 ; AL=1 when the host delivers the virtual Sound Blaster interrupt to the
 ; client's handler, in protected mode or through the real-mode vector. The
 ; driver's virtual PIC credits an EOI to the virtual interrupt only after
@@ -1034,7 +1061,93 @@ resident_io:
     ret
 .regular:
     cmp cl, 1
+    jne .word
+    ; A byte access to the virtual card's cheapest ports is answered here,
+    ; from the driver's own bytes (CDF7), as its port_callback would answer
+    ; it: the mixer index write, the mixer data read, the DSP status reads
+    ; that acknowledge an interrupt, and the first controller's flip-flop
+    ; reset. Each of these would otherwise cost a switch to real mode. The
+    ; rest goes to the driver.
+    cmp dword [ebp+resident_fast], 0
     je .callback
+    ; The write that starts a single-cycle block times its hold at the
+    ; driver's exit; nothing here is that write, but a hold of 1 is left to
+    ; the driver all the same.
+    mov esi, [ebp+resident_fast+20]
+    cmp byte [esi], 1
+    je .callback
+    cmp dx, 0ch
+    je .flip
+    movzx esi, word [ebp+resident_mixer_ports]
+    mov edi, edx
+    sub edi, esi
+    jz .index
+    cmp edi, 1
+    je .data
+    cmp edi, 0ah
+    je .status
+    cmp edi, 0bh
+    jne .callback
+    ; 22Fh read: the 16-bit acknowledge.
+    test ch, ch
+    jnz .callback
+    mov esi, [ebp+resident_fast+4]
+    and byte [esi], 0fdh
+    mov al, 0ffh
+    clc
+    ret
+.index:
+    test ch, ch
+    jz .callback
+    mov esi, [ebp+resident_fast]
+    mov [esi], al
+    clc
+    ret
+.data:
+    test ch, ch
+    jnz .callback
+    mov esi, [ebp+resident_fast]
+    movzx edi, byte [esi]
+    cmp edi, 0fh
+    je .data_reserved
+    cmp edi, 82h
+    jne .data_register
+    mov esi, [ebp+resident_fast+4]
+    mov al, [esi]
+    clc
+    ret
+.data_register:
+    add edi, [ebp+resident_fast+12]
+    mov al, [edi]
+    clc
+    ret
+.data_reserved:
+    mov al, 0ffh
+    clc
+    ret
+.status:
+    ; 22Eh read: the 8-bit acknowledge, bit 7 set while a reply waits.
+    test ch, ch
+    jnz .callback
+    mov esi, [ebp+resident_fast+4]
+    and byte [esi], 0feh
+    mov esi, [ebp+resident_fast+8]
+    mov al, 7fh
+    cmp byte [esi], 0
+    je .status_done
+    mov al, 0ffh
+.status_done:
+    clc
+    ret
+.flip:
+    test ch, ch
+    jz .callback
+    mov esi, [ebp+resident_fast+16]
+    mov byte [esi], 0
+    out dx, al
+    clc
+    ret
+.word:
     cmp cl, 2
     jne .bad
     test ch, ch
