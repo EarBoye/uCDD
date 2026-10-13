@@ -27,6 +27,7 @@ Tested in emulators:
 - Single-cycle playback: a new sound no longer loses its first milliseconds at large output periods, and very short blocks are accepted (King's Quest V's driver test).
 - A review of the whole driver and a second pass against the hardware and interface specifications in `docs/references`, with the fixes listed in ISSUES.md: DOS re-entry from the disc hotkeys, Ctrl+Break during CD reads, DSP command parsing, the 8237 and 8259 emulation, MSCDEX details, the DPMI host's handling of program exits, callbacks, faults and the INT 1Ch/23h/24h handlers of protected-mode programs.
 - Doom's effects turning into a wash with the physical and the virtual card on IRQ 7: fixed.
+- The driver steps aside while no mounted disc has CD audio and the physical card can be the virtual one, so most games run exactly as without it (the **Driver** setting in UCDDSET).
 - UCDDSET: a review of the setup program.
 - Less CPU time: port traps answered in protected mode, the common mixer chains as single loops, and a refill budget that stops a 386 stalling for a tenth of a second at a time. Checked bit-identical, measured on Pentium, 486 and 386 templates.
 
@@ -89,6 +90,7 @@ Copy `UCDD.EXE` and `UCDDSET.EXE` into one directory and run `UCDDSET`.
 - A physical **WSS codec** or ESS card must be on IRQ 5 or 7; the driver handles the master interrupt controller only.
 - **Disk** shows the PCI disk controllers that `UCDD -install` found and lets you add the IRQ of one the BIOS does not report. UCDDSET warns when a controller shares an IRQ with a sound card setting. See BUILDING.md for what the driver does with these IRQs.
 - **Virtual** is what games see: a Sound Blaster (SB16, SB Pro, or SB 1.5/2.0, which report DSP 4.05, 3.02, or 2.01) and a WSS codec. The WSS codec uses the DMA Low channel of the virtual Sound Blaster, and a game can move its IRQ through the WSS board register. Where possible, match the virtual model to the physical card. For example, a virtual SB Pro on an SB Pro-compatible card keeps the game sound in 8-bit stereo and avoids a 16-bit conversion.
+- **Driver** chooses when the driver runs. **On while a mounted disc has CD audio** (the default) lets the driver step aside while no mounted image is bound for CD audio and the virtual card is one the physical card can be at the same port, IRQ and DMA channels: the physical output stops, the card's ports are untrapped, and VCPI stays visible with no DPMI host offered, so a game talks to the real card and runs exactly as it does without μCDD. Mounting an image with audio tracks (or an MDM list with one) brings the driver back; ejecting it steps aside again. The switch happens only at a mount or an eject, never while a game runs. **Always on** keeps the output and the traps on at all times, which a game set to the virtual WSS codec needs, since that codec exists only while the driver runs. The pairings that step aside: a physical SB16 with any virtual model; an SB Pro or an ESS AudioDrive with a virtual SB Pro or SB 1.5/2.0; an SB 1.5/2.0 with its own model; a WSS codec never.
 - **Detect** reads the physical card from the hardware. `BLASTER` only fills in values that the tests cannot find. **Test** plays a tone on each speaker. Both need DOS without the μCDD audio driver.
 
 `UCDDSET` saves to `UCDD.CFG`. `UCDD -install` runs `UCDDSET`, which copies the settings into the driver and sets `BLASTER` for the virtual Sound Blaster. Other `BLASTER` fields, such as `P330`, are kept. If `UCDD.CFG` is missing or from an older version, the `UCDDSET` menu opens first. Changes take effect at the next boot.
@@ -118,6 +120,8 @@ Do not load the audio driver for games that use ADPCM sound. ADPCM is not suppor
 `UCDD.EXE` installs as a DOS CD-ROM device. The redirector assigns its drive letter. The installer is discarded after load.
 
 μCDD traps the game's sound-card I/O and DMA access, converts its PCM sound, and mixes it with CD samples from the image. The physical card plays the combined stream. An internal DPMI host keeps the traps in place for protected-mode games.
+
+While no mounted image carries CD audio and the physical card can stand in for the virtual one, the driver steps aside (the **Driver** setting in UCDDSET): nothing is trapped, no stream runs, and the game uses the card directly. On a Pentium MMX 233 with an ESS at the half rate the stream alone costs 9 to 10 percent of memory bandwidth and 11 to 19 percent of a game's speed, all of which a stepped-aside driver gives back.
 
 ## Usage
 
