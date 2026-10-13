@@ -236,7 +236,7 @@ sb_dos_vector:
 sb_game_vector dd 0
 sb_host_guest_irq dw guest_irq
 sb_host_ports dw trap_ports
-    dd 36464443h
+    dd 37464443h
     dw cd_deferred_refill, cd_refill_pending, virtual_pic_request, last_clock
     ; CDF4: the disk IRQs that go straight to the real-mode handler.
     dw config_disk_mask
@@ -246,5 +246,12 @@ sb_host_ports dw trap_ports
     ; CDF6: the host sets this byte when it delivers the virtual interrupt
     ; to the client (see virtual_pic_write).
     dw virtual_pic_delivered
+    ; CDF7: the bytes behind the virtual card's cheapest ports, which the
+    ; host answers from protected mode without a switch to real mode: the
+    ; mixer index, the DSP interrupt bits, the reply count, the mixer
+    ; registers, the first controller's state (its flip-flop at +0), and
+    ; the single-cycle hold (host/resident.asm, resident_io .regular).
+    dw virtual_mixer_index, virtual_dsp_irq, reply_count, virtual_mixer
+    dw dma8, sb_single_hold
 sb_old_dos dd 0
 %endif
