@@ -18,7 +18,8 @@ Promise Ultra133) across a large DOS game library:
 - No memory corruption after exit when a game passes a protected-mode pointer to MSCDEX.
 - More interrupt-flag patterns recognised, and a larger table of learned sites.
 - CD audio refills keep running with a 256-frame output period.
-- Native ESS AudioDrive output, with an optional half-rate mode.
+- Native ESS AudioDrive output, with an optional half-rate mode. The ES1868 is recognised and its clock trimmed since the identification fix; before it every ESS ran untrimmed with every CD frame interpolated.
+- Measured with and without the driver: CD audio costs 2 to 3 percent of the CPU; Doom runs 19 percent slower and Quake 14, of which the driver's own work is about 6 points and the rest is the output stream's ISA DMA taking the memory bus, which any card streaming at that rate costs on this chipset. See "Performance" in ISSUES.md.
 
 Tested in emulators:
 
@@ -27,6 +28,7 @@ Tested in emulators:
 - A review of the whole driver and a second pass against the hardware and interface specifications in `docs/references`, with the fixes listed in ISSUES.md: DOS re-entry from the disc hotkeys, Ctrl+Break during CD reads, DSP command parsing, the 8237 and 8259 emulation, MSCDEX details, the DPMI host's handling of program exits, callbacks, faults and the INT 1Ch/23h/24h handlers of protected-mode programs.
 - Doom's effects turning into a wash with the physical and the virtual card on IRQ 7: fixed.
 - UCDDSET: a review of the setup program.
+- Less CPU time: port traps answered in protected mode, the common mixer chains as single loops, and a refill budget that stops a 386 stalling for a tenth of a second at a time. Checked bit-identical, measured on Pentium, 486 and 386 templates.
 
 Microsoft EMM386 is no longer supported; JEMMEX was already required.
 

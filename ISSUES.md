@@ -6,15 +6,18 @@ changes themselves.
 ## How things were tested
 
 **Real hardware:** Pentium MMX 233, ECS P5HX-A (430HX), 64 MB, ESS ES1868
-at A220 I5 D1, S3 Trio64V+, Voodoo 1, Promise Ultra133 TX2, MS-DOS 7.1,
-JemmEx, SHSUCDX. These tests were made on 0.9.3a, and the combined build
-was run again after the rebase on 0.9.3b. Nothing after the `setup-audit`
-change in the table below has run on the real PC yet.
+at A220 D1, on IRQ 5 for the early tests and IRQ 7 since, S3 Trio64V+,
+Voodoo 1, Promise Ultra133 TX2, MS-DOS 7.1, JemmEx, SHSUCDX. The early
+tests were made on 0.9.3a, and the combined build was run again after the
+rebase on 0.9.3b. The builds from the IRQ 7 fix on ran there with a set of
+scripts (HWLOG) that time memory, disk, Doom and Quake with and without
+the driver, and dump the profile builds' counters; those are the figures
+under "Performance".
 
 **Emulators:**
 
 - FreeDOS with JemmEx 5.86 and SHSUCDX 3.09 in QEMU (SB16 and CS4231A, protected-mode games, memory snapshots, an AHCI controller for the disk IRQ scan) and in DOSBox-X (SB16, SB Pro, ES688, recorded audio). Test programs play known signals and run the detection code of real game drivers; the recorded output is checked for gaps and steps.
-- 86Box 6.0 (ASUS P/I-P55T2P4, Pentium MMX 233, 64 MB), MS-DOS 7.1, JEMMEX 5.86, MSCDEX 2.25, an ES1688 standing in for the ES1868 and set by UNISOUND, also Sound Blaster Pro v2, Sound Blaster 2.0 and Sound Blaster 16. A raw DPMI test client exercises the host services (0204h/0205h, 0200h, reflection, 0300h, nested exec); a recording build of the driver counts deliveries, acknowledges and EOIs. Doom, Heretic, Duke Nukem 3D, Wolfenstein 3D and Witchaven run with the output recorded and the spectrogram checked. Protected-mode games cannot be tested in DOSBox-X: the host uses the debug registers, which that emulator does not act on.
+- 86Box 6.0 (ASUS P/I-P55T2P4, Pentium MMX 233, 64 MB; also an Am386DX-40 with 8 MB and a 486DX2-66 with 16 MB for the slow-CPU figures), MS-DOS 7.1, JEMMEX 5.86, MSCDEX 2.25, an ES1688 standing in for the ES1868 and set by UNISOUND, also Sound Blaster Pro v2, Sound Blaster 2.0 and Sound Blaster 16. A raw DPMI test client exercises the host services (0204h/0205h, 0200h, reflection, 0300h, nested exec); a recording build of the driver counts deliveries, acknowledges and EOIs. Doom, Heretic, Duke Nukem 3D, Wolfenstein 3D and Witchaven run with the output recorded and the spectrogram checked. Protected-mode games cannot be tested in DOSBox-X: the host uses the debug registers, which that emulator does not act on.
 
 ## Changes
 
@@ -26,7 +29,7 @@ branches are gone; their names stay as the names of the changes.
 | `disc-header-tolerance` | Tested on hardware |
 | `flat-pointer-reflection` | Tested on hardware |
 | `cd-refill-large-periods` | Tested on hardware |
-| `ess-native-output` | Tested on hardware, ES1868 only. The half-rate alignment fix on top is tested in an emulator only |
+| `ess-native-output` | Tested on hardware, ES1868 only. The half-rate alignment fix on top is tested in an emulator only. The 44.1 kHz clock trim was not applied on hardware until the ESS identification fix below |
 | `cli-patterns` | Tested on hardware, benefit only partly confirmed |
 | `disk-irq-direct` | In every tested build, not tested alone. Replaced by `disk-irq-detect` |
 | `disk-irq-detect` | Emulators only. The scan ran first in UCDDSET and then moved into `UCDD -install`, where the driver learns the machine's controllers itself and UCDDSET keeps the Disk row and the IRQ set by hand. QEMU with an AHCI controller on IRQ 11: the install prints "Disk controller IRQs go to DOS directly: 11 14 15" and the driver and host masks read 11 14 15; `UCDDPCI=OFF` gives 14 15. DOSBox-X with and without a PCI bus prints nothing, and a manual IRQ 9 gives 9 14 15. The UCDDSET Disk row shows "PCI on IRQ 11" and warns about the virtual WSS on IRQ 11. The freeze it prevents needs a PCI controller that uses its IRQ in DOS, so that part needs real hardware |
@@ -42,6 +45,9 @@ branches are gone; their names stay as the names of the changes.
 | DOS-side termination | 86Box: an INT 24h abort and an INT 23h termination, at depth 0 and from a child under a parent, leave the IVT (08h-0Fh, 70h-77h, 1Ch, 22h-24h), DOS free memory and VCPI free pages as before the client, and the next client starts. Before, the host stayed busy until reboot |
 | IRQ 7 wash | See "Fixed after the reviews". 86Box: 0 washed Doom runs of 15 at 7/7 on the fixed build against 3 of 10 before; Duke Nukem 3D, Heretic, Wolfenstein 3D, Witchaven and the DPMI client unchanged |
 | Data-flow pass | After the IRQ 7 stack fault, a mechanical pass over every entry point and join label (register, segment, stack and flag state on each incoming path) across the driver's interrupt and trap side, its DOS side, the host's mode switches and stubs, and the host's protected-mode services. Five defects, listed under "Fixed after the reviews"; everything else traced came back sound. 86Box on the fixed head: Doom 7/7 three runs and one with a real-mode serial mouse driver, no wash; timedemo unchanged; Heretic and Wolf3D as before; verify-mix 0 bad; 16-bit and 32-bit INT 1Ch clients at 18 ticks a second; a new client after an INT 24h abort; a client polling INT 16h for 30 s with keys arriving leaves the keyboard working and nothing in service at the controller. That last harness did not reproduce the swallowed EOI on the build before the fix either, so the register-only reflection fix stands on reading, not on a reproduced failure |
+| Performance pass | Measured first, then changed: port traps answered in protected mode, the common mixer chains as single loops, a 16 KB refill budget. Each checked bit-identical with the `--verify-mix` build; the figures are under "Performance". 86Box on the Pentium, 386 and 486 templates, then the real PC |
+| ESS identification | The ES1868 was never recognised, so its clock trim never ran: the mixer index was rewritten before each identification read, which restarts the chip's answer, and the first byte was then lost to a port read. Found from the real PC's cycle counts; confirmed on the chip with a probe program and the fixed build |
+| Program button | Added to UCDDSET for the jumperless Sound Blaster 16 boards, then dropped: UNISOUND sets those boards through the same registers and the README already requires the card set before install |
 
 ## The output period decides which games have sound
 
@@ -64,7 +70,8 @@ at 256 and has sound at 128.
 ## Slow CPUs
 
 Measured in QEMU with an instruction-counted clock, SB16, unmodified
-0.9.3b. Every instruction takes the same time there, so a real 386, where a
+0.9.3b; the mixer and refill changes of the performance pass came later
+and their 386 and 486 figures are under "Performance". Every instruction takes the same time there, so a real 386, where a
 multiply is slow, does worse than these figures. "CPU taken" is the share of
 a counting loop's passes lost over five seconds.
 
@@ -300,7 +307,7 @@ Sound card emulation:
   conventional memory at 512 KB, and wrote over whatever was there. Found by
   the rig session reading the handler after the IRQ 7 work; the games it ran
   at 7/7 happened to survive it. The handler loads CS again before the
-  switch. The hardware tests all ran with the card on IRQ 5, so no real-PC
+  switch. The hardware tests before it ran with the card on IRQ 5, so no real-PC
   run has had this fault.
 - The single-cycle block patch, reached from the port trap when a game
   starts a block, ran the mixer's string stores with the game's direction
@@ -335,8 +342,10 @@ Sound card emulation:
   read register back to IRR whatever the game had selected. The handler
   writes the saved mask back instead of reading it again.
 - ESS: register BAh is written only on an ES1868 or ES1878 (mixer 40h
-  identification); the analog control write changes bits 1 and 0 only; the
-  mixer registers the start writes (14h, 22h, 26h) are put back at the stop.
+  identification, with the index written once and the first byte kept
+  clear of the port read, see "Performance"); the analog control write
+  changes bits 1 and 0 only; the mixer registers the start writes (14h,
+  22h, 26h) are put back at the stop.
 - WSS: the board register's IRQ codes follow the documented table (none, 7,
   9, 10, 11, 5); the codec start no longer fails when the calibration bit is
   never seen set.

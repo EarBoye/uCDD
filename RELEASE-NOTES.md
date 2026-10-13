@@ -25,6 +25,10 @@ JemmEx).
 ## Sound card emulation and output
 
 - Native ESS AudioDrive output through the chip's extended mode at 44.1 kHz, with a half-rate model that costs less CPU time. Register BAh is written only on an ES1868 or ES1878. Hardware, ES1868.
+- The ES1868 is recognised and its clock trimmed to an exact 44.1 kHz. The identification rewrote the mixer index before each read, which restarts the chip's answer, and lost the first byte to a port read, so every ESS ran at 44194 Hz with every CD frame interpolated. CD audio costs 2 to 3 percent of a Pentium 233 instead of 5. Hardware.
+- The physical interrupt handler on IRQ 7 switched to a stack in a segment taken from the interrupt controller's answer, over conventional memory at 512 KB. It loads its own segment again.
+- The common mixer chains (8-bit stereo and mono game sound with and without the disc, silence with the disc) run as single loops; the CD-only mixing takes a third less, a mono stream on a 386 a sixth less. Bit-identical.
+- The timer refill reads 16 KB per pass instead of up to 128 KB, so a 386 with an ISA disk waits 30 ms at a time instead of 200.
 - Single-cycle playback: a new sound no longer writes past the output buffer at large output periods, very short blocks are accepted (Sierra's driver test in King's Quest V), the same on a slow CPU, and a click between two close blocks is gone.
 - DSP command parsing: a refused command or argument clears the argument counter; a rate is checked before it is stored, so a rate of 0 no longer divides; exit auto-initialize while paused is applied at the resume; 41h/42h set the rate of the legacy commands too; A0h and A8h are accepted; 20h answers 80h, F8h answers 0, F3h raises the 16-bit interrupt; the status ports read 7Fh/FFh in the undefined bits; the SB16 stop resets the DSP.
 - Virtual mixer: FM register 26h starts at FFh like its 5-bit twins, so a driver that saves and restores the mixer no longer leaves the FM volume at the lowest step.
@@ -46,6 +50,7 @@ JemmEx).
 - 0800h maps a physical range below 1 MiB to itself instead of refusing it.
 - INT 2Fh AX=1686h answers AX=0 in protected mode; a 0302h procedure is entered with interrupts off; software INT 0 to 7 reach a protected-mode handler with virtual interrupts off; exceptions 1, 3, 4 and 5 without a handler are reflected as real-mode interrupts; the return from a real-mode callback honours the ES:(E)DI the program returns with.
 - Spurious IRQ 7 and 15 are dropped by the real-mode bridge stubs (IRQ 7 unless the virtual Sound Blaster is on it); the PIC read register is put back after the in-service probes; the spurious cascade EOI is specific.
+- Four of the seven trapped ports a game touches per sound interrupt (mixer index write, mixer data read, the DSP status reads that acknowledge, the DMA flip-flop reset) are answered in protected mode without a switch to the driver.
 - Less time on a 386: the pending test comes before the controller reads, the general protection fault decoder fetches four code bytes with one page walk, the real-mode transfer copies doublewords, and the plain EOIs with nothing virtual to end are answered in the host.
 
 ## UCDDSET
@@ -57,7 +62,7 @@ JemmEx).
 
 ## Build
 
-- `--audio-period-frames`, `--no-refill-hint`, `--verify-mix` and `--profile-host` as described in BUILDING.md. The flat sink, register flags image and word I/O split are in every resident-audio build.
+- `--audio-period-frames`, `--no-refill-hint`, `--verify-mix`, `--profile-host` and `--profile-driver` as described in BUILDING.md. The flat sink, register flags image and word I/O split are in every resident-audio build.
 
 # Beta 0.9.3b
 
