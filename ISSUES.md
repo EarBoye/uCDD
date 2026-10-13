@@ -158,6 +158,59 @@ changed volumes.
   client points into UMB blocks are found at cleanup only when the UMB link
   is on.
 
+## Performance
+
+Measured in the 86Box rig (13 Oct 2026): a Pentium MMX 233 with the
+ES1688 for the ES1868, an Am386DX-40 with 8 MB and a 486DX2-66 with 16 MB,
+each with MS-DOS 7.1 and JEMMEX 5.86. Ratios between builds on one machine
+are reliable; the 386 and 486 absolute figures are approximate, since the
+emulator runs those CPUs slower per clock than the real chips. The
+`--profile-host` and `--profile-driver` builds (BUILDING.md) gave the cycle
+counts; the CPU shares come from a counting loop over five seconds.
+
+**What the driver costs Doom on the Pentium**, 256 frames, against sound
+on the bare card: 5.9 percent of realtics, of which the mixer interrupt's
+work 1.7, the port traps' crossings into real mode 1.8, the host's fault
+handling for the trapped ports 0.7, CLI and STI faults 0.5 (700 cycles of
+handler against a 14 microsecond fault, so the CPU's cost, not ours), the
+rest interrupt entries. A trapped port access from a protected-mode game
+costs a fault plus a switch to real mode and back, about 26 microseconds
+inside Doom; CLI and STI fault because port trapping needs IOPL below 3,
+which is the price of the design.
+
+**What CD audio costs**: 7.4 percent of the Pentium from the hard disk at
+256 frames, of which 2.3 points are the BIOS reading the image by
+programmed I/O (a bus-master IDE driver such as UIDE takes that off the
+CPU; the Promise card's BIOS has no DOS driver of its own). On the ES1868's
+exact-rate path the mixing is 1.8 percent; the ES1688 without the clock
+trim runs the interpolating path at 4.8 percent, which is what any ESS
+other than the ES1868 and ES1878 pays. On the 386 CD audio from the hard
+disk took 33 percent on the exact-rate path and 66 on the interpolating
+one; on the 486 17 and 30.
+
+Changes made from these figures, each checked bit-identical by the
+verify-mix build or byte-identical in the DSP test output:
+
+- The host answers four of the seven trapped ports per virtual interrupt
+  in protected mode (mixer index write, mixer data read, the two DSP
+  status reads that acknowledge interrupts, the DMA flip-flop reset): the
+  accesses crossing into the driver fell from 7.4 to 3.4 per interrupt,
+  Doom 0.4 percent faster.
+- The common mixer chains run as single loops: the 8-bit stereo source
+  with and without the disc into a word or a halved store, and silence
+  with the disc into a halved store. The CD-only exact-rate case fell from
+  13.3k to 8.8k cycles per interrupt on the Pentium, from 33 to 26 percent
+  of the 386 and 17 to 12.5 of the 486 from the hard disk. Doom's mixing
+  fell 8 percent: its chain was shorter than estimated, and the gain is
+  the jumps between the pieces.
+- The timer refill reads 16 KB per pass instead of up to 128 KB, since
+  the foreground program waits for the whole pass: on the 386 with an ISA
+  disk that was most of a tenth of a second at a time (pending the rig).
+
+Not worth changing: the CLI and STI path; a virtual ESS model (the
+capture and mix are the same whatever the game believes it talks to); the
+mixer for MMX (a few percent of the mixer's share, in a full segment).
+
 ## Fixed after the reviews
 
 Found by the review of UCDD.EXE and the specification pass, fixed in
