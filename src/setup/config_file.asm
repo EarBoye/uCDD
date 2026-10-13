@@ -109,7 +109,7 @@ config_valid:
     call value_listed
     jc .done
     movzx ax, byte [virtual_model]
-    mov si, virtual_model_values
+    call virtual_model_list
     call value_listed
     jc .done
     mov ax, [virtual_wss_base]
@@ -255,8 +255,8 @@ config_derive:
     mov [virtual_dsp_version], ax
     ret
 
-; DSP version replies by model: 4.05, 3.02, unused, 2.01.
-dsp_versions dw 0504h,0203h,0,0102h
+; DSP version replies by model: 4.05, 3.02, unused, 2.01, ESS 3.01.
+dsp_versions dw 0504h,0203h,0,0102h,0103h
 
 config_save:
     call config_derive

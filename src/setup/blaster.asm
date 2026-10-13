@@ -168,8 +168,8 @@ blaster_build:
     dec di
     ret
 
-; BLASTER T by model: SB16 6, SB Pro 2 4, unused, SB 2.0 3.
-blaster_types db '64 3'
+; BLASTER T by model: SB16 6, SB Pro 2 4, unused, SB 2.0 3, ESS 4.
+blaster_types db '64 34'
 
 ; Set BLASTER in the environment of the program that started UCDD. Return
 ; CF set if that environment cannot be changed.

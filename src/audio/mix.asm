@@ -515,12 +515,18 @@ mix_half:
     jne .stereo16_normal
     cmp byte [sb_single], 0
     je .stereo16_normal
-    mov edx, [dma16+DMA_POSITION]
-    shl edx, 1
-    add edx, eax
-    movzx esi, word [dma16+DMA_COUNT]
+    ; The channel's units: words on the 16-bit channel, bytes on the 8-bit
+    ; one (the virtual ESS carries 16-bit data there).
+    mov si, [game_dma]
+    mov edx, [si+DMA_POSITION]
+    movzx esi, word [si+DMA_COUNT]
     inc esi
+    cmp word [game_dma], dma16
+    jne .single16_bytes
+    shl edx, 1
     shl esi, 1
+.single16_bytes:
+    add edx, eax
     cmp edx, esi
     jb .single16_address
     sub edx, esi
@@ -537,9 +543,15 @@ mix_half:
     cmp eax, [game_block_bytes]
     jae .single_left
     push edx
-    movzx edx, word [dma16+DMA_COUNT]
+    push si
+    mov si, [game_dma]
+    movzx edx, word [si+DMA_COUNT]
     inc edx
+    cmp si, dma16
+    pop si
+    jne .single16_wrap
     shl edx, 1
+.single16_wrap:
     movzx eax, si
     sub ax, [game_offset]
     add eax, 2
