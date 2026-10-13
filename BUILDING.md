@@ -19,12 +19,61 @@ again, install Blender and Pillow. Render `faceplate.py` and `logo.py` with
 Blender. `faceplate.py` writes the faceplate and a mask of its corner shells.
 Then run `assets.py` with the three images.
 
-## Size limits
+## Size limits and what takes the room
 
 The resident driver is one 64 KB segment and the host image must fit a
 16-bit size, so the script stops when `UCDD.EXE` reaches 65536 bytes or
 `UCDDHOST.BIN` reaches 65535. Every feature added to the resident code costs
-room there.
+room there. The installer-only code (the disk scan, the CUE parser, the
+command helper, about 19 KB) counts against the same segment although it
+never stays resident; moving it to a second segment is the way to make room
+when something does not fit.
+
+Figures from the tested build (256 frames, no refill hint), rounded; they
+move a little with every change.
+
+**In memory after `UCDD -install`:** the driver image is 42 KB, of which
+34 KB is permanent and the last 9.5 KB holds the activation code first and
+the DOS swap area and the unit table afterwards. Beside it: the CD work
+buffer (6 KB), the output ring (2 KB at 256 frames, 256 bytes at 32), the
+tail cache (2 KB) and the host's real-mode gateway and stack (7 KB plus
+page alignment). The 64 KB host image itself lives in extended memory
+through VCPI.
+
+**The permanent 34 KB by piece:**
+
+| KB | Piece | Notes |
+| --- | --- | --- |
+| 5.1 | Port trap dispatcher, DSP, DMA and mixer emulation (`audio/trap.asm`) | Core |
+| 5.1 | Device driver and MSCDEX requests (`driver.asm`) | Core |
+| 4.1 | CD streaming, queue, XMS (`audio/mounted.asm`) | Core |
+| 3.2 | General mixer (`audio/mix.asm`) | Core |
+| 2.6 | Mixer fast paths (`audio/mix_run.asm`) | About a quarter of the mixer's cost on a 386, about 1 percent of a Pentium |
+| 3.3 | JemmEx trap backend and its init (`audio/host_jemm*.asm`) | Core; the init is one-shot but outside the overlay |
+| 2.3 | Physical SB16 and ESS output, the interrupt handler (`audio/sb16.asm`) | Core |
+| 2.1 | WSS physical output (also the ESS routines), the virtual WSS codec (`audio/wss_*`) | The virtual codec, 1.2 KB, serves few games |
+| 1.6 | Multi-disc lists and hotkeys (`mdm.asm`) | A feature, not core |
+| 0.9 | Seek cache for image metadata (`audio/disk_cache.asm`) | Fewer FAT walks per refill |
+| 0.8 | Virtual PIC (`audio/irq.asm`) | Core |
+| 0.7 | SB Pro physical output (`audio/pro_output.asm`) | Only with an SB Pro physical card |
+| 0.6 | Single-cycle block patch (`audio/sb_patch.asm`) | Core: short effects |
+| 0.5 | CD resampling (`audio/cd_resample.asm`) | Core for the ESS fast mode and the SB 2.0 |
+| 0.25 | De-emphasis for PRE tracks (`audio/deemphasis.asm`) | Rare |
+| 2.3 | Mixer volume math, timer tick, config, direct DAC, high DMA, state | Small and needed |
+
+Stripping everything that is not core (virtual WSS, SB Pro output, MDM,
+de-emphasis) would save 3 to 4 KB and make the binary card-specific; there
+is no build option for it. The limits above are the reason to care about
+size, not memory: the five blocks fit the upper memory of a machine that
+loads JEMMEX.
+
+**The host image (64 KB, extended memory):** the monitor with its
+instruction decoder, port traps and exceptions 22.5 KB; the interrupt-flag
+site learning and stepping 7.6 KB; real-mode callbacks 5 KB; the DPMI
+entry, exit and services 4.3 KB; the real-mode bridge 3.9 KB; vectors,
+16-bit DOS translation, nesting, memory, cleanup, descriptors, the PIC,
+the switch code and the debug-register support between 0.7 and 2.8 KB
+each.
 
 ## Build options
 

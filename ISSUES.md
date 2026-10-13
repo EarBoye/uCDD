@@ -151,8 +151,9 @@ changed volumes.
 - With no UMBs, the host's gateway and stack sit just above the installer
   image, which leaves a hole of about 19 KB after the driver stays resident.
   The driver's image would have to shrink before the host starts.
-- The resident image carries 2.3 KB of one-shot activation code; the units
-  could be placed before it.
+- The activation code shares its 9.5 KB with the DOS swap area and the unit
+  table, which overwrite it after start; only the JemmEx backend's init,
+  under 1 KB, stays resident as one-shot code. BUILDING.md has the sizes.
 - The real-mode bridge only knows the IRQs it was told about: vectors a
   client points into UMB blocks are found at cleanup only when the UMB link
   is on.
