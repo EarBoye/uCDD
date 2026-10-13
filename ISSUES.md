@@ -226,7 +226,11 @@ CPU. The gains worth having on this machine are therefore in the stream,
 not the code: stopping the output while nothing plays (no game DMA, no
 disc audio) would give a soundless game the no-output figures, at the
 price of a start delay for the next sound; the half-rate "fast" model
-already halves the bus time against 44.1 kHz. Neither is done.
+already halves the bus time against 44.1 kHz. Neither is done: games
+are meant to play sound and disc audio, so the soundless case is not
+worth a design change in the output path. A real ESS output start takes
+0.66 ms with the first interrupt 1.25 ms after the call, should it ever
+be revisited.
 
 The ES1868 clock trim had never been applied on real hardware before the
 ESS identification fix (13 Oct 2026): `ess_identify` rewrote the mixer
