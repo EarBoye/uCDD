@@ -1216,6 +1216,18 @@ host_profile_flush dd 0
 host_profile_irqentry dd 0
 host_profile_refill dd 0
 host_profile_samples times 4*2 dd 0
+    ; Cycle slots, 12 bytes each (cycles dq, passes dd): 0 other exceptions
+    ; through .advance, 1 CLI, 2 STI, 3 IN, 4 OUT, 5 the bridge
+    ; (mon_real_transfer to the return from mon_resume, outermost only),
+    ; 6 a hardware IRQ entry through its .done.
+    db 'CYC1'
+host_profile_cycles times 7*3 dd 0
+host_profile_t0_exc dq 0
+host_profile_t0_bridge dq 0
+host_profile_t0_hwirq dq 0
+host_profile_class db 0
+host_profile_depth_bridge db 0
+    align 4
 host_profile_end:
 %else
 dpmi_trace_pos db 0

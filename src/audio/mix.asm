@@ -29,9 +29,11 @@ mix_half:
     cmp byte [sb_patch_active], 0
     jne .cd_ready
 %endif
+    DRV_TSC_BEGIN load
     call cd_begin_half
 %ifdef RESIDENT_AUDIO
     call cd_filter
+    DRV_TSC_END load
 .cd_ready:
 %endif
 %endif

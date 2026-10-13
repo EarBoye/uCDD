@@ -204,6 +204,7 @@ port_callback:
     push fs
     push cs
     pop ds
+    DRV_TSC_BEGIN trap
     inc dword [port_calls]
     test cl, 18h
     jnz .wide
@@ -1653,6 +1654,7 @@ port_callback:
 .result:
     mov [ss:bp+28], al
 .done:
+    DRV_TSC_END trap
 %ifdef RESIDENT_AUDIO
     ; Time the hold from the end of the write that started the block. On a
     ; slow CPU this trap lasts longer than an output period.

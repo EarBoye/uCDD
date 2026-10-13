@@ -59,7 +59,9 @@ cd_timer:
     mov byte [cd_background_reads], 32
     sti
     cld
+    DRV_TSC_BEGIN refill
     call cd_foreground
+    DRV_TSC_END refill
     cli
     mov byte [cd_background_reads], 0
     mov ss, [cd_call_ss]
@@ -120,7 +122,9 @@ cd_deferred_refill:
     mov byte [cd_background_reads], 1
     sti
     cld
+    DRV_TSC_BEGIN refill
     call cd_foreground
+    DRV_TSC_END refill
     cli
     mov byte [cd_background_reads], 0
     mov ss, [cd_call_ss]

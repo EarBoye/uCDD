@@ -3,6 +3,7 @@
 %ifndef SB_STATE
 %define SB_STATE 1
 %define SB_TAIL_CACHE 1
+%include "audio/profile.inc"
 guest_base dw 220h
 guest_irq dw 5
 guest_dma8 dw 1
