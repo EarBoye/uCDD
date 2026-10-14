@@ -398,7 +398,7 @@ main_draw:
     mov dx, 1104h
     mov si, driver_label
     call put_text
-    mov dx, 1136h
+    mov dx, 1139h
     mov si, fastdma_label
     call put_text
     mov dx, 0f04h
@@ -729,10 +729,10 @@ physical_label db 'Physical',0
 virtual_label db 'Virtual',0
 output_label db 'Output',0
 driver_label db 'Driver',0
-fastdma_label db 'ISA DMA',0
+fastdma_label db 'DMA',0
 fastdma_off_text db 'Normal',0
 fastdma_on_text db 'Fast (PIIX)',0
-fastdma_note db 'Type F DMA for the output on an Intel PIIX bridge. Off on any other chipset.',0
+fastdma_note db 'Type F DMA for the output on an Intel PIIX. Nothing elsewhere.',0
 standby_auto_text db 'On while a mounted disc has CD audio',0
 standby_always_text db 'Always on',0
 standby_note db 'Steps aside until a disc with audio is mounted, if the cards match.',0
