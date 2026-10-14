@@ -43,6 +43,20 @@ The period is a trade: 256 frames costs the least CPU time but leaves some
 games without sound. See "The output period decides which games have sound"
 in ISSUES.md before choosing.
 
+## Thanks
+
+The fork leaned on these people, projects and sites:
+
+- vorvek, for μCDD itself. Everything here is built on that work.
+- [VOGONS](https://www.vogons.org/), where most of what is known about this hardware was worked out in public, and davidmorom there for the game testing noted below.
+- [Japheth's Jemm](https://github.com/Baron-von-Riedesel/Jemm), the memory manager whose port-trap interface the audio driver is built on, with the only written description of it in its QPIEMU sample.
+- [86Box](https://86box.net/) and [DOSBox-X](https://dosbox-x.com/), where nearly every change was tested before it reached real hardware.
+- [S95Sedan's CT1741_DSP](https://github.com/S95Sedan/CT1741_DSP), firmware dumps and disassemblies of the Sound Blaster 16 DSP: ground truth for what the real chip does.
+- [Kagamiin's ESFMu](https://github.com/Kagamiin/ESFMu), the [Furnace ESFM notes](https://github.com/tildearrow/furnace/blob/master/doc/7-systems/esfm.md) and the [dosbox-staging ESFM discussion](https://github.com/dosbox-staging/dosbox-staging/issues/3608), for how ESFM native mode is entered, which is how the virtual ESS was proven to reach it.
+- [sigmaco's Miles Sound System 6.5c archive](https://github.com/sigmaco/milesss-v6.5c) and [ahmadexp's Open-Source-PC110](https://github.com/ahmadexp/Open-Source-PC110/blob/main/Discovery/ES488/readme.md), for driver and chip-probe reference.
+- Ralf Brown's Interrupt List, [SHSUCDX](http://adoxa.altervista.org/shsucdx/) and the data sheets kept in `docs/references`.
+- [The Ardent Tool of Capitalism](https://www.ardent-tool.com/), [DOS Days](https://dosdays.co.uk/index.php), [The Retro Web](https://theretroweb.com/) and [Phil's Computer Lab](https://www.philscomputerlab.com/), for being excellent references on the machines this driver runs on.
+
 The original README follows, updated where the fork changed things.
 
 
