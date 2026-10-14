@@ -169,7 +169,10 @@ changed volumes.
   SB16 (0 calls while the output runs): that store path bypasses the
   harness. The ESS and SB Pro physical paths are covered.
 - The clock trim is applied on the ES1868 and ES1878 only (mixer 40h
-  identification 18h then 68h or 78h, and BAh bit 6 following writes).
+  identification 18h then 68h or 78h, and BAh bit 6 following writes;
+  both data sheets in `docs/references` document the sequence and the
+  bit, the ES1878's with the ADC offset adjust in the low bits, which
+  the trim write leaves at zero).
   The ES1869's manual gives BAh as the left ADC offset adjust register
   and documents no clock trim, so its 69h code is refused on purpose; the
   ES688, ES1688, ES1887 and ES1888 document no trim either. All of them
