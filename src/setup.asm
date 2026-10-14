@@ -559,8 +559,14 @@ dma8_list:
 sb_port_list:
     mov si, sb_port_values
     ret
+; A virtual ESS AudioDrive only on a physical one: its FM side is the real
+; chip's, and a game set to it expects ESFM at the FM ports.
 virtual_model_list:
     mov si, virtual_model_values
+    cmp byte [sound_card], 4
+    jb .done
+    mov si, virtual_model_values_ess
+.done:
     ret
 wss_port_list:
     mov si, wss_port_values
@@ -592,14 +598,21 @@ text_model:
     pop bx
     jmp copy_text
 
-; Keep the port valid for the new card.
+; Keep the port valid for the new card, and the virtual model one the
+; physical card allows.
 model_changed:
     call port_list
     mov ax, [sb_base]
     call value_listed
-    jnc .done
+    jnc .virtual
     mov ax, [si+1]
     mov [sb_base], ax
+.virtual:
+    cmp byte [virtual_model], 4
+    jne .done
+    cmp byte [sound_card], 4
+    jae .done
+    mov byte [virtual_model], 1
 .done:
     clc
     ret
@@ -674,6 +687,8 @@ model_values db 6
 no_values db 0
 virtual_model_values db 3
     dw 0,1,3
+virtual_model_values_ess db 4
+    dw 0,1,3,4
 model_names dw sb16_name,pro_name,wss_name,sb_name,ess_name,ess_fast_name
 output_texts dw output_16,output_pro,output_16,output_sb,output_16,output_fast
 

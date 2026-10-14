@@ -49,13 +49,16 @@ audio_pairing:
     jmp .no
 .wss_or_ess:
     cmp al, 4
-    jae .pro_or_sb
+    jae .ess
     cmp al, 2
     jne .no
     ; A WSS codec is nothing a Sound Blaster driver finds; an ESS is an SB
-    ; Pro with a DSP 3.01.
+    ; Pro with a DSP 3.01, and itself.
     cmp byte [ess_native], 0
     je .no
+.ess:
+    cmp ah, 4
+    je .yes
 .pro_or_sb:
     cmp ah, 1
     je .yes

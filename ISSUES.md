@@ -48,6 +48,7 @@ branches are gone; their names stay as the names of the changes.
 | Performance pass | Measured first, then changed: port traps answered in protected mode, the common mixer chains as single loops, a 16 KB refill budget. Each checked bit-identical with the `--verify-mix` build; the figures are under "Performance". 86Box on the Pentium, 386 and 486 templates, then the real PC |
 | ESS identification | The ES1868 was never recognised, so its clock trim never ran: the mixer index was rewritten before each identification read, which restarts the chip's answer, and the first byte was then lost to a port read. Found from the real PC's cycle counts; confirmed on the chip with a probe program and the fixed build |
 | `step-aside` | The driver stops its output, untraps the ports and puts the host to sleep while no mounted image is bound for CD audio and the physical card can stand in for the virtual one; it engages again at the next mount of a disc with audio. Decided only from the control entry (mount, MDM mount, eject) and at the end of the install. 86Box: 120 transitions (audio CUE, data ISO, MDM with the audio disc second) leave the IVT, PIC masks, trapped-port table, DMA and mixer state byte-identical to the fresh install when aside and to the engaged build when a disc is bound; aside, Doom's timedemo equals the boot without the driver on the Pentium (1558 both) and on the 386 (within 0.2 percent, against 20 percent slower engaged); every pairing rule checked both ways; a version 2 UCDD.CFG installs. Two defects found and fixed in the round: a list with the audio disc second stayed aside, and the stop's vector restore was taken by the driver's own INT 21h hook. Not run: hotkeys mid-game on a list, UCDDPLAY's physical-disc mode, the dialog's save of a version 2 file. Not yet on the real PC |
+| `virtual-ess` | A virtual ESS AudioDrive (virtual model 4): the ESS commands and extension registers in front of the SB Pro parser, 16-bit data over the 8-bit channel, demand-mode DMA accepted, the IRQ on the 8-bit status for every format, the ESS mixer twins (14h, 32h, 36h, 38h) as the SB Pro pairs, and the physical chip's own E7h and mixer 40h answers; UCDDSET offers it only with a physical ESS and the pairing lets the driver step aside with one. 86Box: regression on nine card pairings byte-identical; verify-mix 0 bad on the ESS cases; Warcraft II's ESFM driver enters ESFM native mode (register 105h bit 7, then the native register map) with the virtual ESS and finds no card with a virtual SB Pro. The Miles ESS digital drivers do not start on 86Box's ES1688 even without the driver, so they wait for the real PC |
 | Program button | Added to UCDDSET for the jumperless Sound Blaster 16 boards, then dropped: UNISOUND sets those boards through the same registers and the README already requires the card set before install |
 
 ## The output period decides which games have sound
@@ -164,6 +165,15 @@ changed volumes.
 - The real-mode bridge only knows the IRQs it was told about: vectors a
   client points into UMB blocks are found at cleanup only when the UMB link
   is on.
+- The `--verify-mix` build never counts the CD-only mix on a physical
+  SB16 (0 calls while the output runs): that store path bypasses the
+  harness. The ESS and SB Pro physical paths are covered.
+- The virtual ESS AudioDrive plays only: B8h with its direction bit
+  (recording) is refused, the ESPCM and ADPCM start commands are the SB
+  Pro parser's refusals, port 2xCh reads 7Fh (no FIFO status), and of the
+  mixer's ESS registers only 14h acts (as the voice pair). Its FM side is
+  whatever sits at 388h, which the driver never traps: the real ESFM on a
+  physical ESS, and that is why UCDDSET offers the model with one only.
 - While the driver has stepped aside (no disc bound for CD audio, cards
   matching, "On while a mounted disc has CD audio" in UCDDSET) there is no
   virtual card: a game set to the virtual WSS codec finds nothing, a game

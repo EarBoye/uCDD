@@ -383,6 +383,9 @@ port_callback:
     mov byte [sb_silence], 0
     call virtual_irq_reset
 %endif
+    ; A reset leaves the ESS extension commands disabled and its registers
+    ; at their reset values (A5h F8h, B1h and B2h bits 4 and 6).
+    call ess_virtual_reset
     test al, al
     jnz .done
     inc word [virtual_resets]
@@ -392,6 +395,7 @@ port_callback:
     jmp .done
 .mixer_index:
     mov [virtual_mixer_index], al
+    mov byte [ess_id_phase], 0
     jmp .done
 .mixer_data:
     movzx bx, byte [virtual_mixer_index]
@@ -410,6 +414,23 @@ port_callback:
     mov [sb_filter_bypass], al
     jmp .done
 .mixer_volume:
+    ; 14h is the ESS's full-width twin of 04h, on every model.
+    cmp bl, 14h
+    je .voice_pair
+    cmp byte [virtual_model], 4
+    jne .sb_registers
+    ; The ESS's other twins, four bits per channel like the SB Pro's: 32h
+    ; master, 36h FM, 38h CD, 3Eh line (stored only). On the SB16 those
+    ; numbers are its own per-channel registers.
+    cmp bl, 32h
+    je .master_pair
+    cmp bl, 36h
+    je .fm_pair
+    cmp bl, 38h
+    je .cd_pair
+    cmp bl, 3eh
+    je .done
+.sb_registers:
     cmp bl, 22h
     je .master_pair
     cmp bl, 28h
@@ -418,6 +439,7 @@ port_callback:
     je .fm_pair
     cmp bl, 4
     jne .volume16
+.voice_pair:
     mov bx, 32h
     jmp .volume_pair
 .master_pair:
@@ -533,6 +555,15 @@ port_callback:
     jne .unowned_dma
     and al, 0fch
     or al, 1
+    ; The virtual ESS is programmed with demand-mode transfers (B9h): the
+    ; emulation moves data a period at a time whatever the request mode, so
+    ; demand mode is kept as the single mode of the same kind.
+    cmp byte [virtual_model], 4
+    jne .mode_value
+    test al, 0c0h
+    jnz .mode_value
+    or al, 40h
+.mode_value:
     cmp al, 49h
     je .set_mode
     cmp al, 59h
@@ -666,6 +697,41 @@ port_callback:
     cmp byte [arguments], 0
     jne .argument
     mov [dsp_command], al
+    cmp byte [virtual_model], 4
+    jne .common_command
+    ; The ESS AudioDrive's own commands come first: E7h identifies it, C6h
+    ; and C7h switch the extension registers on and off, and with them on
+    ; A0h to BFh write a register and C0h reads one. Everything else is the
+    ; Sound Blaster Pro's (DSP 3.01).
+    cmp al, 0e7h
+    je .ess_identify
+    cmp al, 0c6h
+    je .ess_extend
+    cmp al, 0c7h
+    je .ess_compatible
+    cmp byte [ess_extended], 0
+    je .common_command
+    cmp al, 0c0h
+    je .time_constant
+    cmp al, 0a0h
+    jb .common_command
+    cmp al, 0bfh
+    ja .common_command
+    jmp .time_constant
+.ess_identify:
+    ; The physical chip's own answer (ess_setup), so the game sees the chip
+    ; in the machine; 68h 8Bh before any start.
+    mov ax, [ess_physical_id]
+    mov [reply], ax
+    mov byte [reply_count], 2
+    jmp .done
+.ess_extend:
+    mov byte [ess_extended], 1
+    jmp .done
+.ess_compatible:
+    mov byte [ess_extended], 0
+    jmp .done
+.common_command:
     cmp al, 10h
     je .time_constant
     cmp al, 41h
@@ -965,6 +1031,18 @@ port_callback:
     call sb_dac_write
     jmp .argument_done
 .normal_argument:
+    cmp byte [virtual_model], 4
+    jne .common_argument
+    cmp byte [ess_extended], 0
+    je .common_argument
+    mov bl, [dsp_command]
+    cmp bl, 0c0h
+    je .ess_read
+    sub bl, 0a0h
+    cmp bl, 1fh
+    ja .common_argument
+    jmp .ess_write
+.common_argument:
     cmp byte [dsp_command], 0e2h
     jne .invert_argument
     call sb_identify
@@ -1162,6 +1240,9 @@ port_callback:
     mov byte [game_source], 0
     mov si, dma8
     mov cl, 0
+    ; The ESS moves 16-bit data over its one 8-bit channel, in bytes.
+    cmp byte [virtual_model], 4
+    je .dma_selected
     cmp byte [pending_frame_shift], 2
     je .wide_dma
     test byte [pending_format], 1
@@ -1346,6 +1427,10 @@ port_callback:
     mov byte [sb_sign16+1], 80h
 .sign16_ready:
     mov al, 1
+    ; The ESS signals every transfer on the 8-bit status (22Eh), whatever
+    ; the format; the SB16 signals 16-bit data on 22Fh.
+    cmp byte [virtual_model], 4
+    je .irq_bit
     cmp cl, 2
     je .wide_irq
     cmp word [game_dma], dma16
@@ -1468,6 +1553,106 @@ port_callback:
 %ifdef WSS_INPUT
 %include "audio/wss_input.inc"
 %endif
+; ESS extension register write: BL=register minus A0h, AL=the value, from
+; .argument with arguments=1. Only B8h acts: bit 0 starts or stops the
+; transfer, with the format taken from B7h, the rate from A1h and the byte
+; count from A4h/A5h; the other registers are stored for C0h reads.
+.ess_write:
+    xor bh, bh
+    mov [ess_virtual_regs+bx], al
+    cmp bl, 0b8h-0a0h
+    jne .argument_done
+    test al, 1
+    jz .ess_stop
+    cmp byte [ess_started], 0
+    jne .argument_done
+    mov byte [ess_started], 1
+    ; Recording is not emulated.
+    test al, 2
+    jnz .command_unsupported
+    ; B7h: bit 2 16-bit, bit 3 stereo, bit 5 signed (Table 11 of the data
+    ; sheet). pending_format: bit 0 16-bit mono, bit 1 unsigned 16-bit,
+    ; bit 2 signed 8-bit.
+    mov al, [ess_virtual_regs+0b7h-0a0h]
+    xor bl, bl
+    xor cl, cl
+    test al, 4
+    jz .ess_8bit
+    inc cl
+    test al, 8
+    jz .ess_16_mono
+    inc cl
+    jmp .ess_16_sign
+.ess_16_mono:
+    or bl, 1
+.ess_16_sign:
+    test al, 20h
+    jnz .ess_format_ready
+    or bl, 2
+    jmp .ess_format_ready
+.ess_8bit:
+    test al, 8
+    jz .ess_8_sign
+    inc cl
+.ess_8_sign:
+    test al, 20h
+    jz .ess_format_ready
+    or bl, 4
+.ess_format_ready:
+    mov [pending_format], bl
+    mov [pending_frame_shift], cl
+    ; A1h: 397.7 kHz / (128 - x) with bit 7 clear, 795.5 kHz / (256 - x)
+    ; with it set.
+    movzx ecx, byte [ess_virtual_regs+0a1h-0a0h]
+    mov eax, 397700
+    test cl, 80h
+    jz .ess_divider
+    mov eax, 795500
+    sub ecx, 128
+.ess_divider:
+    neg ecx
+    add ecx, 128
+    xor edx, edx
+    div ecx
+    cmp eax, 4000
+    jb .command_unsupported
+    cmp eax, 48000
+    ja .command_unsupported
+    mov [game_rate], ax
+    shl eax, 16
+    xor edx, edx
+    mov ecx, OUTPUT_RATE
+    div ecx
+    mov [game_step], eax
+    ; A4h/A5h hold the two's complement of the byte count: the count less
+    ; one, as the start commands take it, is its complement.
+    mov ax, [ess_virtual_regs+0a4h-0a0h]
+    not ax
+    mov byte [sb_finished], 0
+    mov byte [sb_exit_pending], 0
+    mov byte [sb_input], 0
+    mov byte [sb_single], 1
+    test byte [ess_virtual_regs+0b8h-0a0h], 4
+    jz .start_kind
+    mov byte [sb_single], 0
+    jmp .start_kind
+.ess_stop:
+    cmp byte [ess_started], 0
+    je .argument_done
+    mov byte [ess_started], 0
+    ; Bit 0 cleared: the transfer stops where it is, as D0h pauses it; a new
+    ; start programs the counters again.
+    mov byte [arguments], 0
+    jmp .pause
+.ess_read:
+    sub al, 0a0h
+    cmp al, 1fh
+    ja .command_unsupported
+    movzx bx, al
+    mov al, [ess_virtual_regs+bx]
+    mov [reply], al
+    mov byte [reply_count], 1
+    jmp .argument_done
 .read:
     cmp dx, 226h
     je .reset_read
@@ -1584,6 +1769,20 @@ port_callback:
     jmp .result
 .mixer_value:
 %endif
+    cmp bx, 40h
+    jne .mixer_stored
+    cmp byte [virtual_model], 4
+    jne .mixer_stored
+    ; The physical chip's identification sequence, four reads after the
+    ; index write (which the host answers for a protected-mode game, so the
+    ; sequence also wraps after four).
+    movzx bx, byte [ess_id_phase]
+    mov al, [ess_physical_mixer_id+bx]
+    inc bl
+    and bl, 3
+    mov [ess_id_phase], bl
+    jmp .result
+.mixer_stored:
     mov al, [virtual_mixer+bx]
     jmp .result
 .dma_read:
@@ -1884,6 +2083,31 @@ dma_port:
 .done:
     ret
 
+; The ESS extension state after a DSP reset: commands off, A5h F8h, B1h and
+; B2h with bits 4 and 6 (the data sheet's reset values), the rest zero.
+; Keeps AL (the reset port value) for the caller.
+ess_virtual_reset:
+    push ax
+    push cx
+    push di
+    push es
+    push cs
+    pop es
+    mov di, ess_virtual_regs
+    xor ax, ax
+    mov cx, 16
+    cld
+    rep stosw
+    mov byte [ess_virtual_regs+0a5h-0a0h], 0f8h
+    mov byte [ess_virtual_regs+0b1h-0a0h], 50h
+    mov byte [ess_virtual_regs+0b2h-0a0h], 50h
+    mov byte [ess_extended], 0
+    mov byte [ess_started], 0
+    pop es
+    pop di
+    pop cx
+    pop ax
+    ret
 
 trap_ports:
 %include "audio/ports.inc"
@@ -1903,6 +2127,12 @@ game_irq_bit db 1
 ; Bit 0: 16-bit mono. Bit 1: unsigned 16-bit. Bit 2: signed 8-bit.
 game_format db 0
 pending_format db 0
+; The virtual ESS AudioDrive (virtual_model 4): the extension registers A0h
+; to BFh behind commands C6h/C7h, and whether B8h bit 0 is set.
+ess_extended db 0
+ess_started db 0
+ess_id_phase db 0
+ess_virtual_regs times 32 db 0
 game_block_bytes dd 4096
 game_exit_frame dd 0
 game_mix_frame dd 0
