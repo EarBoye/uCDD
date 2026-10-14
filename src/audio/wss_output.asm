@@ -295,11 +295,11 @@ ess_rate_adjust:
 ; 14.31818 MHz / 18 / 18
 ESS_RATE equ 44192
 
-; CF clear for the ES1868 family, which has the trim: with index 40h written
-; once, four reads of the mixer data port give 18h, then 68h, 69h, 78h or
-; 79h, and the configuration address. The ES1887 and ES1888 use 40h as a
-; configuration register and fail this on purpose; ess_rate_adjust still
-; checks that BAh bit 6 follows writes before trusting it. The index is written once because writing it again may restart
+; CF clear for an ES1868 or ES1878: with index 40h written once, four reads
+; of the mixer data port give 18h, then 68h or 78h, and the configuration
+; address. Not the ES1869 (18h 69h): its BAh is the ADC offset adjust
+; register and its manual documents no clock trim. The ES1887 and ES1888
+; use 40h as a configuration register and fail this on purpose. The index is written once because writing it again may restart
 ; the sequence; the real ES1868 answers 18h 68h to this order.
 ; physical_read loads AX (the QPI call), so the first byte is held in CL.
 ess_identify:
@@ -316,7 +316,6 @@ ess_identify:
     mov [ess_physical_mixer_id+3], al
     cmp cl, 18h
     jne .other
-    and bl, 0eeh
     cmp bl, 68h
     je .known
     cmp bl, 78h

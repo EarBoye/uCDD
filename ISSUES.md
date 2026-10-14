@@ -168,12 +168,12 @@ changed volumes.
 - The `--verify-mix` build never counts the CD-only mix on a physical
   SB16 (0 calls while the output runs): that store path bypasses the
   harness. The ESS and SB Pro physical paths are covered.
-- The clock trim is applied on the ES1868 family only (mixer 40h
-  identification 18h then 68h, 69h, 78h or 79h, and BAh bit 6 following
-  writes). The 1869 and 1879 codes are accepted on the strength of the
-  family and the read-back check; no such chip has been tested. The ES688,
-  ES1688, ES1887 and ES1888 document no trim and run the interpolating
-  path.
+- The clock trim is applied on the ES1868 and ES1878 only (mixer 40h
+  identification 18h then 68h or 78h, and BAh bit 6 following writes).
+  The ES1869's manual gives BAh as the left ADC offset adjust register
+  and documents no clock trim, so its 69h code is refused on purpose; the
+  ES688, ES1688, ES1887 and ES1888 document no trim either. All of them
+  run the interpolating path.
 - The virtual ESS AudioDrive plays only: B8h with its direction bit
   (recording) is refused, the ESPCM and ADPCM start commands are the SB
   Pro parser's refusals, port 2xCh reads 7Fh (no FIFO status), and of the
