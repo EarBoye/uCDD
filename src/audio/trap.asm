@@ -2202,8 +2202,34 @@ ess_virtual_reset:
     cld
     rep stosw
     mov byte [ess_virtual_regs+0a5h-0a0h], 0f8h
-    mov byte [ess_virtual_regs+0b1h-0a0h], 50h
-    mov byte [ess_virtual_regs+0b2h-0a0h], 50h
+    ; B1h and B2h also carry the card's IRQ and DMA selection in bits 3:2
+    ; (IRQ 9, 5, 7, 10; DMA none, 0, 1, 3). The Miles ESS driver reads them
+    ; when its settings leave IRQ or DMA at -1, so they report the virtual
+    ; card's own.
+    push bx
+    mov ah, 50h
+    mov bx, ess_irq_bits
+.irq_bits:
+    cmp byte [bx], 0ffh
+    je .irq_ready
+    mov cl, [virtual_irq]
+    cmp cl, [bx]
+    je .irq_found
+    add bx, 2
+    jmp .irq_bits
+.irq_found:
+    or ah, [bx+1]
+.irq_ready:
+    mov [ess_virtual_regs+0b1h-0a0h], ah
+    mov ah, 50h
+    mov bl, [virtual_dma8]
+    cmp bl, 3
+    ja .dma_ready
+    xor bh, bh
+    or ah, [ess_dma_bits+bx]
+.dma_ready:
+    mov [ess_virtual_regs+0b2h-0a0h], ah
+    pop bx
     mov byte [ess_extended], 0
     mov byte [ess_started], 0
     mov byte [ess_clock_alternate], 0
@@ -2237,6 +2263,10 @@ ess_extended db 0
 ; 1 from the ESS's 41h until its time constant byte is taken.
 ess_clock_alternate db 0
 ess_started db 0
+; IRQ number, bits 3:2 for B1h; 0FFh ends the list.
+ess_irq_bits db 2, 0, 9, 0, 5, 4, 7, 8, 10, 0ch, 0ffh
+; B2h bits 3:2 for DMA 0 to 3 (channel 2 has no code: none).
+ess_dma_bits db 4, 8, 0, 0ch
 ess_id_phase db 0
 ; E3h on a DSP 4.xx: the text the CT1741 firmware sends, zero included. While
 ; reply_pointer is set the write port reads busy and commands are dropped.
