@@ -37,13 +37,30 @@ config_load:
     je .old
     cmp ax, CONFIG_SIZE
     je .size_ok
-    ; A version 2 file is one byte shorter; its missing byte reads as 0.
-    cmp ax, CONFIG_SIZE-1
+    ; Older files are shorter by the bytes added since: version 2 at 36
+    ; bytes, version 3 at 37. Their missing bytes read as 0.
+    cmp ax, 36
+    jb .invalid
+    ja .later_size
+    mov bl, 2
+    jmp .version_known
+.later_size:
+    cmp ax, 37
     jne .invalid
-    cmp byte [file_buffer+4], CONFIG_VERSION-1
+    mov bl, 3
+.version_known:
+    cmp [file_buffer+4], bl
     jne .invalid
+    push ds
+    pop es
+    mov di, file_buffer
+    add di, ax
+    mov cx, CONFIG_SIZE
+    sub cx, ax
+    xor al, al
+    cld
+    rep stosb
     mov byte [file_buffer+4], CONFIG_VERSION
-    mov byte [file_buffer+CONFIG_SIZE-1], 0
     jmp .copy
 .size_ok:
     cmp byte [file_buffer+4], CONFIG_VERSION
@@ -133,6 +150,8 @@ config_valid:
     cmp byte [config_master_volume], 100
     ja .bad
     cmp byte [config_audio_always], 1
+    ja .bad
+    cmp byte [config_fast_dma], 1
     ja .bad
     movzx ax, byte [config_volume_step]
     mov si, step_values

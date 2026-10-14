@@ -119,6 +119,7 @@ audio_release:
     ; vector for a game's while the driver is engaged).
     mov byte [audio_engaged], 0
     call sb_stop
+    call fast_dma_clear
     call virtual_irq_reset
     mov byte [virtual_pic_service], 0
     mov byte [virtual_pic_delivered], 0
@@ -142,6 +143,7 @@ audio_engage:
     ; clear, so the call reaches DOS.
     call sb_start
     jc .failed
+    call fast_dma_set
     call host_wake
     mov byte [audio_engaged], 1
     ret
@@ -150,6 +152,62 @@ audio_engage:
     ; the fault byte.
     or byte [fault], 80h
     ret
+
+; Type F ISA DMA on the output channel (82371FB data sheet, MBDMA0 at PCI
+; configuration offset 76h of the ISA bridge: bit 7 fast, bits 2:0 the
+; channel, bits 6:3 kept as read since the PIIX3 holds a reserved bit
+; there). Only with the UCDDSET switch on and a PIIX found at install;
+; set when the output starts, the old byte put back when it stops. The
+; register is read and written through the PCI BIOS.
+fast_dma_set:
+    cmp byte [config_fast_dma], 0
+    je .done
+    cmp byte [fast_dma_present], 0
+    je .done
+    cmp byte [fast_dma_active], 0
+    jne .done
+    mov bx, [fast_dma_bridge]
+    mov di, 76h
+    mov ax, 0b108h
+    int 1ah
+    jc .done
+    test ah, ah
+    jnz .done
+    mov [fast_dma_saved], cl
+    and cl, 78h
+    or cl, 80h
+    ; The output channel: the high one on an SB16, the low one elsewhere.
+    mov al, [sb_dma8]
+    cmp byte [sound_card], 0
+    jne .channel
+    mov al, [sb_dma16]
+.channel:
+    and al, 7
+    or cl, al
+    mov ax, 0b10bh
+    int 1ah
+    jc .done
+    test ah, ah
+    jnz .done
+    mov byte [fast_dma_active], 1
+.done:
+    ret
+fast_dma_clear:
+    cmp byte [fast_dma_active], 0
+    je .done
+    mov byte [fast_dma_active], 0
+    mov bx, [fast_dma_bridge]
+    mov di, 76h
+    mov cl, [fast_dma_saved]
+    mov ax, 0b10bh
+    int 1ah
+.done:
+    ret
+; Set at install by fast_dma_scan (disk_scan.asm).
+fast_dma_bridge dw 0
+fast_dma_present db 0
+fast_dma_active db 0
+fast_dma_saved db 0
 
 ; The host's dormant byte: with it set, INT 2Fh AX=1687h chains (no DPMI
 ; offered) and INT 67h AX=DE00h chains (VCPI visible), so a protected-mode

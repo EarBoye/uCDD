@@ -139,6 +139,47 @@ disk_function:
 .done:
     ret
 
+; The ISA bridge that takes Type F DMA timing: an Intel PIIX (122Eh), PIIX3
+; (7000h) or PIIX4 (7110h), function 0. Return AX = bus and device, or CF
+; set. The PCI BIOS presence was checked by disk_scan_pci.
+fast_dma_scan:
+    push bx
+    push cx
+    push dx
+    push si
+    cmp byte [disk_pci], 0
+    je .none
+    mov si, fast_dma_devices
+.device:
+    mov cx, [si]
+    jcxz .none
+    push si
+    mov dx, 8086h
+    xor si, si
+    mov ax, 0b102h
+    int 1ah
+    pop si
+    jc .next
+    test ah, ah
+    jnz .next
+    test bl, 7
+    jnz .next
+    mov ax, bx
+    clc
+    jmp .done
+.next:
+    add si, 2
+    jmp .device
+.none:
+    stc
+.done:
+    pop si
+    pop dx
+    pop cx
+    pop bx
+    ret
+fast_dma_devices dw 7000h,122eh,7110h,0
+
 ; BH bus, BL device and function, DI register. Return CL, or CF set.
 pci_read_byte:
     push ax

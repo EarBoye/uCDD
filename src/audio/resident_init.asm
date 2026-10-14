@@ -105,6 +105,7 @@ audio_activate:
     mov word [audio_error_text], sound_card_message
     call sb_start
     jc .cleanup
+    call fast_dma_set
     call cd_memory_restore
 %ifdef OWN_HOST
     mov word [audio_error_text], internal_host_message
