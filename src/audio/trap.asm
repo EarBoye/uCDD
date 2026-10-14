@@ -391,6 +391,7 @@ port_callback:
     inc word [virtual_resets]
     mov word [reply], 0aah
     mov byte [reply_count], 1
+    mov word [reply_pointer], 0
     mov byte [arguments], 0
     jmp .done
 .mixer_index:
@@ -732,6 +733,12 @@ port_callback:
     mov byte [ess_extended], 0
     jmp .done
 .common_command:
+    ; A string reply left unread ends with the next command.
+    cmp word [reply_pointer], 0
+    je .reply_clear
+    mov word [reply_pointer], 0
+    mov byte [reply_count], 0
+.reply_clear:
     cmp al, 10h
     je .time_constant
     cmp al, 41h
@@ -811,11 +818,22 @@ port_callback:
     je .zero_reply
     cmp al, 0f3h
     je .force_irq16
+    cmp al, 0e3h
+    je .copyright
     cmp al, 0e1h
     jne .command_unsupported
     mov ax, [virtual_dsp_version]
     mov [reply], ax
     mov byte [reply_count], 2
+    jmp .done
+.copyright:
+    ; E3h: the DSP 4.xx firmware sends its copyright notice with the zero
+    ; that ends it; the 3.xx firmware carries the string but no command
+    ; sends it.
+    cmp byte [virtual_dsp_version], 4
+    jb .command_unsupported
+    mov word [reply_pointer], copyright_text
+    mov byte [reply_count], copyright_length
     jmp .done
 .speaker_off:
     mov byte [sb_speaker_flag], 0
@@ -1753,6 +1771,18 @@ port_callback:
     mov al, [reply]
     cmp byte [reply_count], 0
     je .result
+    ; A string reply (reply_pointer set) reads from memory; the others from
+    ; the reply word, low byte first.
+    mov bx, [reply_pointer]
+    test bx, bx
+    jz .reply_word
+    mov al, [bx]
+    inc word [reply_pointer]
+    dec byte [reply_count]
+    jnz .result
+    mov word [reply_pointer], 0
+    jmp .result
+.reply_word:
     shr word [reply], 8
     dec byte [reply_count]
     jmp .result
@@ -2132,6 +2162,10 @@ pending_format db 0
 ess_extended db 0
 ess_started db 0
 ess_id_phase db 0
+; E3h on a DSP 4.xx: the text the CT1741 firmware sends, zero included.
+reply_pointer dw 0
+copyright_text db 'COPYRIGHT (C) CREATIVE TECHNOLOGY LTD, 1992.',0
+copyright_length equ $-copyright_text
 ess_virtual_regs times 32 db 0
 game_block_bytes dd 4096
 game_exit_frame dd 0
