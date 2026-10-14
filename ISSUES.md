@@ -177,6 +177,15 @@ changed volumes.
   and documents no clock trim, so its 69h code is refused on purpose; the
   ES688, ES1688, ES1887 and ES1888 document no trim either. All of them
   run the interpolating path.
+- Descent 2 with HMI's "ESS 488/688" digital driver hung black and silent
+  under the virtual ESS (real PC, then 86Box): the driver programs an ESS
+  transfer count of 61441 bytes, odd, over a 4 KB buffer of 8-bit stereo
+  and polls the DMA position, and the start path refused the block for
+  not being whole frames before it looked at whether the block was longer
+  than the buffer, which only means polling. Fixed: a block longer than
+  the buffer skips the frame check. 86Box: the intro plays 122 s of audio
+  matching the bare chip; SETUP's 8-bit test plays. Not yet on the real
+  PC with the fix.
 - The virtual ESS AudioDrive plays only: B8h with its direction bit
   (recording) is refused, the ESPCM and ADPCM start commands are the SB
   Pro parser's refusals, port 2xCh reads 7Fh (no FIFO status), and of the

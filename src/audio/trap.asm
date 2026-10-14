@@ -1323,6 +1323,12 @@ port_callback:
     dec eax
     test ebx, eax
     jnz .command_unsupported
+    ; A block longer than the buffer only means the game polls the DMA
+    ; position (below), so its length need not be whole frames: HMI's ESS
+    ; driver programs the two's complement of 0FFFh, 61441 bytes, over a
+    ; 4 KB buffer of 8-bit stereo, and a real card just counts bytes.
+    cmp edx, ebx
+    ja .block_aligned
     test edx, eax
     jz .block_aligned
     jmp .command_unsupported
