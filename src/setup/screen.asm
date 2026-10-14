@@ -10,6 +10,7 @@
 %define A_TITLE 0f4h
 %define A_FIELD 0fh
 %define A_SELECT 4fh
+%define A_GREY 78h
 %define A_SHADOW 80h
 %define BOX_ROW 1
 %define BOX_COL 2
@@ -460,8 +461,10 @@ form_run:
     je .redraw
     ret
 
-; BX item. Draw its value as an input. A setting that the card does not use
-; shows its text in the box color. A fader also draws its track.
+; BX item. Draw its value as an input. A setting that the card does not use,
+; or a tick box that cannot be ticked, shows in grey, and in the selection
+; colour when selected so that the cursor stays visible. A fader also draws
+; its track.
 item_draw:
     pusha
     mov byte [item_disabled], 0
@@ -482,10 +485,11 @@ item_draw:
     jne .value
     call fader_track
 .value:
-    mov bl, A_BOX
+    mov bl, A_GREY
     cmp byte [item_disabled], 0
-    jne .line
+    jne .focus
     mov bl, A_FIELD
+.focus:
     cmp byte [item_focus], 0
     je .line
     mov bl, A_SELECT

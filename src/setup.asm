@@ -420,20 +420,34 @@ main_draw:
     mov si, detected_label
     call put_text
     mov bl, A_BOX
-    mov dx, 0f26h
+    mov dh, 0fh
     mov cx, 1
     mov al, 0b3h
 .divider:
+    ; put_repeat moves the column on; start each row at column 38.
+    mov dl, 26h
     call put_repeat
     inc dh
     cmp dh, 13h
     jb .divider
+    ; A greyed box has its label greyed with it.
+    mov bl, A_BOX
+    call fastdma_available
+    jnc .fastdma_label
+    mov bl, A_GREY
+.fastdma_label:
     mov dx, 1009h
     mov si, fastdma_label
     call put_text
+    mov bl, A_BOX
+    call always_available
+    jnc .always_label
+    mov bl, A_GREY
+.always_label:
     mov dx, 1109h
     mov si, always_label
     call put_text
+    mov bl, A_BOX
     mov dx, 1028h
     mov si, pci_irq_label
     call put_text
