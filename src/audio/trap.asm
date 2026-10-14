@@ -1887,6 +1887,19 @@ port_callback:
     cmp byte [sb_tail_mode], 0
     jne .count_bytes
     call game_elapsed
+    ; The virtual ESS reports one period less than has been mixed. HMI's ESS
+    ; driver (Descent 2) follows the count closely and rewrites the buffer
+    ; right up to it; at the full count it caught frames not yet played and
+    ; the output clicked about 40 times a second. One period earlier it is
+    ; as clean as the real chip.
+    cmp byte [virtual_model], 4
+    jne .elapsed_ready
+    cmp byte [sb_single], 0
+    jne .elapsed_ready
+    sub eax, PERIOD_FRAMES
+    jns .elapsed_ready
+    xor eax, eax
+.elapsed_ready:
     movzx ecx, word [game_rate]
     mul ecx
     mov ecx, OUTPUT_RATE
