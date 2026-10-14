@@ -40,7 +40,7 @@ branches are gone; their names stay as the names of the changes.
 | `setup-audit` | A review of UCDDSET after `wss-stop-vector`. Fixed, in the shared sound code: the SB Pro start counted loop turns for its priming timeout (now each turn reads a port); `pro_stop` reset the DSP with the IRQ live (masked first now); the real-mode handler took any IRQ 7 as the card's on the SB Pro and SB 2.0 models (the in-service bit is checked now); the WSS codec start unmasked the IRQ before clearing a codec interrupt left from before. In UCDDSET: INT 23h and 24h handlers (Ctrl+Break with BREAK=ON ended the program with vectors hooked); a bounded copy of a kept BLASTER field (a field of 9 or more characters late in the value overran the 96-byte buffer); mode 7 and B000h on MDA and Hercules, blink off on CGA, and the previous text mode and 43/50 lines put back on exit; the tick waits read as elapsed the reset at midnight; `speaker_test` freed segment 0 when its allocation had failed; a CPU check before 386 instructions; the detection's 8237 programming with interrupts off. Checked in 86Box: the Test twice at IRQ 5 and 7, once as SB Pro and SB 2.0; Hercules and CGA; an empty environment; a 100-character BLASTER field at install. QEMU: Doom under the host at IRQ 7 and 5 unchanged. Not tested: the priming timeout on a GHz CPU, Ctrl+Break itself. The in-service check it added clobbered the stack segment at IRQ 7; fixed later, see "Fixed after the reviews" |
 | Review of UCDD.EXE | Five independent readings of the driver, the port trap and card emulation, the mixer and CD streaming, the host IRQ path and the DPMI services. The fixes are listed under "Fixed after the reviews". Emulators only |
 | Specification pass | The code read against the documents in `docs/references` and the hot paths costed with the i386 clock counts. Emulators only |
-| EMM386 dropped | JEMMEX was already required. The host refuses to start when the VCPI server has filled the page table entries it uses ("The internal DPMI host did not start"); JEMMEX 5.86 reports the same first free entry (444h) with and without option `SB`, so the refusal was not seen in the rig and stands as a guard |
+| EMM386 dropped | JEMMEX was already required. The host refuses to start when the VCPI server has filled the page table entries it uses ("The internal DPMI host did not start"); JEMMEX 5.86 reports the same first free entry (444h) with and without option `SB`, so the refusal was not seen in any emulator and stands as a guard |
 | INT 1Ch/23h/24h reflection | 86Box, raw DPMI client: a 16-bit client's INT 1Ch handler gets 18 ticks a second (0 before), 15 to 18 with CD audio playing; the vector under the stub reads as the original and the IVT is back after exit; a 32-bit client's INT 24h handler runs for an open on an empty A: with the client's selectors and no DOS prompt, and its fail, retry and abort answers are honoured; a child without a handler freezes the parent's counter and a child with one counts on its own; Ctrl+C reaches a protected-mode INT 23h handler, and its carry ends the program |
 | DOS-side termination | 86Box: an INT 24h abort and an INT 23h termination, at depth 0 and from a child under a parent, leave the IVT (08h-0Fh, 70h-77h, 1Ch, 22h-24h), DOS free memory and VCPI free pages as before the client, and the next client starts. Before, the host stayed busy until reboot |
 | IRQ 7 wash | See "Fixed after the reviews". 86Box: 0 washed Doom runs of 15 at 7/7 on the fixed build against 3 of 10 before; Duke Nukem 3D, Heretic, Wolfenstein 3D, Witchaven and the DPMI client unchanged |
@@ -195,7 +195,7 @@ changed volumes.
 
 ## Performance
 
-Measured in the 86Box rig (13 Oct 2026): a Pentium MMX 233 with the
+Measured in 86Box (13 Oct 2026): a Pentium MMX 233 with the
 ES1688 for the ES1868, an Am386DX-40 with 8 MB and a 486DX2-66 with 16 MB,
 each with MS-DOS 7.1 and JEMMEX 5.86. Ratios between builds on one machine
 are reliable; the 386 and 486 absolute figures are approximate, since the
@@ -287,7 +287,7 @@ mixer for MMX (a few percent of the mixer's share, in a full segment).
 ## Fixed after the reviews
 
 Found by the review of UCDD.EXE and the specification pass, fixed in
-`fixes`, checked in the emulator rig against the build before the review
+`fixes`, checked in 86Box against the build before the review
 (0f81195) unless the note says otherwise. Ctrl+Break with BREAK=ON needs
 MS-DOS (FreeDOS does not run the break check in those calls) and was checked
 in 86Box.
@@ -299,7 +299,7 @@ Driver and CD:
   read the image through DOS with the game's PSP and without the DOS state
   swap. A game's file on the same handle number lost its position. The bind
   runs inside `dos_enter` now, and the timer does not switch discs while the
-  BIOS disk code runs. Rig: twelve handles open on one file, the position
+  BIOS disk code runs. 86Box: twelve handles open on one file, the position
   no longer jumps to 0.
 - With `BREAK=ON`, Ctrl+C or Ctrl+Break during a CD read reached the default
   INT 23h handler with the resident's PSP current, which ended the resident.
@@ -334,7 +334,7 @@ Sound card emulation:
   AX, and the stack switch that follows loads SS from AX. Every audio
   interrupt then ran on a stack in segment 800Ah or 800Bh, inside
   conventional memory at 512 KB, and wrote over whatever was there. Found by
-  the rig session reading the handler after the IRQ 7 work; the games it ran
+  a second reading of the handler after the IRQ 7 work; the games it ran
   at 7/7 happened to survive it. The handler loads CS again before the
   switch. The hardware tests before it ran with the card on IRQ 5, so no real-PC
   run has had this fault.
@@ -346,12 +346,12 @@ Sound card emulation:
   Found by the data-flow pass after the IRQ 7 stack fault; `sb_patch` clears
   the flag under its own flag save now.
 - A refused DSP command or argument left the argument counter set, so the
-  bytes the game wrote next were taken as arguments. Rig: E1h after a
+  bytes the game wrote next were taken as arguments. 86Box: E1h after a
   refused short block replies 04.05, no reply before.
 - A refused rate was already stored, and a rate of 0 later divided in the
   silence command and the single-cycle block start.
 - DAh/D9h while paused with D0h/D5h was dropped; it is held and applied at
-  the resume, as the DSP does. Rig: D0h, DAh, D4h on an auto-initialize
+  the resume, as the DSP does. 86Box: D0h, DAh, D4h on an auto-initialize
   stream ends the block after the resume, looped before.
 - 41h/42h set the rate of the legacy commands too; A0h and A8h are accepted;
   20h answers 80h, F8h answers 0, F3h raises the 16-bit interrupt; the status
@@ -359,7 +359,7 @@ Sound card emulation:
 - The virtual mixer's FM register 26h starts at FFh, as its 5-bit twins
   34h/35h do.
 - 8237: the command, master clear, all-mask and status registers of both
-  controllers are trapped. Rig: a write to the slave all-mask register
+  controllers are trapped. 86Box: a write to the slave all-mask register
   during playback first stopped the stream, because the per-channel write
   went to port 0Fh; fixed, and the master and slave all-mask stop and resume
   the stream as the controller would. The status read hides the ring's
@@ -408,7 +408,7 @@ Virtual PIC:
   0300h call to a hardware vector the host holds in service is treated as a
   chain; a signalled interrupt that is neither requested nor in service for
   two periods is raised again; and the host answers the plain EOIs with
-  nothing virtual to end itself. Rig: the recording build shows one EOI per
+  nothing virtual to end itself. 86Box: the recording build shows one EOI per
   run landing on the held interrupt and the last delivery unacknowledged in
   the washed runs, and that EOI forwarded on the fixed build.
 

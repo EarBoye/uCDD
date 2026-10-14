@@ -116,7 +116,7 @@ and the IRQ set by hand.
 
 ## The tested build
 
-The builds tested on real hardware and in the emulator rig used this line:
+The builds tested on real hardware and in the emulators used this line:
 
 ```console
 python scripts/build.py --resident-audio --audio-period-frames 256 --no-refill-hint
