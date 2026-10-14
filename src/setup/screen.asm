@@ -14,9 +14,9 @@
 %define BOX_ROW 1
 %define BOX_COL 2
 %define BOX_WIDTH 76
-%define BOX_HEIGHT 22
-%define TITLE_ROW 3
-%define BUTTON_ROW 20
+%define BOX_HEIGHT 24
+%define TITLE_ROW 2
+%define BUTTON_ROW 22
 %define TRACK_TOP 5
 %define TRACK_BOTTOM 16
 
@@ -40,6 +40,11 @@
 %macro item 12
     db %1,%2,%3,%4,%5,%6,%7,%8
     dw %9,%10,%11,%12
+%endmacro
+
+; value byte, availability routine (CF set when the box cannot be ticked)
+%macro tick 2
+    dw %1,%2
 %endmacro
 
 %define CHOICE_VALUE 0
@@ -279,9 +284,11 @@ form_frame:
     pop es
     mov al, ' '
     mov bl, A_SHADOW
+%if BOX_ROW+BOX_HEIGHT < 25
     mov dx, (BOX_ROW+BOX_HEIGHT)*256+BOX_COL+2
     mov cx, BOX_WIDTH
     call put_repeat
+%endif
     mov dh, BOX_ROW+1
     mov cx, 2
 .shadow:
@@ -600,6 +607,43 @@ fader_track:
 ; Format routines. BX item, DI output.
 format_button:
     jmp format_label
+
+; A tick box: "[X]" or "[ ]", greyed when its availability routine says no.
+format_tick:
+    mov si, [bx+ITEM_DATA]
+    push si
+    call [si+2]
+    pop si
+    jnc .available
+    mov byte [item_disabled], 1
+.available:
+    mov si, [si]
+    mov al, '['
+    stosb
+    mov al, ' '
+    cmp byte [si], 0
+    je .mark
+    mov al, 'X'
+.mark:
+    stosb
+    mov al, ']'
+    stosb
+    mov byte [di], 0
+    ret
+
+; Space or Enter on a tick box. Nothing happens on a greyed one; its help
+; line says why.
+toggle_tick:
+    mov si, [bx+ITEM_DATA]
+    push si
+    call [si+2]
+    pop si
+    jc .done
+    mov si, [si]
+    xor byte [si], 1
+    mov byte [changed], 1
+.done:
+    ret
 
 format_label:
     mov si, [bx+ITEM_DATA]

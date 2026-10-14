@@ -72,8 +72,14 @@ start:
     cmp al, LOAD_OK
     je install_settings
 .menu:
-    ; The Disk row shows what the PCI scan finds. The driver scans for itself.
+    ; The Detected column shows what the PCI scan finds and which ISA bridge
+    ; the machine has. The driver scans for itself at install.
     call disk_scan
+    mov word [chipset_device], 0
+    call fast_dma_scan
+    jc .scanned
+    mov [chipset_device], cx
+.scanned:
     call main_menu
     jc .cancel
     cmp byte [handoff], 0
@@ -340,7 +346,7 @@ main_menu:
     mov word [form_draw], main_draw
     mov word [form_keys], main_keys
     mov word [form_notes], main_notes
-    mov word [form_status_row], 0310h
+    mov word [form_status_row], 0114h
     mov byte [menu_result], 1
     call form_run
     call screen_stop
@@ -353,32 +359,26 @@ main_menu:
     ret
 
 main_draw:
-    mov dx, 0504h
+    mov dx, 0404h
     mov si, table_header
     mov bl, A_TITLE
     call put_text
-    mov dx, 0604h
+    mov dx, 0504h
     mov cx, 69
     mov al, 0c4h
     mov bl, A_BOX
     call put_repeat
-    mov dx, 0704h
+    mov dx, 0604h
     mov si, physical_label
     call put_text
-    call disk_draw
-    mov dx, 0904h
-    mov cx, 69
-    mov al, 0fah
-    mov bl, A_BOX
-    call put_repeat
-    mov dx, 0b04h
+    mov dx, 0804h
     mov si, virtual_label
     call put_text
-    mov dx, 0c11h
+    mov dx, 0911h
     mov si, wss_name
     call put_text
     ; The virtual WSS codec uses the DMA Low channel of the virtual SB.
-    mov dx, 0c3bh
+    mov dx, 093bh
     mov al, [virtual_dma8]
     add al, '0'
     mov cx, 1
@@ -386,22 +386,16 @@ main_draw:
     mov dl, 45h
     mov al, '*'
     call put_repeat
-    mov dx, 0e04h
+    mov dx, 0b04h
     mov si, output_label
     call put_text
-    mov dx, 0e11h
+    mov dx, 0b10h
     movzx bx, byte [sound_card]
     shl bx, 1
     mov si, [output_texts+bx]
     mov bl, A_BOX
     call put_text
-    mov dx, 1104h
-    mov si, driver_label
-    call put_text
-    mov dx, 1139h
-    mov si, fastdma_label
-    call put_text
-    mov dx, 0f04h
+    mov dx, 0c04h
     mov si, applications_text
     call put_text
     mov si, virtual_cards_text
@@ -411,6 +405,67 @@ main_draw:
     mov cx, 1
     mov bl, A_BOX
     call put_repeat
+    mov dx, 0d04h
+    mov si, stepaside_text
+    call put_text
+    mov dx, 0e04h
+    mov cx, 69
+    mov al, 0fah
+    call put_repeat
+    mov dx, 0f04h
+    mov si, options_label
+    mov bl, A_TITLE
+    call put_text
+    mov dx, 0f28h
+    mov si, detected_label
+    call put_text
+    mov bl, A_BOX
+    mov dx, 0f26h
+    mov cx, 1
+    mov al, 0b3h
+.divider:
+    call put_repeat
+    inc dh
+    cmp dh, 13h
+    jb .divider
+    mov dx, 1009h
+    mov si, fastdma_label
+    call put_text
+    mov dx, 1109h
+    mov si, always_label
+    call put_text
+    mov dx, 1028h
+    mov si, pci_irq_label
+    call put_text
+    mov dx, 1128h
+    mov si, other_irq_label
+    call put_text
+    mov dx, 1228h
+    mov si, chipset_none_text
+    mov ax, [chipset_device]
+    test ax, ax
+    jz .chipset
+    mov si, chipset_piix3_text
+    cmp ax, 7000h
+    je .chipset
+    mov si, chipset_piix4_text
+    cmp ax, 7110h
+    je .chipset
+    mov si, chipset_piix_text
+.chipset:
+    call put_text
+    call disk_draw
+    ; The help line of a tick box says why it is greyed.
+    mov word [main_notes+12*2], fastdma_help
+    call fastdma_available
+    jnc .fastdma_help_ready
+    mov word [main_notes+12*2], fastdma_grey
+.fastdma_help_ready:
+    mov word [main_notes+13*2], always_help
+    call always_available
+    jnc .always_help_ready
+    mov word [main_notes+13*2], always_grey
+.always_help_ready:
     ret
 
 main_keys:
@@ -622,58 +677,52 @@ model_changed:
 
 MAIN_ITEMS equ 21
 main_items:
-    item 7,16,21,0, NONE,6,NONE,1, format_choice,choice_popup,choice_cycle,model_choice
-    item 7,41,3,0, NONE,7,0,2, format_choice,choice_popup,choice_cycle,port_choice
-    item 7,49,3,0, NONE,5,1,3, format_choice,choice_popup,choice_cycle,irq_choice
-    item 7,57,3,0, NONE,9,2,4, format_choice,choice_popup,choice_cycle,dma8_choice
-    item 7,67,3,0, NONE,10,3,NONE, format_choice,choice_popup,choice_cycle,dma16_choice
-    item 8,49,3,0, 2,8,NONE,NONE, format_choice,choice_popup,choice_cycle,disk_irq_choice
-    item 11,16,21,0, 0,11,NONE,7, format_choice,choice_popup,choice_cycle,virtual_model_choice
-    item 11,41,3,0, 1,11,6,8, format_choice,choice_popup,choice_cycle,virtual_port_choice
-    item 11,49,3,0, 5,12,7,9, format_choice,choice_popup,choice_cycle,virtual_irq_choice
-    item 11,57,3,0, 3,12,8,10, format_choice,choice_popup,choice_cycle,virtual_dma8_choice
-    item 11,67,3,0, 4,12,9,NONE, format_choice,choice_popup,choice_cycle,virtual_dma16_choice
-    item 12,41,3,0, 7,13,NONE,12, format_choice,choice_popup,choice_cycle,wss_port_choice
-    item 12,49,3,0, 8,13,11,NONE, format_choice,choice_popup,choice_cycle,wss_irq_choice
-    item 17,17,36,0, 11,15,NONE,14, format_choice,choice_popup,choice_cycle,standby_choice
-    item 17,62,11,0, 12,15,13,NONE, format_choice,choice_popup,choice_cycle,fastdma_choice
-    item 20,5,9,0, 13,NONE,NONE,16, format_button,hotkeys_screen,0,hotkeys_label
-    item 20,18,7,0, 13,NONE,15,17, format_button,mixer_screen,0,mixer_label
-    item 20,31,8,0, 13,NONE,16,18, format_button,detect_action,0,detect_label
-    item 20,43,6,0, 14,NONE,17,19, format_button,test_action,0,test_label
-    item 20,55,6,0, 14,NONE,18,20, format_button,save_action,0,save_label
-    item 20,65,8,0, 14,NONE,19,NONE, format_button,cancel_action,0,cancel_label
-main_notes dw 0,0,0,0,0,disk_note
+    item 6,16,21,0, NONE,5,NONE,1, format_choice,choice_popup,choice_cycle,model_choice
+    item 6,41,3,0, NONE,6,0,2, format_choice,choice_popup,choice_cycle,port_choice
+    item 6,49,3,0, NONE,7,1,3, format_choice,choice_popup,choice_cycle,irq_choice
+    item 6,57,3,0, NONE,8,2,4, format_choice,choice_popup,choice_cycle,dma8_choice
+    item 6,67,3,0, NONE,9,3,NONE, format_choice,choice_popup,choice_cycle,dma16_choice
+    item 8,16,21,0, 0,12,NONE,6, format_choice,choice_popup,choice_cycle,virtual_model_choice
+    item 8,41,3,0, 1,10,5,7, format_choice,choice_popup,choice_cycle,virtual_port_choice
+    item 8,49,3,0, 2,11,6,8, format_choice,choice_popup,choice_cycle,virtual_irq_choice
+    item 8,57,3,0, 3,12,7,9, format_choice,choice_popup,choice_cycle,virtual_dma8_choice
+    item 8,67,3,0, 4,14,8,NONE, format_choice,choice_popup,choice_cycle,virtual_dma16_choice
+    item 9,41,3,0, 6,12,NONE,11, format_choice,choice_popup,choice_cycle,wss_port_choice
+    item 9,49,3,0, 7,14,10,NONE, format_choice,choice_popup,choice_cycle,wss_irq_choice
+    item 16,3,3,0, 10,13,NONE,14, format_tick,toggle_tick,0,fastdma_tick
+    item 17,3,3,0, 12,15,NONE,14, format_tick,toggle_tick,0,always_tick
+    item 17,61,4,0, 11,18,13,NONE, format_choice,choice_popup,choice_cycle,disk_irq_choice
+    item 22,5,9,0, 13,NONE,NONE,16, format_button,hotkeys_screen,0,hotkeys_label
+    item 22,18,7,0, 13,NONE,15,17, format_button,mixer_screen,0,mixer_label
+    item 22,31,8,0, 13,NONE,16,18, format_button,detect_action,0,detect_label
+    item 22,43,6,0, 14,NONE,17,19, format_button,test_action,0,test_label
+    item 22,55,6,0, 14,NONE,18,20, format_button,save_action,0,save_label
+    item 22,65,8,0, 14,NONE,19,NONE, format_button,cancel_action,0,cancel_label
+main_notes dw 0,0,0,0,0
     dw virtual_note,virtual_note,virtual_note,virtual_note,virtual_note,wss_note,wss_note
-    dw standby_note,fastdma_note
+    dw fastdma_help,always_help,disk_note
     dw 0,0,0,0,0,0
 model_choice:
     choice sound_card,1,model_list,text_model,model_changed
-standby_choice:
-    choice config_audio_always,1,standby_list,text_standby,0
-standby_list:
-    mov si, standby_values
+fastdma_tick:
+    tick config_fast_dma,fastdma_available
+always_tick:
+    tick config_audio_always,always_available
+; CF set when the machine has no Intel PIIX bridge.
+fastdma_available:
+    cmp word [chipset_device], 0
+    je .no
+    clc
     ret
-standby_values db 2
-    dw 0,1
-text_standby:
-    push bx
-    mov bx, ax
-    shl bx, 1
-    mov si, [standby_names+bx]
-    pop bx
-    jmp copy_text
-standby_names dw standby_auto_text,standby_always_text
-fastdma_choice:
-    choice config_fast_dma,1,standby_list,text_fastdma,0
-text_fastdma:
-    push bx
-    mov bx, ax
-    shl bx, 1
-    mov si, [fastdma_names+bx]
-    pop bx
-    jmp copy_text
-fastdma_names dw fastdma_off_text,fastdma_on_text
+.no:
+    stc
+    ret
+; CF set when the physical card cannot act as the virtual one (the driver's
+; own rule, audio/pairing.asm).
+always_available:
+    jmp card_pairing
+%include "audio/pairing.asm"
+chipset_device dw 0
 port_choice:
     choice sb_base,2,port_list,text_hex3,0
 irq_choice:
@@ -728,14 +777,21 @@ table_header db 'Card'
 physical_label db 'Physical',0
 virtual_label db 'Virtual',0
 output_label db 'Output',0
-driver_label db 'Driver',0
-fastdma_label db 'DMA',0
-fastdma_off_text db 'Normal',0
-fastdma_on_text db 'Fast (PIIX)',0
-fastdma_note db 'Type F DMA for the output on an Intel PIIX. Nothing elsewhere.',0
-standby_auto_text db 'On while a mounted disc has CD audio',0
-standby_always_text db 'Always on',0
-standby_note db 'Steps aside until a disc with audio is mounted, if the cards match.',0
+stepaside_text db 'With no CD audio disc, uCDD steps aside if the cards are compatible.',0
+options_label db 'Options',0
+detected_label db 'Detected',0
+fastdma_label db 'Use Type F DMA (Intel PIIX)',0
+always_label db 'uCDD driver always on',0
+pci_irq_label db 'PCI disk card IRQ',0
+other_irq_label db 'Other disk card IRQ',0
+chipset_none_text db 'No Intel PIIX detected',0
+chipset_piix_text db 'Chipset: Intel PIIX',0
+chipset_piix3_text db 'Chipset: Intel PIIX3',0
+chipset_piix4_text db 'Chipset: Intel PIIX4',0
+fastdma_help db 'Faster sound card DMA on Intel 430FX, HX, VX, TX and 440 boards.',0
+fastdma_grey db 'Needs an Intel PIIX chipset: 430FX, HX, VX, TX or 440 boards.',0
+always_help db 'Ticked: uCDD stays on even without a CD audio disc.',0
+always_grey db 'Needs a virtual card the physical one can act as, same settings.',0
 sb16_name db 'Sound Blaster 16',0
 pro_name db 'Sound Blaster Pro',0
 wss_name db 'Windows Sound System',0
