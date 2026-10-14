@@ -10,7 +10,7 @@
 %define A_TITLE 0f4h
 %define A_FIELD 0fh
 %define A_SELECT 4fh
-%define A_GREY 78h
+%define A_GREY 0f8h
 %define A_SHADOW 80h
 %define BOX_ROW 1
 %define BOX_COL 2
