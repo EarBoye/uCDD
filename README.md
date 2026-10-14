@@ -55,7 +55,11 @@ The fork leaned on these people, projects and sites:
 - [S95Sedan's CT1741_DSP](https://github.com/S95Sedan/CT1741_DSP), firmware dumps and disassemblies of the Sound Blaster 16 DSP: ground truth for what the real chip does.
 - [Kagamiin's ESFMu](https://github.com/Kagamiin/ESFMu), the [Furnace ESFM notes](https://github.com/tildearrow/furnace/blob/master/doc/7-systems/esfm.md) and the [dosbox-staging ESFM discussion](https://github.com/dosbox-staging/dosbox-staging/issues/3608), for how ESFM native mode is entered, which is how the virtual ESS was proven to reach it.
 - [sigmaco's Miles Sound System 6.5c archive](https://github.com/sigmaco/milesss-v6.5c) and [ahmadexp's Open-Source-PC110](https://github.com/ahmadexp/Open-Source-PC110/blob/main/Discovery/ES488/readme.md), for driver and chip-probe reference.
-- Ralf Brown's Interrupt List, [SHSUCDX](http://adoxa.altervista.org/shsucdx/) and the data sheets kept in `docs/references`.
+- [Ralf Brown's Interrupt List](http://www.cs.cmu.edu/~ralf/files.html), for MSCDEX, XMS, the PCI BIOS and the DOS internals the driver stands on, and [SHSUCDX](http://adoxa.altervista.org/shsucdx/).
+- The DPMI 0.9 and 1.0 specifications, the VCPI specification kept findable by the [EDM2 wiki](http://www.edm2.com/), and the LIM EMS 4.0 text kept by the [Spice86 wiki](https://github.com/OpenRakis/Spice86/wiki); the internal host was read against them section by section.
+- The Linux ALSA es18xx driver, against which the ES1868 identification was checked.
+- [NASM](https://www.nasm.us/) and Python, which build everything here, and [FreeDOS](https://www.freedos.org/) with [QEMU](https://www.qemu.org/) as the first test bench.
+- The data sheets kept in `docs/references`, most of them found through DOS Days and [the Ardent Tool's data sheet](https://www.ardent-tool.com/datasheets/) and [Intel document](https://www.ardent-tool.com/CPU/Docs_Intel.html) collections.
 - [The Ardent Tool of Capitalism](https://www.ardent-tool.com/), [DOS Days](https://dosdays.co.uk/index.php), [The Retro Web](https://theretroweb.com/) and [Phil's Computer Lab](https://www.philscomputerlab.com/), for being excellent references on the machines this driver runs on.
 
 The original README follows, updated where the fork changed things.
