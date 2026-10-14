@@ -119,14 +119,24 @@ changed volumes.
   (`ess-position`, under "Limits" above); with the Sound Blaster 16 setting
   86Box shows none, so the hardware report there is still open.
 - The Miles ESS digital driver (AUDIODRV.DIG; Theme Hospital, Dungeon
-  Keeper, Heroes 2 and 13 more in the libraries) finds no card under the
-  virtual ESS: it sends F2h twice and spins about 0.5 ms on a Pentium with
-  no port access for the interrupt, which uCDD delivers at the next output
-  period. Traced in 86Box on Theme Hospital (reset, E7h, C6h, F2h F2h,
-  timeout, the same again with the IRQ from B1h). The trap-exit delivery
-  in the host (`host_io_irq`) did not fire for this protected-mode game's
-  real-mode driver call; the fix belongs in the host. Until then those
-  games run with a Sound Blaster digital driver and ESFM.MDI music.
+  Keeper, Heroes 2 and 13 more in the libraries) under the virtual ESS: it
+  sends F2h twice and spins about 0.5 ms on a Pentium with no port access
+  for the interrupt. The trap exit (`host_io_irq`) delivered nothing while
+  a protected-mode client with its own handler sat in a real-mode call,
+  so the interrupt came a period late and the driver found no card.
+  `miles-irq` delivers it there to the real-mode handler the game
+  installed (or through the host bridge when the vector leads into the
+  host), with the delivered mark set so the handler's EOI is credited.
+  86Box: both F2h interrupts are taken and acknowledged at once and the
+  detection passes (6 exit counts of the old skip before, none after).
+  STILL OPEN: the game then never starts digital playback (no further
+  card access after the ESFM driver's own check; the intro is silent),
+  so something later in Miles' install refuses the card. Regression of
+  the delivery change: SBT16 and SADUMP on six pairings, verify-mix on
+  seven, Doom, Duke, Heretic, Wolf3D, Witchaven, Descent 2 on ESS, Theme
+  Hospital on SB16.DIG and Warcraft II on SBPRO.DIG with ESFM all as
+  before. Until solved, those games run with a Sound Blaster digital
+  driver and ESFM.MDI music.
 - HMI's 16-bit ESS modes (E01Bh, E01Ch) are silent on 86Box's bare ES1688
   too, so they are untested; their register sequence is the 8-bit one
   with another format byte (B7h F4h, BCh).

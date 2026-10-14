@@ -211,10 +211,29 @@ host_io_irq:
     shl esi, 4
     movzx eax, word [ebx+own_host_active]
     add esi, eax
+    xor edi, edi
     cmp byte [esi], 0
     je .priority
     cmp byte [esi+1], 0
-    jne .done
+    je .priority
+    ; A client's real-mode call, the client with a protected-mode handler
+    ; for the IRQ. Before, nothing was delivered here and the interrupt
+    ; waited for the next output period: the Miles ESS driver's F2h test
+    ; waits about half a millisecond in its real-mode code with no port
+    ; access, and found no card. The real-mode handler the game installed
+    ; (in the vector, or kept in sb_game_vector when the vector is the
+    ; mixer's) is what a real card's interrupt reaches in that code, so it
+    ; gets it now. Only a vector that leads into the host goes through the
+    ; host bridge, as sb_real_irq passes it (.protected there); the bridge
+    ; holds it while the client has interrupts off in protected mode.
+    movzx ecx, byte [ebx+guest_vector]
+    mov cx, [ecx*4+2]
+    cmp cx, ax
+    jne .priority
+.bridge:
+    shl eax, 16
+    mov ax, [esi+2]
+    mov edi, eax
 .priority:
     mov al, 0bh
     out 20h, al
@@ -224,6 +243,14 @@ host_io_irq:
     out 20h, al
     test ah, [ebx+guest_irq_priority]
     jnz .done
+    test edi, edi
+    jz .ivt_vector
+    mov esi, edi
+    jmp .vector
+.ivt_vector:
+    ; A real-mode handler gets it here: the virtual PIC credits its EOI to
+    ; the virtual interrupt only with the delivered mark set (sb_real_irq).
+    mov byte [ebx+virtual_pic_delivered], 1
     movzx esi, byte [ebx+guest_vector]
     mov esi, [esi*4]
     mov al, [ebx+guest_irq]
