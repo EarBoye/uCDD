@@ -1,6 +1,6 @@
 ## About this fork
 
-This is a fork of vorvek's μCDD. All credit for the driver is his. The
+This is a fork of [vorvek's μCDD](https://github.com/vorvek/uCDD). All credit for the driver is his. The
 changes in this fork were written with Claude, tested on real hardware where
 noted, and otherwise in emulators (QEMU, DOSBox-X and 86Box with MS-DOS 7.1,
 JemmEx and a DPMI test client). [ISSUES.md](ISSUES.md) records the state of
@@ -47,10 +47,11 @@ in ISSUES.md before choosing.
 
 The fork leaned on these people, projects and sites:
 
-- vorvek, for μCDD itself. Everything here is built on that work.
+- [vorvek's μCDD](https://github.com/vorvek/uCDD), the upstream. Everything here is built on that work.
 - [VOGONS](https://www.vogons.org/), where most of what is known about this hardware was worked out in public, and davidmorom there for the game testing noted below.
 - [Japheth's Jemm](https://github.com/Baron-von-Riedesel/Jemm), the memory manager whose port-trap interface the audio driver is built on, with the only written description of it in its QPIEMU sample.
 - [86Box](https://86box.net/) and [DOSBox-X](https://dosbox-x.com/), where nearly every change was tested before it reached real hardware.
+- [JazeFox's UNISOUND](https://www.vogons.org/viewtopic.php?t=72553), which sets the card before the driver loads, on the test machines and in every setup this README describes.
 - [S95Sedan's CT1741_DSP](https://github.com/S95Sedan/CT1741_DSP), firmware dumps and disassemblies of the Sound Blaster 16 DSP: ground truth for what the real chip does.
 - [Kagamiin's ESFMu](https://github.com/Kagamiin/ESFMu), the [Furnace ESFM notes](https://github.com/tildearrow/furnace/blob/master/doc/7-systems/esfm.md) and the [dosbox-staging ESFM discussion](https://github.com/dosbox-staging/dosbox-staging/issues/3608), for how ESFM native mode is entered, which is how the virtual ESS was proven to reach it.
 - [sigmaco's Miles Sound System 6.5c archive](https://github.com/sigmaco/milesss-v6.5c) and [ahmadexp's Open-Source-PC110](https://github.com/ahmadexp/Open-Source-PC110/blob/main/Discovery/ES488/readme.md), for driver and chip-probe reference.
