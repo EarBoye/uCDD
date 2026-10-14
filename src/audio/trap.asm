@@ -697,6 +697,12 @@ port_callback:
 .command:
     cmp byte [arguments], 0
     jne .argument
+    ; The DSP sends a string reply one byte at a time and waits for each
+    ; read, so it takes no command until the string is read and its write
+    ; port reads busy meanwhile (.ready). A command written anyway is
+    ; dropped here; the chip would hold it in its mailbox.
+    cmp word [reply_pointer], 0
+    jne .done
     mov [dsp_command], al
     cmp byte [virtual_model], 4
     jne .common_command
@@ -733,12 +739,6 @@ port_callback:
     mov byte [ess_extended], 0
     jmp .done
 .common_command:
-    ; A string reply left unread ends with the next command.
-    cmp word [reply_pointer], 0
-    je .reply_clear
-    mov word [reply_pointer], 0
-    mov byte [reply_count], 0
-.reply_clear:
     cmp al, 10h
     je .time_constant
     cmp al, 41h
@@ -1749,8 +1749,12 @@ port_callback:
     mov al, 0ffh
     jmp .result
 .ready:
-    ; Only bit 7 is defined; a card reads the other bits as set.
+    ; Only bit 7 is defined; a card reads the other bits as set. Busy while
+    ; a string reply waits to be read.
     mov al, 7fh
+    cmp word [reply_pointer], 0
+    je .result
+    mov al, 0ffh
     jmp .result
 .status:
 %ifdef VIRTUAL_IRQ
@@ -2162,7 +2166,8 @@ pending_format db 0
 ess_extended db 0
 ess_started db 0
 ess_id_phase db 0
-; E3h on a DSP 4.xx: the text the CT1741 firmware sends, zero included.
+; E3h on a DSP 4.xx: the text the CT1741 firmware sends, zero included. While
+; reply_pointer is set the write port reads busy and commands are dropped.
 reply_pointer dw 0
 copyright_text db 'COPYRIGHT (C) CREATIVE TECHNOLOGY LTD, 1992.',0
 copyright_length equ $-copyright_text
