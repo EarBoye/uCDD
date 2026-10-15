@@ -2215,22 +2215,32 @@ dma_port:
 .done:
     ret
 
-; The ESS extension state after a DSP reset: commands off, A5h F8h (a DMA
-; count of 2048, data sheet), B1h and B2h as the chip reads them, the rest
-; zero. Keeps AL (the reset port value) for the caller.
+; The ESS extension state after a DSP reset: commands off and the registers
+; at the values the ES1868F sets on a software reset. Measured with ESSSTAT
+; on 15 Oct 2026: known values written, 2x6h 3 then 0, read back. The data
+; sheet's "set up for 8 kHz sampling" is A2h = E7h (a 3.5 kHz roll-off) and
+; its 2048-byte count is A4h/A5h = 00h/F8h; A1h, which the sheet leaves
+; "unknown", is DCh (22097 Hz). A9h, BAh and BCh were not written in the
+; test; their values are what the chip reads after a reset. Keeps AL (the
+; reset port value) for the caller.
 ess_virtual_reset:
     push ax
     push cx
+    push si
     push di
     push es
     push cs
     pop es
+    mov si, ess_reset_values
     mov di, ess_virtual_regs
-    xor ax, ax
     mov cx, 16
     cld
-    rep stosw
-    mov byte [ess_virtual_regs+0a5h-0a0h], 0f8h
+    rep movsw
+    pop es
+    pop di
+    pop si
+    push di
+    push es
     ; B1h and B2h bits 3:0 are read-only and decode the card's IRQ and DMA
     ; channel, the same two bits in 3:2 and 1:0 (ES1868 data sheet, B1h and
     ; B2h descriptions): IRQ 2/9 0000, 5 0101, 7 1010, 10 1111; DMA 0 0101,
@@ -2297,6 +2307,13 @@ ess_extended db 0
 ; 1 from the ESS's 41h until its time constant byte is taken.
 ess_clock_alternate db 0
 ess_started db 0
+; A0h to BFh after a software reset, as the ES1868F reads them (B1h and B2h
+; are then given the code for the virtual IRQ and DMA).
+ess_reset_values:
+    db 00h, 0dch, 0e7h, 00h, 00h, 0f8h, 00h, 00h      ; A0h to A7h
+    db 02h, 0ch, 00h, 00h, 00h, 00h, 00h, 00h         ; A8h to AFh
+    db 00h, 10h, 10h, 00h, 0ffh, 00h, 80h, 44h        ; B0h to B7h
+    db 00h, 00h, 00h, 00h, 76h, 00h, 00h, 00h         ; B8h to BFh
 ; IRQ number, bits 3:0 for B1h; 0FFh ends the list (ES1868 data sheet).
 ess_irq_bits db 2, 0, 9, 0, 5, 5, 7, 0ah, 10, 0fh, 0ffh
 ; B2h bits 3:0 for DMA 0 to 3 (channel 2 has no code: 0000).
