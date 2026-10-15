@@ -78,7 +78,13 @@ the development machine):
    - Nothing the game can observe moves: counts, interrupts and status
      follow the DAC clock.
    - Disc audio is not involved.
-4. **Service points.** Every trapped access to the card's ports and the DMA
+4. **Pause and DMA enable** (data sheet, Table 10 and the B2h description).
+   - D0h pauses the DMA only: the DAC plays out the FIFO. D4h continues the
+     DMA from the same counter and block. A paused stream does not time
+     out.
+   - With B2h bit 6 clear the chip drives no DRQ, so the virtual DMA moves
+     nothing (the bytes stay put, no counter overflow, no interrupt).
+5. **Service points.** Every trapped access to the card's ports and the DMA
    controller's ports, and every output period interrupt. A game that polls
    sees the exact state. An interrupt is requested at the first service
    after its moment: within one output period (0.73 ms at 32 frames).
@@ -96,6 +102,10 @@ the development machine):
 - **Recording** is not modelled. Neither is Audio 2.
 - **Buffer location.** A DMA buffer above 1 MB (the own host's high source
   path) keeps the previous path, without the model.
+- **Fill rate by transfer type.** B9h 1 and 2 are demand transfers of 2 and
+  4 bytes per request. The model fills at the rate measured with B9h=0
+  (single transfers) for all three. ESSSTAT's B9h blocks measure the chip
+  (not yet run on the PC).
 - **Period length.** The model is assembled for output periods up to 256
   frames (OUTPUT_SHIFT 8), which keeps its DAC ring at 4 KB.
 

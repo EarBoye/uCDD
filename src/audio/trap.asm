@@ -414,6 +414,10 @@ port_callback:
     je .done
     test bl, bl
     jz .mixer_reset
+    cmp byte [virtual_model], 4
+    jne .mixer_not_twin
+    call ess_mixer_twin_write
+.mixer_not_twin:
     ; The virtual ESS's registers 30h to 3Fh are its own (32h master, 36h FM,
     ; 38h CD, 3Eh line among them); the same numbers in virtual_mixer are the
     ; SB16 per-channel gains the mixer reads. They are kept apart, and the
@@ -540,6 +544,9 @@ port_callback:
     mov [ess_mixer_high+2], al
     mov [ess_mixer_high+6], al
     mov [ess_mixer_high+8], al
+    cmp byte [virtual_model], 4
+    jne .volume_update
+    mov [virtual_mixer+14h], al
     jmp .volume_update
 .flip_reset:
     mov byte [si+DMA_FLIP], 0
@@ -899,6 +906,14 @@ port_callback:
 %endif
     jmp .done
 .resume8:
+%ifdef ESS_FIFO_MODEL
+    ; D4h continues the DMA that D0h paused, from the same counter.
+    cmp byte [ess_fifo_on], 0
+    je .resume8_sb
+    call ess_fifo_unpause
+    jmp .done
+.resume8_sb:
+%endif
     cmp byte [game_irq_bit], 2
     je .done
     jmp .resume
@@ -979,10 +994,25 @@ port_callback:
     mov [game_exit_frame], eax
     jmp .done
 .pause8:
+%ifdef ESS_FIFO_MODEL
+    ; Extended Mode on the virtual ESS: D0h pauses the DMA only, and the
+    ; FIFO plays out (data sheet, Table 10).
+    cmp byte [ess_fifo_on], 0
+    je .pause8_sb
+    call ess_fifo_pause
+    jmp .done
+.pause8_sb:
+%endif
     cmp byte [game_irq_bit], 2
     je .done
     jmp .pause
 .pause16:
+    ; On the ESS, D5h returns one byte, 1, for the ES488 (Table 10).
+    cmp byte [virtual_model], 4
+    jne .pause16_sb
+    mov al, 1
+    jmp .one_reply
+.pause16_sb:
     cmp byte [game_irq_bit], 2
     jne .done
 .pause:
@@ -1567,6 +1597,10 @@ port_callback:
     ; SB16's output filter follows the sample rate, for legacy commands too.
     cmp byte [virtual_dsp_version], 4
     jae .filter_clear
+    ; So does the ES1868's: it ignores the SB Pro filter bits (data sheet,
+    ; Table 14 note) and sets its filter from 40h/41h or 42h (Table 10).
+    cmp byte [virtual_model], 4
+    je .filter_clear
     mov byte [sb_filter_legacy], 1
     ; A block that follows a filtered block is the same output stream. Keep the
     ; filter state: the response to the last block has not ended.
@@ -1738,6 +1772,11 @@ port_callback:
 .ess_fresh:
     mov byte [ess_start_request], 1
 %endif
+    ; The B8h write's argument is taken: the start below joins the Sound
+    ; Blaster starts, which arrive with none left. Without this the next
+    ; command byte was read as another B8h value (D0h stopped the stream,
+    ; C0h B8h lost its reply).
+    mov byte [arguments], 0
     ; A4h/A5h hold the two's complement of the byte count: the count less
     ; one, as the start commands take it, is its complement.
     mov ax, [ess_virtual_regs+0a4h-0a0h]
@@ -1946,10 +1985,16 @@ port_callback:
     cmp byte [virtual_model], 4
     jne .mixer_plain
     cmp bx, 30h
-    jb .mixer_plain
+    jb .mixer_ess_low
     cmp bx, 3fh
     ja .mixer_plain
     mov al, [ess_mixer_high+bx-30h]
+    jmp .result
+.mixer_ess_low:
+    ; The ES1868's SB Pro registers read bits 0 and 4 as 1, and 0Ch bit 0
+    ; as 1 (data sheet, before Table 14).
+    mov al, [virtual_mixer+bx]
+    call ess_mixer_read_bits
     jmp .result
 .mixer_plain:
     mov al, [virtual_mixer+bx]
@@ -2396,6 +2441,75 @@ ess_reset_values:
     db 00h, 10h, 10h, 00h, 0ffh, 00h, 80h, 44h        ; B0h to B7h
     db 00h, 00h, 00h, 00h, 76h, 00h, 00h, 00h         ; B8h to BFh
 ; IRQ number, bits 3:0 for B1h; 0FFh ends the list (ES1868 data sheet).
+; The ES1868's mixer (data sheet, the extended-access passage before Table
+; 14): 04h, 22h, 26h, 28h and 2Eh are the registers 14h, 32h, 36h, 38h and
+; 3Eh seen through the SB Pro address. Written there, bits 0 and 4 are
+; cleared; read there, they are 1. Written at the twin, all 8 bits. 0Ch
+; bit 0 is cleared by a write and reads 1. BL=the register, AL=the value
+; (changed as the register keeps it); both copies are kept the same.
+ess_mixer_twin_write:
+    push si
+    push di
+    cmp bl, 0ch
+    jne .pairs
+    and al, 0feh
+    jmp .done
+.pairs:
+    mov si, ess_mixer_twins
+.find:
+    mov di, [si]
+    test di, di
+    jz .done
+    cmp bl, [si]
+    je .sb_pro
+    cmp bl, [si+1]
+    je .extended
+    add si, 2
+    jmp .find
+.sb_pro:
+    and al, 0eeh
+    movzx di, byte [si+1]
+    jmp .store_twin
+.extended:
+    movzx di, byte [si]
+    mov [virtual_mixer+di], al
+    jmp .done
+.store_twin:
+    cmp di, 30h
+    jb .twin_low
+    mov [ess_mixer_high+di-30h], al
+    jmp .done
+.twin_low:
+    mov [virtual_mixer+di], al
+.done:
+    pop di
+    pop si
+    ret
+
+; BX=an ESS mixer register below 30h, AL=its stored value: the read value.
+ess_mixer_read_bits:
+    cmp bl, 0ch
+    jne .pairs
+    or al, 1
+    ret
+.pairs:
+    cmp bl, 4
+    je .stuck
+    cmp bl, 22h
+    je .stuck
+    cmp bl, 26h
+    je .stuck
+    cmp bl, 28h
+    je .stuck
+    cmp bl, 2eh
+    jne .done
+.stuck:
+    or al, 11h
+.done:
+    ret
+
+ess_mixer_twins db 04h,14h, 22h,32h, 26h,36h, 28h,38h, 2eh,3eh, 0, 0
+
 ess_irq_bits db 2, 0, 9, 0, 5, 5, 7, 0ah, 10, 0fh, 0ffh
 ; B2h bits 3:0 for DMA 0 to 3 (channel 2 has no code: 0000).
 ess_dma_bits db 5, 0ah, 0, 0fh

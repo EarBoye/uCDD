@@ -132,6 +132,7 @@ ess_fifo_start:
     mov byte [sb_tail_valid], 0
     mov byte [sb_single_hold], 0
     mov byte [ess_dma_on], 1
+    mov byte [ess_dma_paused], 0
     mov byte [ess_fifo_on], 1
     pop es
     popad
@@ -153,6 +154,7 @@ ess_fifo_continue:
     mov [ess_seg_start], eax
     call ess_fifo_block
     mov byte [ess_dma_on], 1
+    mov byte [ess_dma_paused], 0
     popad
     ret
 
@@ -189,9 +191,28 @@ ess_fifo_block:
 .ready:
     ret
 
+; D0h: the DMA pauses where it is; the DAC plays out the FIFO (data sheet,
+; Table 10). D4h continues it, the counter and the block unchanged. Only a
+; running DMA pauses.
+ess_fifo_pause:
+    cmp byte [ess_dma_on], 0
+    je .done
+    mov byte [ess_dma_on], 0
+    mov byte [ess_dma_paused], 1
+.done:
+    ret
+ess_fifo_unpause:
+    cmp byte [ess_dma_paused], 0
+    je .done
+    mov byte [ess_dma_paused], 0
+    mov byte [ess_dma_on], 1
+.done:
+    ret
+
 ; B8h bit 0 cleared: the DMA stops; the DAC plays out the FIFO.
 ess_fifo_stop_dma:
     mov byte [ess_dma_on], 0
+    mov byte [ess_dma_paused], 0
     call ess_fifo_position
     ret
 
@@ -225,6 +246,7 @@ ess_dac_free:
 ess_fifo_reset:
     mov byte [ess_fifo_on], 0
     mov byte [ess_dma_on], 0
+    mov byte [ess_dma_paused], 0
     mov byte [ess_status_latch], 0
     ret
 
@@ -255,6 +277,10 @@ ess_fifo_service:
     call ess_dac_frame
     cmp byte [ess_dma_on], 0
     je .next
+    ; B2h bit 6 enables the DRQ for Extended Mode DMA; clear, the chip
+    ; requests nothing (data sheet, B2h).
+    test byte [ess_virtual_regs+0b2h-0a0h], 40h
+    jz .next
     call ess_dma_frame
 .next:
     inc dword [ess_k]
@@ -263,6 +289,9 @@ ess_fifo_service:
     ; With the DMA stopped and the FIFO empty for longer than the output
     ; delay, the stream has played out.
     cmp byte [ess_dma_on], 0
+    jne .raise
+    ; A DMA paused by D0h is still the stream's.
+    cmp byte [ess_dma_paused], 0
     jne .raise
     mov eax, [ess_d]
     cmp eax, [ess_q]
@@ -530,6 +559,8 @@ ess_shift db 0
 ess_src_wrap db 0
 ess_fifo_on db 0
 ess_dma_on db 0
+; Set by D0h while the DMA ran, cleared by D4h, B8h and a reset.
+ess_dma_paused db 0
 ess_raise db 0
 ; 2xCh bits 0 (DMA counter overflow) and 2 (processor interrupt) until a 2xEh
 ; read.
