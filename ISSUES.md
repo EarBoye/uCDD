@@ -129,6 +129,12 @@ changed volumes.
   host), with the delivered mark set so the handler's EOI is credited.
   86Box: both F2h interrupts are taken and acknowledged at once and the
   detection passes (6 exit counts of the old skip before, none after).
+  The real-mode delivery now sets virtual_pic_delivered: host_io_irq never
+  did since 412fe80 introduced the mark, so a handler's EOI after a
+  delivery from the trap exit was not credited and the virtual line stayed
+  in service. A latent bug only this real-mode-call case reached: on the
+  old code the path delivered 0 times in 64303 trap exits across Wolf3D
+  (real mode) and Doom (DOS/4GW).
   STILL OPEN: the game then never starts digital playback (no further
   card access after the ESFM driver's own check; the intro is silent),
   so something later in Miles' install refuses the card. Regression of
