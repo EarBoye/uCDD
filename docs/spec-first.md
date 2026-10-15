@@ -440,12 +440,51 @@ observable behaviour identical with it on and off.
    sound. Evidence from the ESS drivers and the game set decides the
    order, never whether.
 
-## 12. Michael's principles (15 Oct)
+## 12. The mantra (16 Oct 2026)
 
-In order:
+Agreed with Michael after a review; it replaces the three principles of
+15 Oct. When the rules conflict, rule 5 sets the order.
 
-1. The specification and reference documents are mother and father. They
-   are holy. Compliance is the goal.
-2. Accurate CD audio output, with the game's audio mixed in. CD audio is
-   downsampled only when the selected physical card cannot play its rate.
-3. Performance is the crown we earn.
+1. **The specification and reference documents are mother and father.**
+   They are holy; compliance is our goal.
+   - We check them at the start of each step, when a bug is found, and
+     after regression testing.
+   - Where the documents are silent or contradict each other, emulation
+     decides first, then the real hardware we have.
+   - That hardware is one sample, not the whole family. Every disagreement
+     between documents, emulators and hardware is written down.
+2. **We are platform and hardware agnostic.**
+   - The driver works from a 386 to an Athlon or Pentium III; the 386 is
+     best effort.
+   - We use the references to make sure, emulators to confirm, and real
+     hardware to prove it where we have it.
+3. **We aim for accurate CD audio output and mix in game audio.** We only
+   accept downsampling CD audio if the selected physical card is incapable,
+   or the CPU cannot keep up within the 16 ms ceiling (rule 5), and we
+   record which.
+4. **Performance is the crown we earn.** If the specification allows it,
+   we reach for it.
+5. **When rules conflict, the order is: specification, then working on
+   every platform, then accurate audio, then performance.**
+   - Added latency never exceeds 16 ms.
+   - Within that ceiling, a system that cannot keep up may get a longer
+     period, downsampled audio or another allowance, and we record why.
+6. **The ESS family and the Sound Blaster family are separate entities.**
+   - We do not build one as the other and correct it from there.
+   - In compatibility mode the ESS follows the ESS data sheets' description
+     of its Sound Blaster compatibility, not Creative's documents.
+   - The ESS work follows the ESS sheets as a family. The virtual card
+     follows the model it presents, and the physical path handles every
+     model we have a sheet for.
+   - Consequence for layer C: the virtual ESS's command set is to be built
+     from the ESS sheets' command tables, not from the SB Pro parser with
+     the ESS commands in front of it, as it is now.
+7. **We write meticulous notes, for us and for others who may find them.**
+   - When we find a bug, we write it down. When we find the answer, we
+     write it beside it.
+   - The fork's limits stay: no game files, nothing to the original author
+     without Michael's say-so, no test-bench nicknames.
+8. **Every result carries its evidence grade:** data sheet, emulator, or
+   hardware.
+9. **We write beautiful, efficient, well-commented code for humans to
+   read.**
