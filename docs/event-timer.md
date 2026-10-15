@@ -239,14 +239,17 @@ F2h writes 3 us apart, count the interrupts, measure the latency with the
 8237 count: expect one interrupt, 23 to 45 us); Theme Hospital's
 AUDIODRV.DIG on the virtual ESS plays; Descent 2 click rate unchanged
 (about 1/s); Doom, Duke, Heretic, Wolf3D, Witchaven, Warcraft II unchanged;
-the RTC users from the survey (section 9): A.G.E. (rewrites registers A and B
-and A1h every frame), Future Dimension (direct IVT write, 1024 and 64 Hz
-switches), a MIDPAK RTC build at 128 Hz (Capitalism), Lords of the Realm
-(A1h on exit, then a second program must still get the timer), The Horde
-(register B SET and clock writes, 1 s measurement), each with a disc
-mounted so the driver is engaged, and the same games with the driver aside;
-a program that calls INT 15h AH=86h; the clock and date (INT 1Ah and DOS)
-correct after each run;
+the RTC users from the survey (section 9) that have CD audio, so the
+driver is engaged while they run: Future Dimension (direct IVT 70h write,
+1024 and 64 Hz switches for the whole run), The Horde (128 Hz measurement at
+start-up, then register B SET and clock writes), Capitalism Plus with its
+RTC MIDPAK chosen (128 Hz); the BIOS wait users with CD audio: The Secret of
+Monkey Island CD (SCUMM, INT 15h AH=86h waits of 976 us) and Rayman (INT 15h
+AH=83h); one RTC user with no audio tracks run with the driver aside, to
+confirm the step-aside leaves it alone (A.G.E., which rewrites registers A
+and B and A1h every frame); Lords of the Realm followed by a second program,
+to confirm A1h bit 0 on exit does not stop the timer; the clock and date
+(INT 1Ah and DOS) correct after each run;
 realtics on the Pentium and the 386 within noise; CMOS registers A and B
 byte-identical before install and after exit.
 
@@ -346,5 +349,28 @@ the game's pace); the timer takes IRQ 8 in Jemm's slot, not the IVT; A1h
 bit 0 is virtualised; clock writes pass through; a slave PIC remap stands
 the timer down; and the timer is held only while the driver is engaged.
 Confidence: high for the confirmed list, medium for completeness (the
-unscanned files, code a byte scan cannot see, and the BIOS's own INT 15h
-use).
+unscanned files and code a byte scan cannot see).
+
+Games on the library's discs with CD audio among the RTC users: Future
+Dimension (14 tracks), The Horde (11), Alien Logic (5, static only),
+Capitalism Plus (8, only with the RTC MIDPAK). The others (KKND, Lords of
+the Realm, Lost Vikings 2, Perfect General II, Capitalism, Simon 2) are data
+discs, so the driver has stepped aside while they run.
+
+**BIOS wait users** (static scan of the same files, INT 15h AH=86h and 83h):
+
+| Call | Titles | Notes |
+| --- | --- | --- |
+| AH=86h, 11 games | Double Dragon 3, IAS, Jill of the Jungle 1 to 3, Liero, Protostar's SETUP, Hannibal's HANSOUND, The Secret of Monkey Island (floppy and CD), Day of the Tentacle, The Patrician, Sword of Aragon, Ultima 0's STUBIT | SCUMM waits 976 us (one 1024 Hz tick); Jill 50 ms; The Patrician 30 ms |
+| AH=83h, 6 games | Rayman and Rayman Forever (game, editor and SETSOUND), Space Max, Strife's AVI.EXE (cancel only), Wizardry I, III, V SCANCODE.COM | |
+| DPMI 0300h for INT 15h | none | Slipstream 5000 hooks INT 15h rather than calling it |
+
+With CD audio: Monkey Island CD (24 tracks), Rayman (24), Rayman Forever
+(19). Whether the calls are reached at runtime is not yet known; only 86Box
+can show it, since DOSBox-X implements INT 15h without the RTC.
+
+A BIOS wait counts in its own INT 70h handler by the microseconds a tick is
+worth at the rate it set (976 at 1024 Hz). The tick splitting in 4.4 gives
+it exactly its own rate whatever the chip runs at, which is the property
+these games depend on; a tick delivered at our rate instead would make a
+SCUMM wait eight times short during a fast burst.
