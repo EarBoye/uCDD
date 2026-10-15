@@ -1620,8 +1620,24 @@ port_callback:
 ; .argument with arguments=1. Only B8h acts: bit 0 starts or stops the
 ; transfer, with the format taken from B7h, the rate from A1h and the byte
 ; count from A4h/A5h; the other registers are stored for C0h reads.
+; B1h and B2h keep bits 3:0, which are read-only on the ES1868 (data sheet,
+; B1h and B2h descriptions). B1h bit 7 does not take a write: the ES1868F
+; reads 5Ah after DAh is written (measured, 15 Oct 2026).
 .ess_write:
     xor bh, bh
+    cmp bl, 0b1h-0a0h
+    je .ess_write_b1
+    cmp bl, 0b2h-0a0h
+    jne .ess_write_store
+    and al, 0f0h
+    jmp .ess_write_low
+.ess_write_b1:
+    and al, 70h
+.ess_write_low:
+    mov ah, [ess_virtual_regs+bx]
+    and ah, 0fh
+    or al, ah
+.ess_write_store:
     mov [ess_virtual_regs+bx], al
     cmp bl, 0b8h-0a0h
     jne .argument_done
@@ -2199,9 +2215,9 @@ dma_port:
 .done:
     ret
 
-; The ESS extension state after a DSP reset: commands off, A5h F8h, B1h and
-; B2h with bits 4 and 6 (the data sheet's reset values), the rest zero.
-; Keeps AL (the reset port value) for the caller.
+; The ESS extension state after a DSP reset: commands off, A5h F8h (a DMA
+; count of 2048, data sheet), B1h and B2h as the chip reads them, the rest
+; zero. Keeps AL (the reset port value) for the caller.
 ess_virtual_reset:
     push ax
     push cx
@@ -2215,15 +2231,17 @@ ess_virtual_reset:
     cld
     rep stosw
     mov byte [ess_virtual_regs+0a5h-0a0h], 0f8h
-    ; B1h and B2h also carry the card's IRQ and DMA selection in bits 3:2
-    ; (IRQ 9, 5, 7, 10; DMA none, 0, 1, 3). The Miles ESS driver reads them
-    ; when its settings leave IRQ or DMA at -1, so they report the virtual
-    ; card's own. The 50h base (bits 4 and 6 set, 7 and 5 clear) is the
-    ; data sheet's setting for extended mode; bit 6 enables the DMA counter
-    ; interrupt. A real ES1868 after UNISOUND reads 1Ah (bit 6 clear, bit 1
-    ; set): do not copy that.
+    ; B1h and B2h bits 3:0 are read-only and decode the card's IRQ and DMA
+    ; channel, the same two bits in 3:2 and 1:0 (ES1868 data sheet, B1h and
+    ; B2h descriptions): IRQ 2/9 0000, 5 0101, 7 1010, 10 1111; DMA 0 0101,
+    ; 1 1010, 3 1111, others 0000. They report the virtual card's own
+    ; selection; the Miles ESS driver reads them when its settings leave IRQ
+    ; or DMA at -1, and ADRV688 keeps them in its read-modify-write. The
+    ; upper bits are bit 4 set and 7:5 clear, as the ES1868F reads (1Ah with
+    ; IRQ 7 and DMA 1, measured after UNISOUND, 15 Oct 2026); the data sheet
+    ; gives no reset value for them.
     push bx
-    mov ah, 50h
+    mov ah, 10h
     mov bx, ess_irq_bits
 .irq_bits:
     cmp byte [bx], 0ffh
@@ -2237,7 +2255,7 @@ ess_virtual_reset:
     or ah, [bx+1]
 .irq_ready:
     mov [ess_virtual_regs+0b1h-0a0h], ah
-    mov ah, 50h
+    mov ah, 10h
     mov bl, [virtual_dma8]
     cmp bl, 3
     ja .dma_ready
@@ -2279,10 +2297,10 @@ ess_extended db 0
 ; 1 from the ESS's 41h until its time constant byte is taken.
 ess_clock_alternate db 0
 ess_started db 0
-; IRQ number, bits 3:2 for B1h; 0FFh ends the list.
-ess_irq_bits db 2, 0, 9, 0, 5, 4, 7, 8, 10, 0ch, 0ffh
-; B2h bits 3:2 for DMA 0 to 3 (channel 2 has no code: none).
-ess_dma_bits db 4, 8, 0, 0ch
+; IRQ number, bits 3:0 for B1h; 0FFh ends the list (ES1868 data sheet).
+ess_irq_bits db 2, 0, 9, 0, 5, 5, 7, 0ah, 10, 0fh, 0ffh
+; B2h bits 3:0 for DMA 0 to 3 (channel 2 has no code: 0000).
+ess_dma_bits db 5, 0ah, 0, 0fh
 ess_id_phase db 0
 ; E3h on a DSP 4.xx: the text the CT1741 firmware sends, zero included. While
 ; reply_pointer is set the write port reads busy and commands are dropped.

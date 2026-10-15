@@ -241,18 +241,23 @@ changed volumes.
   not understood from the code (`game_mix_frame` should already equal
   the read position). The Sound Blaster 16 setting of the same game is
   clean on 86Box with and without the change. Not yet on the real PC.
-- The virtual ESS's B1h and B2h read 50h after a reset: IRQ 9 and no DMA
-  in their bits 3:2. The Miles ESS driver (AUDIODRV.DIG) takes IRQ and DMA
-  from there when its DIG.INI leaves them at -1. Fixed (`ess-irq-bits`):
-  the bits report the virtual IRQ (9, 5, 7, 10) and DMA (none, 0, 1, 3);
-  58h 58h for 7 and 1. The encoding is the real ES1868's: it read 1Ah 1Ah
-  after UNISOUND at IRQ 7 and DMA 1 (HWLOG run 1), 86Box's ES1688 reads
-  5Ah. The real chip's other bits differ from the virtual 50h base
-  (bit 6 clear, bit 1 set); not acted on.
+- The virtual ESS's B1h and B2h. The ES1868 data sheet makes bits 3:0
+  read-only, decoding the IRQ (2/9 0000, 5 0101, 7 1010, 10 1111) and the
+  DMA channel (0 0101, 1 1010, 3 1111). The ES1868F reads 1Ah after
+  UNISOUND at IRQ 7 and DMA 1, keeps bits 3:0 through writes of 5Ah, DAh
+  and 50h, and does not take bit 7 in B1h (DAh reads back 5Ah) while B2h
+  does (ESSSTAT, 15 Oct 2026). The first fix (`ess-irq-bits`) put a two-bit
+  code in bits 3:2 only, over a 50h base, and let games write bits 3:0.
+  Fixed (`ess-registers`): bits 3:0 carry the data sheet's code and ignore
+  writes, B1h bit 7 is dropped, and the reset value is 10h plus the code,
+  as the chip reads. AUDIODRV.DIG reads them when its DIG.INI leaves IRQ
+  or DMA at -1; ADRV688.DIG keeps bits 3:0 in its read-modify-write.
 - The Miles ESS digital driver (AUDIODRV.DIG) tests the card with two F2h
-  commands a few microseconds apart and expects one interrupt after the
-  DSP's latency; the virtual card delivers each at once, the test counts
-  two and fails. Measured in DOSBox-X on a bare ESS688 (with a port
+  commands a few microseconds apart and waits for its interrupt counter to
+  read one, then two. On the ES1868F each F2h raises its own interrupt
+  11.7 to 14.2 us after the command, so the counter passes through one
+  (F2TEST, 15 Oct 2026); two F2h are not merged. The virtual card delivers
+  each at once, the count goes from none to two, and the test fails. Measured in DOSBox-X on a bare ESS688 (with a port
   logger added to a local DOSBox-X build): the second F2h 3 us after the
   first, the interrupt 13 us after
   the first, then a spin of about 0.5 ms with no port access for the
