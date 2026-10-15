@@ -201,9 +201,22 @@ stopped the chip. The timer traps the four ports again, reads register A
 and B from the chip into the game's copies (the game's rate and PIE as it
 left them), restores its own rate and PIE, and continues in owned mode.
 One period at most is lost to the coarse fallback. Entering shared mode
-happens at the trapped register B write that turns the game's PIE on at a
-fast enough rate, or at a register A write that raises the rate while PIE
-is on.
+is armed by the trapped register B write that turns the game's PIE on at a
+fast enough rate, or by a register A write that raises the rate while PIE
+is on, and taken only once the game has kept that rate for 100 ms of
+owned-mode ticks. A rate blip is then never shared: Future Dimension raises
+its rate to 1024 Hz and drops it to 64 Hz again 0.7 ms later twice in a 75 s
+run, and without the delay each blip would cost an enter and a leave. The
+100 ms in owned mode at 1024 Hz cost what trapping costs, about a
+hundredth of a second of a Pentium each time.
+
+Future Dimension (rig log, 75 s): register B written once (43h) at 0.78 s,
+PIE on throughout; register A switched between 1024 Hz and 64 Hz eleven
+times, about six a minute, each as read A then write A with no PIE or A1h
+change; its IVT 70h entry swapped between four handlers every 10 to 20 s.
+So the 64 Hz drop in shared mode is seen by the tick-interval check, never
+as silence, and the vector swaps are covered by delivering to whatever IVT
+70h holds at the tick.
 
 **The game's view in owned mode: a virtual RTC on ports 70h and 71h.**
 
@@ -301,7 +314,8 @@ AUDIODRV.DIG on the virtual ESS plays; Descent 2 click rate unchanged
 the RTC users from the survey (section 9) that have CD audio, so the
 driver is engaged while they run: Future Dimension (direct IVT 70h write,
 1024 and 64 Hz switches for the whole run, so it crosses between shared and
-owned mode many times a minute; its cost while engaged must be within noise
+owned mode about six times a minute, with two 0.7 ms rate blips that must
+not enter shared mode; its cost while engaged must be within noise
 of the driver without the timer), The Horde (128 Hz measurement at
 start-up, then register B SET and clock writes), Capitalism Plus with its
 RTC MIDPAK chosen (128 Hz); the BIOS wait users with CD audio: The Secret of
