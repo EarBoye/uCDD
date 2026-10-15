@@ -160,19 +160,69 @@ ICW1 to the slave PIC (Inner Worlds remaps it from 70h to 28h), the vector
 the slot watches is gone: the timer stands down until audio_release and
 deadlines fall back to trap exits and period ticks.
 
-**The game's view: a virtual RTC on ports 70h and 71h.** Both are trapped
-while the timer is held. Each RTC user in the survey writes them at most a
-few hundred times a second (A.G.E., the worst, 190 a second), about half a
-percent of a Pentium at 26 us a trap.
+**Two modes.** The cost of trapping 70h and 71h is set by the game's
+interrupt handler, not its set-up: each game tick costs two or three RTC
+port accesses plus a slave EOI. The rig measured over 40 s, at 26 us a
+trap from a protected-mode game:
 
-- Index latch: the game's last index (and its NMI bit 7) is kept. The
+| Game | Traps a second | Pentium share | Timer held? |
+| --- | --- | --- | --- |
+| Future Dimension | 4,734 | 12.3 % | yes, CD audio |
+| Galactix | 4,096 | 10.6 % | no, floppy |
+| A.G.E. | 3,072 | 8.0 % | no, floppy |
+| Space Max | 2,998 | 7.8 % | no, floppy |
+| Zack (MIDPAK) | 640 | 1.7 % | no, data disc |
+| Stronghold (MIDPAK) | 384 | 1.0 % | no, data disc |
+
+Trapping every access is too expensive for a game at 1024 Hz, so the timer
+has two modes and moves between them as the game's use changes. Jemm's QPI
+traps and untraps single ports (1A06h, 1A07h), so a switch costs a few
+calls.
+
+- Owned mode: the game's PIE is off, or its rate is slower than ours. The
+  timer runs the chip at its own rate, 70h and 71h are trapped, and the
+  game sees the virtual RTC below. A 128 Hz MIDPAK costs 1 to 2 percent
+  here; a game with PIE off costs nothing but its rare accesses.
+- Shared mode: the game's PIE is on and its rate is at least ours (1024 Hz
+  and up). The chip runs at the game's rate, 70h, 71h, A0h and A1h are
+  untrapped, the game reads register C and sends its own slave EOI, and
+  the timer takes each tick from Jemm's slot without touching the chip.
+  The game's handler then costs what it costs with no driver. The timer's
+  fast burst is not available here unless the game's own rate is 8192 Hz,
+  so deadlines are met within one game tick (976 us at 1024 Hz): Miles's
+  0.5 ms F2h test would still fail in shared mode, which takes an RTC game
+  that also uses the Miles ESS driver with CD audio, none known.
+
+Leaving shared mode: the timer cannot see a rate or PIE write with the
+ports untrapped, so it watches its own ticks instead. At every period tick
+it checks the time since the last slot tick; if no tick came within two of
+its own coarse intervals, or the interval has grown, the game slowed or
+stopped the chip. The timer traps the four ports again, reads register A
+and B from the chip into the game's copies (the game's rate and PIE as it
+left them), restores its own rate and PIE, and continues in owned mode.
+One period at most is lost to the coarse fallback. Entering shared mode
+happens at the trapped register B write that turns the game's PIE on at a
+fast enough rate, or at a register A write that raises the rate while PIE
+is on.
+
+**The game's view in owned mode: a virtual RTC on ports 70h and 71h.**
+
+- Index latch: the game's last index (and its NMI bit 7) is kept. Required:
+  Future Dimension selects 0Ch once and its handler then only reads 71h
+  (about 110k reads with no 70h write); Galactix's handler ends by
+  selecting 0Dh. The
   timer's own handler selects register C and then writes the game's index
   back before it returns, so a game interrupted between its 70h write and
   its 71h access reads the register it selected.
-- Register A: bits 6:4 and bit 7 pass through; bits 3:0 (the rate) are the
-  game's, stored. The chip runs at the faster of the game's rate and ours.
-- Register B: bit 6 (PIE) is the game's, stored; the chip's PIE is ours
-  while the timer is held. Every other bit passes through, including SET
+- Register A: bits 6:4 pass through; bits 3:0 (the rate) are the game's,
+  stored. Bit 7 is the chip's update-in-progress flag on every read, never
+  the bit the game wrote: The Horde writes A9h and then polls bit 7, which
+  ends within about 2 ms on a real chip and never if the written bit is
+  echoed. The chip runs at the faster of the game's rate and ours.
+- Register B: bit 6 (PIE) is the game's, stored, and a read returns the
+  stored bit: MIDPAK reads register B about every 7 ms, and the MIDPAK and
+  Lords of the Realm libraries test bit 6 to see whether the RTC is already
+  taken. The chip's PIE is ours while the timer is held. Every other bit passes through, including SET
   (bit 7) and the time format bits, so clock writes reach the chip (The
   Horde writes register B SET and time registers 00h, 02h, 04h). The
   MC146818 keeps the periodic interrupt running while SET holds updates.
@@ -181,8 +231,11 @@ percent of a Pentium at 26 us a trap.
   bits it returns other than PF (AF, UF, from a BIOS alarm or an
   update-ended interrupt) are kept for the game; PF is set in the game's
   copy at each of the game's virtual ticks whether or not its PIE is on
-  (the chip sets PF regardless of PIE, and The Horde's 1 s measurement or
-  any polling loop depends on that). A game's read of register C returns
+  (the chip sets PF regardless of PIE; no surveyed game polls PF with PIE
+  off, but the chip does it, so the copy does). A read with nothing pending
+  returns 00h and is not an error: Future Dimension's handler is entered
+  about 1,478 times a second, half of them with nothing pending, probably
+  because it also calls INT 70h itself. A game's read of register C returns
   its copy and clears it, with bit 7 (IRQF) set when an enabled flag is.
 - Registers D and the clock and CMOS bytes (00h to 09h, 0Dh up): pass
   through.
@@ -196,6 +249,12 @@ with the interrupted frame, after our EOIs. The accumulator is in 122 us
 units, so it survives our own rate switches (section 4.3) without
 disturbing the game's phase. A game at 8192 Hz (IAS) runs the chip at 8192
 Hz; every tick is the game's, and ours piggyback on it.
+
+**Order.** Games set up the RTC, the vector and the mask in every order
+(Lords of the Realm: B, A, B, vector, C, A1h; MIDPAK: A, vector, C, A1h, B
+last; Future Dimension: A, B, A1h, C; Galactix: vector, A, B, A1h). Each
+write takes effect on the game's copy at once and the decision to deliver
+is made per tick from the copies, so no order is special.
 
 **Slave PIC mask, port A1h.** Trapped while the timer is held. Bit 0 is the
 game's, stored; the chip's bit 0 stays clear. Every other bit passes
@@ -241,13 +300,15 @@ AUDIODRV.DIG on the virtual ESS plays; Descent 2 click rate unchanged
 (about 1/s); Doom, Duke, Heretic, Wolf3D, Witchaven, Warcraft II unchanged;
 the RTC users from the survey (section 9) that have CD audio, so the
 driver is engaged while they run: Future Dimension (direct IVT 70h write,
-1024 and 64 Hz switches for the whole run), The Horde (128 Hz measurement at
+1024 and 64 Hz switches for the whole run, so it crosses between shared and
+owned mode many times a minute; its cost while engaged must be within noise
+of the driver without the timer), The Horde (128 Hz measurement at
 start-up, then register B SET and clock writes), Capitalism Plus with its
 RTC MIDPAK chosen (128 Hz); the BIOS wait users with CD audio: The Secret of
 Monkey Island CD (SCUMM, INT 15h AH=86h waits of 976 us) and Rayman (INT 15h
 AH=83h); one RTC user with no audio tracks run with the driver aside, to
-confirm the step-aside leaves it alone (A.G.E., which rewrites registers A
-and B and A1h every frame); Lords of the Realm followed by a second program,
+confirm the step-aside leaves it alone (A.G.E., whose set-up is an 88k-access
+burst); Lords of the Realm followed by a second program,
 to confirm A1h bit 0 on exit does not stop the timer; the clock and date
 (INT 1Ah and DOS) correct after each run;
 realtics on the Pentium and the 386 within noise; CMOS registers A and B
@@ -331,7 +392,7 @@ logs on 70h, 71h, A0h, A1h and IVT 70h. Full report: rig86/rtc_survey.md.
 
 | Group | Titles | Behaviour |
 | --- | --- | --- |
-| Periodic interrupt users, confirmed | A.G.E., Galactix, Space Max | 1024 Hz; A.G.E. rewrites register A, register B and A1h every frame (12.6k register writes in 66 s) |
+| Periodic interrupt users, confirmed | A.G.E., Galactix, Space Max | 1024 Hz; A.G.E. sets up in one 106 ms burst of about 6,300 repetitions (read B, read A twice, A=26h, read B, B=4Bh, A1h), then only its handler runs |
 | | Future Dimension | IVT 70h written directly; 1024 and 64 Hz switched many times a minute |
 | | Capitalism, Zack, Stronghold | 128 Hz from MIDPAK's RTC builds (PMIDPAK, TMIDPAK and some MIDPAK.COM do not use the RTC) |
 | | Lords of the Realm | 256 Hz; on exit restores the vector and sets A1h bit 0 |
@@ -343,7 +404,9 @@ logs on 70h, 71h, A0h, A1h and IVT 70h. Full report: rig86/rtc_survey.md.
 | | Inner Worlds' extender | Remaps the slave PIC base from 70h to 28h |
 | The five oldest games | Donkey, Softporn, Wizardry I, Ball, Zork I | No RTC or IRQ 8 access |
 
-What it changed in the design: the virtual RTC is complete rather than a
+What it changed in the design: the timer has an owned and a shared mode
+(the handlers' trap cost, measured at up to 12 percent of a Pentium, rules
+out trapping a 1024 Hz game); the virtual RTC is complete rather than a
 stand-down check (register C semantics, tick splitting, rate switching at
 the game's pace); the timer takes IRQ 8 in Jemm's slot, not the IVT; A1h
 bit 0 is virtualised; clock writes pass through; a slave PIC remap stands
