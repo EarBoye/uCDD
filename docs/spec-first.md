@@ -439,3 +439,13 @@ observable behaviour identical with it on and off.
 8. Every deviation in section 2 is fixed, whether or not it changes the
    sound. Evidence from the ESS drivers and the game set decides the
    order, never whether.
+
+## 12. Michael's principles (15 Oct)
+
+In order:
+
+1. The specification and reference documents are mother and father. They
+   are holy. Compliance is the goal.
+2. Accurate CD audio output, with the game's audio mixed in. CD audio is
+   downsampled only when the selected physical card cannot play its rate.
+3. Performance is the crown we earn.
