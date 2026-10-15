@@ -5,7 +5,10 @@ develop uCDD: data sheets, specifications and Ralf Brown's Interrupt List.
 It shares no history with the code branches and is never merged into them.
 
 The original PDFs are in the `References.zip` asset of the
-[references release](https://github.com/EarBoye/uCDD/releases/tag/references).
+[references release](https://github.com/EarBoye/uCDD/releases/tag/references),
+except four that are not in that zip and are kept here beside their text:
+the CS4231A and CS4232 data sheets, the later PIIX and PIIX3 data sheet, and
+the second ES1869 revision. Jemm's QPI description is plain text already.
 The folders here mirror the folders in that zip, and each `.txt` file has the
 name of its PDF. Text was extracted with `pdftotext -layout`, so tables keep
 their columns but figures are lost. Check a register table against the PDF
