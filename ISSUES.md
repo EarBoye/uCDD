@@ -53,6 +53,8 @@ branches are gone; their names stay as the names of the changes.
 | `ess-position` | The virtual ESS reports a polled DMA count one output period behind the mix (Descent 2 crackle). 86Box: SBT16 and SADUMP on seven pairings unchanged, verify-mix 0 bad on the virtual ESS with and without CD audio |
 | `virtual-timing` | An auto-initialised transfer's polled DMA count follows the output clock, as a real card's counter does, instead of the mix's whole periods; never past the mix. 86Box: SBT16 on seven pairings unchanged, verify-mix 0 bad on eight runs, Doom, Duke, Heretic, Wolf3D, Witchaven, Theme Hospital (SB16.DIG), Warcraft II as before, Descent 2 clean on ESS and SB16. Tomb Raider (whose CD audio support brought in the mix-based count, 9f3b5bd) with its CD mounted (data track and 60 s of track 2) sounds the same second by second, about 30 detector events a second on both builds; whether those are its sound or an older fault needs a bare-card run |
 | `ess-irq-bits` | B1h/B2h report the virtual IRQ and DMA in bits 3:2. 86Box: SBT16 on five pairings unchanged, Descent 2 and Doom on the virtual ESS as before |
+| `fast-dma` | Type F ISA DMA on the output channel through the PIIX's MBDMA0 register, behind a UCDDSET switch, set at every output start and restored at every stop; the bridge (8086h:7000h, 122Eh or 7110h) found at install. Real PC (ECS P5HX-A, PIIX3, ES1868, by the standalone tool before the driver option): tone unchanged by ear at 22.05 and 44.1 kHz; memory copy loss with the stream running 9.0 to 0.7 percent at the half rate, 18.0 to 1.5 at the full rate; Doom timedemo 1788 to 1613 realtics, full Quake 19.8 to 22.0 fps with CD music; the PIIX3 keeps bit 3 of the register, so the write preserves bits 6:3. Cards known to accept the timing: ES1868. The driver option itself is in test |
+| UCDDSET layout | The main screen redone to a mockup agreed with the fork's owner: the box one row taller, Options and Detected columns, tick boxes that grey themselves with a help line saying why, the chipset named. In test in 86Box |
 | Program button | Added to UCDDSET for the jumperless Sound Blaster 16 boards, then dropped: UNISOUND sets those boards through the same registers and the README already requires the card set before install |
 
 ## The output period decides which games have sound
@@ -270,7 +272,7 @@ changed volumes.
   whatever sits at 388h, which the driver never traps: the real ESFM on a
   physical ESS, and that is why UCDDSET offers the model with one only.
 - While the driver has stepped aside (no disc bound for CD audio, cards
-  matching, "On while a mounted disc has CD audio" in UCDDSET) there is no
+  matching, the "always on" box clear in UCDDSET) there is no
   virtual card: a game set to the virtual WSS codec finds nothing, a game
   that needs a DPMI host finds none unless it brings its own, and the state
   changes only at a mount or an eject from the command line or UCDDPLAY.
@@ -365,6 +367,19 @@ the cost of disc audio over idle from 5.2 to 3.1 percent from the hard
 disk and 4.0 to 1.9 from a RAM disk; the hard-disk cases keep about 1.2
 points for the BIOS reads. A real ESS output start takes 0.66 ms, with
 the first audio interrupt 1.25 ms after the call.
+
+**Type F DMA** (13 Oct 2026, real PC): the PIIX family can run an ISA
+DMA channel at 3 clocks per transfer instead of 8, through a 4-byte
+buffer. With the ESS streaming and no driver loaded the memory copy loss
+fell from 9.0 to 0.7 percent at the half rate and from 18.0 to 1.5 at
+the full rate, the register loop unchanged; under μCDD Doom went from
+1788 to 1613 realtics and full Quake with CD music from 19.8 to 22.0 fps,
+which leaves the driver's whole cost in Doom at about 6 percent. The
+ES1868 takes the faster cycle cleanly (its data sheet asks for a 100 ns
+write strobe and releases its request within 30 ns). The option is a
+UCDDSET switch, off by default; no other chipset family is known to the
+driver, and a card that cannot keep up gives garbled audio, not damage,
+since playback reads memory.
 
 Not worth changing: the CLI and STI path; a virtual ESS model (the
 capture and mix are the same whatever the game believes it talks to); the

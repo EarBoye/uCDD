@@ -5,28 +5,23 @@
 ; and an IRQ set by hand for a controller it did not find. The driver runs the
 ; same scan at installation and builds the mask itself.
 
-; Write what the PCI scan found to disk_found_text.
+; Write what the PCI scan found to disk_found_text: the IRQ numbers, "+?"
+; for a controller with no usable IRQ, or "--" with no PCI BIOS, the scan
+; off, or nothing found.
 disk_found_describe:
     mov di, disk_found_text
-    mov si, disk_no_pci_text
-    cmp byte [disk_pci], 0
-    je .copy
-    mov si, disk_off_text
-    cmp byte [disk_pci], 2
-    je .copy
-    mov si, disk_none_text
+    mov si, disk_dash_text
+    cmp byte [disk_pci], 1
+    jne .copy
     mov ax, [disk_found]
     test ax, ax
     jnz .list
     cmp byte [disk_unknown], 0
     je .copy
-    mov si, disk_no_irq_text
+    mov si, disk_more_text+1
 .copy:
     jmp copy_text
 .list:
-    mov si, disk_pci_irq_text
-    call copy_text
-    mov ax, [disk_found]
     mov byte [disk_irq_first], 1
     call disk_irq_text
     cmp byte [disk_unknown], 0
@@ -34,24 +29,21 @@ disk_found_describe:
     mov si, disk_more_text
     call copy_text
 .done:
-    ; The text starts at column 17 and the IRQ field at column 49.
-    mov byte [disk_found_text+31], 0
+    mov byte [disk_found_text+12], 0
     ret
 
-; Main screen: the Disk row and a warning above the output line.
+; Main screen, the Detected column: the PCI disk IRQs, and a warning on the
+; row above the help line when a disk IRQ is a sound card's.
 disk_draw:
     call disk_found_describe
-    mov dx, 0804h
-    mov si, disk_label
-    mov bl, A_BOX
-    call put_text
-    mov dx, 0811h
+    mov dx, 103dh
     mov si, disk_found_text
+    mov bl, A_BOX
     call put_text
     call disk_check
     test si, si
     jz .done
-    mov dx, 0d04h
+    mov dx, 1304h
     mov bl, A_TITLE
     call put_text
 .done:
@@ -61,25 +53,19 @@ disk_irq_list:
     mov si, disk_irq_values
     ret
 
-; 0 shows as a dash: no IRQ set by hand.
+; 0 shows as "none": no IRQ set by hand.
 text_disk_irq:
     test ax, ax
     jnz text_decimal
-    mov byte [di], '-'
-    mov byte [di+1], 0
-    inc di
-    ret
+    mov si, disk_none_text
+    jmp copy_text
 
 disk_irq_choice:
     choice config_disk_irq,1,disk_irq_list,text_disk_irq,0
 disk_irq_values db 10
     dw 0,3,4,5,6,7,9,10,11,12
-disk_label db 'Disk',0
-disk_no_pci_text db 'No PCI BIOS',0
-disk_none_text db 'Only IRQ 14 and 15',0
-disk_off_text db 'PCI scan off (UCDDPCI)',0
-disk_no_irq_text db 'PCI, no IRQ set',0
-disk_pci_irq_text db 'PCI on IRQ ',0
+disk_none_text db 'none',0
+disk_dash_text db '--',0
 disk_more_text db ' +?',0
-disk_note db 'Set a disk controller IRQ that uCDD missed. 14 and 15 always work.',0
+disk_note db 'Only for a disk card the scan misses, e.g. ISA or VLB.',0
 disk_found_text times 48 db 0
