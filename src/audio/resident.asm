@@ -7,6 +7,11 @@
 %define MOUNTED_AUDIO 1
 %define CD_IMAGE_TEST 1
 %define VIRTUAL_IRQ 1
+; The virtual ESS's FIFO and DAC model (audio/ess_fifo.asm), for output
+; periods up to 256 frames.
+%if OUTPUT_SHIFT <= 8
+%define ESS_FIFO_MODEL
+%endif
 %define WSS_INPUT 1
 %include "audio/layout.inc"
 
@@ -47,6 +52,7 @@ audio_linked db 0
 %include "audio/mounted.asm"
 %include "audio/background.asm"
 %include "audio/irq.asm"
+%include "audio/ess_fifo.asm"
 %include "audio/sb_patch.asm"
 %include "audio/standby.asm"
 %include "audio/host_jemm.asm"
@@ -136,11 +142,15 @@ audio_cleanup:
     mov word [cd_half_allocation], 0
 .work_memory:
     cmp word [cd_work_allocation], 0
-    je .memory
+    je .ess_memory
     mov es, [cd_work_allocation]
     mov ah, 49h
     int 21h
     mov word [cd_work_allocation], 0
+.ess_memory:
+%ifdef ESS_FIFO_MODEL
+    call ess_dac_free
+%endif
 .memory:
     call cd_memory_restore
     cmp byte [audio_detach_failed], 0

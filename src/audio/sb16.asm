@@ -390,6 +390,11 @@ audio_irq:
     mov cl, [ess_half]
     shr ax, cl
     xor [next_half], ax
+%ifdef ESS_FIFO_MODEL
+    ; The virtual ESS's DAC ring must reach the output clock before the next
+    ; half reads it (ess_fifo.asm: the mixer reads ESS_DELAY_FRAMES behind).
+    call ess_fifo_service
+%endif
     DRV_TSC_BEGIN mix
     call mix_half
     DRV_TSC_END mix

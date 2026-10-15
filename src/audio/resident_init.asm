@@ -81,6 +81,9 @@ audio_activate:
     mov word [audio_error_text], cd_work_memory_message
     call cd_work_allocate
     jc .cleanup
+%ifdef ESS_FIFO_MODEL
+    call ess_dac_allocate
+%endif
 %ifdef VERIFY_MIX
     call verify_allocate
 %endif

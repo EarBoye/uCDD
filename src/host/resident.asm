@@ -105,8 +105,17 @@ resident_host_init:
     add eax, ecx
     mov [cs:resident_game_vector], eax
     push edx
+    cmp dword [ds:bp+8], 38464443h
+    jne .version7
+    ; CDF8 adds the virtual model (resident_io .status).
+    movzx edx, word [ds:bp+38]
+    add edx, ecx
+    mov [cs:resident_fast+24], edx
+    jmp .version7_fields
+.version7:
     cmp dword [ds:bp+8], 37464443h
     jne .version6
+.version7_fields:
     ; CDF7 adds the virtual card bytes the host answers itself (resident_io).
     movzx edx, word [ds:bp+26]
     add edx, ecx
@@ -889,7 +898,8 @@ resident_delivered dd 0
 ; CDF7: the virtual card bytes answered in protected mode, or 0 at the first
 ; with an older driver: the mixer index, the DSP interrupt bits, the reply
 ; count, the mixer registers, the first DMA controller's state, the hold.
-resident_fast times 6 dd 0
+; CDF8 adds the virtual model, or 0 with an older driver.
+resident_fast times 7 dd 0
 ; AL=1 when the host delivers the virtual Sound Blaster interrupt to the
 ; client's handler, in protected mode or through the real-mode vector. The
 ; driver's virtual PIC credits an EOI to the virtual interrupt only after
@@ -1140,9 +1150,16 @@ resident_io:
     clc
     ret
 .status:
-    ; 22Eh read: the 8-bit acknowledge, bit 7 set while a reply waits.
+    ; 22Eh read: the 8-bit acknowledge, bit 7 set while a reply waits. The
+    ; virtual ESS (model 4) answers from its status register: the driver's.
     test ch, ch
     jnz .callback
+    mov esi, [ebp+resident_fast+24]
+    test esi, esi
+    jz .status_sb
+    cmp byte [esi], 4
+    je .callback
+.status_sb:
     mov esi, [ebp+resident_fast+4]
     and byte [esi], 0feh
     mov esi, [ebp+resident_fast+8]

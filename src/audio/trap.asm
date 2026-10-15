@@ -253,6 +253,9 @@ port_callback:
     pop ds
     DRV_TSC_BEGIN trap
     inc dword [port_calls]
+%ifdef ESS_FIFO_MODEL
+    call ess_fifo_service
+%endif
     test cl, 18h
     jnz .wide
 %ifdef MDM_SUPPORT
@@ -1581,6 +1584,14 @@ port_callback:
     mov bl, [game_active]
     mov byte [game_active], 1
     inc word [virtual_starts]
+%ifdef ESS_FIFO_MODEL
+    cmp byte [ess_start_request], 0
+    je .model_start_done
+    mov byte [ess_start_request], 0
+    call ess_fifo_start
+    jnc .done
+.model_start_done:
+%endif
 %ifdef RESIDENT_AUDIO
     ; An output interrupt can be pending when this write returns. The game
     ; must run before a block that starts a stream can end.
@@ -1703,6 +1714,27 @@ port_callback:
     mov ecx, OUTPUT_RATE
     div ecx
     mov [game_step], eax
+%ifdef ESS_FIFO_MODEL
+    ; The DAC still plays the stream: the DMA resumes into it, unless the
+    ; rate or the format changed, which starts a new one.
+    cmp byte [ess_fifo_on], 0
+    je .ess_fresh
+    cmp eax, [ess_step]
+    jne .ess_restart
+    mov al, [pending_frame_shift]
+    cmp al, [ess_shift]
+    jne .ess_restart
+    mov al, [pending_format]
+    cmp al, [game_format]
+    jne .ess_restart
+    call ess_fifo_continue
+    jmp .argument_done
+.ess_restart:
+    call ess_fifo_reset
+    mov byte [game_active], 0
+.ess_fresh:
+    mov byte [ess_start_request], 1
+%endif
     ; A4h/A5h hold the two's complement of the byte count: the count less
     ; one, as the start commands take it, is its complement.
     mov ax, [ess_virtual_regs+0a4h-0a0h]
@@ -1719,6 +1751,13 @@ port_callback:
     cmp byte [ess_started], 0
     je .argument_done
     mov byte [ess_started], 0
+%ifdef ESS_FIFO_MODEL
+    cmp byte [ess_fifo_on], 0
+    je .ess_pause
+    call ess_fifo_stop_dma
+    jmp .argument_done
+.ess_pause:
+%endif
     ; Bit 0 cleared: the transfer stops where it is, as D0h pauses it; a new
     ; start programs the counters again.
     mov byte [arguments], 0
@@ -1813,11 +1852,34 @@ port_callback:
     ; Only bit 7 is defined; a card reads the other bits as set. Busy while
     ; a string reply waits to be read.
     mov al, 7fh
+%ifdef ESS_FIFO_MODEL
+    ; The ESS's 2xCh is its status register (ess_status).
+    cmp byte [virtual_model], 4
+    jne .ready_busy
+    call ess_status
+.ready_busy:
+%endif
     cmp word [reply_pointer], 0
     je .result
-    mov al, 0ffh
+    or al, 80h
     jmp .result
 .status:
+%ifdef ESS_FIFO_MODEL
+    ; The ESS answers 2xEh with the low status bits, bit 7 for data
+    ; available, and clears its interrupt sources (measured on the ES1868F:
+    ; 01h, 09h, 1Ch at the interrupts).
+    cmp byte [virtual_model], 4
+    jne .status_sb
+    call ess_status
+    and al, 3fh
+    mov byte [ess_status_latch], 0
+    and byte [virtual_dsp_irq], 0feh
+    cmp byte [reply_count], 0
+    je .result
+    or al, 80h
+    jmp .result
+.status_sb:
+%endif
 %ifdef VIRTUAL_IRQ
     and byte [virtual_dsp_irq], 0feh
 %endif
@@ -1893,6 +1955,17 @@ port_callback:
     cmp byte [si+DMA_FLIP], 0
     jne .count_high
     push dx
+%ifdef ESS_FIFO_MODEL
+    ; While the virtual ESS's stream runs, the count is the bytes its DMA
+    ; has moved into the FIFO.
+    cmp byte [ess_fifo_on], 0
+    je .count_model_off
+    cmp si, dma8
+    jne .count_model_off
+    call ess_fifo_count
+    jmp .snapshot
+.count_model_off:
+%endif
     cmp si, [game_dma]
     jne .idle_count
     cmp byte [game_active], 0
@@ -2277,6 +2350,9 @@ ess_virtual_reset:
     mov byte [ess_extended], 0
     mov byte [ess_started], 0
     mov byte [ess_clock_alternate], 0
+%ifdef ESS_FIFO_MODEL
+    call ess_fifo_reset
+%endif
     pop es
     pop di
     pop cx
@@ -2307,6 +2383,8 @@ ess_extended db 0
 ; 1 from the ESS's 41h until its time constant byte is taken.
 ess_clock_alternate db 0
 ess_started db 0
+; Set by the B8h start for the common start code to hand over to the model.
+ess_start_request db 0
 ; A0h to BFh after a software reset, as the ES1868F reads them (B1h and B2h
 ; are then given the code for the virtual IRQ and DMA).
 ess_reset_values:

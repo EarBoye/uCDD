@@ -248,7 +248,7 @@ sb_dos_vector:
 sb_game_vector dd 0
 sb_host_guest_irq dw guest_irq
 sb_host_ports dw trap_ports
-    dd 37464443h
+    dd 38464443h
     dw cd_deferred_refill, cd_refill_pending, virtual_pic_request, last_clock
     ; CDF4: the disk IRQs that go straight to the real-mode handler.
     dw config_disk_mask
@@ -265,5 +265,9 @@ sb_host_ports dw trap_ports
     ; the single-cycle hold (host/resident.asm, resident_io .regular).
     dw virtual_mixer_index, virtual_dsp_irq, reply_count, virtual_mixer
     dw dma8, sb_single_hold
+    ; CDF8: the virtual card's model. The ESS's 2xEh answer comes from its
+    ; status register (ess_fifo.asm), which only the driver keeps, so the
+    ; host passes that read on (host/resident.asm, resident_io .status).
+    dw virtual_model
 sb_old_dos dd 0
 %endif

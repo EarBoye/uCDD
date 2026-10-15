@@ -25,6 +25,13 @@ virtual_irq_reset:
     ret
 
 virtual_irq_tick:
+%ifdef ESS_FIFO_MODEL
+    cmp byte [ess_fifo_on], 0
+    je .not_model
+    call ess_fifo_service
+    ret
+.not_model:
+%endif
     cmp byte [game_active], 0
     je .done
     mov si, [game_dma]
@@ -124,6 +131,13 @@ virtual_irq_tick:
     ret
 .sb:
 %endif
+%ifdef ESS_FIFO_MODEL
+    ; A Compatibility Mode block ends on the ESS processor: 2xCh bit 2.
+    cmp byte [virtual_model], 4
+    jne .latch_ready
+    or byte [ess_status_latch], 4
+.latch_ready:
+%endif
     cmp byte [virtual_dsp_irq], 0
     jne .signalled
     mov al, [game_irq_bit]
@@ -172,6 +186,14 @@ sb_silence_tick:
 ; SB16 and ES1688 do (F2TEST: one interrupt for F2h twice without the
 ; acknowledge). A request to the controller only from a clear line.
 virtual_dsp_raise:
+%ifdef ESS_FIFO_MODEL
+    ; F2h, F3h and the 80h silence end are the ESS processor's: 2xCh bit 2.
+    cmp byte [virtual_model], 4
+    jne virtual_dsp_raise_line
+    or byte [ess_status_latch], 4
+%endif
+; The same without the ESS status bit: the model's DMA counter overflow.
+virtual_dsp_raise_line:
     cmp byte [virtual_dsp_irq], 0
     jne .held
     or [virtual_dsp_irq], al
