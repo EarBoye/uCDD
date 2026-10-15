@@ -191,6 +191,29 @@ development PC is the reference still to run):
   physical chip read before the driver configured it, with bits 3:2 for
   the virtual IRQ and DMA.
 
+**What the ESS drivers use** (DOSBox-X port logs for HMI and Miles, a
+static listing for ADRV688 and ESFM; register by register, the order in
+which layer C is proven):
+
+| Driver (games) | Detection | Set-up and play | Mixer and other ports |
+| --- | --- | --- | --- |
+| HMI SOS (62) | Reset, C6h | B8h 04h, 00h, 05h; A8h 01h; B6h 80h; B7h 51h then 98h; B2h DAh; A1h DCh (22097 Hz); A4h/A5h -4096; D1h. Reads back A8h and B2h | None |
+| ADRV688.DIG, AIL 3.0 (52) | Reset, C6h, E7h, F2h three times (the interrupt counter test), E2h AAh twice | B8h 04h; A8h bits 1:0 (01b stereo, 10b mono); B6h and B7h from a four-format table (80/51/D0, 00/71/F4, 80/51/98, 00/71/BC); B1h and B2h read-modify-write keeping bits 3:0, OR 50h; A1h from 795.5 kHz above 23000 Hz, 397.7 kHz below; A2h from a table or the rate; D3h, D1h; B8h OR 05h to start | None |
+| ESFM.MDI, AIL 3.0 (21) | Reads 388h and the DSP ports, resets through 2x6h | ESFM native mode: 2x7h pulse 20h then 00h (FM reset), index 105h = 80h through 38Ah/38Bh, then 16-bit register indices | Mixer 36h read, saved, written 88h, set from the MIDI master volume, restored at exit |
+| AUDIODRV.DIG, AIL 4 (16) | C6h, E7h, F2h four times, E2h AAh twice | C6h; B8h 04h; A8h 01h; A1h 6Eh (22094 Hz); A2h F7h; A4h/A5h -2048; B6h 00h; B7h 71h then BCh; B1h and B2h 5Ah after reading them; B8h 05h; D1h; D3h | Mixer 14h and 36h 88h after reading them; 2x7h 20h then 00h; 2xCh polled about two thousand times |
+
+So the virtual ESS needs, in this order:
+
+1. The F2h interrupt with its latency and merging.
+2. B1h, B2h, A8h and the other registers read back as the chip reads them.
+3. 2xCh's status bits.
+4. A1h's two clock ranges and A2h, which also feeds layer D's filter.
+5. The stereo selection through A8h bits 1:0, as well as B7h.
+6. Mixer 14h and 36h with read-back.
+
+FM (ESFM native mode, 2x7h) passes through to the physical chip and is
+its business.
+
 **What the sheet says that the virtual ESS must add:**
 
 - 2xCh status: busy, FIFO full, FIFO empty, half-empty, and the three
