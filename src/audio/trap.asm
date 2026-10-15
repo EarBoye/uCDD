@@ -2205,7 +2205,10 @@ ess_virtual_reset:
     ; B1h and B2h also carry the card's IRQ and DMA selection in bits 3:2
     ; (IRQ 9, 5, 7, 10; DMA none, 0, 1, 3). The Miles ESS driver reads them
     ; when its settings leave IRQ or DMA at -1, so they report the virtual
-    ; card's own.
+    ; card's own. The 50h base (bits 4 and 6 set, 7 and 5 clear) is the
+    ; data sheet's setting for extended mode; bit 6 enables the DMA counter
+    ; interrupt. A real ES1868 after UNISOUND reads 1Ah (bit 6 clear, bit 1
+    ; set): do not copy that.
     push bx
     mov ah, 50h
     mov bx, ess_irq_bits
