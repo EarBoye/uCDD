@@ -298,3 +298,28 @@ observable behaviour identical with it on and off.
    merge now as off-by-default (section 9)?
 4. Fast mode: retire it in favour of passthrough, or keep it as a
    CD-audio-only choice for slow machines?
+
+## 11. Decisions (Michael, after the proposal)
+
+1. CD audio follows the period hardware: on an ESS or Sound Blaster card of
+   the time, disc audio never passed through the DAC. The drive's analog
+   output went by cable to the card's CD input and was mixed in the analog
+   mixer, under the mixer's CD volume (38h on the ESS, 28h on the SB Pro,
+   36h/37h on the SB16). The game set only that volume and the MSCDEX play
+   commands; the DAC's rate never touched the disc audio. So the virtual
+   card's rate is the game's, and the CD stream is the guest that adapts to
+   it, continuously across any rate change: this confirms layer D's
+   passthrough and its requirement that a restart never clicks the disc.
+2. ESS behaviour is guided by what ESS games expect: the eleven ESS driver
+   binaries in the 147 ESS-aware games of the survey (HMI's five variants
+   in 62 games, ADRV688.DIG in 52, ESFM.MDI in 21, AUDIODRV.DIG's two in
+   16) set the order in which layer C's registers and behaviours are
+   proven, each against the data sheet.
+3. `fast-dma` and `setup-layout` are merged into `fixes` (fcf67f2, with
+   `spec-fixes` and the rig's three branches).
+4. Fast mode as a physical output mode is retired in favour of
+   passthrough: it keeps the ESS out of spec (every game rate resampled to
+   22050 Hz and pair-averaged). Its one remaining reason, half the ISA DMA
+   time on a slow machine, is met by passthrough when the game plays at 22
+   kHz, and by an option to play disc audio alone at 22050 Hz, which
+   touches only the guest stream. `fast-resample` is not merged.
