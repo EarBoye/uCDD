@@ -10,13 +10,14 @@
 %define A_TITLE 0f4h
 %define A_FIELD 0fh
 %define A_SELECT 4fh
+%define A_GREY 0f8h
 %define A_SHADOW 80h
 %define BOX_ROW 1
 %define BOX_COL 2
 %define BOX_WIDTH 76
-%define BOX_HEIGHT 22
-%define TITLE_ROW 3
-%define BUTTON_ROW 20
+%define BOX_HEIGHT 24
+%define TITLE_ROW 2
+%define BUTTON_ROW 22
 %define TRACK_TOP 5
 %define TRACK_BOTTOM 16
 
@@ -40,6 +41,11 @@
 %macro item 12
     db %1,%2,%3,%4,%5,%6,%7,%8
     dw %9,%10,%11,%12
+%endmacro
+
+; value byte, availability routine (CF set when the box cannot be ticked)
+%macro tick 2
+    dw %1,%2
 %endmacro
 
 %define CHOICE_VALUE 0
@@ -279,9 +285,11 @@ form_frame:
     pop es
     mov al, ' '
     mov bl, A_SHADOW
+%if BOX_ROW+BOX_HEIGHT < 25
     mov dx, (BOX_ROW+BOX_HEIGHT)*256+BOX_COL+2
     mov cx, BOX_WIDTH
     call put_repeat
+%endif
     mov dh, BOX_ROW+1
     mov cx, 2
 .shadow:
@@ -453,8 +461,10 @@ form_run:
     je .redraw
     ret
 
-; BX item. Draw its value as an input. A setting that the card does not use
-; shows its text in the box color. A fader also draws its track.
+; BX item. Draw its value as an input. A setting that the card does not use,
+; or a tick box that cannot be ticked, shows in grey, and in the selection
+; colour when selected so that the cursor stays visible. A fader also draws
+; its track.
 item_draw:
     pusha
     mov byte [item_disabled], 0
@@ -475,10 +485,11 @@ item_draw:
     jne .value
     call fader_track
 .value:
-    mov bl, A_BOX
+    mov bl, A_GREY
     cmp byte [item_disabled], 0
-    jne .line
+    jne .focus
     mov bl, A_FIELD
+.focus:
     cmp byte [item_focus], 0
     je .line
     mov bl, A_SELECT
@@ -600,6 +611,43 @@ fader_track:
 ; Format routines. BX item, DI output.
 format_button:
     jmp format_label
+
+; A tick box: "[X]" or "[ ]", greyed when its availability routine says no.
+format_tick:
+    mov si, [bx+ITEM_DATA]
+    push si
+    call [si+2]
+    pop si
+    jnc .available
+    mov byte [item_disabled], 1
+.available:
+    mov si, [si]
+    mov al, '['
+    stosb
+    mov al, ' '
+    cmp byte [si], 0
+    je .mark
+    mov al, 'X'
+.mark:
+    stosb
+    mov al, ']'
+    stosb
+    mov byte [di], 0
+    ret
+
+; Space or Enter on a tick box. Nothing happens on a greyed one; its help
+; line says why.
+toggle_tick:
+    mov si, [bx+ITEM_DATA]
+    push si
+    call [si+2]
+    pop si
+    jc .done
+    mov si, [si]
+    xor byte [si], 1
+    mov byte [changed], 1
+.done:
+    ret
 
 format_label:
     mov si, [bx+ITEM_DATA]

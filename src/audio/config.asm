@@ -3,8 +3,8 @@
 
 ; UCDD.CFG contents. At installation, UCDDSET checks the file and copies the
 ; complete record into the driver.
-CONFIG_VERSION equ 3
-CONFIG_SIZE equ 37
+CONFIG_VERSION equ 4
+CONFIG_SIZE equ 38
 HOTKEY_COUNT equ 5
 config_data db 'uCDD',CONFIG_VERSION
 sound_card db 0
@@ -43,6 +43,11 @@ config_disk_irq db 0
 ; can stand in for the virtual one (audio/standby.asm). Version 3 added the
 ; byte; a version 2 file reads as 0.
 config_audio_always db 0
+; 1 asks for Type F ISA DMA timing on the output channel while the driver
+; is engaged, on an Intel PIIX, PIIX3 or PIIX4 bridge found at install
+; (audio/standby.asm); nothing happens on another chipset. Version 4
+; added the byte; older files read as 0.
+config_fast_dma db 0
 config_size_check equ 1 / (($-config_data) = CONFIG_SIZE)
 ; Not in UCDD.CFG. UCDD -install scans the PCI BIOS (disk_scan.asm) and sets
 ; the mask: IRQ 14 and 15, the IRQs of PCI disk controllers, and

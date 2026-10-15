@@ -12,64 +12,17 @@
 
 audio_engaged db 1
 
-; Carry clear when the physical card can stand in for the virtual one.
+; Carry clear when stepping aside is allowed: the switch off and the cards
+; paired (audio/pairing.asm, shared with UCDDSET).
 audio_pairing:
     cmp byte [config_audio_always], 0
     jne .no
-    mov ax, [sb_base]
-    cmp ax, [virtual_base]
-    jne .no
-    mov al, [sb_irq]
-    cmp al, [virtual_irq]
-    jne .no
-    mov al, [sb_dma8]
-    cmp al, [virtual_dma8]
-    jne .no
-    ; AL physical model (0 SB16, 1 SB Pro, 2 WSS or ESS, 3 SB 1.5/2.0, 4 and 5
-    ; ESS before sb_model), AH virtual model (0 SB16, 1 SB Pro, 3 SB 1.5/2.0).
-    mov al, [sound_card]
-    mov ah, [virtual_model]
-    test al, al
-    jnz .not_sb16
-    ; An SB16 is every virtual model; its own needs the high channel too.
-    test ah, ah
-    jnz .pro_or_sb
-    mov al, [sb_dma16]
-    cmp al, [virtual_dma16]
-    jne .no
-    jmp .yes
-.not_sb16:
-    cmp al, 1
-    je .pro_or_sb
-    cmp al, 3
-    jne .wss_or_ess
-    ; An SB 1.5/2.0 is only itself.
-    cmp ah, 3
-    je .yes
-    jmp .no
-.wss_or_ess:
-    cmp al, 4
-    jae .ess
-    cmp al, 2
-    jne .no
-    ; A WSS codec is nothing a Sound Blaster driver finds; an ESS is an SB
-    ; Pro with a DSP 3.01, and itself.
-    cmp byte [ess_native], 0
-    je .no
-.ess:
-    cmp ah, 4
-    je .yes
-.pro_or_sb:
-    cmp ah, 1
-    je .yes
-    cmp ah, 3
-    je .yes
+    jmp card_pairing
 .no:
     stc
     ret
-.yes:
-    clc
-    ret
+
+%include "audio/pairing.asm"
 
 ; From the control entry after a mount or an eject, and from the end of the
 ; install: engage or step aside as the bound disc and the pairing require.
@@ -119,6 +72,7 @@ audio_release:
     ; vector for a game's while the driver is engaged).
     mov byte [audio_engaged], 0
     call sb_stop
+    call fast_dma_clear
     call virtual_irq_reset
     mov byte [virtual_pic_service], 0
     mov byte [virtual_pic_delivered], 0
@@ -142,6 +96,7 @@ audio_engage:
     ; clear, so the call reaches DOS.
     call sb_start
     jc .failed
+    call fast_dma_set
     call host_wake
     mov byte [audio_engaged], 1
     ret
@@ -150,6 +105,74 @@ audio_engage:
     ; the fault byte.
     or byte [fault], 80h
     ret
+
+; Type F ISA DMA on the output channel (82371FB data sheet, MBDMA0 at PCI
+; configuration offset 76h of the ISA bridge: bit 7 fast, bits 2:0 the
+; channel, bits 6:3 kept as read since the PIIX3 and PIIX4 hold a reserved
+; bit there, except that the PIIX's bit 3 is set). Type F serves the
+; output, which reads memory; the PIIX has no Type F for transfers that
+; write it. Only with the UCDDSET switch on and a PIIX found at install;
+; set when the output starts, the old byte put back when it stops. The
+; register is read and written through the PCI BIOS.
+fast_dma_set:
+    cmp byte [config_fast_dma], 0
+    je .done
+    cmp byte [fast_dma_present], 0
+    je .done
+    cmp byte [fast_dma_active], 0
+    jne .done
+    mov bx, [fast_dma_bridge]
+    mov di, 76h
+    mov ax, 0b108h
+    int 1ah
+    jc .done
+    test ah, ah
+    jnz .done
+    mov [fast_dma_saved], cl
+    and cl, 78h
+    or cl, 80h
+    ; On the PIIX, bit 3 (DMC) picks the ISA slot's DREQ and DACK# over the
+    ; motherboard pair for the channel; left at 0, the card is cut off (PIIX
+    ; and PIIX3 data sheet, MBDMA registers). The PIIX3 and PIIX4 keep it
+    ; reserved, so the read value stays there.
+    cmp word [fast_dma_device], 122eh
+    jne .fast_bits
+    or cl, 8
+.fast_bits:
+    ; The output channel: the high one on an SB16, the low one elsewhere.
+    mov al, [sb_dma8]
+    cmp byte [sound_card], 0
+    jne .channel
+    mov al, [sb_dma16]
+.channel:
+    and al, 7
+    or cl, al
+    mov ax, 0b10bh
+    int 1ah
+    jc .done
+    test ah, ah
+    jnz .done
+    mov byte [fast_dma_active], 1
+.done:
+    ret
+fast_dma_clear:
+    cmp byte [fast_dma_active], 0
+    je .done
+    mov byte [fast_dma_active], 0
+    mov bx, [fast_dma_bridge]
+    mov di, 76h
+    mov cl, [fast_dma_saved]
+    mov ax, 0b10bh
+    int 1ah
+.done:
+    ret
+; Set at install by fast_dma_scan (disk_scan.asm).
+fast_dma_bridge dw 0
+; The bridge's PCI device ID (fast_dma_scan).
+fast_dma_device dw 0
+fast_dma_present db 0
+fast_dma_active db 0
+fast_dma_saved db 0
 
 ; The host's dormant byte: with it set, INT 2Fh AX=1687h chains (no DPMI
 ; offered) and INT 67h AX=DE00h chains (VCPI visible), so a protected-mode

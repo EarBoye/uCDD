@@ -1601,6 +1601,14 @@ audio_prepare:
     call disk_scan
     call disk_mask
     mov [config_disk_mask], ax
+%ifdef RESIDENT_AUDIO
+    call fast_dma_scan
+    jc .no_fast_dma
+    mov [fast_dma_bridge], ax
+    mov [fast_dma_device], cx
+    mov byte [fast_dma_present], 1
+.no_fast_dma:
+%endif
     call disk_report
     call guest_configure
     cmp byte [sound_card], 3

@@ -49,6 +49,12 @@ branches are gone; their names stay as the names of the changes.
 | ESS identification | The ES1868 was never recognised, so its clock trim never ran: the mixer index was rewritten before each identification read, which restarts the chip's answer, and the first byte was then lost to a port read. Found from the real PC's cycle counts; confirmed on the chip with a probe program and the fixed build |
 | `step-aside` | The driver stops its output, untraps the ports and puts the host to sleep while no mounted image is bound for CD audio and the physical card can stand in for the virtual one; it engages again at the next mount of a disc with audio. Decided only from the control entry (mount, MDM mount, eject) and at the end of the install. 86Box: 120 transitions (audio CUE, data ISO, MDM with the audio disc second) leave the IVT, PIC masks, trapped-port table, DMA and mixer state byte-identical to the fresh install when aside and to the engaged build when a disc is bound; aside, Doom's timedemo equals the boot without the driver on the Pentium (1558 both) and on the 386 (within 0.2 percent, against 20 percent slower engaged); every pairing rule checked both ways; a version 2 UCDD.CFG installs. Two defects found and fixed in the round: a list with the audio disc second stayed aside, and the stop's vector restore was taken by the driver's own INT 21h hook. Not run: hotkeys mid-game on a list, UCDDPLAY's physical-disc mode, the dialog's save of a version 2 file. Not yet on the real PC |
 | `virtual-ess` | A virtual ESS AudioDrive (virtual model 4): the ESS commands and extension registers in front of the SB Pro parser, 16-bit data over the 8-bit channel, demand-mode DMA accepted, the IRQ on the 8-bit status for every format, the ESS mixer twins (14h, 32h, 36h, 38h) as the SB Pro pairs, and the physical chip's own E7h and mixer 40h answers; UCDDSET offers it only with a physical ESS and the pairing lets the driver step aside with one. 86Box: regression on nine card pairings byte-identical; verify-mix 0 bad on the ESS cases; Warcraft II's ESFM driver enters ESFM native mode (register 105h bit 7, then the native register map) with the virtual ESS and finds no card with a virtual SB Pro. With the ESS mixer twins routed, the ESFM level follows the driver's mixer 36h writes (the remaining 8 dB above the bare chip is the driver's own FM level, the same offset OPL music has). The Miles ESS digital drivers do not start on 86Box's ES1688 even without the driver; on DOSBox-X the Miles 3.5 one (AUDIODRV.DIG) runs on a bare ESS688 and ESS1688, so its run on the virtual ESS waits for the real PC. Not yet on the real PC |
+| `odd-long-block` | A block longer than the DMA buffer skips the whole-frame check (Descent 2's HMI ESS driver). 86Box regression: SBT16 and SADUMP on six pairings, verify-mix, Doom, Duke, Heretic, Wolf3D, Witchaven unchanged |
+| `ess-position` | The virtual ESS reports a polled DMA count one output period behind the mix (Descent 2 crackle). 86Box: SBT16 and SADUMP on seven pairings unchanged, verify-mix 0 bad on the virtual ESS with and without CD audio |
+| `virtual-timing` | An auto-initialised transfer's polled DMA count follows the output clock, as a real card's counter does, instead of the mix's whole periods; never past the mix. 86Box: SBT16 on seven pairings unchanged, verify-mix 0 bad on eight runs, Doom, Duke, Heretic, Wolf3D, Witchaven, Theme Hospital (SB16.DIG), Warcraft II as before, Descent 2 clean on ESS and SB16. Tomb Raider (whose CD audio support brought in the mix-based count, 9f3b5bd) with its CD mounted (data track and 60 s of track 2) sounds the same second by second, about 30 detector events a second on both builds; whether those are its sound or an older fault needs a bare-card run |
+| `ess-irq-bits` | B1h/B2h report the virtual IRQ and DMA in bits 3:2. 86Box: SBT16 on five pairings unchanged, Descent 2 and Doom on the virtual ESS as before |
+| `fast-dma` | Type F ISA DMA on the output channel through the PIIX's MBDMA0 register, behind a UCDDSET switch, set at every output start and restored at every stop; the bridge (8086h:7000h, 122Eh or 7110h) found at install. Real PC (ECS P5HX-A, PIIX3, ES1868, by the standalone tool before the driver option): tone unchanged by ear at 22.05 and 44.1 kHz; memory copy loss with the stream running 9.0 to 0.7 percent at the half rate, 18.0 to 1.5 at the full rate; Doom timedemo 1788 to 1613 realtics, full Quake 19.8 to 22.0 fps with CD music; the PIIX3 keeps bit 3 of the register, so the write preserves bits 6:3. Cards known to accept the timing: ES1868. The driver option itself is in test |
+| UCDDSET layout | The main screen redone to a mockup agreed with the fork's owner: the box one row taller, Options and Detected columns, tick boxes that grey themselves with a help line saying why, the chipset named. In test in 86Box |
 | Program button | Added to UCDDSET for the jumperless Sound Blaster 16 boards, then dropped: UNISOUND sets those boards through the same registers and the README already requires the card set before install |
 
 ## The output period decides which games have sound
@@ -111,7 +117,38 @@ changed volumes.
   data-only driver, so this is probably not the audio host.
 - Descent II: crackle in the intro audio with every build tested on
   hardware. The filter fix in `single-cycle-start` removes a click of this
-  kind in an emulator; whether it is the same fault is not known.
+  kind in an emulator; whether it is the same fault is not known. With the
+  game set to ESS under the virtual ESS the crackle is understood and fixed
+  (`ess-position`, under "Limits" above); with the Sound Blaster 16 setting
+  86Box shows none, so the hardware report there is still open.
+- The Miles ESS digital driver (AUDIODRV.DIG; Theme Hospital, Dungeon
+  Keeper, Heroes 2 and 13 more in the libraries) under the virtual ESS: it
+  sends F2h twice and spins about 0.5 ms on a Pentium with no port access
+  for the interrupt. The trap exit (`host_io_irq`) delivered nothing while
+  a protected-mode client with its own handler sat in a real-mode call,
+  so the interrupt came a period late and the driver found no card.
+  `miles-irq` delivers it there to the real-mode handler the game
+  installed (or through the host bridge when the vector leads into the
+  host), with the delivered mark set so the handler's EOI is credited.
+  86Box: both F2h interrupts are taken and acknowledged at once and the
+  detection passes (6 exit counts of the old skip before, none after).
+  The real-mode delivery now sets virtual_pic_delivered: host_io_irq never
+  did since 412fe80 introduced the mark, so a handler's EOI after a
+  delivery from the trap exit was not credited and the virtual line stayed
+  in service. A latent bug only this real-mode-call case reached: on the
+  old code the path delivered 0 times in 64303 trap exits across Wolf3D
+  (real mode) and Doom (DOS/4GW).
+  STILL OPEN: the game then never starts digital playback (no further
+  card access after the ESFM driver's own check; the intro is silent),
+  so something later in Miles' install refuses the card. Regression of
+  the delivery change: SBT16 and SADUMP on six pairings, verify-mix on
+  seven, Doom, Duke, Heretic, Wolf3D, Witchaven, Descent 2 on ESS, Theme
+  Hospital on SB16.DIG and Warcraft II on SBPRO.DIG with ESFM all as
+  before. Until solved, those games run with a Sound Blaster digital
+  driver and ESFM.MDI music.
+- HMI's 16-bit ESS modes (E01Bh, E01Ch) are silent on 86Box's bare ES1688
+  too, so they are untested; their register sequence is the 8-bit one
+  with another format byte (B7h F4h, BCh).
 - Witchaven's Smacker intro (SMACKPLY.EXE) freezes on its first frame with
   the audio driver installed, silent, at 7/7 and at 5/5, on every build
   tested in 86Box; it plays without μCDD. The game itself, started without
@@ -186,6 +223,49 @@ changed volumes.
   the buffer skips the frame check. 86Box: the intro plays 122 s of audio
   matching the bare chip; SETUP's 8-bit test plays. Not yet on the real
   PC with the fix.
+- Descent 2 on "ESS 488/688" then crackled about 40 times a second (real
+  PC, recorded at the speakers with both cards ESS, full rate, Type F off
+  and on; 86Box 36.7/s at 128 frames, 38.2/s at 256, mostly three output
+  periods apart; the bare ES1688 1.4/s, the detector's floor on that
+  audio). HMI's driver rewrites its buffer right up to the DMA count it
+  polls, and the count ran one output period ahead of what was safe.
+  Fixed (`ess-position`): the virtual ESS's polled count of an
+  auto-initialised transfer is reported one period behind the mix.
+  Replaced on `virtual-timing` by a count that follows the output clock
+  (the frame being heard) for every model, never past the mix: Descent 2
+  on the virtual ESS 0.9/s at 128 frames and 1.2/s at 256, 8-bit mono
+  0.7/s, the SB16 setting 1.3/s as before. 86Box:
+  1.0/s at 128 frames and 1.1/s at 256; one period ahead instead gives
+  117/s. Only the virtual ESS's count read changes; the SB models and the
+  interrupt timing do not. Why exactly one period is the safe margin is
+  not understood from the code (`game_mix_frame` should already equal
+  the read position). The Sound Blaster 16 setting of the same game is
+  clean on 86Box with and without the change. Not yet on the real PC.
+- The virtual ESS's B1h and B2h read 50h after a reset: IRQ 9 and no DMA
+  in their bits 3:2. The Miles ESS driver (AUDIODRV.DIG) takes IRQ and DMA
+  from there when its DIG.INI leaves them at -1. Fixed (`ess-irq-bits`):
+  the bits report the virtual IRQ (9, 5, 7, 10) and DMA (none, 0, 1, 3);
+  58h 58h for 7 and 1. The encoding is the real ES1868's: it read 1Ah 1Ah
+  after UNISOUND at IRQ 7 and DMA 1 (HWLOG run 1), 86Box's ES1688 reads
+  5Ah. The real chip's other bits differ from the virtual 50h base
+  (bit 6 clear, bit 1 set); not acted on.
+- The Miles ESS digital driver (AUDIODRV.DIG) tests the card with two F2h
+  commands a few microseconds apart and expects one interrupt after the
+  DSP's latency; the virtual card delivers each at once, the test counts
+  two and fails. Measured in DOSBox-X on a bare ESS688 (with a port
+  logger added to a local DOSBox-X build): the second F2h 3 us after the
+  first, the interrupt 13 us after
+  the first, then a spin of about 0.5 ms with no port access for the
+  counter to reach one. Use the game's Sound Blaster 16 or Pro driver with
+  the virtual Sound Blaster (every one of the 16 Miles ESS games in the
+  libraries ships them). A latency model needs a time source finer than
+  the output period; the physical chip's own F2h (its interrupt delivered
+  from audio_irq) is the candidate, then the RTC. The next step of the same
+  test, the E2h DMA identification, already matches the hardware: E2TEST
+  (four arguments after a reset, one byte each by single-mode write DMA on
+  channel 1) reads 40h 30h F3h 98h with the 8237 TC bit, and 40h through
+  22Ah with the channel masked, on 86Box's SB16 and ES1688 and on the
+  virtual SB16, SB Pro and ESS alike.
 - The virtual ESS AudioDrive plays only: B8h with its direction bit
   (recording) is refused, the ESPCM and ADPCM start commands are the SB
   Pro parser's refusals, port 2xCh reads 7Fh (no FIFO status), and of the
@@ -193,7 +273,7 @@ changed volumes.
   whatever sits at 388h, which the driver never traps: the real ESFM on a
   physical ESS, and that is why UCDDSET offers the model with one only.
 - While the driver has stepped aside (no disc bound for CD audio, cards
-  matching, "On while a mounted disc has CD audio" in UCDDSET) there is no
+  matching, the "always on" box clear in UCDDSET) there is no
   virtual card: a game set to the virtual WSS codec finds nothing, a game
   that needs a DPMI host finds none unless it brings its own, and the state
   changes only at a mount or an eject from the command line or UCDDPLAY.
@@ -288,6 +368,19 @@ the cost of disc audio over idle from 5.2 to 3.1 percent from the hard
 disk and 4.0 to 1.9 from a RAM disk; the hard-disk cases keep about 1.2
 points for the BIOS reads. A real ESS output start takes 0.66 ms, with
 the first audio interrupt 1.25 ms after the call.
+
+**Type F DMA** (13 Oct 2026, real PC): the PIIX family can run an ISA
+DMA channel at 3 clocks per transfer instead of 8, through a 4-byte
+buffer. With the ESS streaming and no driver loaded the memory copy loss
+fell from 9.0 to 0.7 percent at the half rate and from 18.0 to 1.5 at
+the full rate, the register loop unchanged; under μCDD Doom went from
+1788 to 1613 realtics and full Quake with CD music from 19.8 to 22.0 fps,
+which leaves the driver's whole cost in Doom at about 6 percent. The
+ES1868 takes the faster cycle cleanly (its data sheet asks for a 100 ns
+write strobe and releases its request within 30 ns). The option is a
+UCDDSET switch, off by default; no other chipset family is known to the
+driver, and a card that cannot keep up gives garbled audio, not damage,
+since playback reads memory.
 
 Not worth changing: the CLI and STI path; a virtual ESS model (the
 capture and mix are the same whatever the game believes it talks to); the
