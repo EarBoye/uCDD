@@ -36,11 +36,14 @@ Microsoft EMM386 is no longer supported; JEMMEX was already required.
 The build line used for testing is:
 
 ```console
-python scripts/build.py --resident-audio --audio-period-frames 256 --no-refill-hint
+python scripts/build.py --resident-audio --audio-period-frames 64 --no-refill-hint
 ```
 
 The period is a trade: 256 frames costs the least CPU time but leaves some
-games without sound. See "The output period decides which games have sound"
+games without sound. On a Pentium 233 the period costs nothing measurable
+down to 32 frames (Doom timedemo 1519 to 1522 realtics from 32 to 256), and
+64 is the shortest without extra clicks in Descent 2; a 386 still pays for
+short periods. See "The output period decides which games have sound"
 in ISSUES.md before choosing.
 
 ## Thanks
