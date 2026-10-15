@@ -408,6 +408,25 @@ port_callback:
     je .done
     test bl, bl
     jz .mixer_reset
+    ; The virtual ESS's registers 30h to 3Fh are its own (32h master, 36h FM,
+    ; 38h CD, 3Eh line among them); the same numbers in virtual_mixer are the
+    ; SB16 per-channel gains the mixer reads. They are kept apart, and the
+    ; ESS twins reach the gains only through their pair routing below.
+    cmp byte [virtual_model], 4
+    jne .mixer_store
+    cmp bl, 30h
+    jb .mixer_store
+    cmp bl, 3fh
+    ja .mixer_store
+    mov [ess_mixer_high+bx-30h], al
+    cmp bl, 32h
+    je .master_pair
+    cmp bl, 36h
+    je .fm_pair
+    cmp bl, 38h
+    je .cd_pair
+    jmp .done
+.mixer_store:
     mov [virtual_mixer+bx], al
     cmp bl, 0eh
     jne .mixer_volume
@@ -415,23 +434,10 @@ port_callback:
     mov [sb_filter_bypass], al
     jmp .done
 .mixer_volume:
-    ; 14h is the ESS's full-width twin of 04h, on every model.
+    ; 14h is the ESS's full-width twin of 04h, on every model. The ESS's
+    ; other twins (32h master, 36h FM, 38h CD) are routed above.
     cmp bl, 14h
     je .voice_pair
-    cmp byte [virtual_model], 4
-    jne .sb_registers
-    ; The ESS's other twins, four bits per channel like the SB Pro's: 32h
-    ; master, 36h FM, 38h CD, 3Eh line (stored only). On the SB16 those
-    ; numbers are its own per-channel registers.
-    cmp bl, 32h
-    je .master_pair
-    cmp bl, 36h
-    je .fm_pair
-    cmp bl, 38h
-    je .cd_pair
-    cmp bl, 3eh
-    je .done
-.sb_registers:
     cmp bl, 22h
     je .master_pair
     cmp bl, 28h
@@ -518,6 +524,16 @@ port_callback:
     mov [virtual_mixer+36h], ax
     mov dword [virtual_mixer+3ch], 0b151fh
     mov dword [virtual_mixer+44h], 80808080h
+    ; The virtual ESS's own registers 30h to 3Fh: the three twins at the
+    ; SB Pro pairs' reset level, the rest zero.
+    mov di, ess_mixer_high
+    mov cx, 8
+    xor ax, ax
+    rep stosw
+    mov al, 0cch
+    mov [ess_mixer_high+2], al
+    mov [ess_mixer_high+6], al
+    mov [ess_mixer_high+8], al
     jmp .volume_update
 .flip_reset:
     mov byte [si+DMA_FLIP], 0
@@ -742,9 +758,9 @@ port_callback:
     cmp al, 10h
     je .time_constant
     cmp al, 41h
-    je .rate
+    je .rate_or_ess
     cmp al, 42h
-    je .input_rate
+    je .input_or_ess
     cmp al, 40h
     je .time_constant
     cmp al, 48h
@@ -872,7 +888,8 @@ port_callback:
     jmp .done
 .force_irq:
 %ifdef VIRTUAL_IRQ
-    mov byte [virtual_dsp_irq], 1
+    ; F2h adds the 8-bit request; a 16-bit one already pending stays.
+    or byte [virtual_dsp_irq], 1
     mov al, [guest_irq_bit]
     mov [virtual_pic_request], al
 %endif
@@ -1001,6 +1018,21 @@ port_callback:
     mov byte [sb_paused], 1
     mov byte [game_active], 0
     jmp .done
+.input_or_ess:
+    ; On the ESS, 42h takes one byte, the filter clock, which the virtual
+    ; card has no use for (the ES1868 data sheet's command table).
+    cmp byte [virtual_model], 4
+    jne .input_rate
+    mov byte [arguments], 1
+    jmp .done
+.rate_or_ess:
+    ; On the ESS, 41h is the time constant of 40h on a 1.5 MHz clock, one
+    ; byte: rate = 1500000 / (256 - X).
+    cmp byte [virtual_model], 4
+    jne .rate
+    mov byte [dsp_command], 40h
+    mov byte [ess_clock_alternate], 1
+    jmp .time_constant
 .input_rate:
     ; The SB16 uses one sample rate for output and input.
     mov byte [dsp_command], 41h
@@ -1079,6 +1111,10 @@ port_callback:
     mov [sb_test_register], al
     jmp .argument_done
 .pcm_argument:
+    ; Only the virtual ESS leaves 42h here (.input_or_ess): its one byte
+    ; is the filter clock.
+    cmp byte [dsp_command], 42h
+    je .argument_done
     cmp byte [dsp_command], 14h
     je .length
 %ifdef VIRTUAL_IRQ
@@ -1171,6 +1207,11 @@ port_callback:
     neg ecx
     add ecx, 256
     mov eax, 1000000
+    cmp byte [ess_clock_alternate], 0
+    je .time_clock
+    mov byte [ess_clock_alternate], 0
+    mov eax, 1500000
+.time_clock:
     xor edx, edx
     div ecx
     cmp eax, 65535
@@ -1823,6 +1864,15 @@ port_callback:
     mov [ess_id_phase], bl
     jmp .result
 .mixer_stored:
+    cmp byte [virtual_model], 4
+    jne .mixer_plain
+    cmp bx, 30h
+    jb .mixer_plain
+    cmp bx, 3fh
+    ja .mixer_plain
+    mov al, [ess_mixer_high+bx-30h]
+    jmp .result
+.mixer_plain:
     mov al, [virtual_mixer+bx]
     jmp .result
 .dma_read:
@@ -2143,6 +2193,7 @@ ess_virtual_reset:
     mov byte [ess_virtual_regs+0b2h-0a0h], 50h
     mov byte [ess_extended], 0
     mov byte [ess_started], 0
+    mov byte [ess_clock_alternate], 0
     pop es
     pop di
     pop cx
@@ -2170,6 +2221,8 @@ pending_format db 0
 ; The virtual ESS AudioDrive (virtual_model 4): the extension registers A0h
 ; to BFh behind commands C6h/C7h, and whether B8h bit 0 is set.
 ess_extended db 0
+; 1 from the ESS's 41h until its time constant byte is taken.
+ess_clock_alternate db 0
 ess_started db 0
 ess_id_phase db 0
 ; E3h on a DSP 4.xx: the text the CT1741 firmware sends, zero included. While
@@ -2185,6 +2238,9 @@ virtual_resets dw 0
 virtual_starts dw 0
 virtual_mixer_index db 0
 %include "audio/mixer.asm"
+; The virtual ESS's mixer registers 30h to 3Fh (trap .mixer_data), from
+; the same reset values as .mixer_reset gives them.
+ess_mixer_high db 0, 0, 0cch, 0, 0, 0, 0cch, 0, 0cch, 0, 0, 0, 0, 0, 0, 0
 virtual_mixer:
     times 4 db 0
     db 0ffh

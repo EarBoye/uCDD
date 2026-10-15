@@ -1114,9 +1114,16 @@ resident_io:
     movzx edi, byte [esi]
     cmp edi, 0fh
     je .data_reserved
-    ; 40h is the ESS identification sequence, which the driver keeps.
+    ; 40h is the ESS identification sequence, which the driver keeps, and
+    ; 30h to 3Fh are the virtual ESS's own registers, which the driver keeps
+    ; apart from the gains stored at those numbers (trap .mixer_stored).
     cmp edi, 40h
     je .callback
+    cmp edi, 30h
+    jb .data_fast
+    cmp edi, 3fh
+    jbe .callback
+.data_fast:
     cmp edi, 82h
     jne .data_register
     mov esi, [ebp+resident_fast+4]

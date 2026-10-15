@@ -282,8 +282,13 @@ virtual_pic_write:
     ; The rotate forms end the service like their plain forms.
     and ah, 7fh
     and al, 7fh
-    cmp al, 20h
-    je .eoi
+    ; 20h to 27h are all the non-specific EOI: the level bits only count in
+    ; the specific forms (8259A data sheet, OCW2).
+    cmp ah, 20h
+    jne .not_eoi
+    mov al, 20h
+    jmp .eoi
+.not_eoi:
     cmp al, [guest_eoi]
     je .guest_eoi
     cmp ah, 60h

@@ -253,6 +253,12 @@ dpmi_pic_io:
     ; controller gets the plain form.
     and ah, 7fh
     and al, 7fh
+    ; 20h to 27h are all the non-specific EOI: the level bits only count in
+    ; the specific forms (8259A data sheet, OCW2).
+    cmp ah, 20h
+    jne .eoi_form
+    mov al, 20h
+.eoi_form:
     mov [esp+28], al
     cmp ah, 60h
     je .specific
