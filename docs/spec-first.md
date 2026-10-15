@@ -1,6 +1,7 @@
 # Specification first: a design proposal
 
-Status: proposal. Written on `fixes` at 77979b2, with `spec-fixes`,
+Status: adopted (Michael), updated 15 Oct with the ES1868F measurements.
+Was: proposal. Written on `fixes` at 77979b2, with `spec-fixes`,
 `setup-layout`, the rig's three branches (`combined-test` 772941d),
 `fast-resample` and `event-timer` in view. Sources: the reference library
 (branch `reference-library`, notes in `notes/`) and S95Sedan's disassembly
@@ -55,7 +56,7 @@ the IRQ and DMA, the delivered mark on the trap exit. Still open:
 | DSP | A single-cycle command during auto-init restarts at once; the guide says at the block end | B |
 | DSP | Reading 2xEh does not cancel a request still waiting at the PIC | B |
 | Timing | Block-end IRQ from the mix position, not the played position | B |
-| Timing | F2h interrupt delivered at once; the DSP takes microseconds | B and C |
+| Timing | F2h interrupt delivered at once; the ES1868F takes 11.7 to 14.2 us and does not merge two | B and C |
 | Mixer | Every index is plain RAM; SB 2.0 has a mixer it should not | B |
 | ESS | 2xCh status always 7Fh: FIFO full and empty and data available together | C |
 | ESS | No compatibility-mode model: always the extended register set | C |
@@ -175,21 +176,49 @@ resamples it; layer D fixes that.
 reads and stores as the sheet says. Its bit 6 changes the virtual card's
 clock only if a game sets it, which no surveyed driver does.
 
-**Measured so far** (ESSSTAT on 86Box's ES1688; the bare ES1868F on the
-development PC is the reference still to run):
+**Measured on the ES1868F** (F2TEST and ESSSTAT on the development PC,
+JEMM boot after UNISOUND, 15 Oct; the chip reads FFh everywhere without
+UNISOUND, so there is no power-on reference). Where 86Box differs, the chip
+decides:
 
-- 2xCh on the bare chip reads 00h idle, 01h (bit 0, the extended DMA
-  counter) at a block's interrupt, and 04h (bit 2, the DSP processor) at
-  an F2h interrupt. Each is cleared by the 2xEh read. The virtual ESS
-  reads 7Fh throughout, so a driver telling the two sources apart (the
-  Miles driver polls 2xCh some two thousand times) sees both at once.
-- B1h and B2h read 1Ah on the bare chip and on the real ES1868F after
-  UNISOUND: bit 4, the IRQ or DMA selection in bits 3:2, and bit 1. Bit 6
-  is clear until a driver sets it. The virtual ESS reads 58h (the 50h
-  base from the programming sequence plus the selection). No data sheet
-  gives 50h as a reset value. The virtual card should report what the
-  physical chip read before the driver configured it, with bits 3:2 for
-  the virtual IRQ and DMA.
+- F2h raises its interrupt 11.7 to 14.2 us after the command. Two F2h
+  back to back give two interrupts, every time: the chip does not merge
+  them (86Box does). With the first unacknowledged, a second F2h raises
+  nothing (done on `dsp-irq-level`). The Miles test (ADRV688, AUDIODRV)
+  needs its counter to pass through 1 between the two interrupts, so the
+  requirement is the latency, serialised, not merging.
+- 2xCh reads 18h idle (bit 4 FIFO empty, bit 3 half-empty), not 00h
+  (86Box) or 7Fh (the virtual ESS). During a block the full, empty and
+  half-empty bits follow the FIFO. At a block interrupt it reads 01h, or 09h
+  below half; at an F2h interrupt 1Ch. The 2xEh read clears bits 0 and 2,
+  and its own value is those low bits (01h, 09h, 1Ch), not 7Fh.
+- B1h and B2h read 1Ah after UNISOUND. Bits 3:0 are read-only and hold the
+  data sheet's code, the same two bits in 3:2 and 1:0: IRQ 2/9 0000, 5
+  0101, 7 1010, 10 1111; DMA 0 0101, 1 1010, 3 1111. Written 5Ah, DAh, 50h:
+  B1h reads 5Ah each time (bit 7 cannot be set), B2h 5Ah, DAh, 5Ah. The
+  virtual ESS's reset value (50h plus 1000 for IRQ 7) and its writable low
+  bits are both wrong.
+- The extended-mode block interrupt comes when the block's last byte
+  enters the 256-byte FIFO: 1024 bytes at 22094 Hz interrupt after 34.78
+  ms mono (model (1024-256)/22094 = 34.76) and 17.41 ms stereo (17.38).
+  86Box raises it at the end of play.
+- The FIFO's consumption follows B7h bit 3; a disagreeing A8h makes no
+  difference to the timing. A8h bits 1:0 set the converters' mode
+  (ES1869 sheet) and are stored and read back.
+
+**From the data sheets** (ES1868, with the ES1869 for the registers the
+ES1868 sheet does not describe):
+
+- A reset sets the timer divider and filter for 8 kHz and the DMA counters
+  to 2048 bytes; the virtual ESS leaves A1h and A2h at 00h.
+- The ES1868 ignores the SB Pro filter bits in 0Ch and 0Eh; in
+  Compatibility Mode the filter follows 40h, 41h or 42h.
+- 14h, 32h, 36h, 38h and 3Eh are the 8-bit extended access of 04h, 22h,
+  26h, 28h and 2Eh, and 1Ch of 0Ch. Reads of the SB Pro registers return
+  bits 0 and 4 set; 0Ch bit 0 reads 1 and is cleared on write. 3Ah and 3Ch
+  are not in the ES1868 sheet.
+- BAh is the sample-rate adjust on the ES1868 and the left ADC offset on
+  the ES1869: the virtual BAh follows the mirrored chip.
 
 **What the ESS drivers use** (DOSBox-X port logs for HMI and Miles, a
 static listing for ADRV688 and ESFM; register by register, the order in
@@ -204,12 +233,15 @@ which layer C is proven):
 
 So the virtual ESS needs, in this order:
 
-1. The F2h interrupt with its latency and merging.
-2. B1h, B2h, A8h and the other registers read back as the chip reads them.
-3. 2xCh's status bits.
-4. A1h's two clock ranges and A2h, which also feeds layer D's filter.
-5. The stereo selection through A8h bits 1:0, as well as B7h.
-6. Mixer 14h and 36h with read-back.
+1. B1h and B2h: the chip's code in read-only bits 3:0, B1h bit 7 clear;
+   A1h and A2h reset to 8 kHz.
+2. 2xCh and 2xEh as measured: FIFO state, the three interrupt source bits,
+   the 2xEh value.
+3. The extended-mode block interrupt when the last byte enters the FIFO.
+4. The F2h interrupt after its latency (about 13 us), serialised.
+5. A1h's two clock ranges and A2h, which also feeds layer D's filter.
+6. Consumption from B7h bit 3; A8h stored and read back.
+7. Mixer 14h and 36h with read-back, and the SB Pro read-back bits.
 
 FM (ESFM native mode, 2x7h) passes through to the physical chip and is
 its business.
@@ -252,9 +284,11 @@ ear.
     from A2h. The data sheet puts it at 80 to 90 percent of half the
     sample rate, from a filter clock of 7.16 MHz/(256-X) with the
     roll-off at a 82nd of it.
-  - In Compatibility Mode, and on the SB Pro, the filter follows the
-    time constant and mixer 0Eh's filter switch.
-  - On the SB16 it follows the rate.
+  - On the SB Pro the filter follows the time constant and mixer 0Eh's
+    filter switch. The ESS in Compatibility Mode ignores 0Eh: its filter
+    follows 40h, 41h or 42h.
+  - On the SB16 it follows the rate. No document in the library says
+    so: to be measured, or marked firmware-derived.
   Upsampling loses nothing, so the game's audio comes out as the real
   card would have played it, which is the emulation the spec asks for.
 - Timing is unchanged and already exact. The game's samples are consumed,
@@ -329,9 +363,10 @@ observable behaviour identical with it on and off.
    marked as hardware-measured or firmware-derived, with the evidence.
 2. Conformance tests, on the rig and the PC. Existing: SBT16, SADUMP,
    E2TEST, E41TEST, TONE4, verify-mix. To add:
-   - F2TEST: latency and merging.
+   - F2TEST: latency and merging (written; ES1868F measured).
    - A DSP command sweep per model, compared with a bare card on the PC.
-   - An ESS status sweep: 2xCh through a block.
+   - An ESS status sweep: 2xCh through a block (ESSSTAT, written;
+     ES1868F measured).
    - A mixer read-back sweep per model.
    - An output transparency test: a known game stream captured digitally
      in 86Box and compared sample for sample, and on the PC by spectrum.
