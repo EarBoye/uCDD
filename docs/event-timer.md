@@ -1,8 +1,88 @@
 # A virtual card with real-card timing: the event timer design
 
 Status: design, nothing built. Branch `event-timer` carries this document
-only. Written against `fixes` d6148e8 and the rig's local branches
+only. Section 0 revises the plan after the reference library: a short
+period and the physical card's own one-shots first, the RTC as fallback. Written against `fixes` d6148e8 and the rig's local branches
 ess-position 76c90de, miles-irq 4c4448a, virtual-timing 5c90d13.
+
+## 0. Revision after the reference library (read this first)
+
+The reference library (branch `reference-library`, notes in `notes/`)
+changes the recommendation. The RTC design below is kept, but as a
+fallback, not phase 1. Two facts the first draft did not use:
+
+1. The long period is not a hardware need on the development PC. The
+   ES1868 needs 256 frames only for Sound Blaster Pro output (ISSUES.md,
+   "The output period decides which games have sound"); this PC plays
+   through the chip's native extended mode, where nothing documented asks
+   for it. The period is a build option, 32 frames by default, and 128
+   and 256 were chosen as a CPU-cost trade before the performance work
+   (port traps answered in protected mode, the single-loop mixer, the
+   refill budget). No short period has been measured on the Pentium
+   since.
+2. Every physical card type but the SB Pro and SB 2.0 already has a fine
+   one-shot event source on the IRQ the driver owns:
+   - ESS AudioDrive: F2h on the physical chip. Port 2xCh bit 2 marks an
+     interrupt from the DSP processor, bit 0 one from the extended-mode
+     DMA counter (ES1868 data sheet, port table, 2xCh read), so the
+     handler can tell a relayed F2h from a period interrupt.
+   - SB16: F2h on the physical DSP. The output is 16-bit, so an 8-bit
+     interrupt in mixer 82h is the F2h.
+   - WSS (CS4231A): a 16-bit timer at about 10 us a count, I20 and I21,
+     enabled by I16 TE, signalled by I24 TI on the codec's IRQ (CS4231A
+     data sheet, "Timer Registers"). A programmable one-shot of any
+     length.
+   - SB Pro and SB 2.0: none while high-speed output runs, since the DSP
+     takes no commands then.
+
+### The options, weighed again
+
+| Option | Resolution | Conflicts | Covers | Cost |
+| --- | --- | --- | --- | --- |
+| A. RTC periodic interrupt, virtual RTC (sections 4 and 5) | 122 us bursts, 976 us coarse | About twenty RTC games, the BIOS waits, IRQ 2 masks, slave remaps, the NMI bit (port 70h is write-only, so it cannot be kept by reading it back) | Everything | The coarse tick costs as much as a 43-frame period, since both are a real-mode interrupt a millisecond; plus the virtual RTC |
+| B. A short output period, deadlines checked at each period interrupt and trap exit | One period: 0.73 ms at 32 frames, 1.45 ms at 64 | None: the interrupt is already ours | Block ends against the count, single-cycle completion, the read-ahead and the shortest block (at 32 frames the read-ahead is 64 frames, 256 bytes, an ESS FIFO's worth) | One interrupt a period; unmeasured on the Pentium since the performance work. On a 386 it stays expensive (18.5 percent idle at 32 against 3.7 at 256 in the older QEMU figures) |
+| C. Relay a sub-period one-shot to the physical card: F2h on ESS and SB16, the codec timer on WSS | The chip's own latency, or 10 us on WSS | None | The F2h test (Miles), any short fixed latency | Small: one command or two register writes, and a check in the interrupt handler. Not on SB Pro or SB 2.0 |
+| D. Share the PIT (run channel 0 faster, split the game's ticks) | Any | Every game owns the PIT, and Build and Descent read counter 0 for timing, so the counter itself would need virtualising | Everything | Rejected: the widest conflict of all |
+
+B and C together cover every case found so far without taking a resource
+any game uses. A remains the answer only for a sub-period event on an SB
+Pro or SB 2.0, or on a 386 that cannot afford a short period; no game is
+known to need it.
+
+### The revised plan
+
+Step 0, measurement, no code (the rig and the Pentium): Doom timedemo,
+a real-mode game, Descent 2's click rate and CPU share at 32, 64, 128 and
+256 frames on the ESS in native mode, from the existing build option.
+Also whether the ES1868 in extended mode is clean at 32 and 64 frames
+(blocks of 128 and 256 bytes against its 256-byte FIFO). The result sets
+the default period per machine class.
+
+Phase 1a, deadlines on the period interrupt (option B): the deadline table
+of section 4.2, checked at each period interrupt and each trap exit; the
+block-end interrupt raised from the played position (closing item 3);
+single-cycle completion on its deadline. No new hardware.
+
+Phase 1b, the physical one-shot (option C): F2h and F3h relayed to the
+physical ESS or SB16, the virtual interrupt raised when its interrupt
+lands (2xCh bit 2 on the ESS, mixer 82h bit 0 on the SB16); on WSS the
+codec timer armed for the deadline. The delivery from the interrupt
+handler during a client's real-mode call needs the same routing the
+rig's miles-irq branch gave host_io_irq (sb_real_irq's protected-mode
+path goes through the bridge, which defers while VIF is clear in a locked
+real-mode call, the case Miles uses). On SB Pro and SB 2.0 the deadline
+falls back to phase 1a.
+
+Phase 2 is unchanged in aim (the mixer at a hardware-sized read-ahead)
+but comes from option B for free: at a short period the read-ahead is
+already a FIFO's worth.
+
+The RTC timer (sections 4 and 5) is built only if a game turns up that
+needs a sub-period event the physical card cannot give. If it is built,
+the review adds three corrections: track the NMI bit as last written
+rather than read it back; leave the slave and master EOIs of a reflected
+tick to the game, or the game's EOI ends the virtual sound card interrupt;
+keep the master's IRQ 2 bit clear at the chip whatever the game masks.
 
 ## 1. The problem in one sentence
 
