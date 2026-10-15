@@ -1887,18 +1887,33 @@ port_callback:
     cmp byte [sb_tail_mode], 0
     jne .count_bytes
     call game_elapsed
-    ; The virtual ESS reports one period less than has been mixed. HMI's ESS
-    ; driver (Descent 2) follows the count closely and rewrites the buffer
-    ; right up to it; at the full count it caught frames not yet played and
-    ; the output clicked about 40 times a second. One period earlier it is
-    ; as clean as the real chip.
-    cmp byte [virtual_model], 4
-    jne .elapsed_ready
+    ; An auto-initialised transfer's count follows the output clock, the
+    ; frame being heard, as a real card's DMA counter does, rather than the
+    ; mix, which runs one to two periods ahead in whole periods. HMI's
+    ; drivers follow the count closely and rewrite the buffer right up to
+    ; it: at the mix they caught frames not yet played (Descent 2 on the
+    ; virtual ESS clicked about 40 times a second). The clock is never past
+    ; the mix, so everything behind it has been read.
     cmp byte [sb_single], 0
     jne .elapsed_ready
-    sub eax, PERIOD_FRAMES
-    jns .elapsed_ready
+    cmp byte [game_source], 0
+    jne .elapsed_ready
+    cmp byte [game_start_pending], 0
+    jne .elapsed_ready
+    push eax
+    call output_clock
+    cmp byte [sb_paused], 0
+    je .played_clock
+    mov eax, [sb_pause_clock]
+.played_clock:
+    sub eax, [game_started]
+    jns .played_ready
     xor eax, eax
+.played_ready:
+    pop ecx
+    cmp eax, ecx
+    jbe .elapsed_ready
+    mov eax, ecx
 .elapsed_ready:
     movzx ecx, word [game_rate]
     mul ecx

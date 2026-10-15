@@ -51,6 +51,7 @@ branches are gone; their names stay as the names of the changes.
 | `virtual-ess` | A virtual ESS AudioDrive (virtual model 4): the ESS commands and extension registers in front of the SB Pro parser, 16-bit data over the 8-bit channel, demand-mode DMA accepted, the IRQ on the 8-bit status for every format, the ESS mixer twins (14h, 32h, 36h, 38h) as the SB Pro pairs, and the physical chip's own E7h and mixer 40h answers; UCDDSET offers it only with a physical ESS and the pairing lets the driver step aside with one. 86Box: regression on nine card pairings byte-identical; verify-mix 0 bad on the ESS cases; Warcraft II's ESFM driver enters ESFM native mode (register 105h bit 7, then the native register map) with the virtual ESS and finds no card with a virtual SB Pro. With the ESS mixer twins routed, the ESFM level follows the driver's mixer 36h writes (the remaining 8 dB above the bare chip is the driver's own FM level, the same offset OPL music has). The Miles ESS digital drivers do not start on 86Box's ES1688 even without the driver; on DOSBox-X the Miles 3.5 one (AUDIODRV.DIG) runs on a bare ESS688 and ESS1688, so its run on the virtual ESS waits for the real PC. Not yet on the real PC |
 | `odd-long-block` | A block longer than the DMA buffer skips the whole-frame check (Descent 2's HMI ESS driver). 86Box regression: SBT16 and SADUMP on six pairings, verify-mix, Doom, Duke, Heretic, Wolf3D, Witchaven unchanged |
 | `ess-position` | The virtual ESS reports a polled DMA count one output period behind the mix (Descent 2 crackle). 86Box: SBT16 and SADUMP on seven pairings unchanged, verify-mix 0 bad on the virtual ESS with and without CD audio |
+| `virtual-timing` | An auto-initialised transfer's polled DMA count follows the output clock, as a real card's counter does, instead of the mix's whole periods; never past the mix. 86Box: SBT16 on seven pairings unchanged, verify-mix 0 bad on eight runs, Doom, Duke, Heretic, Wolf3D, Witchaven, Theme Hospital (SB16.DIG), Warcraft II as before, Descent 2 clean on ESS and SB16. Tomb Raider, whose CD audio support brought in the mix-based count (9f3b5bd), not tested yet |
 | `ess-irq-bits` | B1h/B2h report the virtual IRQ and DMA in bits 3:2. 86Box: SBT16 on five pairings unchanged, Descent 2 and Doom on the virtual ESS as before |
 | Program button | Added to UCDDSET for the jumperless Sound Blaster 16 boards, then dropped: UNISOUND sets those boards through the same registers and the README already requires the card set before install |
 
@@ -227,7 +228,11 @@ changed volumes.
   audio). HMI's driver rewrites its buffer right up to the DMA count it
   polls, and the count ran one output period ahead of what was safe.
   Fixed (`ess-position`): the virtual ESS's polled count of an
-  auto-initialised transfer is reported one period behind the mix. 86Box:
+  auto-initialised transfer is reported one period behind the mix.
+  Replaced on `virtual-timing` by a count that follows the output clock
+  (the frame being heard) for every model, never past the mix: Descent 2
+  on the virtual ESS 0.9/s at 128 frames and 1.2/s at 256, 8-bit mono
+  0.7/s, the SB16 setting 1.3/s as before. 86Box:
   1.0/s at 128 frames and 1.1/s at 256; one period ahead instead gives
   117/s. Only the virtual ESS's count read changes; the SB models and the
   interrupt timing do not. Why exactly one period is the safe margin is
