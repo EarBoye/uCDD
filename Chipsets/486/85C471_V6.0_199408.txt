@@ -1,0 +1,4124 @@
+                                                 85C471 Green PC ISA-VESA Single
+Chip
+
+1. 85C471 OVERVIEW
+1.1 Introduction
+
+     The SiS85C471 single chip controller supports Intel's 80486DX2/DX/SX/SL Enhanced,
+     P24D/P24T/P24C CPU, Cyrix's Cx486S2 (M6/M7) CPU and AMD's Am486DXL/DXL2
+     CPU.
+
+     The SiS85C471 is a high performance, 100% PC/AT compatible single chip controller,
+     designed for cached/non-cached P24D/P24T/P24C, M6/M7 or 486 PC systems. The high
+     integration of the powerful cache controller, the DRAM controller, the CPU interfaces, the
+     bus controller, the data buffers and the peripheral controllers provides an easy and economical
+     solution for compact board manufacturing.
+
+     In addition to supporting burst reads for the cache line fills of the CPU, the SiS85C471 is
+     capable of accepting burst write data of the CPU's internal cache dirty line(s) during CPU
+     write-back cycles. The support of the CPU burst write cycle is optional through the control of
+     the Configuration Registers. The SiS85C471 supports the cache size up to 1 MB and the
+     DRAM size up to 128 MB.
+
+     The SiS85C471 has a built-in cache controller which supports direct mapped write-
+     through/write-back cache. The programmable AT-bus clock supports are compatible with
+     AT-bus timing requirements for different PC systems.
+
+     In addition, the local bus interfaces, the integration of the DMA Controllers, Interrupt
+     Controllers and Timers/Counters are designed to be a higher performance, more compact, and
+     more cost-effective product for a P24D/P24T/P24C, 486SX/DX/DX2/SL-Enhanced,
+     Am486DXL/DXL2, or a Cx486S2 (M6/M7) PC/AT system.
+
+     The SiS85C471 provides power saving features to allow a system, through the control of
+     BIOS, to reduce the CPU clock frequency from 50MHz down to 0 MHz(STOP CLOCK)
+     when the system is idle.
+
+     To support the SL-Enchanced 486, M6/M7, P24D/P24T/P24C's Am486DXL/DXL2
+     STPCLK/SMI features, the SiS85C471 also implements the corresponding logics to support
+     STPCLK /SMI for power saving.
+
+     The SiS85C471 supports the VL-Bus applications including (1) CPU accesses VL-Bus
+     targets, (2) VL-Bus master mode, and (3) DMA or ISA master accesses VL-Bus targets.
+
+     The SiS85C471 provides flexible ways in configuring the system depending on whether cache
+     or VESA local bus masters are supported. The different configurations require different
+     numbers of external components.
+
+
+
+Preliminary V6.0 August 19, 1994            1            Silicon Integrated Systems Corporation
+                                              85C471 Green PC ISA-VESA Single
+Chip
+1.2 Features
+  Fully IBM PC/AT Compatible. 80486DX2/DX/SX/SL Enhanced, P24D/P24T/P24C, M6/M7 and
+  Am486DXL/Am486DXL2 Single Chip Controller
+  Supports L1 Cache Write back CPU (P24T/P24D/M6/M7) systems
+  Direct Mapped Cache Controller
+  - Write-Back or Write-Through Schemes
+  - Bank Interleave or Non-Interleave Cache
+  - 0/1 Wait State Cache Write Hit
+  - Flexible Cache Size : 32/64/128/256/512KB or 1MB
+  - 7 bits or 8 bits TAG addresses
+  - Flexible 2-1-1-1, 3-1-1-1, 2-2-2-2 and 3-2-2-2 Burst Read/Write Timing
+  Fast Page Burst Mode DRAM Controller
+  - 4 Banks up to 128MB of DRAMs
+  - 256K/512K/1M/2M/4M/16MxN DRAM Type
+  - Programmable DRAM Speed
+  - Double-sided SIMMs
+  Two Programmable Non-Cacheable Regions (64KB-4MB area)
+  CAS before RAS Transparent DRAM Refresh
+  BIOS/Video ROM Cacheable
+  Shadow RAM in Increments of 32KB
+  - Option to Disable Cache in Shadow RAM Area
+  256K Memory Relocation
+  8042 Emulation of Fast A20GATE and CPU Reset
+  Supports Port 92h
+  Hardware/Software De-Turbo Switch
+  Supports Two VL-Bus Master
+  Supports Flash Memory
+  Supports Double/Single frequency input
+  CPU Operating frequency 0-100 MHz
+  Supports Power Management Mode
+  - Supports the SMM and the SMI
+  - CPU Stop Clock Function
+  - Four Power Saving States
+  - Long and Short System Timers
+  - Supports the APM control
+  - Supports Break Switch control
+  - Power Saving also on non-SMI CPU
+  - More System Event Monitoring and the Power Saving Control
+  AT Bus State Machine and Controller
+  Synchronous/Asynchronous AT Bus Clock
+  Programmable AT Bus Speed
+  - 1/2,1/3,1/4,1/5,1/6,1/8,1/10 of Input Clock or 7.159MHz
+  Programmable Wait State Generation
+  - 1 or 2 Wait States for 16-Bit Transfers
+  - 4 or 5 Wait States for 8-Bit Transfers
+  Programmable I/O Recovery Time
+  Programmable driving current for the DRAM and the ISA bus signals
+  32-Bit Data Buffer Between CPU and AT System
+  Data Conversion and Swapping Logic for 32-/16-/8-Bit Transfers During CPU and DMA Cycles
+
+Preliminary V6.0 August 19, 1994         2           Silicon Integrated Systems Corporation
+                                              85C471 Green PC ISA-VESA Single
+Chip
+  Data Latches for AT Read Cycles
+  Parity Generation and Detection Logic
+  Port B Register and NMI Logic
+  Integrated Peripheral Controllers
+  - 8259A x2 / 8237x2 / 8254 / 74LS612
+  387/487SX and Weitek 3167/4167 Coprocessors Interface
+  208-Pin PQFP
+  0.8µm Low Power CMOS Technology
+
+
+
+
+Preliminary V6.0 August 19, 1994          3           Silicon Integrated Systems Corporation
+                                                                  85C471 Green PC ISA-VESA Single
+Chip
+1.3 Block Diagram
+            VESA TARGETs without CACHE application
+                     A2-31
+                               LOCAL BUS                                                                          V ESA slot
+                     D0-31
+                              DEVICES (targets)
+
+                     A2-31
+                                    80486,P24D/T
+                     D0-3 1
+                                   SL Enhanced
+                                                                                                             ISA slot
+                     A 2-31
+                                    80387                                                    DACK s
+                     D0-3 1
+                                    W EITEK
+                                                                                      IS A com m ands
+
+
+                                                                                                   IRQ s
+
+                                                                                                  DR Qs
+
+
+
+                     A 2-31
+                                                         M PX I                   XD 0-7
+                                                                                                           8042
+                                       S i S             M PXS
+
+                                                         XD0-7
+                                     85C471
+                                                         SD8-15                   X D 0- 7
+                    D16-31                                                                                 RTC
+                                                         SA0-1
+
+
+                                   R AS,C A S,M A                                 XD 0-7
+
+                                                                                  SA0 -15                  BIOS
+                     D 0-31
+                                    DRAM
+
+
+                                                     XD 0-7
+                    D 0-1 5                                                                                  ISA slot
+                                        245s         SD 0-15
+                                                                                             SD 0-15
+
+                    A2-23                            S A2-19                                 SA0-19
+
+                                        245s                                                 L A17-23
+   D 0-31
+            A2-31
+
+
+
+
+            VESA TARGETs with CACHE application
+                     A2-31
+                               LOCAL BUS                                                                          VESA slot
+                     D0-31
+                              DEVICES (targets)
+
+                     A2-31
+                                    80486,P24D/T
+                     D0-31
+                                   SL Enhanced
+                                                                                                             ISA slot
+                     A2-31
+                                    80387                                                    DACKs
+                     D0-31
+                                    WEITEK
+                                                                                       ISA commands
+                     A4-17
+
+                     D0-31          CACHE                                                          IRQs
+                                                                                  151s             DRQs
+                                               TAG
+
+
+                     A2-31
+                                                         MPXI                     XD0-7
+                                                                                                           8042
+                                      S i S              MPXS
+
+                                                         XD0-7
+                                    85C471
+                                                         SD8-15                   XD0-7
+                    D16-31
+                                                         SA0-1
+                                                                                                           RTC
+
+                                   RAS,CAS,MA                                      XD0-7
+
+                                                                                  SA0-15                   BIOS
+                     D0-31
+                                    DRAM
+
+
+                                                     XD0-7
+                    D0-15                                                                                    ISA slot
+                                        245s         SD0-15
+                                                                                             SD0-15
+
+                    A2-23                            SA2-19                                  SA0-19
+
+                                         245s                                                LA17-23
+   D0-31
+            A2-31
+
+
+
+Preliminary V6.0 August 19, 1994                     4                Silicon Integrated Systems Corporation
+                                                               85C471 Green PC ISA-VESA Single
+Chip
+      Two VESA MASTERs without CACHE application
+                     A2-31
+                               LOCAL BUS                                                                       VESA slot
+                     D0-31
+                              DEVICES ( targets / masters )
+
+                     A2-31
+                                    80486,P24D/T
+                     D 0-31
+                                  SL Enhanced
+                                                                                                          ISA slot
+                     A2- 31
+                                   80387                                                  D ACKs
+                     D0-31                                               138
+                                   WEITEK
+                                                                                   ISA commands
+
+
+                                                                                               IRQ s
+
+                                                                                               DRQs
+
+
+
+                     A2- 31
+                                                        MPXI                    XD0-7
+                                                                                                        8042
+                                     S i S              MPXS
+
+                                                        XD 0-7
+                                    85C471
+                                                        SD 8-15                 XD 0-7
+                    D 16-31
+                                                        SA0-1
+                                                                                                        RTC
+
+                                  RAS,CAS,MA                                    XD0-7
+
+                                                                                SA0-15                  BIOS
+                     D0- 31
+                                   DRAM
+
+
+                                                    XD 0-7
+                     D 0-15                                                                               ISA slot
+                                      245s          SD 0-15
+                                                                                         SD 0-15
+
+                     A2-23                           SA2-19                              SA0-19
+                                      245s                                               LA17-23
+   D0-31
+            A2-31
+
+
+
+
+      Two VESA MASTERs With CACHE application
+                     A2-31
+                               LOCAL BUS                                                                       VESA slot
+                     D 0-31
+                              DEVICES (targets/masters)
+
+                     A 2-31
+                                    80486,P24D/T
+                     D0-31
+                                   SL Enhanced
+                                                                                                          ISA slot
+                     A2-31
+                                   80387                                  138
+                                                                                          DACKs
+                     D0-31         WEITEK
+                                                                                       ISA com m ands
+                     A4-17
+
+                      D0-31         CACHE                                                      IRQs
+                                                                                151s           DRQs
+                                             TAG
+
+
+                     A2-31
+                                                        M PXI                   XD0-7
+                                                                                                        8042
+                                     S i S              M PXS
+
+                                                        XD0-7
+                                    85C471
+                                                        S D8-15                 XD 0-7
+                    D16-31
+                                                        SA0-1
+                                                                                                        RTC
+
+                                   RAS,CAS,MA                                   XD0-7
+
+                                                                                S A0-15                 BIOS
+                     D 0-31
+                                   DRAM
+
+
+                                                     XD0-7
+                     D0-15                                                                                ISA s lot
+                                      245s           SD 0-15
+                                                                                          SD 0-15
+
+                     A2-23                           SA2-19                               SA0-19
+
+                                      245s                                                LA17-23
+   D 0-31
+            A2-31
+
+
+
+
+Preliminary V6.0 August 19, 1994                    5              Silicon Integrated Systems Corporation
+                                                     85C471 Green PC ISA-VESA Single
+Chip
+2 FUNCTIONAL DESCRIPTION
+2.1 Cache Controller
+2.1.1 Direct Mapped Cache
+
+     In a write-through cache system, data are written to the main memory while or immediately
+     after they are written into the cache. So the main memory always contains valid data.
+
+     Cache is a good way in de-coupling the fast processor from the slow main memory and gets the best
+     performance for the processor. Direct-mapped cache is the most straight-forward, flexible, easy-to-
+     implement and cost-effective cache structure. A 2/4-way set-associative cache has better performance
+     than the direct-mapped cache, but the performance difference is negligible when the cache size is
+     large enough (e.g. 64KB). The SiS85C471 supports both write through and write back, for both the
+     first level and the second level caches. To maintain the caches coherency, the SiS85C471 allows the
+     CPU or the VL-Master to write back the entire dirty line to either the second level caches or the main
+     memory via a completed burst write transfer. The SiS85C471 also provides a fast 8-bit/7-bit tag
+     comparator and all the control logics for the second level cache of the 80486 processor. To implement
+     a secondary cache, users only need to add SRAMs for the tag and the data memory onto the system.
+     The maximum configurable cache size through the register is 1 MB.
+
+2.1.2 Write-Back vs. Write-Through
+
+     When the contents of the cache data are modified by the processor, the main memory has to be
+     updated. Failing to do so will raise an inconsistency problem when the stale data in the main memory
+     are accessed. There are two approaches to update the main memory. The first is the write-through
+     method and the second is the write-back (also called "copy-back") method. In a write-back cache
+     system, there is a dirty bit for each cache data line. When a write hit occurs in a cache line, the
+     corresponding "alter" bit will be set. The data are written to the main memory when the line is
+     replaced by a cache line fill. When a cache line fill occurs, the cache controller checks the
+     corresponding "alter" bit. If the "alter" bit is set, the cache data will then be written to the main
+     memory before the cache line fill starts.
+
+     A write-back cache offers higher performance than a write-through cache if writes to the main
+     memory are much slower than to the cache. A write-back cache is also favored when data are
+     written to a memory location several times in the cache before they are written into the main
+     memory. The performance advantage of the write-back cache over write-through cache is
+     software dependent.
+
+     The SiS85C471 can be configured to support a write-back or write-through cache. The TAG
+     address field of the SiS85C471 for the caches can either be programmed in 7-bit or 8-bit wide.
+     Besides tag and data RAMs, a write-back cache may need a SRAM for the dirty bits if the
+     TAG RAM and the ALTER RAM can not be shared in one SRAM. So, a write-back cache
+     may have better performance, but costs more than a write-through cache. The
+     cost/effectiveness is justified by application requirements.
+
+
+
+Preliminary V6.0 August 19, 1994               6             Silicon Integrated Systems Corporation
+                                                  85C471 Green PC ISA-VESA Single
+Chip
+2.1.3 80486 Burst Cache Line Fill
+     The internal cache of the 80486 has a 16-byte line size. When a read miss occurs in the
+     internal cache, the 80486 initiates off-chip memory read cycles to update the current cache
+     line. The 80486 reads the 16-byte block (4 doublewords). To increase the bus throughput, the
+     80486 provides a burst mode transfer. Four doublewords can be read sequentially in 5
+     processor clocks (2-1-1-1).
+     The second level cache provided by the SiS85C471 also has a 16-byte line size. It supports the
+     80486 burst read cycles to do the fastest cache line fill. When the 80486 internal and external
+     caches encounter a read miss, they are both updated with the data line read from the DRAMs
+     simultaneously.
+     In addition to supporting burst reads for the cache line fills of the CPU, the SiS85C471 is
+     capable of accepting burst write data of the CPU's internal cache dirty line(s) during CPU
+     write back cycles. The CPU burst write support is optional by programming the
+     Configuration Registers. The SiS85C471 supports the cache size up to 1MB and the DRAM
+     size up to 128MB.
+2.1.4 Cache Update Policy
+     For CPU cycles, the contents of the cache memory are updated when either the cache read
+     miss or write hit occurs. Tag and data RAMs are both updated in the cache read miss cycles.
+     In the cache write hit cycles, the SiS85C471 updates only the data RAM. In the cache write
+     miss cycles, the CPU writes data into the main memory (DRAMs), while the cache memory
+     remains unchanged. The "alter" bit of the data line in a write-back cache is reset in a cache
+     update (read miss) cycle and set in a write hit cycle.
+     When the cache is disabled, all the CPU reads from the memory are treated as cache read
+     misses, so both tag and data RAMs are updated. This feature is used to initialize the cache
+     memory before it is enabled.
+     In DMA/ISA master cycles, the cache data RAMs are written when a write hit occurs to assure
+     the cache coherency. Cache memory is not accessed in DMA/ISA master write miss or read
+     cycles for the write-through cache. For the write-back cache, DMA/ISA master read hit cycles
+     are conducted to the cache, not to the DRAMs.
+2.1.5 Cache Size Options
+   (A) 8-bit wide TAG address field
+
+             Cache Size      Tag RAM       Alter RAM      Data RAM      Cacheable
+                                                                          Size
+                32KB           2Kx8             2Kx1        8Kx8 x4          8MB
+                64KB           4Kx8             4Kx1        8Kx8 x8         16MB
+                128KB          8Kx8             8Kx1       32Kx8 x4         32MB
+                256KB          16Kx8            16Kx1      32Kx8 x8         64MB
+                512KB          32Kx8            32Kx1      128Kx8 x4       128MB
+                 1M            64Kx8            64Kx1      128Kx8x8        128MB
+
+
+
+
+Preliminary V6.0 August 19, 1994            7            Silicon Integrated Systems Corporation
+                                                  85C471 Green PC ISA-VESA Single
+Chip
+   (B) 7-bit wide TAG address field
+
+                Cache Size        Tag RAM +          Data RAM          Cacheable
+                                  Alter RAM                               Size
+                    32KB             2Kx8              8Kx8 x4            4MB
+                    64KB             4Kx8              8Kx8 x8            8MB
+                   128KB             8Kx8             32Kx8 x4           16MB
+                   256KB            16Kx8             32Kx8 x8           32MB
+                   512KB            32Kx8            128Kx8 x4           64MB
+                     1M             64Kx8            128Kx8x8           128MB
+
+     The cacheable DRAM size is determined by cache size because the tag address field is always
+     8-bit wide. The on-board memory beyond the cacheable size is not cacheable. It is still
+     cacheable for the 80486 internal cache.
+
+2.1.6 Cache Speed Options
+
+     The external cache can be configured as non-interleaved or two-bank interleaved. Two-bank
+     interleaved cache can use slower cache data RAMs but needs more data RAM chips.
+     The SiS85C471 provides four cache read speed options : 2-1-1-1, 3-1-1-1, 2-2-2-2 and 3-2-2-
+     2, and two options for cache write cycles : 2T or 3T. The cache read speed x-y-y-y is selected
+     via bit 7 of configuration register 50 (x) and bit 0 of configuration register 51 (y). The 2T
+     cache write is applicable only when the first cycle of a burst cache read is also set to 2T (2-1-
+     1-1 or 2-2-2-2).
+     The following is the table of cache configurations and the suggested speeds of the SRAMs in
+     implementing the cache data RAMs for various CPU speeds.
+
+                                     25MHz          33MHz          40MHz          50MHz
+       Cache Configuration
+                                      CPU            CPU            CPU            CPU
+       2-1-2 Interleave (*1)         -35 (*2)         -20            -12             ----
+       2-1-2 Non-interleave            -25            -15             ----           ----
+       2-1-3 Interleave                -40            -25            -20             ----
+       2-1-3 Non-interleave            -25            -15             ----           ----
+       3-1-3 Interleave                -45            -25            -20             -12
+       3-1-3 Non-interleave            -25            -15             ----           ----
+       2-2-2 Non-interleave            -35            -20            -12             ----
+       2-2-3 Non-interleave            -40            -25            -20             ----
+       3-2-3 Non-interleave            -65            -45            -35             -25
+       3-2-3 Interleave                -80            -55            -45             -30
+
+   Note: *1. x-y-z means x-y-y-y burst read and zT write cycle.
+         *2. -m means the access speed of SRAMs in ns.
+
+Preliminary V6.0 August 19, 1994             8            Silicon Integrated Systems Corporation
+                                                     85C471 Green PC ISA-VESA Single
+Chip
+
+     The following is the table of cache configu-rations and suggested speeds of the SRAMs in
+     implementing the cache tag and alter RAMs for various CPU speeds.
+
+                                     25MHz            33MHz           40MHz         50MHz
+       Cache Configuration
+                                      CPU              CPU             CPU           CPU
+                  2-X-2                -25                -20          -12           ----
+                  2-X-3                -35                -25          -15           ----
+                  3-X-3                -45                -35          -25           -20
+   Note: X represents either 1T or 2T cycles.
+
+
+2.1.7 Non-Cacheable Regions
+     In some applications, users prefer a block of memory not to be cached. The SiS85C471
+     provides two programmable non-cacheable regions to serve this function.
+
+     Only the on-board DRAMs directly controlled by SiS85C471 are cacheable. The memory
+     residing on the AT bus is non-cacheable. When a memory space is mapped by both the on-
+     board DRAMs and AT add-in memory, the CPU accesses will be conducted to the on-board
+     DRAMs.
+     If the AT add-in memory is to be accessed instead of the on-board DRAMs in the overlapped
+     memory space, the two non-cacheable regions can be used to disable the on-board DRAMs in
+     the programmed space.
+
+     The sizes and starting addresses of the two non-cacheable regions are programmable in the
+     configuration registers 54, 55, 56 and 57. The validity of the starting address bits depends on
+     the size of the related non-cacheable region as shown in the table below.
+
+           Size           A23   A22      A21         A20        A19    A18    A17      A16
+           64K            V      V           V        V         V      V        V           V
+          128K            V      V           V        V         V      V        V           X
+          256K            V      V           V        V         V      V        X           X
+          512K            V      V           V        V         V      X        X           X
+            1M            V      V           V        V         X      X        X           X
+            2M            V      V           V        X         X      X        X           X
+            4M            V      V           X        X         X      X        X           X
+       V = Valid
+       X = Don't Care
+
+
+
+Preliminary V6.0 August 19, 1994                 9          Silicon Integrated Systems Corporation
+                                                   85C471 Green PC ISA-VESA Single
+Chip
+2.1.8 Cache Initialization
+     The second level cache supported by SiS85C471 does NOT provide the valid bits for the
+     data lines. All the cache data are assumed valid once the cache is enabled. All the cache lines
+     must be filled with valid data before the cache enable bit is turned on. The cache
+     initialization can be done through sequential reads to a block of on-board DRAMs which is
+     equal to or larger than the cache in size.
+
+2.2 DRAM Controller
+
+2.2.1 DRAM Speed Options
+
+     The SiS85C471 provides 4 read and 2 write speed options in the configuration register. A
+     table of page hit cycle times of all the possible speed configurations is listed as follows:
+
+                       Read        486 Burst Read           Write
+          Fastest        3          3-2-2-2                 2
+          Faster          4         4-3-3-3                 2/3
+          Slower          5         5-4-4-4                 2/3
+          Slowest         6         6-5-5-5                 4
+
+              Note: The unit of the above table is in T cycles.
+
+     There will be plenty of timing margin if "Fastest" is used for 25MHz 80486, "Faster" for
+     33MHz 80486, "Slower" for 40MHz 80486, and "Slowest" for 50MHz 80486. The table
+     below shows the DRAM access timing for different speed configurations.
+
+2.2.2 DRAM Size Configuration
+     The SiS85C471 supports 53 DRAM configurations in 4 banks. Besides the traditional
+     256K/1M/4M xN DRAMs, the new 512K /2M/8M/16M xN DRAMs are also supported.
+
+Refresh
+     In the original PC/AT design, the CPU is held off (i.e. HLDA asserted) during the DRAM
+     refresh cycles. It happens once every 15us and takes at least 0.5us for each occurrance.
+
+     In SiS85C471, refresh can be selected to hold the CPU or not by setting bit 5 of the
+     configuration register 58.
+
+     The DRAM speeds are becoming faster and the time needed for each refresh cycle is getting
+     shorter. For example, the refresh cycle time for 100ns DRAMs is 180ns minimum. In a
+     system with cache, most of the CPU accesses are referred to the cache, so the DRAM usage
+     (percent of time the DRAMs are accessed by the CPU) is significantly reduced.
+
+
+
+
+Preliminary V6.0 August 19, 1994              10           Silicon Integrated Systems Corporation
+                                                 85C471 Green PC ISA-VESA Single
+Chip
+DRAM Access Timing
+
+                  Fastest     Faster      Slower     Slowest
+        Trcd        1.5T         2T         2T           3T     RAS-to-CAS delay
+        Tcas        1.5T         2T         3T           3T     Read CAS pulse width
+         Trp          3T         3T         4T           5T     RAS precharge
+         Tcp        0.5T         1T         1T           2T     CAS precharge
+
+     In the SiS85C471, the main memory refresh is independent of the AT-bus refresh so the
+     cycle time is shorter (not necessary to follow the standard AT-bus timing). When doing the
+     main memory refresh, the CPU is NOT held off so it may execute the program in the cache.
+     If the CPU accesses the main memory while the refresh cycle is going, the access will be
+     pending until the refresh cycle is finished.
+     The following table lists the refresh-related RAS timings of the on-board DRAMs :
+                      Fastest Faster Slower Slowest
+          RAS            3T        3T     4T        5T
+          pre-charge
+          RAS active 3T            4T     4T        5T
+     If hidden refresh is selected on the AT bus, the AT bus refresh cycles are issued every 15us
+     when there is no access from the CPU, the local bus masters, the DMA controllers, or the bus
+     master on the AT bus. The CPU will not feel the existence of the AT bus refresh cycles unless
+     it issues an AT bus cycle or cache miss cycle while the refresh cycle is going on. The
+     controller arbitrates among the CPU AT cycle, the DMA/master request, and the AT bus
+     refresh cycle so that they can be executed one after another when more than one intend to use
+     the AT bus at the same time.
+     The SiS85C471 has a slow refresh feature to cut the refresh frequency down to 1/4. It should
+     be selected only when the system is equipped with slow-refresh DRAMs.
+     The refresh scheme of the CPU local DRAMs is CAS-before-RAS refresh. The CASes go
+     active at least one T before the RASes in local memory refresh cycles.
+     To reduce the power noise caused by the refresh cycles, the RASes of the odd banks go active
+     one T after the RASes of the even banks. It is called the "staggered refresh".
+2.2.3 Shadow RAM
+     The Memory space 0A0000-0FFFFFh is reserved for the video RAM, the I/O and system
+     BIOS ROMs. Accesses to this area should not be conducted to the main memory in standard
+     PC/AT systems. Since the speed of the DRAMs is significantly faster than that of the ROMs,
+     the overall system performance can be improved if contents of the BIOS ROMs are copied to
+     the unused DRAM area (0A0000- 0FFFFFh), and the CPU accesses to this area are conducted
+     to the DRAMs instead of to the BIOS ROMs. This is called the "Shadow RAM".
+     The SiS85C471 provides shadows to 0C0000-0EFFFFh in 32KB granularity and shadow to
+     0F0000-0FFFFFh. The shadow RAMs are non-cacheable by default. The shadow RAMs in
+     C0000-C7FFFh and F0000-FFFFFh can be programmed to being cacheable.
+
+Preliminary V6.0 August 19, 1994           11            Silicon Integrated Systems Corporation
+                                                  85C471 Green PC ISA-VESA Single
+Chip
+2.2.4 256KB Relocation
+
+     The SiS85C471 provides the 256KB DRAM relocation from 0A0000-0BFFFFh and 0D0000-
+     0EFFFFh to the top of the configured DRAM.
+     This function works for the DRAM sizes of 1MB, 2MB, 4MB, 6MB and 8MB when the
+     shadowing of D and E segments is disabled.
+2.2.5 72-pin SIMM Module Support
+     The SiS85C471 supports 72-pin double-sided SIMM modules. Please refer to Register 59
+     bit 5-0 on page 27 for details.
+
+2.3 ROM/Flash ROM Support
+     The SiS85C471 provides a chip select signal for the system BIOS ROM. The memory space
+     assigned to the ROM/Flash ROM is the highest 64/128KB of the real (1MB) and the
+     protected (4GB) address modes of the 80486/P24D/P24T/P24C CPUs.
+
+     The system BIOS ROM can be shadowed to the DRAMs to improve performance. When
+     the RAM shadowing feature is turned on, the accesses to the system BIOS with addresses
+     below 100000h will be channeled to the DRAMs.
+
+2.4 Fast A20GATE And CPU Reset/Port 92h
+     In the original PC/AT design, the A20GATE and CPU Reset (RC) are controlled by the
+     8042 keyboard controller to switch the CPU between the real and protected address
+     modes and to warm boot the system. The operation of 8042 is slow. If address mode
+     switching happens frequently, execution speed will be affected.
+
+     The SiS85C471 provides an 8042 emulation to generate the A20GATE and CPU reset
+     signals in hardware. This feature is software transparent.
+
+     The SiS85C471 also provides a control port, I/O port hex 0092, to generate the
+     A20GATE and the CPU reset. The following shows the definitions of bit 1 and bit 0 of
+     the port 092h that are used for the generation of those two signals.
+
+      Bit 1: This bit is internally OR'ed with the FAST_A20_GATE. Writing an "1" to this bit
+       will force A20M to go high active. Upon reset, this bit goes low.
+      Bit 0: This bit can be set to "0" by a CPU reset or a IO write operation. A transition of this
+       bit from "0" to "1" will have the INIT signal go active. The minimum delay from the
+       transition of this to the INIT active is 2 to 6 s.
+
+2.5 Local Bus Support
+     The SiS85C471 uses LBD* (Local Bus Device) and LRDY* (Local Bus Device Ready) pins
+     to implement Local Bus Device Architecture such as Weitek 3167/4167 and VESA VL-Bus
+     devices.
+
+
+Preliminary V6.0 August 19, 1994             12            Silicon Integrated Systems Corporation
+                                                  85C471 Green PC ISA-VESA Single
+Chip
+     When there are more than one local bus devices, their LBD* signals should be "ANDed"
+     together before connecting to the SiS85C471.
+
+     The SiS85C471 samples the LBD* input at the end of T2 when DRAM speed is set to
+     "FASTEST" or "FASTER", and at the end of T3 when DRAM speed is "SLOWER" or
+     "SLOWEST". The LBD* pin should be asserted before the sampling point if the current cycle
+     is a local bus cycle. Bit 1 of Register 58 can be programmed to overwrite the sampling point
+     described above.
+
+2.5.1 VESA VL-Bus Interface
+
+     The SiS85C471 provides VESA local bus supports as follows :
+   A. Local bus device is accessed by CPU :
+     When a local bus device decodes the bus definition/address and determines this is its cycle
+      at the start of a CPU bus cycle, it should assert LBD* to inform the SiS85C471 this is a
+      local bus device cycle.
+
+     The local bus cycle can be terminated in two ways :
+
+       1. The local bus device asserts LRDY* to the SiS85C471. The SiS85C471 will generate the
+          CPURDY* by either synchronizing the LRDY* with the CPU clock (synchronous mode)
+          or passing LRDY* directly to the output buffer (transparent mode) determined by Bit 0 of
+          Register 58 being 0 (default) or 1.
+       2. The local bus device can assert BRDY* to indicate the burst mode transfer support. The
+          SiS85C471 also monitors BRDY* when LBD* is detected asserted. When the
+          SiS85C471 detects that both BLAST* from the CPU and BRDY* from the local bus
+          device are asserted, the SiS85C471 will end the burst transfer cycle.
+     BS16* support: If the local bus device is capable of doing 16-bit transfers only, it should
+      assert BS16* to the CPU to indicate that another cycle may be necessary.
+   B. Local bus master cycles
+     The SiS85C471 supports two local bus masters. When a local bus master needs to take over
+      the bus, it issues bus request signal to the SiS85C471. The SiS85C471 waits until there is
+      no other local bus cycle pending before issuing the bus grant signal to indicate that the local
+      bus master can start to access the system targets. The local bus masters can access all the
+      system resources including on-board memory, the ISA-bus devices, and the local bus
+      targets.
+
+     The local bus master can perform burst mode transfers while accessing on-board memory or
+      a local bus target that supports burst transfers. After detecting three BRDY*s, the local bus
+      master issues BLAST* to indicate the last burst cycle.          The local bus masters which do
+      not wish to burst, must drive BLAST* low when they own the bus.
+     C. DMA/ISA master accesses local bus target
+
+
+Preliminary V6.0 August 19, 1994             13            Silicon Integrated Systems Corporation
+                                                   85C471 Green PC ISA-VESA Single
+Chip
+     When the address coming from ISA bus in a DMA or an ISA bus master cycle selects a local
+      bus target.
+
+     The ADS*, M/IO*, and W/R* are driven by the SiS85C471 in this cycle and the timing is
+      designed to meet the spec. of VESA local bus.
+     The local bus target asserts LBD* to indicate that the local bus target is selected.
+     The SiS85C471 deasserts IORDY low to keep the cycle active until the LRDY* is asserted
+      low by the local bus target. then the SiS85C471 asserts IORDY high to terminate the cycle.
+     ISA command will be negated at least 1 AT clock after IORDY being asserted. In a local
+       bus read cycle, the data will be invalid after CPURDY* (RDYRTN*) is asserted. The
+       SiS85C471 latches data and keeps the data valid until the ISA bus command is negated.
+
+
+2.6 Turbo Switch
+
+     The 486 systems are fast, so it is possible for them to run into problems with some
+     applications. The SiS85C471 offers a De-Turbo function that can be controlled through a
+     hardware switch or software programming. When the De-Turbo function is ON, the system
+     speed can be reduced by 1/3 or 2/3 selected by bit 4 of the configuration register 58.
+2.7 Advanced Clock
+     To increase the setup time margins of the chip output buffers in a high speed system, the
+     SiS85C471's clock input XFCLK, the "Advanced clock", leads the CPU clock by 3~5 ns. The
+     cache read control signals, the local bus control signals, and others can be issued early to
+     increase the margin of cache data RAM access time and the setup time.
+2.8 Clock Generation
+     The CPU clock speed is too fast for slow AT bus. To overcome this problem, the SiS85C471
+     provides a flexible software- controlled selections of the clock used for the AT bus state
+     machine. The SiS85C471 operates the AT bus state machine at the AT bus clock which is
+     determined by the configuration register and can be selected as 1/2, 1/3, 1/4, 1/5, 1/6, 1/8 or
+     1/10 of the input clock, or 7.159 MHz.
+
+     Whenever the configuration is changed, the clock frequency switches accordingly with glitch-
+     free transition.
+2.9 AT Bus State Machine
+     The SiS85C471 starts an AT bus cycle when the current cycle is not a local bus or a local
+     memory cycle. The SiS85C471 asserts BS16* to the CPU or the local bus master and starts
+     driving BALE signal in the AT-TS state.
+     It then enters into the command cycle AT-TC and provides the timing signals for the AT bus
+     cycle and terminates the cycle by asserting CPURDY* signal.
+     To determine the bus size, MEMCS16* signal is sampled at the falling edge of BALE during
+     memory cycle or IOCS16* is sampled at the falling edge of BALE after the command is active
+Preliminary V6.0 August 19, 1994             14             Silicon Integrated Systems Corporation
+                                                   85C471 Green PC ISA-VESA Single
+Chip
+     in an I/O cycle. The command cycle is terminated only when IORDY is active and all
+     programmed wait states have been executed.
+     The period of command cycle is selected by the configuration register. For 16-bit transfers, the
+     default is 1 wait state and can be selected as 2 wait states. For 8-bit transfer, the default is 4
+     wait states and can be selected as 5 wait states. No command delay is inserted for 16-bit
+     memory cycles and 1/2 SYSCLK command delay is inserted for other cycles.
+     IORDY is sampled at the start of every AT-TC state. The command cycle will not complete
+     until all programmed wait states have be executed and IORDY is sampled high. If ZWS* is
+     detected LOW at the middle of the AT-TC state, the current AT cycle will be terminated
+     immediately.
+     During a read cycle, the data read from a device may be lost after the command completes.
+     The SiS85C471 latches the data immediately after the read command is inactive and holds the
+     data until the AT cycle ends. The "Read Latch" function is active for all AT bus read cycles,
+     except during DMA, ISA bus Master, or local RAM read cycles.
+
+     The shortest command recovery time is two AT clock cycles in this chip. It can be too short
+     for some I/O devices. A configuration register is provided to selected the I/O command
+     recovery time for 16-bit transfers and for 8-bit transfers. Please refer to the configuration
+     register 61 description for detail.
+2.10 Data Conversion Logic
+     If both MEMCS16* and IOCS16* are sampled negated, the current cycle is an 8-bit cycle.
+     The AT state machine performs data conversion if the CPU executes a 16-bit read or write
+     during an 8-bit transfer. Besides data conversion, the data are also swapped if necessary. In
+     DMA or ISA Master cycles, data swapping is also processed if necessary. The system checks
+     the command, address, and related control signals and then arranges required swapping.
+     BE0*-BE3* can not be used to select the devices on AT bus directly. BE0*-BE3* are inputs
+     in AT cycles to generate SA1, SA0, and BHE* signals. In a DMA cycle, BE0*-BE3* are
+     generated from SA1 and SA0 to access the local memory. The SiS85C471 checks these four
+     byte enable signals in an AT cycle and determines if it is a 16-bit cycle and whether data
+     conversion should be performed.
+     The SiS85C471 separates a 16-bit read or write operation into two 8-bit transfers and drives
+     SA0 high in the second cycle. In the meanwhile, the SiS85C471 executes the data swapping
+     process among the 32-bit, 16-bit and 8-bit data buses.
+2.11 Port B Register/NMI Logic
+     The SiS85C471 provides accesses to Port B defined by IBM PC/AT. The bit definitions of
+     Port B register are as follows :
+
+     Bit      Contents
+       0      GATE2 - Timer 2 Gate
+       1      SPKEN - Speaker Data
+       2      PCKEN - Parity Check Enable
+
+Preliminary V6.0 August 19, 1994              15            Silicon Integrated Systems Corporation
+                                                 85C471 Green PC ISA-VESA Single
+Chip
+       3      IOCHCKEN - I/O Channel Check Enable
+       4      REFRESH - Refresh Detect
+       5      OUT2 - Timer 2 Out
+       6      IOCHCK - I/O Channel Check
+       7      PCK - Parity Check
+     The NMI logic in the SiS85C471 enables and latches the I/O or parity error to generate a non-
+     maskable interrupt to the CPU if NMI is enabled. NMI is enabled when bit 7 of port 70h is
+     clear to 0. NMI is disabled if it is set to 1.
+2.12 Bus Buffer Control Logic
+     During an AT-bus read cycle, the data from the responding device are latched immediately
+     after the read command is inactive and are held stable till the end of the AT cycle.
+     The SiS85C471 provides 16-bit to 8-bit or 8-bit to 16-bit data bus conversion in AT cycles. In
+     DMA cycles, 32-bit, 16-bit and 8-bit data bus conversions are provided.
+2.13 Parity Generation/Detection
+     During memory write cycles, the SiS85C471 generates even parity for each of the four bytes.
+     The parity bits PD0- PD3 are written to the parity memory in the system DRAMs. During
+     memory read cycles, the SiS85C471 checks for even parity for each byte read. If odd parity is
+     detected, the SiS85C471 flags a parity error. The SiS85C471 detects the error and generates
+     NMI when enabled. The parity error can be cleared by programming parity check disable,
+     which is defined by Bit 2 of port B register.
+2.14 Peripheral Controllers
+     The SiS85C471 contains Peripheral Controllers which include two 8237 DMA Controllers, a
+     74LS612 Mapper, two 8259 Interrupt Controllers, and an 8254 Counter/Timer.
+2.15 DMA Controllers
+     Two DMA controllers are connected in such a manner as to provide the user with four DMA
+     channels (DMA1) for 8-bit transfers and three DMA channels (DMA2) for 16-bit transfers
+     (the first 16-bit DMA channel is used for cascading to DMA1). The DMA address mapper, the
+     74LS612, is used to drive the upper address lines during DMA cycles.
+2.16 Interrupt Controllers
+     Two interrupt controllers, namely INTC1 and INTC2, are provided in the SiS85C471. Each
+     controller supports 8 channels of interrupts, so in total, the SiS85C471 supports 16 levels of
+     interrupts. Of the 16 channels, two channels are connected internally to support internal
+     devices, allowing 14 user-definable interrupt channels. The two internally connected channels
+     are :
+     Channel 0 -Counter/Timer Counter 0 Interrupt
+     Channel 2 -Cascade to Slave Interrupt Controller (INTC2)
+2.17 Counter/Timer
+     The Counter/Timer (CTC) subsystem contains three independent counters. The clock input of
+     each counter is connected to a clock of 1.19MHz which is derived from dividing the
+
+Preliminary V6.0 August 19, 1994            16            Silicon Integrated Systems Corporation
+                                                  85C471 Green PC ISA-VESA Single
+Chip
+     14.318MHz input by 12. Counter 0 is connected to Interrupt 0 of INTC1. It is used as a multi-
+     level interrupt to the system for such task as time keeping or task-switching. Counter 1 can be
+     programmed to generate pulses or square waves for used by external devices and Counter 2 is
+     a full function Counter/Timer which has a gate input for controlling the internal counter. This
+     counter can be used as an internal counter, a timer, or as a gated rate or pulse generator.
+2.18 Clock and Wait State Control
+     The Clock and Wait State Control subsystem performs four functions : control of the DMA
+     command width; control of the CPU read cycle length; control of the CPU write cycle length
+     and selection of the DMA clock rate. All the functions are user selectable by writing to the
+     Configuration Register located at address 023h.
+
+     Writing or reading this register is accom-plished by first writing a 01h to location 022h to
+     select the Configuration Register. After the Configuration Register 01h is selected, a write or
+     read cycle can be issued to access the data register located at 023h.
+2.19 Peripheral Controllers Address Map
+  DMA Controller Address Map
+
+   DMA1    DMA2    XIOR*   XIOW*     Flip                     Register Function
+                                     Flop
+    000h    0C0h      0       1        0    Read channel 0 current address low byte
+                      0       1        1    Read channel 0 current address high byte
+                      1       0        0    Write channel 0 base and current address low byte
+                      1       0        1    Write channel 0 base and current address high byte
+    001h    0C2h      0       1        0    Read channel 0 current word count low byte
+                      0       1        1    Read channel 0 current word count high byte
+                      1       0        0    Write channel 0 base and current word count low byte
+                      1       0        1    Write channel 0 base and current word count high byte
+    002h    0C4h      0       1        0    Read channel 1 current address low byte
+                      0       1        1    Read channel 1 current address high byte
+                      1       0        0    Write channel 1 base and current address low byte
+                      1       0        1    Write channel 1 base and current address high byte
+    003h    0C6h      0       1        0    Read channel 1 current word count low byte
+                      0       1        1    Read channel 1 current word count high byte
+                      1       0        0    Write channel 1 base and current word count low byte
+                      1       0        1    Write channel 1 base and current word count high byte
+    004h    0C8h      0       1        0    Read channel 2 current address low byte
+                      0       1        1    Read channel 2 current address high byte
+                      1       0        0    Write channel 2 base and current address low byte
+                      1       0        1    Write channel 2 base and current address high byte
+    005h   0CAh       0       1        0    Read channel 2 current word count low byte
+                      0       1        1    Read channel 2 current word count high byte
+                      1       0        0    Write channel 2 base and current word count low byte
+                      1       0        1    Write channel 2 base and current word count high byte
+    006h   0CCh       0       1        0    Read channel 3 current address low byte
+                      0       1        1    Read channel 3 current address high byte
+                      1       0        0    Write channel 3 base and current address low byte
+                      1       0        1    Write channel 3 base and current address high byte
+
+
+
+Preliminary V6.0 August 19, 1994            17             Silicon Integrated Systems Corporation
+                                                 85C471 Green PC ISA-VESA Single
+Chip
+    007h   0CEh      0        1       0    Read channel 3 current word count low byte
+                     0        1       1    Read channel 3 current word count high byte
+                     1        0       0    Write channel 3 base and current word count low byte
+                     1        0       1    Write channel 3 base and current word count high byte
+
+     An internal flip-flop is used to supplement the addressing of the Count and Address
+     registers. This flip-flop selects between high and low bytes of these registers and toggles
+     each time a read or write occurs to any of these registers.
+  DMA Controllers Address Map (continued)
+
+   DMA1 DMA2 XIOR* XIOW*                  Flip               Register Function
+                                          Flop
+    008h    0D0h         0        1        X     Read status register
+                         1        0        X     Write command register
+    009h    0D2h         0        1        X     Read DMA request register
+                         1        0        X     Write DMA request register
+    00Ah    0D4h         0        1        X     Read mode register
+                         1        0        X     Write single bit DMA request mask
+                                                 register
+    00Bh    0D6h         0        1        X     Read mode register
+                         1        0        X     Write mode register
+    00Ch    0D8h         0        1        X     Set byte pointer flip-flop
+                         1        0        X     Clear byte pointer flip-flop
+    00Dh    0DAh         0        1        X     Read temporary register
+                                                 Master clear
+    00Eh    0DCh         0        1        X     Clear mode register counter
+                         1        0        X     Clear all DMA request mask register bits
+    00Fh    0DEh         0        1        X     Read all DMA request mask register bits
+                         1        0        X     Write all DMA request mask register bits
+
+
+
+
+Preliminary V6.0 August 19, 1994            18            Silicon Integrated Systems Corporation
+                                                    85C471 Green PC ISA-VESA Single
+Chip
+   DMA Address Extension Register Map
+
+                   Address                                     Register Function
+                    080h                            Unused
+                    081h                            8-bit DMA Channel 2 (DACK2)
+                    082h                            8-bit DMA Channel 3 (DACK3)
+                    083h                            8-bit DMA Channel 1 (DACK1)
+                    084h                            Unused
+                    085h                            Unused
+                    086h                            Unused
+                    087h                            8-bit DMA Channel 0 (DACK0)
+                    088h                            Unused
+                    089h                            16-bit DMA Channel 2 (DACK6)
+                    08Ah                            16-bit DMA Channel 3 (DACK7)
+                    08Bh                            16-bit DMA Channel 1 (DACK5)
+                    08Ch                            Unused
+                    08Dh                            Unused
+                    08Eh                            Unused
+                    08Fh                            Refresh cycle
+   Interrupt Controller Address Map
+
+   Register     Type      I/O Port      b7     b6        b5    b4    b3    b2      b1   b0
+     ICW1      WRO       20h (A0h) X           X         X     SI    LTM X         SM   X
+     ICW2      WRO       21h (A1h) V7          V6        V5    V4    V3 X          X    X
+     ICW3      WRO       21h       S7          S6        S5    S5    S3 S2         S1   S0
+    ICW3       WRO       A1h            0      0         0   0       0     ID2     ID1  ID0
+    ICW4       WRO       21h (A1h)      X      X         X   EMI     X     X       AEOI X
+    OCW1      RD/WR      21h (A1h)      M7     M6        M5 M4       M3    M2      M1   M0
+    OCW2       WRO       20h (A0h)      R      SL        EOI SI      2/3   L2      L1   L0
+    OCW3       WRO       20h (A0h)      0      ESSM      SMM SI      2/3   PM      RR   RIS
+      IR       RDO       20h (A0h)      IR7    IR6       IR5 IR4     IR3   IR2     IR1  IR0
+      IS       RDO       20h (A0h)      IS7    IS6       IS5 IS4     IS3   IS2     IS1  IS0
+   Note :
+   WRO =          Write only register
+   RDO    =       Read only register
+   RD/WR =        Read/Write register
+   X      =       Don't care
+   Counter/Timer Address Map
+    Address    Function
+    040h       Counter 0 read/write
+    041h       Counter 1 read/write
+    042h       Counter 2 read/write
+    043h       Control register write only
+
+Preliminary V6.0 August 19, 1994              19          Silicon Integrated Systems Corporation
+                                                 85C471 Green PC ISA-VESA Single
+Chip
+2.20 Green PC Function
+     In order to support Intel, Cyrix SMI functions, the SiS85C471 provides SMI* (pin 93),
+     STPCLK* (pin 94) and SMIACT*/ SMADS* (pin 84) for power saving. To support AMD
+     Am486DXL SMI function, the SiS85C471 also provides SMI*(pin93) and SMIADS*(pin 84)
+     for power saving.
+
+     The basic concept of green function depends on system timer reloading. If no system event
+     happened and the timer reaches count, the SiS85C471 enters SMM or slows down CPU
+     speed. If the processor of the system does not support SMI*, STPCLK* pin can still be used to
+     reduce the CPU speed, but additional application circuit is necessary to reduce the CPU speed
+     by 10% descending.
+
+     The SiS85C471 provides two timers, the system event timer and the I/O event timer, to
+     support the GREEN PC functions. Each timer can be used to monitor different events. All the
+     devices therefore can be programmed to enter standby mode at different time zones. Each
+     device could be independent to other devices in entering or waking up from the standby mode.
+     Once a device is entering the standby mode, the I/O timer will be reloaded for the next device
+     to enter the standby mode.
+
+     The selected device will enter the standby mode or the off mode when a time out of the
+     corresponding timer happens. The SMI handler will enable the corresponding bit of the
+     Register 68 if the device enters the standby mode. The corresponding bit of the Register 69
+     will be set when wake-up condition for the device in standby mode is detected. The device
+     then will return back to normal mode by the SMI handler.
+
+     The SiS85C471 also supports the clock throttling mode. If the throttling mode is enabled, the
+     STPCLK* signal will go inactive while an IRQ0 request is served. Hence the operating system
+     timer will not stop while the CPU operation is stopped in the suspend mode.
+
+     Bit 7 of register 5B is used to enable/disable SMM. Registers 5C-5E define un-monitored
+     interrupt vectors. Register 63 defines the SM-RAM address and stop clock condition.
+     Registers 64-65 are used to define Software_SMI address. Registers 66 and 67 are used to
+     select IRQn to break the stop clock. Register 6A defines system management output port
+     SMOUT 7-0. System timer is defined in registers 6D-6F.
+
+
+
+
+Preliminary V6.0 August 19, 1994            20            Silicon Integrated Systems Corporation
+                                                     85C471 Green PC ISA-VESA Single
+Chip
+3. CONFIGURATION REGISTERS
+     There are several configuration registers in the SiS85C471. An indexing scheme is used to
+     access the registers. Port 22h is the index register and port 23h is the data register.
+     The configuration registers are accessed by first writing the index to port 22h and immediately
+     followed by a read from or a write to port 23h. The index is reset after each data access. Every
+     data access to port 23h must be preceded by an index write to port 22h, even if the same
+     register is being accessed. All the reserved bits should be set to the value indicated in the
+     register table for future compatibility purpose.
+     The contents of the configuration registers are listed in the following sections.
+
+     System Hardware Configuration
+     Six pins in the SiS85C471 are used for trapping purpose to identify the hardware
+     configurations at the power-up stage (PWRGD is low).
+     The pin is defined to be 1 if a pull up resistor is used; and it is 0 if a pull down resistor is used.
+     A pull up or pull down resistor of 2.2k is adequate for the trapping purpose. The definitions of
+     the pins are listed below :
+3.1 Hardware Trap Definition
+   DACK1* DACK0* CPU Type Select
+     0      0    Reserved
+     0      1    M7/Am486DXL/Am486DXL2
+     1      0    486DX2/DX/SX/SL Enhanced/P24C
+     1      1    P24D/P24T
+
+   DACK2*
+    1          Cache system
+    0          Non-cache system
+
+   DACK3*
+    1          471 internal operating frequency = XFCLK
+    0          471 internal operating frequency = 1/2 XFCLK
+                 (For more details, please refer to the application circuit.)
+
+   SPK
+    1          Signal DACKn defined as master request and grand signal of VESA bus
+    0          Retrieve DACKn definition
+
+   SMOUT0 (In Cache System)
+    0      Pin 176 = RAS6* and Pin 177 = RAS7* (only for the systems with the 85C407)
+    1      Pin 176 = MPXS1 and Pin 177 = MPXS0
+
+
+
+
+Preliminary V6.0 August 19, 1994               21             Silicon Integrated Systems Corporation
+                                             85C471 Green PC ISA-VESA Single
+Chip
+
+   3.2 Configuration Registers
+
+   Register 50 (index50) Hardware Default = 00
+
+     bit 7, 6     DRAM Speed (See DRAM Speed Options on page 10)
+                  00 : Slowest
+                  01 : Slower
+                  10 : Faster
+                  11 : Fastest
+                  Bit 7 also defines the first transfer of burst cache read and burst cache
+                  write cycle time: 0/1 : 3T/2T
+
+     bit 5        DRAM Write CAS Pulse Width
+                  0 : 2T
+                  1 : 1T
+
+     bit 4        Support CPU internal cache write back control
+                  0 : Disabled
+                  1 : Enabled
+                  When using P24T/D or M6/M7, this bit may be programmed. Otherwise,
+                  this bit should be set to 0.
+
+     bit 3        External cache write back enable
+                  0 : Disabled (Write Through)
+                  1 : Enabled (Write Back)
+
+     bit 2        Pin 138 multiplex output control
+                  0 : RAS3*
+                  1 : MA11
+                  When 16M SIMM DRAM configuration is set, pin 138 functions as
+                  MA11 and bank 3 supports no DRAM.
+
+     bit 1        Burst write enable
+                  0 : Disabled
+                  1 : Enabled
+                  When register 50 bit 4 is set, this bit may be programmed. Otherwise,
+                  this bit should be set to 0.
+
+     bit 0        INIT active enable
+                  0 : Disabled
+                  1 : Enabled
+                  When using P24T/D/C, M6/M7, SL Enhanced 486, this bit should be set
+                  to 1.
+
+
+
+
+Preliminary V6.0 August 19, 1994        22           Silicon Integrated Systems Corporation
+                                              85C471 Green PC ISA-VESA Single
+Chip
+   Register 51 (index 51) Hardware Default = 00
+
+     bit 7        Cache Enable
+                  0 : Disabled
+                  1 : Enabled
+
+     bit 6,5,4    Cache size
+                  000 : 32KB
+                  001 : 64KB
+                  010 : 128KB
+                  011 : 256KB
+                  100 : 512KB
+                  101 : 1MB
+
+     bit 3        Cache Interleave Enable
+                  0 : Disabled
+                  1 : Enabled
+                  If there are two banks cache, this bit should be set to 1.
+
+     bit 2        Cache On/Off
+                  0 : Off
+                  1 : On
+                  When this bit is disabled, all memory access will be fetched from DRAM
+                  directly instead of from cache.
+
+     bit 1        Single / Burst Cache Write Cycle
+                  For single cache write cycle
+                  0 : 3T
+                  1 : 2T
+                  For burst cache write cycle, it denotes the last three transfer cycle
+                  0 : 2T
+                  1 : 1T
+
+     bit 0        Cache Burst Read Cycle
+                  0 : 1T
+                  1 : 2T
+
+   Register 52 (index 52) Hardware Default = 00
+
+     bit 7        Shadow RAM Read Enable
+
+     bit 6        Shadow RAM Write Protection Enable
+
+     bit 5        E8000h - EFFFFh Shadow RAM Enable
+
+     bit 4        E0000h - E7FFFh Shadow RAM Enable
+
+Preliminary V6.0 August 19, 1994         23           Silicon Integrated Systems Corporation
+                                              85C471 Green PC ISA-VESA Single
+Chip
+
+     bit 3         D8000h - DFFFFh Shadow RAM Enable
+
+     bit 2         D0000h - D7FFFh Shadow RAM Enable
+
+     bit 1         C8000h - CFFFFh Shadow RAM Enable
+
+     bit 0         C0000h - C7FFFh Shadow RAM Enable
+
+     bit 0-7
+                   0 : Disabled
+                   1 : Enabled
+
+   Register 53 (index 53) Hardware Default = 00
+
+     bit 7         System BIOS ROM Size
+                   0 : 64K
+                   1 : 128K
+
+     bit 6         Combine System BIOS with C0000h - C7FFFh region for ROM area
+                   0 : Disabled
+                   1 : Enabled
+
+     bit 5         F0000h ~ FFFFFh Shadow RAM Cacheable
+                   0 : Non-Cacheable
+                   1 : Cacheable
+
+     bit 4         C0000h ~ C7FFFh Shadow RAM Cacheable
+                   0 : Non-Cacheable
+                   1 : Cacheable
+
+     bit 3, 2, 1   DMA Cycle Up to 128MB Program A26, A25 and A24
+
+     bit 0         Data Parity check enable
+                   0 : Disabled
+                   1 : Enabled
+
+   Register 54 (index 54) Hardware Default = 00
+
+     bit 7         Allocation of Non-cacheable Area #1
+                   0 : Local DRAM
+                   1 : AT Bus, local DRAM disabled
+
+
+
+
+Preliminary V6.0 August 19, 1994       24          Silicon Integrated Systems Corporation
+                                            85C471 Green PC ISA-VESA Single
+Chip
+
+     bit 6~4       Size of Non-Cacheable Area #1 (within 16MB)
+                   000 : 0KB (disabled)
+                   001 : 64KB
+                   010 : 128KB
+                   011 : 256KB
+                   100 : 512KB
+                   101 : 1MB
+                   110 : 2MB
+                   111 : 4MB
+
+     bit 3         Allocation of Non-Cacheable Area #2
+                   0 : Local DRAM
+                   1 : AT Bus, local DRAM disabled
+     bit 2~0       Size of Non-Cacheable Area #2 (within 128MB)
+                   000 : 0KB (disabled)
+                   001 : 64KB
+                   010 : 128KB
+                   011 : 256KB
+                   100 : 512KB
+                   101 : 1MB
+                   110 : 2MB
+                   111 : 4MB
+
+   Register 55 (index 55) Hardware Default = 00
+
+     bit 7~0       A23~A16 of Non-Cacheable Area #1 (within 16MB)
+
+   Register 56 (index 56) Hardware Default = 00
+
+     bit 7~0       A23~A16 of Non-Cacheable Area #2 (within 128MB)
+
+   Register 57 (index 57) Hardware Default = 00
+
+     bit 7, 6, 5   A26, A25 and A24 of Non-Cacheable Area #2
+
+     bit 4         Fast Reset Emulation Enable
+                   0 : Disabled
+                   1 : Enabled
+
+     bit 3         Fast Reset Latency Control
+                   0 : 2us
+                   1 : 6us
+
+
+
+
+Preliminary V6.0 August 19, 1994       25         Silicon Integrated Systems Corporation
+                                              85C471 Green PC ISA-VESA Single
+Chip
+
+     bit 2        Slow Refresh Enable (1:4)
+                  0 : Normal Refresh
+                  1 : Slow Refresh
+     bit 1        Gate A20 Emulation Enable
+                  0 : Disabled
+                  1 : Enabled
+
+     bit 0        Cache Sizing Enable
+                  0 : Normal Operation
+                  1 : Always Cache hit
+
+   Register 58 (index 58) Hardware Default = 00
+
+     bit 7        Slow CPU (below 25MHz) Enable
+                  0 : Disabled
+                  1 : Enabled
+
+     bit 6        DRAM Write Cycle
+                  0 : 1 wait state
+                  1 : 0 wait state
+
+     bit 5        Refresh Cycle Hold CPU
+                  0 : Enabled
+                  1 : Disabled (set Hidden Refresh)
+
+     bit 4        De-turbo Hold Time (Every 12us)
+                  0 : Hold 4us
+                  1 : Hold 8us
+
+     bit 3        Reserved and should be written with 0.
+
+     bit 2        Combine System BIOS with C8000h - CFFFFh region for ROM area
+                  0 : Disabled
+                  1 : Enabled
+
+     bit 1        Latch Local Bus Device (LDEV*) in T2/T3
+                  0 : T3
+                  1 : T2
+
+     bit 0        Select Local Bus Ready (LRDY*)
+                  0 : Synchronize in next clock
+                  1 : Transparent
+
+
+
+
+Preliminary V6.0 August 19, 1994         26           Silicon Integrated Systems Corporation
+                                                  85C471 Green PC ISA-VESA Single
+Chip
+
+   Register 59 (index 59) Hardware Default =00
+
+     bit 7            De-Turbo On / Off
+                      0 : Turbo
+                      1 : De-Turbo
+
+
+     bit 6            De-Turbo Switch Enable
+                      0 : De-Turbo switch enabled
+                      1 : Always turbo, ignore the status of turbo switch
+     bit 5 - 0    DRAM Size Configuration (note: S = Single side, D = Double side )
+
+                               Bank-0        Bank-1        Bank-2      Bank-3         Total
+             000000         256K*36-S                                                  1MB
+             000001         256K*36-S     256K*36-S                                    2MB
+             000010         256K*36-S     256K*36-S     512K*36-D                      4MB
+             000011         256K*36-S     256K*36-S       1M*36-S                      6MB
+             000100         256K*36-S     256K*36-S     512K*36-D     1M*36-S          8MB
+             000101         256K*36-S     256K*36-S       1M*36-S     1M*36-S         10MB
+             000110         256K*36-S     256K*36-S       4M*36-S                     18MB
+             000111         512K*36-D                                                  2MB
+             001000         512K*36-D     512K*36-D                                    4MB
+             001001         512K*36-D       1M*36-S                                    6MB
+             001010         512K*36-D     512K*36-D       1M*36-S                      8MB
+             001011         512K*36-D     512K*36-D       1M*36-S     1M*36-S         12MB
+             001100         512K*36-D       4M*36-S                                   18MB
+             001101         512K*36-D     512K*36-D       4M*36-S                     20MB
+             001110         512K*36-D     512K*36-D       1M*36-S     4M*36-S         24MB
+             001111         512K*36-D     512K*36-D       4M*36-S     4M*36-S         36MB
+             010000           1M*36-S                                                  4MB
+             010001           1M*36-S       1M*36-S                                    8MB
+             010010           1M*36-S       1M*36-S       1M*36-S                     12MB
+             010011           1M*36-S       1M*36-S       1M*36-S     1M*36-S         16MB
+             010100           1M*36-S       4M*36-S                                   20MB
+             010101           1M*36-S       1M*36-S       4M*36-S                     24MB
+             010110           1M*36-S       4M*36-S       4M*36-S                     36MB
+             010111           1M*36-S       1M*36-S       4M*36-S     4M*36-S         40MB
+             011000           2M*36-D                                                  8MB
+             011001           2M*36-D      2M*36-D                                    16MB
+             011010           2M*36-D      2M*36-D       2M*36-D                      24MB
+             011011           2M*36-D      2M*36-D       2M*36-D      2M*36-D         32MB
+             011100           4M*36-S                                                 16MB
+             011101           4M*36-S      4M*36-S                                    32MB
+             011110           4M*36-S      4M*36-S        4M*36-S                     48MB
+             011111           4M*36-S      4M*36-S        4M*36-S     4M*36-S         64MB
+             100000         256K*36-S      1M*36-S                                     5MB
+             100001         256K*36-S      4M*36-S                                    17MB
+             100010         256K*36-S     16M*36-S                                    65MB
+             100011           1M*36-S      2M*36-D                                    12MB
+             100100           1M*36-S     16M*36-S                                    68MB
+             100101           1M*36-S      1M*36-S       16M*36-S                     72MB
+
+Preliminary V6.0 August 19, 1994             27           Silicon Integrated Systems Corporation
+                                                 85C471 Green PC ISA-VESA Single
+Chip
+             100110          4M*36-S      16M*36-S                                    80MB
+             100111          4M*36-S       4M*36-S      16M*36-S                      96MB
+             101000         16M*36-S                                                  64MB
+             101001         16M*36-S      16M*36-S                                   128MB
+             101010          1M*36-S       8M*36-D                                    36MB
+             101011          1M*36-S       8M*36-D       8M*36-D                      68MB
+             101100          1M*36-S       1M*36-S       8M*36-D                      40MB
+             101101          1M*36-S       1M*36-S       8M*36-D     8M*36-D          72MB
+             101110          4M*36-S       8M*36-D                                    48MB
+             101111          4M*36-S       8M*36-D       8M*36-D                      80MB
+             110000          4M*36-S       4M*36-S       8M*36-D                      64MB
+             110001          4M*36-S       4M*36-S       8M*36-D     8M*36-D          96MB
+             110010          8M*36-D                                                  32MB
+             110011          8M*36-D       8M*36-D                                    64MB
+             110100          8M*36-D       8M*36-D       8M*36-D                      96MB
+             110101          8M*36-D       8M*36-D       8M*36-D     8M*36-D         128MB
+             110110          1M*36-S       2M*36-D       2M*36-D                      20MB
+             110111          1M*36-S       2M*36-D       2M*36-D     2M*36-D          28MB
+             111000          1M*36-S       1M*36-S       2M*36-D                      16MB
+             111001          1M*36-S       1M*36-S       2M*36-D     2M*36-D          24MB
+             111010          2M*36-D       4M*36-S                                    24MB
+             111011          2M*36-D       2M*36-D       2M*36-D     4M*36-S          40MB
+             111100          2M*36-D       2M*36-D       4M*36-S                      32MB
+             111101          2M*36-D       2M*36-D       4M*36-S     4M*36-S          48MB
+             111110          2M*36-D       2M*36-D       8M*36-D                      48MB
+             111111          2M*36-D       2M*36-D       8M*36-D     8M*36-D          80MB
+
+   Register 5A        Hardware Default = 00
+
+     bit 7            Reserved and Should be Written with 0
+
+     bit 6            Overwrite the Cache Read Cycle Time
+                      0 : Keep the access time that defined in the Register 50 bit 7.
+                      1 : Force all the first cycle time of cache access to be 2T, it
+                      overwrites the bit 7 of register 50.
+
+     bit 5            Reserved and Should be Written with 0
+
+     bit 4            Reading the De-Turbo Status (Read Only)
+                      0 : Turbo
+                      1 : De-Turbo
+
+     bit 3-2          Reserved and Should be Written with 0
+
+     bit 1            M7 CPU's L1 Cache Burst Write Timing Control
+                      0 : Always support 3-2-2-2, regardless register 51 bit 1 and
+                          register 50 bit 7.
+                      1 : Be able to support 2-1-1-1
+                         This bit is vaild only when M7 CPU is used.
+
+
+Preliminary V6.0 August 19, 1994            28           Silicon Integrated Systems Corporation
+                                                 85C471 Green PC ISA-VESA Single
+Chip
+
+     bit 0        Local Master Acess DRAM Cycle CASn Delay 1T active
+                  0 : Disable
+                  1 : Enable
+
+   Register 5B    Hardware Default = 00
+
+     bit 7        SMM Enable
+                  0 : Disabled
+                  1 : Enabled
+                  This bit is used to enable/disable the generation of SMI* or IRQ12/15
+                  interrupt.
+
+     bit 6        Stop Clock enable
+                  0 : Disabled
+                  1 : Enabled
+                  This bit is used to enable/disable the generation of STPCLK* signal.
+                  When enabled, a sequence of reading I/O port 043h followed by
+                  reading I/O port 070h forces SiS85C471 to assert STPCLK*.
+
+     bit 5        STPCLK* Auto Generation Select
+                  0 : Disabled
+                  1 : Enabled
+                  When enabled, the SiS85C471 asserts STPCLK* when the system
+                  timer expires, the break switch is pressed or the software SMI port is
+                  accessed.
+
+     bit 4        System Management Mode Request Selection
+                  0 : By IRQ
+                  1 : By SMI
+                  The SiS85C471 provides an alternative way to enter system
+                  management mode by using IRQn for those CPUs that do not have SMI* input
+                  pin. Note that , when bit 5 of Register 5B is set to 1, this bit should be set to 1.
+                  (For more details, please refer to Register 68,69)
+
+     bit 3        IRQn Channel Selection
+                  0 : SELECT IRQ12
+                  1 : SELECT IRQ15
+                  This bit is valid only when Register 5B bit 4 is set to 0.
+
+
+
+
+Preliminary V6.0 August 19, 1994            29            Silicon Integrated Systems Corporation
+                                               85C471 Green PC ISA-VESA Single
+Chip
+     bit 2        SYSCLK Frequency Auto-Switch
+                  0 : Disable
+                  1 : Enable
+                  During CPU clock scaling, SYSCLK will be changed to 7.159 MHz.
+                  Once CPU clock is resumed to the normal state, the SYSCLK will return
+                  to the frequency defined by register 60 bit 7-5 after 30ms. CPU clock
+                  scaling can be triggered by an active SMOUTn or STPCLK*.
+
+     bit 1        Relocate enable
+                  1 : Disabled
+                  0 : Enabled
+                  If this bit is enabled and segments D and E are non-shadowed,and DRAM size
+                  is 1MB ,2MB, 4MB, 5MB, 6MB or 8MB, then 256KB DRAM relocation is
+                  enabled. Note that, when SMM RAM is used, this bit should be set to 1.
+
+     bit 0        Reserved
+
+   Register 5C    Interrupt vector address trap mask 1
+
+     bit 7 ~ 0    bit [7:0] correspond to interrupt vector address of A[9:2]. If an interrupt
+                  event such as IRQn, INTn, or NMI occurs, CPU always accesses the
+                  corresponding interrupt vector from memory 0h to 03ffh. This register is
+                  used to mask out an interrupt vector while the SiS85C471 is monitoring
+                  interrupt events. (default should be set to INT8 )
+
+   Register 5D    Interrupt vector address trap mask 2
+
+     bit 7 ~ 0    Correspond to address bit of A[9:2]
+
+   Register 5E    Interrupt vector address trap mask 3
+
+     bit 7 ~ 0    Correspond to address bit of A[9:2]
+
+   Register 5F
+
+     bit 7        Pin 41 Mutiplex Output Control
+                  0: Pin 41 functions as SMOUT0
+                  1: Pin 41 functions as FLASHWE*
+
+     bit 6        FLASHWE* Activity Control
+                  0: FLASHWE* is driven low
+                  1: FLASHWE* is driven high
+
+     bit 5        FLASHWE* Program Control
+                  0: FLASHWE* is always high
+                  1: FLASHWE* can be programmed by setting register 5F bit 6
+                  This bit also controls the function of register 75 bit 0, please refer to
+                  register 75 bit 0.
+
+Preliminary V6.0 August 19, 1994          30           Silicon Integrated Systems Corporation
+                                              85C471 Green PC ISA-VESA Single
+Chip
+
+     bit 4        Reload Events of System Event Timer Include Those Events
+                  Monitored by I/O Device Standby Timer
+                  0 : Disable
+                  1 : Enable
+     bit 3,2      System Eevent Timer and I/O Device Standby Timer Time Base
+                  Select
+                  00 : 9.374 second
+                  01 : 1.171 second
+                  10 : 35.759 micro second
+                  11 : 0.139 micro second
+
+     bit 1        Reserved and should be written to 0.
+
+     bit 0        Any Activity of Break Event Generate a SMI
+                  0: Disable
+                  1: Enable
+                  The break events are defined in register 63 bit 3-0. If this bit is enabled,
+                  any active break event will generate a SMI and set register 69 bit 3 .
+
+   Register 60 (index 60) Hardware Default = 00
+
+     bit 7 ~ 5    Bus Clock Frequency Selection
+                  000 : BUSCLK = 7.159 MHz
+                  001 : BUSCLK = 1/10 XFCLK
+                  010 : BUSCLK = 1/8 XFCLK
+                  011 : BUSCLK = 1/6 XFCLK
+                  100 : BUSCLK = 1/5 XFCLK
+                  101 : BUSCLK = 1/4 XFCLK
+                  110 : BUSCLK = 1/3 XFCLK
+                  111 : BUSCLK = 1/2 XFCLK
+     bit 4        Zero Wait for 16-bit Memory or I/O Command
+                  0: Disable
+                  1: Enable
+     bit 3        16-bit I/O Read Cycle Command without Command Delay
+                  0: Disable
+                  1: Enable
+     bit 2        Decrease 16-bit I/O Read Cycle One AT Bus Clock
+                  0: Disable
+                  1: Enable
+     bit 1~0      Reserved
+
+
+
+
+Preliminary V6.0 August 19, 1994         31            Silicon Integrated Systems Corporation
+                                             85C471 Green PC ISA-VESA Single
+Chip
+   Register 61 (index 61) Hardware Default = 09
+
+     bit 7, 6     16-Bit I/O Cycle Command Recovery Time Selection
+                  00 : 8 BUSCLK
+                  01 : 5 BUSCLK
+                  10 : 3 BUSCLK
+                  11 : 2 BUSCLK
+
+     bit 5, 4     8-Bit I/O Cycle Command Recovery Time Selection
+                  00 : 16 BUSCLK
+                  01 : 11 BUSCLK
+                  10 : 7 BUSCLK
+                  11 : 4 BUSCLK
+
+     bit 3        Reserved and should be written with 1
+
+     bit 2        16-bit Memory, I/O Wait State Selection
+                  0 : 2 wait states
+                  1 : 1 wait states
+
+     bit 1        8-bit Memory, I/O Wait State Selection
+                  0 : 5 wait states
+                  1 : 4 wait states
+
+     bit 0        Reserved and should be written with 1
+
+   Register 62    Reserved
+
+     bit 7        Reserved
+
+     bit 6        Reserved and should be written with 1
+
+     bit 5-0      Reserved
+
+   Register 63
+
+     bit 7 - 5    SM-RAM Area select
+                  000 : Remap E segment to A segment
+                  001 : Remap E segment to B segment
+                  010 : E Segment
+                  100 : Remap segment 6 to segment A (for Am486DXL/DXL2 CPU)
+                  101 : Remap segment 6 to segment B (for Am486DXL/DXL2 CPU)
+                  When Bit 7=1, Pin SMI* timing will function as Am486DXL's definition.
+
+     bit 4        SM-RAM Access control
+                  0 : SM-RAM can be accessed only through SMM (SMIACT* is active
+                      low)
+                  1 : SM-RAM can be accessed during normal operation.
+
+
+Preliminary V6.0 August 19, 1994        32          Silicon Integrated Systems Corporation
+                                             85C471 Green PC ISA-VESA Single
+Chip
+     bit 3        Stop Clock /Clock Scaling/Clock Throttling Break by IRQn
+                  0 : Disabled
+                  1 : Enabled
+                  This bit is used to allow IRQn to break system from idle mode when set.
+     bit 2        Stop Clock /Clock Scaling/Clock Throttling Break by NMI
+                  0 : Disabled
+                  1 : Enabled
+                  This bit is used to allow NMI to break system from idle mode when set.
+
+     bit 1        Stop Clock /Clock Scaling/Clock Throttling Break by DMA Request
+                  0 : Disabled
+                  1 : Enabled
+                  This bit is used to allow any DMA request to break system from idle
+                  mode.
+     bit 0        Stop Clock /Clock Scaling/Clock Throttling Break by Local Master
+                  request
+                  0 : Disabled
+                  1 : Enabled
+                  This bit is used to allow any local master request to break system from
+                  idle mode.
+
+   Register 64    Define Software_SMI low byte address A7 - A0
+
+     bit 7 ~ 0    This register defines the lower 8 bits of SW_SMI address trap address.
+                  bit[7:0] correspond to address A[7:0]. If SW_SMI is enabled (defined in
+                  register 68, bit 1), an I/O write to the address defined in Registers 64
+                  and 65 will force the SiS85C471 to generate software SMI*. The
+                  software SMI* can be used to support APM.
+
+   Register 65    Define Software_SMI high byte address A15 - A8
+
+   Register 66    System event timer is reloaded by IRQ0~7 or Stop Clock Break
+                  selects Register 1.
+
+     bit 7        : IRQ7
+
+     bit 6        : IRQ6
+
+     bit 5        : IRQ5
+
+     bit 4        : IRQ4
+
+     bit 3        : IRQ3
+
+     bit 2        : IRQ2
+Preliminary V6.0 August 19, 1994        33          Silicon Integrated Systems Corporation
+                                              85C471 Green PC ISA-VESA Single
+Chip
+
+     bit 1        : IRQ1
+
+     bit 0        : IRQ0
+
+   Register 67    System event timer is reloaded by IRQ8~15 or Stop Clock Break
+                  selects Register 2.
+
+     bit 7        : IRQ15
+
+     bit 6        : IRQ14
+
+     bit 5        : IRQ13
+
+     bit 4        : IRQ12
+
+     bit 3        : IRQ11
+
+     bit 2        : IRQ10
+
+     bit 1        : IRQ9
+
+     bit 0        IRQ8
+                  0 : IRQn active will force STPCLK* to go high, if the Register 63 bit 3 is
+                     enabled.
+                  1 : IRQn active will not influence STPCLK*
+   Register 68    SMI/IRQ enable register
+
+     bit 7        I/O Device Standby timer time out control
+                  0 : Disabled
+                  1 : Enabled
+
+     bit 6        Programmable I/O Device Standby exit control
+                  0 : Disabled
+                  1 : Enabled
+
+     bit 5        Serial Port or Parallel Port Standby exit control
+                  0 : Disabled
+                  1 : Enabled
+
+     bit 4        Hard Disk standby exit control
+                  0 : Disabled
+                  1 : Enabled
+     bit 3        Screen save mode exit control
+                  0 : Disabled
+                  1 : Enabled
+
+Preliminary V6.0 August 19, 1994         34           Silicon Integrated Systems Corporation
+                                               85C471 Green PC ISA-VESA Single
+Chip
+     bit 2        Break switch SMI/IRQ control
+                  0 : Disabled
+                  1 : Enabled
+
+     bit 1        Software SMI/IRQ control
+                  0 : Disabled
+                  1 : Enabled
+
+     bit 0        System event timer time out SMI/IRQ control
+                  0 : Disabled
+                  1 : Enabled
+
+   Register 69    SMI/IRQ request status register
+
+     bit 7        I/O device standby timer time out request
+
+     bit 6        Programmable I/O device standby exit request
+
+     bit 5        Serial port or parallel port standby exit request
+                  ( refer to bit 0 and 1 of the Register 73 for the port selected )
+
+     bit 4        Hard disk standby exit request
+
+     bit 3        Local Standby / Clock Scaling / Clock Throttling exit request
+
+     bit 2        Break switch SMI/IRQ Request
+                  If the SMM was enabled and the Register 68 bit 2 = "1" and the
+                  Register 71 bit 7 = "0" , then this bit can be set by writing an "1". If the
+                  Register 71 bit 7 = "1", this bit can be set by the RC or the De-Turbo
+                  pin.
+     bit 1        Sortware SMI/IRQ Request
+                  This bit can be set by enabling the Register 68 bit 1 and an I/O write to
+                  the address defined in the Registers 64 and 65.
+     bit 0        System event timer time out SMI/IRQ Request
+                  If the SMM is enabled and the register 5B bit 5 is set to 0 (disable) and
+                  the Register 68 bit 0 is set to 1 (enable), then this bit can be set to 1
+                  when a time out of the system timer happens.
+                  Which of the SMI/IRQ functions should be serviced could be decided by
+                  the SMI handler while reading this register.
+                  0: not requested
+                  1: requested
+
+
+
+
+Preliminary V6.0 August 19, 1994          35           Silicon Integrated Systems Corporation
+                                              85C471 Green PC ISA-VESA Single
+Chip
+   Register 6A
+
+     bit 7 ~ 0    SMOUT 7 - 0
+
+   Register 6B    SMI_CLR Register
+                  When a SMI or IRQ12/15 is active, 85C471 will not allow a new SMI or
+                  IRQ12/15 generated until this register is wrote, CPU state have been
+                  restored, and a 6 us timer times out.
+
+   Register 6C    SMI_MASK Register / Port 70h Shadow Register
+                  Read from or write to this register has different meaning.When read
+                  this register, the index value written to port 70h is got. When a SMI or
+                  IRQ12/15 is active, 85C471 masks out CPU resets except those resets
+                  caused by shutdown cycle or hardware reset until this register is written,
+                  CPU state have been restored, and a 14 us timer times out.
+
+   Register 6D    System Event Timer Low Byte
+
+   Register 6E    System Event Timer High Byte
+                  Each count represents 9.374 seconds. Maximum time count is
+                  614325.08 seconds. If SMM and bit 0 of Register 68 are enabled, the
+                  system event timer starts counting down. When the timer counts down
+                  to 0, either SMI, IRQ12 or IRQ15 will be used as the system
+                  management request signal if bit 5 of Register 5B is disabled.
+
+                  Time out period = (number of counts - 1) * Time Base
+
+   Register 6F    System timer reload event detection
+
+     bit 7        Local device detection control
+                  0: Disabled
+                  1: Enabled
+
+     bit 6        IRQn detection control
+                  0 : Disabled
+                  1 : Enabled
+                  If this bit is enabled, any IRQ that goes active except disabled by
+                  Registers 66 and 67 will reload system event timer.
+
+     bit 5        Video Acess Request (Memory Segment A0000h~BFFFFh, I/O Port
+                  3B0h~3B7h, 3C0h~3CFh, 3D0h~3DFh)
+                  0 : Disabled
+                  1 : Enabled
+
+
+
+
+Preliminary V6.0 August 19, 1994         36           Silicon Integrated Systems Corporation
+                                             85C471 Green PC ISA-VESA Single
+Chip
+
+     bit 4        0C0000-0C7FFF Address trap detection control
+                  0 : Disabled
+                  1 : Enabled
+     bit 3        INT vector address trap (0h - 03FFh) detection control
+                  0 : Disabled
+                  1 : Enabled
+     bit 2        DMA request detection control
+                  0 : Disabled
+                  1 : Enabled
+     bit 1        Local master request detection control
+                  0 : Disabled
+                  1 : Enabled
+     bit 0        Programmable I/O port detection control
+                  0 : Disabled
+                  1 : Enabled (Please refer to Registers 70 and 71)
+
+   Register 70    Programmable I/O port address register
+
+     bit 7 ~ 0    : A9 - A2
+
+   Register 71
+
+     bit 7,6      Break switch pin select
+                  0 X : Disabled
+                  1 0 : the RC pin is used as the break switch pin
+                  1 1 : the De-Turbo pin is used as the break switch pin
+     bit 5        Pin 58 definition
+                  0 : as SMOUT1
+                  1 : as SMOUTW*
+     bit 4,3,2    Programmable I/O port address mask
+                  000 : no mask
+                  001 : mask A0
+                  010 : mask A1-A0
+                  011 : mask A2-A0
+                  100 : mask A3-A0
+                  101 : mask A4-A0
+                  110 : mask A5-A0
+                  111 : mask A6-A0
+                  When Programmable I/O port detection control bit in the Register 6F bit
+                  0 is enabled, an I/O access to the address defined in the Registers 70
+                  and 71 will force the system event timer to be reloaded.
+
+
+Preliminary V6.0 August 19, 1994        37           Silicon Integrated Systems Corporation
+                                              85C471 Green PC ISA-VESA Single
+Chip
+     bit 1,0      Programmable I/O port address A1, A0
+                  When I/O trap address enable bit, bit 0 of Register 6F, is enabled, I/O
+                  command accessing the address defined by Registers 70 and 71 will
+                  force System Event Timer to be reloaded.
+
+   Register 72
+
+     bit 7        Clock throttling
+                  0 : Disabled
+                  1 : Enabled
+                  When STPCLK* is active and this bit is enabled, a coming IRQ0 will
+                  force the STPCLK* to go inactive until an EOI command for the IRQ0 is
+                  issued.
+
+     bit 6        CPUCLK scaling controlled by SMOUT
+                  0 : Disabled
+                  1 : Enabled
+
+     bit 5 ~ 3    CPUCLK scaling control select
+                  000 : by SMOUT0
+                  001 : by SMOUT1
+                  010 : by SMOUT2
+                  011 : by SMOUT3
+                  100 : by SMOUT4
+                  101 : by SMOUT5
+                  110 : by SMOUT6
+                  111 : by SMOUT7
+
+     bit 2,1      Definition for 116,133,134,137
+                  00:      pin 116 = SMOUT2
+                           pin 133 = ALT
+                           pin 134 = ALTWL*
+                           pin 137 = SMOUT3
+                  01:      pin 116 = RAS4*
+                           pin 133 = ALT
+                           pin 134 = ALTWL*
+                           pin 137 = RAS5*
+                  1X:      pin 116 = RAS4*
+                           pin 133 = RAS6*
+                           pin 134 = RAS7*
+                           pin 137 = RAS5*
+                  If the external cache is set to write back mode ( register 50 bit 3 = "1" )
+                  then
+                  1 0 : no Alter bit ( always dirty )
+                  1 1 : combine 7 tag bits + 1 Alter bit in one SRAM
+
+Preliminary V6.0 August 19, 1994         38           Silicon Integrated Systems Corporation
+                                                 85C471 Green PC ISA-VESA Single
+Chip
+     bit 0        Port 92h support ( functions defined by bit 1 and bit 0 only )
+                  0 : Disabled
+                  1 : Enabled
+                  This bit enables/disables the function of bit 0 and 1 of port 92h. The bit 1 of
+                  port 92h is ORed with Fast_A20_Gate internally to generate A20M*. If both
+                  this bit and Fast_A20_gate are 0, A20M* is at low state .
+                  Bit 0 of port 92h can be cleared by CPURESET or a I/O write operation. When
+                  register 50 bit 0 is set to 1, setting port 90 bit 0 to 1 from 0 by an I/O write to
+                  itself, an INIT is generated after a 2 us or 6 us delay depending on register 57
+                  bit 3.
+   Register 73    I/O device standby monitor
+     bit 7        Programmable I/O ports defined by Registers 71 and 70
+                  0 : Disabled
+                  1 : Enabled
+     bit 6        I/O ports 1F0h to 1F7h and 3F6 detect - Hard Disk Port
+                  0 : Disabled
+                  1 : Enabled
+     bit 5        I/O ports 2F8h to 2FFh, 3F8h to 3FFh, 2E8h to 2EFh, or 3E8h to
+                  3EFh detect - Serial Port
+                  0 : Disabled
+                  1 : Enabled
+     bit 4        I/O ports 278h to 27Fh, 378h to 37Fh or 3BCh to 3BFh - Parallel
+                  Port
+                  0 : Disabled
+                  1 : Enabled
+     bit 3        IRQ1, 3, 4 and IRQ 12 detect - Screen save mode detect
+                  0 : Disable
+                  1 : Enable
+     bit 2        Screen save mode exit request status
+                  0 : no any IRQ 1, 3, 4 or IRQ 12 request
+                  1 : IRQ 1, 3, 4 or IRQ 12 request
+     bit 1        Serial Port standby exit control
+                  0 : Disable
+                  1 : Enable
+     bit 0        Parallel Port standby exit control
+                  0 : Disable
+                  1 : Enable
+    Register 74   I/O Device Standby Timer
+                  The time period of each count is according to the setting of register 5F
+                  bit 3,2. Maximum time period is 2399.75 seconds.The minimum count
+                  is 2.The timer expires when any of the selected event(s) in register 73
+
+Preliminary V6.0 August 19, 1994           39             Silicon Integrated Systems Corporation
+                                               85C471 Green PC ISA-VESA Single
+Chip
+                   bit 7-3 has been idle for a programmed period. Please refer to register
+                   68 bit 7.
+                   Time out period = (number of counts - 1) * Time Base
+
+   Register 75
+     bit 7         Reserved
+     bit 6         IORDY* Control
+                   0: Disable
+                   1: Enable
+                   During clock scaling, IORDY* for DMA or ISA Master transfer is active
+                   till memory transfer complete.
+     bit 5-4       Reserved
+     bit 3         A20ML Control
+                   0 : Disable
+                   1 : Enable
+                   When CPU executes SMI handler, A20ML goes high. After SMI handler
+                   is done, A20ML return to the previous state.
+     bit 2         RAS[7:4] Active Control
+                   0 : Disable
+                   1 : Enable
+     bit 1         MA bus and MWE buffers driving capacity control
+                   0 : 12 mA
+                   1 : 24 mA
+     bit 0         Flash Memory Write Control
+                   0 : Enable
+                   1 : Disable
+                   Once this bit is set to disable, it is not able to reprogrammable and any
+                   write to BIOS ROM area is void.
+   Register 76
+     bit 7, 6, 5   Reserved and should be written with 0
+     bit 4         Stop Green Bus Cycle Detected
+                   0 : Disable
+                   1 : Enable
+                   This bit is valid only when Intel CPU or Am486plus is used. If this bit is
+                   enabled, STPCLK* can only be deasserted after Stop Grant Bus Cycle
+                   is detected.
+     bit 3,2,1     Reserved and should be written with 0
+     bit 0         Keyboard interface status (Read only)
+                   0 : Keyboard interface is disabled
+                   1 : Keyboard interface is enabled
+
+
+
+Preliminary V6.0 August 19, 1994          40          Silicon Integrated Systems Corporation
+                                                     85C471 Green PC ISA-VESA Single
+Chip
+3.3 Application Description
+                  74F151         TO SIS85C471                                   74F151           TO SIS85C471
+
+      IRQ1   D0                     MPXI2                      DRQ5     D0                   Q     MPXI1
+      IRQ4   D1                                                DRQ6     D1
+      IRQ5   D2                                                DRQ7     D2
+      IRQ6   D3                                                 IRQ3    D3
+      IRQ9   D4                                                 IRQ7    D4
+     IRQ10   D5                                                IRQ8*    D5
+     IRQ11   D6                                                IRQ12    D6
+     IRQ14   D7            ABC                                 IRQ15    D7               ABC
+
+                                   MPXS2                                                           MPXS2
+                                   MPXS1                                                           MPXS1
+                                   MPXS0                                                           MPXS0
+
+
+
+
+                                 TO SIS85C471             SIS85C471          74LS138
+                                                                                            TO ISA/VESA SLOTS
+                  74F151
+   IOCHCK*   D0              Q     MPXI0                 DACK0*/A138    A              Q0        SDACK0
+        RC   D1                                          DACK1*/B138    B              Q1        SDACK1
+      WIRQ   D2                                          DACK2*/C138                   Q2        SDACK2
+                                                                        C
+   D-TURBO   D3                                                                        Q3        SDACK3
+      DRQ0   D4                                         DACK3*/GN138                   Q4        LGNT2*
+                                                                        GN
+      DRQ1   D5                                                                        Q5        SDACK5
+      DRQ2   D6                                                                                  SDACK6
+                                                                                       Q6
+      DRQ3   D7            ABC                                                         Q7        SDACK7
+
+                                   MPXS2
+                                   MPXS1
+                                   MPXS0
+                                                        DACK5*/LGNT1*                         LGNT1*
+                                                        DACK6*/LERQ1*                         LREQ1*
+                                                        DACK7*/LERQ2*                         LREQ2*
+
+
+
+
+Preliminary V6.0 August 19, 1994                41          Silicon Integrated Systems Corporation
+                                        85C471 Green PC ISA-VESA Single
+Chip
+
+4. PIN DESCRIPTION
+
+4.1 Pin Assignment
+
+
+
+
+      14MHZ     1                                                  156   CAS0*
+        BALE                                                       155   VSS
+      HDEN*                                                              CAS1*
+       LDEN*                                                             CAS2*
+        BDIR    5                                                        CAS3*
+        SDIR                                                             KCE0*
+     ASRTC*                                                              KCE1*
+     DRRTC*                                                              KCE2*
+     DWRTC*                                                              KCE3*
+         VDD    10                                                       VDD
+         XD0                                                             KWEY*/RAS7*
+         XD1                                                       145   KWEX*/RAS6*
+         XD2                                                             KREY*/RAS5*
+         XD3                                                             KREX*/RAS4*
+         VSS    15                                                       VSS
+         XD4                                                             RAS0*
+         XD5                                                             RAS1*
+         XD6                                                             RAS2*
+         XD7                                                             RAS3*
+         VSS                                                             RAS5*/SMOUT3
+         PD0                                                             MRE*
+         PD2                                                       135   MWE*
+         D16                                                             RAS7*/ALTWE*/RC
+         D17                                                             RAS6*/ALT/DTURBO
+         VDD    25                                                       TAWE*
+         D18                                                             TA0
+         D19                                                       130   TA1
+
+
+
+
+                               85C471
+         D20                                                              TA2
+          D21                                                             TA3
+          D22                                                             TA4
+          D23                                                             TA5
+        HOLD                                                       125    TA6
+       BS16*                                                              TA7
+          D24                                                             LRDY*
+          D25   35                                                        LBD*
+          D26                                                             LOCK*
+          D27                                                      120    A2
+         VSS                                                              VSS
+          D28                                                             PCD
+          D29   40                                                        A3
+     SMOUT0                                                               RAS4*/SMOUT2
+          D30                                                             CPURDY*
+         VDD                                                              VDD
+          D31                                                             PWRGD
+         PD3    45                                                        BRDY*
+         SD8                                                              BE0*
+         SD9                                                       110    BE1*
+        SD10                                                              BE2*
+        SD11                                                              BE3
+        SD12                                                              BLAST*
+        SD13                                                              M/IO*
+        SD14                                                       105    D/C*
+
+
+
+
+Preliminary V6.0 August 19, 1994   42        Silicon Integrated Systems Corporation
+                                               85C471 Green PC ISA-VESA Single
+Chip
+  Pin listing(* means active low)
+    1 = 14MHZ    53 = SD15              105 = D/C*              157 = KA3X/KA3{IRQ4}
+    2 = BALE     54 = PD1               106 = M/IO*             158 = KA3Y/KA2{IRQ1}
+    3 = HDEN*    55 = SPK               107 = BLAST*            159 = MA10
+    4 = LDEN*    56 = A20M*             108 = BE3*              160 = MA9
+    5 = BDIR     57 = A4                109 = BE2*              161 = MA8
+    6 = SDIR     58 = SMOUT1/SMOUTW*    110 = BE1*              162 = MA7
+    7 = ASRTC*   59 = A5                111 = BE0*              163 = MA6
+    8 = DRRTC*   60 = VSS               112 = BRDY*             164 = VSS
+    9 = DWRTC*   61 = VDD               113 = PWRGD             165 = VDD
+   10 = VDD      62 = A6                114 = VDD               166 = MA5
+   11 = XD0      63 = A7                115 = CPURDY*           167 = MA4
+   12 = XD1      64 = A8                116 = RAS4*/SMOUT2      168 = MA3
+   13 = XD2      65 = A9                117 = A3                169 = MA2
+   14 = XD3      66 = A10               118 = PCD               170 = MA1
+   15 = VSS      67 = A11               119 = VSS               171 = MA0
+   16 = XD4      68 = A12               120 = A2                172 = INTR
+   17 = XD5      69 = A13               121 = LOCK*             173 = ZWS*
+   18 = XD6      70 = A14               122 = LBD*              174 = IORDY
+   19 = XD7      71 = A15               123 = LRDY*             175 = MPXS2{IRQ11}
+   20 = VSS      72 = A16               124 = TA7{IRQ15}        176 = MPXS1/RAS6*{IRQ10}
+   21 = PD0      73 = A17               125 = TA6{IRQ14}        177 = MPXS0/RAS7*{IRQ9}
+   22 = PD2      74 = A18               126 = TA5{IRQ12}        178 = MPXI2{IRQ8}
+   23 = D16      75 = A19               127 = TA4{IRQ7}         179 = MPXI1{IRQ6}
+   24 = D17      76 = VSS               128 = TA3{IRQ3}         180 = MPXI0{IRQ5}
+   25 = VDD      77 = A20               129 = TA2{DRQ7}         181 = MEMCS16*
+   26 = D18      78 = A21               130 = TA1{DRQ6}         182 = VSS
+   27 = D19      79 = A22               131 = TA0{DRQ5}         183 = IOCS16*
+   28 = D20      80 = A23               132 = TAWE*{WIRQ}       184 = MASTER*
+   29 = D21      81 = A24               133 = RAS6*/ALT{DTURBO} 185 = DACK7*(LREQ2*)
+   30 = D22      82 = A25               134 = RAS7*/ALTWE*{RC*} 186 = DACK6*(LREQ1*)
+   31 = D23      83 = A26               135 = MWE*              187 = DACK5*(LGNT1*)
+   32 = HOLD     84 = SMIACT*           136 = MRE*{IOCHK*}      188 = DACK3*(GN138)
+   33 = BS16*    85 = KEN*              137 = RAS5*/SMOUT3      189 = DACK2*(C138)
+   34 = D24      86 = EADS*             138 = RAS3*/MA11        190 = DACK1*(B138)
+   35 = D25      87 = KBROMCS*          139 = RAS2*             191 = DACK0*(A138)
+   36 = D26      88 = A27               140 = RAS1*             192 = MEMR*
+   37 = D27      89 = A31               141 = RAS0*             193 = MEMW*
+   38 = VSS      90 = HITM*             142 = VSS               194 = SMEMR*
+   39 = D28      91 = RSTCPU            143 = KREX*{RAS4*}      195 = SMEMW*
+   40 = D29      92 = VSS               144 = KREY*{RAS5*}      196 = SA1
+   41 = SMOUT0   93 = SMI*              145 = KWEX*{RAS6*} 197 = SA0
+   42 = D30      94 = STPCLK*           146 = KWEY*{RAS7*} 198 = VSS
+   43 = VDD      95 = HLDA              147 = VDD               199 = SYSCLK
+   44 = D31      96 = VSS               148 = KCE3*{DRQ0}       200 = VSS
+   45 = PD3      97 = VDD               149 = KCE2*{DRQ1}       201 = VDD
+   46 = SD8      98 = XFCLK             150 = KCE1*{DRQ2}       202 = AEN
+   47 = SD9      99 = IGNNE*            151 = KCE0*{DRQ3}       203 = BHE*
+   48 = SD10     100 = FERR*            152 = CAS3*             204 = REF*
+   49 = SD11     101 = NMI              153 = CAS2*             205 = RSTDRV
+   50 = SD12     102 = INIT             154 = CAS1*             206 = TC
+   51 = SD13     103 = ADS*             155 = VSS               207 = IOR*
+   52 = SD14     104 = W/R*             156 = CAS0*             208 = IOW*
+   NOTE: {???} for non-cache mode, (???) for VL-BUS master support mode.
+
+Preliminary V6.0 August 19, 1994          43          Silicon Integrated Systems Corporation
+                                                 85C471 Green PC ISA-VESA Single
+Chip
+
+4.2 Pin Definitions
+4.2.1 CPU Interface
+
+    Pin No.   Symbol           Type                 Name and Function
+    103     ADS*                I/O Address status is an input from CPU and local
+                               (12)1 bus master, and an output to local bus targets
+                                     in DMA/ISA master cycles. It is an active low
+                                     signal that indicates a valid bus cycle definition
+                                     and address are available on the cycle
+                                     definition lines and address bus.
+
+    106        M/IO*            I/O Memory I/O definition is an input from CPU
+                               (12)1 and local bus master, and is an output to local
+                                     bus targets in DMA/ISA master cycles. It
+                                     indicates an I/O cycle when low, and a
+                                     memory cycle when high.
+
+    104        W/R*             I/O Write/Read definition is an input from CPU and
+                               (12)1 local bus master, and is an output to local bus
+                                     targets in DMA/ISA master cycles. It indicates
+                                     a read cycle when low, and a write cycle when
+                                     high.
+
+    105        D/C*                 I     Data/control definition is an input to indicate a
+                                          control cycle when low, and a data cycle when
+                                          high.
+
+    115        CPURDY*          I/O CPU Ready output indicates that the current
+                               (24)1 cycle is complete when a VL-Bus master or
+                                     the CPU accesses on-board memory or ISA
+                                     target. It is connected to the ready-return of
+                                     VESA slots. Once the SiS85C471 detects the
+                                     active low of LBD*, CPURDY* becomes Hi-Z.
+                                     The SiS85C471 will drive CPURDY* active if
+                                     LRDY* is detected to be active low.
+
+    32         HOLD                 O     The bus hold request is used to request the
+                                   (6)1   control of the CPU bus. HLDA will be asserted
+                                          by the CPU after completing the current bus
+                                          cycle.
+
+   Note 1: Driving Current. (Unit:mA)
+
+
+
+Preliminary V6.0 August 19, 1994            44           Silicon Integrated Systems Corporation
+                                                 85C471 Green PC ISA-VESA Single
+Chip
+
+    Pin No.   Symbol           Type             Name and Function
+    95      HLDA                 I  Hold acknowledge comes from the CPU in
+                                    response to a HOLD request. It is active high
+                                    and remains driven during bus hold period.
+                                    HLDA indicates that the CPU has given the
+                                    bus to another bus master.
+
+    101        NMI                  O     Non-maskable interrupt is rising edge trigger
+                                   (6)1   signal to the CPU and is generated to invoke a
+                                          non-maskable interrupt.
+
+    172        INTR                 O     Interrupt goes high whenever a valid interrupt
+                                   (6)1   request is asserted. It is used to interrupt the
+                                          CPU, and is usually connected to the CPU's
+                                          interrupt pin.
+
+    33         BS16*             O   BS16* is a tri-state active low output used to
+                               (12)1 indicate to the CPU or the VL-Bus master that
+                                     the current target can only do 16-bit transfer.
+                                     This signal is driven active by the SiS85C471
+                                     while the CPU or the VL-Bus master accesses
+                                     the device which is not on-board memory. The
+                                     BS16* will be in high impedance when LBD* is
+                                     detected low. The BS16* will then be driven
+                                     by the VL-Bus target if the target can not do
+                                     32-bit transfers.
+    56         A20M*             O   A20 Mask is the fast A20GATE output to the
+                                (6)1 CPU. It remains high during power up and the
+                                     CPU reset period. It will force A20 to go low
+                                     when active.
+
+    86         EADS*             O   External address strobe is a tri-state output
+                                   1
+                               (12) pin. It indicates that a valid external address
+                                     has been driven onto the 80486 CPU address
+                                     pins. This address will be used for the CPU to
+                                     perform an internal cache invalidation cycle. It
+                                     is driven by the SiS85C471 during DMA or ISA
+                                     master cycles. It is driven by the VL-Bus
+                                     master during a VL-Bus master cycle.
+
+    100        FERR*                I     Floating point error from the 80486 CPU. It is
+                                          driven active when a floating point error
+                                          occurs.
+
+   Note 1: Driving Current. (Unit:mA)
+
+Preliminary V6.0 August 19, 1994            45           Silicon Integrated Systems Corporation
+                                                 85C471 Green PC ISA-VESA Single
+Chip
+
+    Pin No.   Symbol           Type               Name and Function
+    99      IGNNE*                 1
+                               O(6) Ignore numeric error informs the 80486 CPU
+                                     to ignore a numeric error.
+
+    107        BLAST*               I/O   The burst last signal indicates that the next
+                                   (6)1   time BRDY* is returned the burst bus cycle is
+                                          complete. The signal is driven by the bus
+                                          master or the CPU, and is sensed by bus
+                                          targets. It is an input in a CPU or VL-Bus
+                                          master cycle, and is an output in a DMA/ISA
+                                          master cycle. Because the DMA/ISA master
+                                          can not perform burst mode transfers, BLAST*
+                                          is low always during these cycles.
+
+    112        BRDY*            I/O Burst Ready indicates that data presented are
+                               (12)1 valid during a burst cycle. It is driven by the
+                                     SiS85C471 during non-local-bus cycles, and is
+                                     driven by the VL-Bus target if LBD* is asserted
+                                     low. BRDY* is an input when LBD* is detected
+                                     active.
+
+    94         STPCLK*           O   The SiS85C471 supports P24D/T, SL
+                               (12)1 Enhanced 486 stop clock function by asserting
+                                     STPCLK* in power saving mode. For Cyrix
+                                     CPUs, it is connected to the SUSP# pin.
+
+   Note 1: Driving Current. (Unit:mA)
+
+
+
+
+Preliminary V6.0 August 19, 1994            46          Silicon Integrated Systems Corporation
+                                                85C471 Green PC ISA-VESA Single
+Chip
+4.2.2 Local Bus and Bus Control
+
+     Pin No.       Symbol         Type               Name and Function
+    121          LOCK*            I    The bus lock pin indicates that the current bus
+                                       cycle is locked. The CPU will not allow a bus
+                                       hold when LOCK* is asserted.
+
+    122          LBD*             I       Local bus device cycle input to indicate a local
+                                          bus device cycle.
+
+    123          LRDY*            I       Local bus device ready is an active low input
+                                          to indicate that the current local bus cycle is
+                                          complete. The SiS85C471 either synchro-
+                                          nizes it or passes it through to generate the
+                                          CPURDY*.
+
+    111-108      BE0 - 3*         I/O     Byte enables determine the bytes to be
+                                  (6)1    accessed during CPU or DMA/ISA master
+                                          cycles. During CPU cycles, they are encoded
+                                          to generate SA1, SA0, and BHE*. During DMA
+                                          or ISA master cycles, SA1, SA0 and BHE* are
+                                          used to generate the byte enable signals.
+
+    120,117,57   A2,A3,           I/O     CPU address lines. They are outputs during
+    ,59,         A4-A15           (6)1    DMA or ISA master cycles.
+    62-75,77-
+    83,88,89     A16-A27,A31
+    197          SA0              I/O     AT bus address 0. It is an output during the
+                                  (12)1   AT or DMA cycles, and an input during the
+                                          ISA master cycles. It is LOW during 16-bit
+                                          access cycles.
+
+    196          SA1              I/O     AT bus address 1. It is an output during the
+                                  (12)1   AT or DMA cycles, and an input during the
+                                          ISA master cycles.
+
+    203          BHE*             I/O     Byte high enable signal indicates that the high
+                                  (12)1   byte has valid data on the ISA 16-bit data bus.
+                                          This signal is an output except in ISA master
+                                          mode.
+
+    192          MEMR*            I/O     AT-bus memory read command signal is an
+                                  (12)1   output pin during AT/DMA/refresh cycles and
+                                          is an input pin in ISA master cycles. It is used
+                                          to retrieve data from the ISA bus memory.
+   Note 1: Driving Current. (Unit:mA)
+
+
+Preliminary V6.0 August 19, 1994           47           Silicon Integrated Systems Corporation
+                                               85C471 Green PC ISA-VESA Single
+Chip
+
+    Pin No.   Symbol           Type                Name and Function
+    193     MEMW*               I/O AT-bus memory write command signal is an
+                               (12)1 output pin during AT/DMA cycles and is an
+                                     input pin in ISA master cycles. This active low
+                                     signal writes data into the ISA bus memory.
+
+    194        SMEMR*            O   AT-bus memory read. It instructs the memory
+                               (12)1 devices to drive data onto the data bus. It is
+                                     active only when the memory to be accessed
+                                     is within the lowest 1MB.
+
+    195        SMEMW*            O   AT-bus memory write. It instructs the memory
+                               (12)1 devices to store the data present on the data
+                                     bus. It is active only when the memory to be
+                                     accessed is within the lowest 1MB.
+
+    207        IOR*             I/O AT-bus I/O read command signal is an output
+                               (24)1 pin during AT or DMA cycles and is an input
+                                     pin in ISA master cycles. When low, it strobes
+                                     an I/O device to place data on the data bus.
+
+    208        IOW*             I/O AT-bus I/O write command signal is an output
+                               (24)1 pin during AT or DMA cycles and is an input
+                                     pin in ISA master cycles. When low, it strobes
+                                     data on the data bus into a selected I/O
+                                     device.
+    2          BALE              O   Bus address latch enable is used on the ISA
+                               (12)1 bus to latch valid address from the CPU. Its
+                                     falling edge starts the ISA command cycle.
+
+    181        MEMCS16*            I    16-bit memory chip select indicates a 16-bit
+                                        memory transfer when asserted or an 8-bit
+                                        memory transfer when it is negated.
+
+    183        IOCS16*             I    16-bit I/O chip select indicates that the AT bus
+                                        cycle is a 16-bit I/O transfer when asserted or
+                                        an 8-bit I/O transfer when it is negated.
+
+    173        ZWS*                I    Zero wait state is an active low signal. The
+                                        system ignores the IORDY signal and
+                                        terminates the AT bus cycle without additional
+                                        wait state when it is asserted.
+   Note 1: Driving Current. (Unit:mA)
+
+
+
+
+Preliminary V6.0 August 19, 1994          48           Silicon Integrated Systems Corporation
+                                                85C471 Green PC ISA-VESA Single
+Chip
+
+     Pin No.     Symbol        Type                Name and Function
+    174        IORDY            I/O I/O channel ready is normally high. It can be
+                               (24)1 pulled low by the slow devices on the AT bus
+                                     to add wait states for the ISA memory or I/O
+                                     cycles. When a DMA or an ISA master
+                                     accesses a VL-Bus target, IORDY is an output
+                                     to control the wait states.
+
+    184        MASTER*              I     Master* is an active low signal from AT bus.
+                                          When active, it indicates that the ISA bus
+                                          master takes over the control of the system.
+                                          The address and control signals are all driven
+                                          by the ISA bus master.
+
+    202        AEN               O   Address Enable is driven high on the ISA bus
+                                   1
+                               (12) to indicate the address lines are valid in DMA
+                                     or ISA master cycles. It is low otherwise.
+
+    3          HDEN*                O     High Byte data enable signal enables the high
+                                   (6)1   byte buffer of the SD bus.
+
+    4          LDEN*                O     Low Byte data enable signal enables the
+                                   (6)1   buffer of the XD bus.
+
+    5          BDIR                 O     Data Buffer Direction controls the direction of
+                                   (6)1   the buffers between SD15-SD8 and D15-D8,
+                                          and the direction of the buffers between the
+                                          XD bus and D7-D0. A HIGH sets the data
+                                          path from D15-D8 (D7-D0) to the SD (XD) bus
+                                          and a LOW sets the data path from the SD
+                                          (XD) bus to D15-D8 (D7-D0).
+
+    6          SDIR                 O     SD low byte Data Direction controls the direc-
+                                   (6)1   tion of the low byte buffers between SD and
+                                          XD. A HIGH sets the data path from XD to SD
+                                          and a LOW sets the data path from SD to XD.
+
+    7          ASRTC                O     Address strobe of the real time clock device is
+                                   (6)1   used to latch the address from XD bus when
+                                          the CPU accesses the RTC.
+
+    8          DRRTC*               O     Data read strobe of the real time clock device
+                                   (6)1   is used to drive data onto the XD bus when
+                                          the CPU accesses the RTC.
+
+   Note 1: Driving Current. (Unit:mA)
+
+Preliminary V6.0 August 19, 1994           49           Silicon Integrated Systems Corporation
+                                                85C471 Green PC ISA-VESA Single
+Chip
+
+     Pin No.        Symbol         Type               Name and Function
+    9             DWRTC*             O   Data write strobe of the real time clock device
+                                    (6)1 is used to store the data presented on the XD
+                                         bus when the CPU accesses the RTC. This
+                                         pin must be connected to the R/W of the RTC.
+
+    206           TC                 O   Terminal count gives information concerning
+                                   (12)1 the completion of DMA transfers.
+                                         A pulse is generated by the DMA controller
+                                         when the terminal count (TC) of any channel
+                                         reaches except for channel 0 in memory-to-
+                                         memory mode. During memory-to-memory
+                                         transfers, TC will be asserted when the TC for
+                                         channel 1 occurs.
+                                         When a TC pulse occurs, the DMA controller
+                                         will terminate the service, and if auto-initialize
+                                         is enabled, the base registers will be written to
+                                         the current registers of that channel. The
+                                         mask bit and the TC bit in the Status word will
+                                         be set for the currently active channel unless
+                                         the channel is programmed for auto-initialize.
+                                         In that case, the mask bit remains clear.
+
+    11-14,        XD0-7             I/O Peripheral data bus lines. They are the system
+    16-19         /SMOUT0-7        (12)1 Management Output Port when in system
+                                         management mode.
+
+    46-53         SD8-15            I/O Data bus high byte for the ISA bus.
+                                   (12)1
+    23,24,        D16-23            I/O Data bus bits 16-31 for the microprocessor,
+    26-31                          (12)1 the memory, and the I/O devices.
+    34-37         D24-27
+    39,40,42,44
+                  D28-31
+
+  Note 1: Driving Current. (Unit:mA)
+
+
+
+
+Preliminary V6.0 August 19, 1994           50           Silicon Integrated Systems Corporation
+                                                85C471 Green PC ISA-VESA Single
+Chip
+4.2.3 CLK and Reset
+
+
+     Pin No.      Symbol           Type               Name and Function
+    98          XFCLK                I    Clock input of the SiS85C471. This input
+                                          supplies the clock for the state machines of
+                                          the memory/cache controller and the CPU/VL-
+                                          Bus interface control. It should be the same
+                                          frequency as the CPU and VL-Bus master. It
+                                          should lead the CPU clock by 3-5ns.
+    199         SYSCLK              O    ISA bus clock, for ISA bus controller, ISA bus
+                                   (12)1 interfaces and the DMA controller. It can be
+                                         programmed to derive from the XFCLK or
+                                         from the 14MHz clock.
+    1           14MHZ                I    14MHz is an clock input for the timer and the
+                                          DMA controller.    It is 14.318MHz and is
+                                          generated by an external oscillator.
+    113         PWRGD                I    Power good is a power on reset and push
+                                          button reset input. It is high when in normal
+                                          operation. The low to high transition is used
+                                          by the SiS85C471 to latch the hardware
+                                          trapping pins.
+    91          RSTCPU              O    Reset CPU is an active high output to reset
+                                   (12)1 the CPU.
+    205         RSTDRV              O    Reset driver is an active high output for a
+                                   (12)1 system reset.
+    102         INIT                O     The INITialization output pin forces the P24D
+                (WM_RST)                  /T to begin execution in a know state. The
+                                   (6)1
+                                          P24D/T state after INIT is the same as the
+                                          state after RESET except that the internal
+                                          caches, floating point registers and the SMM
+                                          base register retain whatever values they had
+                                          prior to INIT.
+
+  Note 1: Driving Current. (Unit:mA)
+
+
+
+
+Preliminary V6.0 August 19, 1994           51          Silicon Integrated Systems Corporation
+                                                 85C471 Green PC ISA-VESA Single
+Chip
+4.2.4 Cache and DRAM Interfaces
+
+    Pin No.       Symbol           Type               Name and Function
+   85           KEN*                 O   The 80486 CPU cache enable pin is used
+                                    (6)1 when the current cycle is cacheable to the
+                                         internal cache of the CPU. It is an active low
+                                         signal asserted by the SiS85C471 during
+                                         cacheable cycles.
+
+   118          PCD                  I     Page cache disable pin reflects the state of
+                                           the page attribute bits of the 80486 CPU.
+
+                                           When using P24D or P24T CPU, this pin is
+                                           defined as CACHE*.
+
+   204          REF*                I/O Refresh signal is used to initiate a refresh
+                                   (24)1 cycle. This signal is an input in ISA bus
+                                         master cycles and is an output in other cycles.
+
+   135          MWE*                  O    Memory write enable is an active low output
+                                    (12/   signal to enable local DRAM writes.
+                                   24)1
+   136          MRE*{IOCHK           I/O   Memory read enable is an active low output
+                *}                 (12)1   signal to enable local DRAM reads. In a non-
+                                           cache system, it is defined as IOCHK*.
+
+   124-128      TA7,6{IRQ15         I/O    Tag RAM data bus lines. In a cached system,
+                ,14}               (6)1    they are defined as the tag data lines to the
+                TA5{IRQ12}                 tag RAM. In a non-cached system, they are
+                TA4{IRQ7}                  defined as the Interrupt request lines.
+                TA3{IRQ3}                  The interrupt request lines can be edge
+                                           triggered or level triggered.        For edge
+                                           triggered interrupts, they are detected at the
+                                           low-to-high rising edge; for level triggered
+                                           interrupts, the high level inputs trigger the
+                                           interrupt. The interrupt inputs must keep in
+                                           high level until they are acknowledged.
+
+   129-131      TA2-0{DRQ7-5}       I/O    In a cached system, they are defined as the
+                                   (6)1    Tag RAM Data Bus Lines 2 to 0. In a non-
+                                           cached system, they are defined as the DMA
+                                           request lines 7 to 5.
+
+   132          TAWE*{WIRQ}         O      Tag RAM write enable is an active low signal
+                                   (6)1    in a cached system. In a non-cached system,
+                                           it is the interrupt request line for co-processor.
+
+
+Preliminary V6.0 August 19, 1994            52           Silicon Integrated Systems Corporation
+                                              85C471 Green PC ISA-VESA Single
+Chip
+     Pin No       Symbol       Type              Name and Function
+     145       KWEX*{RAS6*}    O     Cache write enable for even bank. In a non-
+                               (12)1 cached system, this pin is defined as DRAM
+                                     Row Address Strobe 6.
+     146       KWEY*{RAS7*}    O       Cache write enable for odd bank. In a non-
+                               (12)1   cached system, this pin is defined as DRAM
+                                       Row Address Strobe 7.
+     143       KREX*{RAS4*}    O       Cache read enable for even bank. In a non-
+                               (12)1   cached system, this pin is defined as DRAM
+                                       Row Address Strobe 4.
+     144       KREY*{RAS5*}    O       Cache read enable for odd bank. In a non-
+                               (12)1   cached system, this pin is defined as DRAM
+                                       Row Address Strobe 5.
+     151-148   KCE0*-3*        I/O     Cache byte enables are active low signals.
+               {DRQ3-          (12)1   They are asserted to access the correspond-
+               DRQ0}                   ing bytes in the second level cache. In a non-
+                                       cached system, they are the DMA Requests.
+     133       RAS6*/ALT       I/O     Alter bit of cache indicates that the cache data
+               {DTURBO}                line has been modified. In a non-cached
+                               (6)1
+                                       system, it is used as the DE-TURBO pin.
+                                       DRAM Row Address Strobe 6 is active low.
+                                       (Please refer to Register 72 for details)
+     134       RAS7*/ALTW      I/O     Alter bit write enable is the write strobe to the
+               E* {RC*}                alter RAM. This signal is active low to update
+                               (6)1
+                                       the ALT bit when cache read miss or cache
+                                       write hit occurs. In a non-cached system, it is
+                                       an active low reset input from Keyboard
+                                       controller to reset the CPU.
+                                       DRAM Row Address Strobe 7 is active low.
+                                       (Please refer to Register 72 for details)
+     158       KA3Y/KA2{IR     I/O     KA3Y-Cache address 3 for odd bank when
+               Q1}                     Cache interleave mode is used. KA2-Cache
+                               (12)1
+                                       address 2 when Cache non-interleave mode is
+                                       used. IRQ1- Interrupt request level 1 when
+                                       non-Cached mode is used.
+     157       KA3X/KA3{IR     I/O     KA3X-Cache address 3 for even bank when
+               Q4}                     Cache interleave mode is used. KA3-Cache
+                               (12)1
+                                       address 3 when Cache non-interleave mode is
+                                       used. IRQ4-Interrupt request level 4 when
+                                       non-Cached mode is used.
+
+
+
+Preliminary V6.0 August 19, 1994         53           Silicon Integrated Systems Corporation
+                                                85C471 Green PC ISA-VESA Single
+Chip
+
+     Pin No.      Symbol           Type              Name and Function
+    21,54       PD0-3               I/O DRAM parity bits generate even parity bits in
+    22,45                          (12)1 memory write cycles and accept even parity
+                                         bits in memory read cycles.
+
+    93          SMI*                 O   System Management Interrupt. This pin is the
+                                   (12)1 SMI* output pin to the CPU SMI* input. It is
+                                         used to generate the System Management
+                                         Interrupt to the CPU for power saving.
+
+    84          SMIACT*              I    The SMIACT* pin is used as the SMI
+                                          acknowledgement input from the CPU to
+                                          indicate that the SMI is being acknowledged.
+                                          It is connected to the SMIACT*/SMADS*
+                                          output of the CPU.
+
+    90          HITM*                I    The HIT Modified line input pin is active LOW
+                                          when an inquire cycle hits a modified line in
+                                          the CPU. It is used to inhibit another bus
+                                          master from accessing the data line until the
+                                          line is completely written back.
+
+    139-141     RAS2-0*              O   DRAM Row Address Strobes 0, 1 and 2.
+                                       1
+                                   (12) They are active low to latch the row address to
+                                         DRAMs.
+
+    152-154,    CAS3-0*              O   DRAM Column Address Strobes. They are
+    156                                1
+                                   (24) the DRAM data output enable signals for
+                                         bytes 3, 2, 1 and 0 respectively.
+
+    138         RAS3*/MA11           O   It can be configured as Row Address Strobe 3
+                                   (12)1 or Memory Address bit 11. When 16M DRAM
+                                         SIMMs are used, it is configured as MA11. In
+                                         that way, DRAM bank 3 is not supported.
+                                         When configured as RAS3*, four banks of
+                                         DRAMs are supported.
+
+    159-163,    MA10-6              O     DRAM multiplexed address lines 10 to 0.
+    166-171     MA5-0              (12/
+                                   24)1
+
+Note 1: Driving Current. (Unit:mA)
+
+
+
+
+Preliminary V6.0 August 19, 1994           54          Silicon Integrated Systems Corporation
+                                               85C471 Green PC ISA-VESA Single
+Chip
+4.2.5 Multiplexer and Others
+
+    Pin No.       Symbol           Type               Name and Function
+   177         MPXS0/RAS7*     I/O        Multiplexers I/O selection pins. In a non-
+   176         {IRQ9}                     cached system, they are "Interrupt Request"
+               MPXS1/RAS6*     (6)1
+   175         {IRQ10}                    (input) pins. Pins 176 and 177 can be
+               MPXS2{IRQ11}               configured as the RAS6* and the RAS7* if a
+                                          "0" is identified on the SMOUT0 signal during
+                                          power-up stage. (See Section 3.1 for details)
+   180         MPXI0{IRQ5}     I          Multiplexers I/O input pins. In a non-cached
+   179         MPXI1{IRQ6}                system, they are "Interrupt Request" pins.
+   178         MPXI2{IRQ8}
+   191-185     DACK0*(A138)    I/O(6)1 When pin 55(SPK) is pulled down, the pins
+               DACK1*(B138)    I/O(6)1 191~185 are the DMA acknowledges DACK0*
+               DACK2*(C138)    I/O(6)1 ~3* and DACK5*~7*. Each is used to indicate
+               DACK3*(GN13     I/O(6)1 that the DMA device has been granted the
+               8)                      DMA access cycles. The active polarity of
+               DACK5*(LGN      O(6)1
+                                       these lines is programmable. Reset initializes
+               T1*)
+               DACK6*(LRE      I/O(6)1 them to be active low. Because these signals
+                                       are used internally for cascading the DMA
+               Q1*)
+               DACK7*(LRE      I/O(6)1 channels and for DMA page register selection,
+               Q2*)                    these signals must be programmed to be
+                                       active low.
+                                       If pin 55(SPK) is pulled up, the pins 191~188
+                                       are the control signals of 74LS138. They are
+                                       decoded by LS138 to generate the DMA
+                                       acknowledge signals. Please refer to block
+                                       diagram for details.
+                                       Pins 187~185 are used as the arbitration
+                                       signals for VL-Bus master arbitration.
+                                       Pins 191~188 are also used as hardware
+                                       trapping purpose to identify the hardware
+                                       configuration during power up. Please refer to
+                                       System Hardware Configuration for details.
+   87          KBROMCS*        O(6)1      Keyboard controller 8042 or system ROM chip
+                                          select output.
+   55          SPK             I/O(6)1    Speaker is the output for speaker. When
+                                          PWRGD is low, SPK is used as an input for
+                                          hardware trap purpose.
+ Note 1: Driving Current. (Unit:mA)
+
+
+
+
+Preliminary V6.0 August 19, 1994          55           Silicon Integrated Systems Corporation
+                                                 85C471 Green PC ISA-VESA Single
+Chip
+
+  Pin No.       Symbol               Type               Name and Function
+ 41          SMOUT0                    O   The System Management Ourput 0 is an
+                                      (6)1 active low signal. When system timer expires,
+                                           the break switch is pressed or the SMI port is
+                                           accessed, the SMOUT0 will output what is
+                                           programmed in bit 0 of the Register 6A. The
+                                           STPCLK* will also go active low. If the I/O
+                                           timer time out occurs, the SMOUT0 will output
+                                           what is programmed in bit 4 of the Register
+                                           6A.
+                                           SMOUT0 is also used as a hardware trap pin.
+                                           (Please refer to Section 3.1 for details)
+ 58          SMOUT1/                  O     The System Management Ourput 1 is an
+             SMOUTW*                        active low signal. When system timer expires,
+                                     (6)1
+                                            the break switch is pressed or the SMI port is
+                                            accessed, the SMOUT1 will output what is
+                                            programmed in bit 1 of the Register 6A. The
+                                            STPCLK* will also go active low. If the I/O
+                                            timer time out occurs, the SMOUT0 will output
+                                            what is programmed in bit 5 of the Register
+                                            6A.
+                                            The System Management Output Port Write
+                                            Latch pin indicates that the SMOUT7 ~ 0 can
+                                            be latched from the XD bus through this pin.
+                                            After I/O writes to port 22h with index 6A, then
+                                            I/O writes to port 23h which can make
+                                            SMOUTW* active.
+ 116         RAS4*/SMOUT2             O    The System Management Ourput 2 is an
+                                     (12)1 active low signal. The function of the SMOUT2
+                                           is the same as the SMOUT1 except that it
+                                           outputs what is in bit 2 (bit 6) of the Register
+                                           6A.
+                                            DRAM Row Address Strobe 4 is an active low
+                                            signal.(See the Register 72 for Details)
+
+ 137         RAS5*/SMOUT3              O   The System Management Ourput 3 is an
+                                     (12)1 active low signal. The function of the SMOUT3
+                                           is the same as the SMOUT1 except that it
+                                           outputs what is in bit 3 (bit 7) of the Register
+                                           6A
+                                           DRAM Row Address Strobe 5 is an active low
+                                           signal. (See the Register 72 for Details)
+Note 1: Driving Current. (Unit:mA)
+
+Preliminary V6.0 August 19, 1994            56         Silicon Integrated Systems Corporation
+                                               85C471 Green PC ISA-VESA Single
+Chip
+
+   Pin No.         Symbol          Type              Name and Function
+  10,25,     VCC                          +5V DC Power
+  43,61,
+  97,114,1
+  47,
+  165,
+  201
+
+  15,20,     GND                          Ground
+  38,60
+  76,92,
+  96, 119,
+  142,
+  155,164,
+  182,
+  198,200
+
+
+
+
+Preliminary V6.0 August 19, 1994          57        Silicon Integrated Systems Corporation
+                                                  85C471 Green PC ISA-VESA Single
+Chip
+5. ELECTRICAL CHARACTERISTICS
+   Absolute Maximum Ratings
+
+     Parameter                                             Min           Max         Unit
+     Ambient operating temperature                           0            70         oC
+
+     Storage temperature                                    -40          125         oC
+
+     Input voltage                                         -0.3          5.5          V
+     Output voltage                                        -0.5          5.5          V
+
+
+     Note:
+     Stress above these listed may cause permanent damage to device. Functional operation of this
+     device should be restricted to the conditions described under operating conditions.
+
+
+5.1 DC Characteristics
+   TA = 0 - 70 oC, VDD = 5 V + 5 % , GND = 0 V
+
+    Symbol            Parameter            Min       Max          Unit         Condition
+      VIL     Input low voltage            -0.5      0.8           V
+      VIH                                  2.0     VDD+0.5         V
+     VOL      Output low voltage            -       0.45           V       IOL = 4.0 mA
+     VOH      Output high voltage          2.4        -            V       IOH = - 1.0 mA
+      IIL     Input leakage current         -        +10          uA       0 < VIN < VDD
+      IOZ     Tristate leakage current      -        +20          uA     0.45 < VOUT < Vdd
+
+
+
+
+Preliminary V6.0 August 19, 1994           58             Silicon Integrated Systems Corporation
+                                             85C471 Green PC ISA-VESA Single
+Chip
+5.2 AC Characteristics for 33/50 MHz
+
+     TA = 0 - 70 oC, VDD = 5 V + 5 % , VSS = 0 V, CL = 85/50* pf
+
+  Symbol     Parameter                                      Min    Typ Max    Unit
+  T1         KCE* active delay                (Note 3)      4      12 18      ns
+  T2         KCE* inactive delay                            4      12 17      ns
+  T3         Tag address input setup time                   6                 ns
+  T4         BRDY* active delay                             7      11   17    ns
+  T5         BRDY* inactive delay             (Note 1)      7      12   17    ns
+  T6         BLAST* setup time                              2                 ns
+  T7         KEN* active delay*                             8      16   25    ns
+  T8         Cache Interleave KRE* active delay             5      9    13    ns
+  T9         Cache Interleave KRE* inactive delay           4      8    12    ns
+  T10        KA3X valid delay                 (Note 2)      4      8    13    ns
+  T11        KA3Y/KA2 valid delay             (Note 2)      5      10   14    ns
+  T12        Cache Non-interleave KRE* active delay         5      11   16    ns
+  T13        Cache Non-interleave KRE* inactive delay       6      14   20    ns
+  T14        ADS*, W/R* setup time                          1                 ns
+  T15        KWE* active delay                              4      10   16    ns
+  T16        KWE* inactive delay                            4      10   16    ns
+  T17        CPURDY* active delay                           7      12   20    ns
+  T18        CPURDY* inactive delay            (Note 1)     7      13   20    ns
+  T19        Tag address output valid delay                 10     25   40    ns
+  T20        Tag address output floating delay              10     24   40    ns
+  T21        TAWE* active delay                             6      14   23    ns
+  T22        TAWE* inactive delay                           6      16   23    ns
+  T23        ALTWE* active delay*                           5      13   22    ns
+  T24        ALTWE* inactive delay*                         5      15   23    ns
+  T25        MRE* active delay                              9      14   22    ns
+  T26        MRE* inactive delay                            6      13   20    ns
+  T27        RAS* active delay                              7      12   20    ns
+  T28        CAS* active delay                              7      17   25    ns
+  T29        CAS* inactive delay                            6      12   19    ns
+  T30        Column address valid delay                     7      15   25    ns
+  T31        MWE* active delay                              6      13   20    ns
+  T32        MWE* inactive delay                            6      12   19    ns
+                                                                        (To be continued)
+     Notes :
+     1. The Min value assume TA = 70 oC, VDD = 4.75 V ,and CL = 85 pf .
+     2. Specications assume CL = 50 pf .
+     3. The cache SRAM with 20ns access speed should be used for both 33MHz and 50
+        MHz.
+
+
+
+Preliminary V6.0 August 19, 1994        59          Silicon Integrated Systems Corporation
+                                           85C471 Green PC ISA-VESA Single
+Chip
+AC Characteristics
+  Symbol     Parameter                                      Min   Typ    Max    Unit
+  T38        RAS* inactive delay                            6     12     19     ns
+  T39        Row Address valid delay                        9     17     25     ns
+  T40        Fast cache write RDY* active delay             7     12     16     ns
+  T41        ALE active delay from SYSCLK falling           8     16     28     ns
+  T42        ALE inactive delay from SYSCLK                 10    23     45     ns
+  T43        MEMCS16* set up time to SYSCLK                 0
+  T44        MEMCS16* hold time to SYSCLK                   7                ns
+  T45        IOCS16* set up time to SYSCLK                  4                ns
+  T46        IOCS16* hold time to SYSCLK                    3                ns
+  T47        Command active delay from SYSCLK               8     20 42      ns
+  T48        Command inactive delay from SYSCLK             7     15 27      ns
+  T49        ZWS* set up time to SYSCLK                     4                ns
+  T50        ZWS* hold time from SYSCLK                     5                ns
+  T51        HDEN* active delay from BS16*                  6     18 27      ns
+  T52        HDEN* inactive delay from BS16*                8     15 33      ns
+  T53        SDIR, BDIR active delay from BS16*             10    22 35      ns
+  T54        SDIR, BDIR inactive delay from BS16*           7     20 30      ns
+  T55        Data conversion SA0 delay from SYSCLK          6     21 30      ns
+  T56        Data conversion SA0 delay from SYSCLK          10    23 43      ns
+  T57        Address bus valid delay from REF*              9     25 50      ns
+  T58        Address bus float delay from REF*              7     23 44      ns
+  T59        Address set up time to IOR*, IOW* active       16               ns
+  T60        Address hold time from IOR*, IOW* inactive     0                ns
+  T61        SDIR,BDIR delay from command active            8     18 33      ns
+  T62        SDIR,BDIR delay from command inactive          20    45 84      ns
+  T63        SDEN*,HDEN* delay from command active          10    25 45      ns
+  T64        SDEN*,HDEN* delay from command inactive        20    35 55      ns
+  T65        Data valid delay form BS16*                    3     23 40      ns
+  T66        Data valid delay from SYSCLK                   19    45 68      ns
+  T67        Data floating delay from BS16*                 8     20 35      ns
+  T68        D15-0 data set up time to command inactive     15               ns
+  T69        D15-0 data hold time to command inactive       8                ns
+  T70        D7-0 data valid delay from SYSCLK              12    30 60      ns
+  T71        D15-8 data valid delay from SYSCLK             12    30 60      ns
+  T72        D23-16 data valid dealy from SYSCLK            15    38 90      ns
+  T73        D31-24 data valid delay from SYSCLK            16    40 90      ns
+  T74        D15-0 data valid delay from D31-16 valid       12    20 40      ns
+  T75        D7-0 data valid delay from D31-24 valid        15    35 65      ns
+  T76        D7-0 data valid delay from D23-16 valid        12    21 40      ns
+  T77        D7-0 data valid delay from D15-8 valid         13    40 60      ns
+                                                                    (To be continued)
+
+
+Preliminary V6.0 August 19, 1994      60          Silicon Integrated Systems Corporation
+                                           85C471 Green PC ISA-VESA Single
+Chip
+AC Characteristics
+  Symbol     Parameter                                  Min   Typ Max      Unit
+  T78        Data valid delay from command active       16    29 54        ns
+  T79        Data float dealy from command inactive     15    35 65        ns
+  T80        DMA clock delay form bus clock                       8        ns
+  T81        Low byte address valid delay                         50       ns
+  T82        Low byte address invalid delay                       45       ns
+  T83        Page address valid delay                             60       ns
+  T84        Page address invalid delay                           47       ns
+  T85        DACKn* active delay                                  41       ns
+  T86        DACKn* inactive delay                                50       ns
+  T87        IOR* or MEMR* active delay                           55       ns
+  T88        IOR* or MEMR* inactive delay                         40       ns
+  T89        IOR* or MEMR* hold time                     0                 ns
+  T90        IOW* or MEMW* active delay                             50     ns
+  T91        IOW* or MEMW* inactive delay                           35     ns
+  T92        TC active delay                                        40     ns
+  T93        TC inactive delay                                      60     ns
+  T94        RSTDRV active delay                        8     13    20     ns
+  T95        RSTDRV inactive delay                      9     22    40     ns
+  T96        RSTCPU active delay*                       6     9     18     ns
+  T97        RSTCPU inactive delay*                     7     15    25     ns
+  T98        RSTCPU duration                            25                 XFCLK
+  T101       LBD* latch setup time                      1                  ns
+  T102       LBD* latch hold time                       6                  ns
+  T103       CPURDY*, BS16*, BRDY* floating delay from 7      15    25     ns
+             LBD* active low
+  T104       LRDY*,BRDY*, CPURDY* setup time, 1                            ns
+             detected by SiS85C471
+  T105       LRDY*, BRDY*, CPURDY* hold time, 6                            ns
+             detected by SiS85C471
+  T106       CPURDY* floating delay from LRDY* falling 4      9     14     ns
+             (Transparent mode)
+  T107       CPURDY* rising delay from LRDY* rising 4         10    16     ns
+             (Transparent mode)
+  T111       ISA command setup time, detected by 3
+             SiS85C471
+  T112       ADS*,EADS* active delay                    7     12    16     ns
+  T113       ADS* ,EADS* inactive delay       (Note 1)  9     13    20     ns
+  T114       W/R*, M/IO* active delay from ISA command 9      18    19     ns
+             active low
+  T115       W/R*, M/IO*        inactive delay from ISA 7     16    20     ns
+             command inactive
+                                                                     (To be continued)
+
+Preliminary V6.0 August 19, 1994      61         Silicon Integrated Systems Corporation
+                                            85C471 Green PC ISA-VESA Single
+Chip
+AC Characteristics
+
+  Symbol     Parameter                                    Min   Typ Max       Unit
+  T116       IORDY active low delay from LBD* active low 6      16 30         ns
+  T117       IORDY inactive delay from XFCLK(*1)          7     15 23         ns
+  T118       VL-Bus data setup time                       2                   ns
+  T119       VL-Bus data hold time                        7                   ns
+  T120       ISA-Bus data valid delay from VL-Bus data 14       32    54      ns
+             valid (read from VL-Bus)
+  T121       ISA-Bus data floating delay from ISA 10            20    35      ns
+             command inactive (read from VL-Bus)
+  T122       VL-Bus data valid delay from LBD* active low 9     15    30      ns
+             (write to VL-Bus)
+  T123       VL-Bus data floating delay from ISA command 8      20    35      ns
+             inactive (write to VL-Bus)
+  T124       VL-Bus master LREQ* input setup time         2                   ns
+  T125       VL-Bus master LREQ* inactive setup time      2                   ns
+  T126       VL-Bus master LGNT* active delay time        8     20    35      ns
+  T127       VL-Bus master LGNT* inactive delay time      6     16    25      ns
+  T128       Burst mode access DRAM BRDY* active delay 6        12    16      ns
+             time
+  T129       LGNT* inactive to LREQ* inactive delay time              5       us
+  T130       SMI*,STPCLK*,INIT, active delay time         3     9     15      ns
+  T131       SMI* floating delay                          8     15    25      ns
+  T132       IORDY active low delay from HITM* active low             36      ns
+                                                                                     (End)
+
+    *1: At the T-state which CPURDY*, LRDY*, or BRDY* is detected active by
+        SiS85C471.
+
+
+
+
+Preliminary V6.0 August 19, 1994       62         Silicon Integrated Systems Corporation
+                                                   85C471 Green PC ISA-VESA Single
+Chip
+5.3 Timing Diagram
+
+                      LOCAL BUS TA RGET CYCLE
+
+  XFCLK
+
+
+   ADS*
+                                   T103
+
+                                                                      T17             T18
+CPURDY*
+
+
+   BS16*
+   BRDY*
+                                                           T104       T105
+
+  LRDY*
+
+                                     T101   T102
+   LBD*
+
+
+                                                               T106
+CPURDY*                                                                        T107
+
+
+                                                               T104   T105
+  LRDY*
+
+
+
+
+                          LOCAL BUS MASTER CYCLE
+
+  XFCLK
+
+                   T124
+
+  LREQ*
+                                                                              T125
+
+
+                                                                                       T127
+  LGNT*
+
+                               T126
+                                                   T14
+    ADS*
+
+
+                                                   T14
+    W/R*
+
+
+
+
+CPURDY*
+                                                         T17            T18
+
+
+
+Preliminary V6.0 August 19, 1994            63                 Silicon Integrated Systems Corporation
+                                               85C471 Green PC ISA-VESA Single
+Chip
+
+                    LOCAL BUS MASTER BURST MODE TRANSFER
+
+ XFCLK
+               T124
+
+  LREQ*
+
+
+  LGNT*           T126
+
+
+                           T14
+
+   ADS*
+
+                           T14
+   W/R*
+
+
+
+  BRDY*
+                                   T128                                                     T5
+
+                                                                                 T6
+ BLAST*
+
+                                                                                      T18
+CPURDY*
+                                                                           T17
+
+
+
+
+XIOR*       ISA MASTER / DMA ACCESS LOCAL BUS TARGET
+XIOW*
+XMEMR*            T111
+XMEMW*
+
+ XFCLK
+  ADS*
+                          T113
+                  T112
+  W/R*
+  M/IO*
+             T114                                                                     T115
+
+  LBD*
+
+
+ IORDY                                                              T117
+                                   T116
+
+CPURDY*
+ LRDY* from VESA                                           T104        T105
+ BRDY*
+
+                                                           T118        T119
+  DATA
+  READ from VESA
+                                                                                      T121
+  DATA                                                       T120
+  READ TRANSFER to ISA
+                                   T122                                               T123
+  DATA
+  WRITE to VESA
+
+
+
+
+Preliminary V6.0 August 19, 1994          64        Silicon Integrated Systems Corporation
+                                                            85C471 Green PC ISA-VESA Single
+Chip
+                                LOCAL BUS PREEMPT CYCLE
+
+  XFCLK
+
+                  T124
+ LREQ1*
+
+
+                                                                                T127
+ LGNT1*
+                         T126                                                          T129
+                                                T14
+
+    ADS*
+                                                T14
+
+    W/R*
+
+                                                             T18
+CPURDY*
+                                                      T17
+
+ LREQ2*
+
+                                                                         T124
+                                                                                                        T126
+ LGNT2*
+
+
+          CACHE READ HIT ( CACHE-INTERLEAVE ) BURST CYCLE
+
+     X FC LK
+                                T14
+       ADS*
+
+
+W/R*, BE[0:3]*
+
+  K C E [0:3]*                                                                                     T2
+                                T1
+                                           T3
+
+  TA [1 6 :2 3]
+
+      BRDY*                                                                                        T5
+                                           T4
+                                                                                              T6
+    B L A S T*
+                         T7
+
+       KE N *
+
+     KREX*                                            T9
+                                      T8
+
+      K R E Y*
+
+       K A 3X                                     T10
+
+
+                                                                   T11
+   K A 3/K A 2
+
+
+
+Preliminary V6.0 August 19, 1994                      65            Silicon Integrated Systems Corporation
+                                                       85C471 Green PC ISA-VESA Single
+Chip
+     CACHE READ HIT ( CACHE NON-INTERLEAVE ) BURST CYCLE
+
+
+   XFCLK
+
+    ADS*
+                                                                                        T2
+KCE [0:3]*
+
+
+TA[16:23]
+
+  BRDY*
+                           T4
+
+  BLAST*                                                                          T6
+
+
+                                                                                       T13
+   KREX*
+                    T12
+                                                                                       T13
+  KREY*
+                    T12
+                                                           T10
+
+    KA3X
+                                            T11
+
+KA3Y/KA2
+
+
+                    CACHE WRITE HIT CYCLE ( 0WS & 1WS )
+
+
+  XFCLK
+
+
+    ADS*
+
+
+
+
+                                                                                             T2
+KCE [0:3]*
+
+
+
+                            T3                                      T3
+
+
+TA[16:23]
+
+
+
+
+                                             T16                                        T16
+                                      T15                                T15
+KWEX*/KWEY*
+
+
+CPURDY*                                      T18                                        T18
+                                T40                                      T17
+
+
+
+
+Preliminary V6.0 August 19, 1994                  66        Silicon Integrated Systems Corporation
+                                                                85C471 Green PC ISA-VESA Single
+Chip
+
+ CACHE READ MISS ( UPDATE CACHE ) CACHE NON-INTERLEAVE
+   3-2-2-2
+  XFCLK
+
+    ADS*
+
+
+KCE [0:3]*
+                                          T19                                                            T20
+
+TA [16:23]   IN          IN                                      OUT                                                IN
+
+
+
+  KWEX*
+                              T15
+                                                                           T16
+   TAWE*                                       T21                                     T22
+
+
+
+ ALTWE*                                        T23                                     T24
+
+
+
+
+                                                                                             T18
+CPURDY*
+                  T25                                                            T17         T26
+    MRE*
+
+
+
+                    CACHE WRITE HIT BURST CYCLE
+                 CACHE INTERLEAVE, PAGE START 5-4-4-4
+             ( EXTERNAL CACHE AT WRITE THROUGH MODE )
+ XFCLK
+
+   ADS*
+                                          T4                                                                   T5
+
+  BRDY*
+                                                                                                   T17     T18
+
+  RDY*
+                        T27
+ RASn*
+
+                                    T28              T29
+ CASn*
+
+                                                                  T15                                           T16
+ KWEX*
+                                          T15                                                T16
+
+ KWEY*
+                                                                                                               T10
+  KA3X
+
+                                                                                             T11
+KA3/KA2
+
+
+Preliminary V6.0 August 19, 1994                           67           Silicon Integrated Systems Corporation
+                                                           85C471 Green PC ISA-VESA Single
+Chip
+
+
+                     WRITE HIT CYCLE , CACHE INTERLEAVE
+              2-1-1-1 ( EXTERNAL CACHE AT WRITE BACK MODE )
+
+
+    XFCLK
+
+
+       ADS*
+                                                                 T16
+                           T15
+
+    KWEX*
+
+                                             T15                         T16
+     KWEY*
+
+
+                                                                         T5
+     BRDY*
+                                       T10
+
+
+                                                     T11
+     KA3X
+
+
+   KA3/KA2
+
+               WRITE HIT BURST CYCLE, CACHE INTERLEAVE
+               3-2-2-2  ( EXTERNAL CACHE AT WRITE BACK MODE )
+
+    XFCLK
+
+
+       ADS*                                                                                      T5
+                                 T4
+     BRDY*
+                                                                                        T17      T18
+       RDY*
+
+                                 T15                                             T16
+
+     KWEX*
+
+
+                                                           T15                                   T16
+
+    KWEY*
+                                              T10
+
+
+
+       KA3X                                                      T11
+
+
+   KA3/KA2
+
+
+
+Preliminary V6.0 August 19, 1994                    68            Silicon Integrated Systems Corporation
+                                                         85C471 Green PC ISA-VESA Single
+Chip
+              WRITE HIT BURST CYCLE , CACHE NON-INTERLEAVE
+              3-2-2-2 ( EXTERNAL CACHE AT WRITE BACK MODE )
+
+     XFCLK
+
+       ADS*
+                                                                                          T17
+                                                                                                 T18
+
+     RDYL*
+                                        T15                                                       T16
+
+    KWEX*
+                                                                                                  T16
+                                            T15
+
+    KWEY*
+                                                                                                      T5
+                            T4         T5
+     BRDY*
+
+                                                               T10
+
+
+       KA3X
+                                        T11
+
+
+
+   KA3Y/KA2
+                                   0                       4                     8               C
+
+
+
+
+                     DRAM READ / WRITE PAGE START
+
+   XFCLK
+                     T14
+    ADS*
+
+
+
+
+    RASn*
+                                                  T27
+
+
+
+                                                                                                 T29
+     CAS*
+                                                                     T30         T28
+
+
+
+
+ MA [0:10]                       ROW                                                 COLUMN
+
+
+
+
+                                                                                                T18
+ CPURDY*
+                                                                                 T17
+
+   MWE*                                                                                         T32
+
+
+                           T31
+
+
+
+
+Preliminary V6.0 August 19, 1994                    69               Silicon Integrated Systems Corporation
+                                                          85C471 Green PC ISA-VESA Single
+Chip
+
+                       REFRESH CYCLE ( FOR FASTER DRAM )
+
+     XFCLK
+
+       OUT1
+                                                           T25
+                                    T38
+
+          0
+       RAS2 *
+
+      RAS1
+         3
+          *
+
+                                                  T28
+       CAS*
+                                          T39
+
+   MA [0:10]       COLUMN                                         ROW
+
+
+
+                                          RESET CYCLE
+    XFCLK
+                 T94
+
+
+   RSTDRV                                                  T95
+                                                                                         T97
+                              T96
+
+    RSTCPU                                                              T98
+
+
+
+
+                                    BUS COMMAND TIMING
+     SYSCLK
+
+
+        BS16*
+
+
+                                          T41     T42
+        BALE
+                                            T43   T44
+   MEMCS16*
+
+                                                    T45    T46
+    IOCS16*
+                                                  T47               T48
+
+        CMD*
+
+
+        ZWS*                                                T49         T50
+                        T51
+                                                                                               T52
+       HDEN*
+                        T53                                                                    T54
+
+
+        SDIR
+        BDIR
+
+
+
+Preliminary V6.0 August 19, 1994                   70              Silicon Integrated Systems Corporation
+                                                     85C471 Green PC ISA-VESA Single
+Chip
+                          DATA CONVERSION CYCLE
+   SYSCLK
+
+              T47         T48                  T47            T48
+
+
+     CMD*
+
+
+
+     BS16*
+
+                                                                                       T56
+                                   T55
+       SA0
+
+
+
+
+                                         REFRESH CYCLE
+       REF*
+
+                                                                                        T58
+                T57
+     XA0-9
+
+
+
+
+                                 NON-CPU CYCLE
+    CMD*
+
+
+
+
+                           T59                          T60
+
+
+
+
+   XA0-15
+
+
+                                         T61                        T62
+
+
+
+
+    BDIR
+    SDIR
+                                         T63                   T64
+
+
+   SDEN*
+   HDEN*
+
+
+
+
+Preliminary V6.0 August 19, 1994               71             Silicon Integrated Systems Corporation
+                                            85C471 Green PC ISA-VESA Single
+Chip
+                              AT READ CYCLE ( 16-bit )
+   SYSCLK
+
+
+
+
+    BS16*
+
+
+
+
+                               T47
+
+     CMD*                                              T48
+
+
+                                                                       T66       T67
+
+                        T65
+
+    D16-31
+
+
+                                               T68            T69
+
+
+     D0-15
+
+
+
+
+                          AT READ CYCLE ( 8-bit )
+   SYSCLK
+
+
+
+    BS16*
+
+
+
+                                T47
+                                                        T48
+     CMD*
+                                                                                 T67
+                                                T68            T69   T70
+
+
+
+       XD0-7
+
+                        T65
+                                                                     T71
+
+
+     SD8-15
+
+                                                                     T72
+
+
+    D16-23
+                                                                     T73
+
+
+    D24-31
+
+
+
+
+Preliminary V6.0 August 19, 1994       72            Silicon Integrated Systems Corporation
+                                            85C471 Green PC ISA-VESA Single
+Chip
+
+
+                               AT WRITE CYCLE (16-bit )
+   BS16*
+
+
+
+
+   CMD*
+
+
+
+
+   D16-31
+
+                        T65                 T74                              T67
+
+
+
+   XD 0-7
+   SD 8-15
+
+
+
+
+                               AT WRITE CYCLE ( 8-bit )
+   BS16*
+
+
+
+
+   CMD*
+
+
+
+
+   D24-31
+                                            T75                              T67
+
+
+
+
+   D16-23
+                                            T76
+
+
+
+   SD8-15
+                                            T77
+                         T65
+
+
+
+
+    XD 0-7
+
+
+
+
+Preliminary V6.0 August 19, 1994       73         Silicon Integrated Systems Corporation
+                                            85C471 Green PC ISA-VESA Single
+Chip
+
+
+
+
+    CMD*                 NON-CPU READ CYCLE ( 16-bit )
+                                                                T79
+
+
+
+   D16-31
+                        T78           T74
+
+    D0-15
+
+
+
+                          NON-CPU READ CYCLE ( 8-bit )
+    CMD*
+
+
+
+
+   D24-31
+
+                                       T75
+
+   D16-23
+
+                                       T76
+
+   D8-15
+
+                        T78            T77                       T79
+
+    D0-7
+
+
+
+
+    CMD*
+                        NON-CPU WRITE CYCLE ( 16-bit )
+                                                                 T79
+
+
+    D0-15
+                                      T74
+                        T78
+   D16-31
+
+
+                         NON-CPU WRITE CYCLE ( 8-bit )
+    CMD*
+
+
+                                                                 T79
+
+     D0-7
+
+
+                        T78           T77
+
+    D8-15
+
+                                      T76
+
+   D16-23
+
+                                      T75
+
+   D24-31
+
+Preliminary V6.0 August 19, 1994     74          Silicon Integrated Systems Corporation
+                                                                           85C471 Green PC ISA-VESA Single
+Chip
+
+                                                            DMA TIM ING
+         SYSCLK
+                            SI          SI        S0          S0          S1          S2         S3         SW          S4         SI    SI
+         DMACLK       T80
+        (internal )
+                                                                                                 No te 1
+            DRQn
+
+
+            HOLD
+
+            HLDA                                                          T81                                                      T82
+
+
+
+          A [ 8:0 ]
+                                                                    T83
+                                                                                                                                   T84
+        A [ 23:16 ]
+                                                                                T85
+                                                                                                                             T86
+         DACKn*
+                                                                                T87
+                                                                                                      No te 2                  T88
+            IOR*
+        ( MEMR*)                                                                T90                                            T89
+                                                                                                       No te 3                 T91
+           IOW*
+        (MEMW*)
+                                                                                                                               T93
+                                                                                           T92
+               TC
+                                        Note 1 : DREQ should be held active until DACK is asserted.
+                                        Note 2 : The first high to low transition is for normal read.
+                                                 The second transition is for delay MEMRD#.
+                                        Note 3 : The first high to low transition is for extended write.
+                                                 The second transition is for normal write.
+
+                                                       STPCLK*                        SMI*
+
+           XFCLK
+                                 T130
+               SMI*                                                                                              T131
+
+            for M6
+
+
+
+   for SL-Enhanced
+      /P24T/P24D
+                                                   T130                                                          T130
+
+        STPCLK*
+        INIT
+
+
+
+
+              IOR*                                                                    A
+
+        STPCLK*
+
+                      NOTE : A :1-2 XFCLK
+
+
+
+
+Preliminary V6.0 August 19, 1994                                   75                      Silicon Integrated Systems Corporation
+                                                       85C471 Green PC ISA-VESA Single
+Chip
+                         SNOOP CYCLE BY VESA MASTER
+
+   XF CLK
+
+
+   HOLD
+
+
+    HLDA
+
+   LREQn*
+                           T126
+
+   LGNTn*
+
+
+
+    HITM*
+
+    EADS*
+                                  T14
+
+    ADS*
+                                            T17                           T18
+
+    RDY*
+                                ( LM )             ( CPU )                         ( LM )
+
+
+
+
+                    SNOOP CYCLE BY DMA OR ISA MASTER
+
+   XFCLK
+
+
+   HOLD
+
+    HLDA                                                                                     T88
+
+   MEMR*
+                         T112
+   EADS*
+                                    T113
+
+   HITM*
+                                                                                      T117
+                                           T132
+   IORDY
+
+    ADS*
+                                                                   T17   T18
+
+
+    RDY*
+
+   HDEN*
+   LDEN*
+
+
+
+
+Preliminary V6.0 August 19, 1994                  76         Silicon Integrated Systems Corporation
+                                                85C471 Green PC ISA-VESA Single
+Chip
+
+5.4 MECHANICAL DIMENSION (FOR SiS85C471)
+
+     QFP208-P              (208-Pin Plastic Flat Package)              Unit: mm
+
+
+
+
+Preliminary V6.0 August 19, 1994           77           Silicon Integrated Systems Corporation
+                                                     85C471 Green PC ISA-VESA Single
+Chip
+                                          30.6+0.3
+                                          28.0+0.2
+                        156                                                       105
+
+
+
+
+        157                                                                              104
+
+
+
+
+        208
+                                                                                        53
+
+
+
+
+                          1                                                       52
+
+              1.25TYP                                                    0.08 M
+                                                               0.2+0.1
+                              0.5+0.1
+
+
+
+
+                                            0.1
+
+                                        29.6+0.3
+
+
+
+
+                                                     0.5+0.2
+
+
+
+
+Preliminary V6.0 August 19, 1994             78                  Silicon Integrated Systems Corporation
+                                                   85C471 Green PC ISA-VESA Single
+Chip
+
+COPYRIGHT NOTICE
+
+   Copyright 1993, Silicon Integrated Systems Corp. ALL RIGHTS RESERVED.
+   This manual is copyrighted By Silicon Integrated Systems Corp. You may not reproduce,
+   transmit, transcribe, store in a retrieval system, or translate into any language, in any form or by
+   any means, electronic, mechanical, magnetic, optical, chemical, manual, or otherwise, any part
+   of this publication without the express written permission of Silicon Integrated Systems Corp.
+
+   TRADEMARKS
+   SiS is a registered trademark of Silicon Integrated Systems Corp.
+   IBM, IBM PC AT and PS/2 are registered trademarks of International Business Machines
+   Corporation.
+   VESA, VL-Bus are trademarks of the Video Electronics Standards Association.
+   Intel, i486, SL Enhanced, P24T and P24D is a trademark of Intel Corporation.
+   Cyrix Cx486S2, M6 and M7 is a trademark of Cyrix Corporation.
+   AMD AM486-40 a trademark of AMD Corporation.
+
+   DISCLAIMER
+
+   Silicon Integrated Systems Corp. makes no representations or warranties regarding the contents
+   of this manual. We reserve the right to revise the manual or make changes in the specifications
+   of the product described within it at any time without notice and without obligation to notify any
+   person of such revision or change.
+
+   The information contained in this manual is provided for general use by our customers. Our
+   customers should be aware that the personal computer field is the subject of many patents. Our
+   customers should ensure that they take appropriate action so that their use of our products does
+   not infringe upon any patents. It is the policy of Silicon Integrated Systems Corp. to respect the
+   valid patent rights of third parties and not to infringe upon or assist others to infringe upon such
+   rights.
+
+   RESTRICTED RIGHTS LEGEND
+   Use, duplication, or disclosure by the Government is subject to restrictions set forth in
+   subparagraph (c)(1)(ii) of the Rights in Technical Data and Computer Software clause at
+   252.277-7013.
+
+
+
+
+Preliminary V6.0 August 19, 1994              79            Silicon Integrated Systems Corporation
+

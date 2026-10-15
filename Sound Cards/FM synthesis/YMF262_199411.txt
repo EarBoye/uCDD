@@ -1,0 +1,1136 @@
+                           YAMAHl{a.~•
+                                                                                         tJPL™
+                         VMF262
+                FM Operator Type L3 (OPL3)
+
+
+ •OVERVIEW
+   The YMF262 (OPL3) was developed as a sound source LSI for computer and game equipment.
+   The YMF262 contains an FM sound source which may be controlled by software. In addition, five
+   different rhythm sounds (bass drum, snare drum, tom tom, top cymbal and hi hat cymbal) are avail-
+   able. The YMF262 is register compatible with the YM3812 (0PL2), with twice the number of signal
+   sources, four new operator modes, selectable waveform and 4 channel output.
+
+
+ •FEATURES
+    • Registers are compatible with YM3812 (0PL2) FM sound source.
+    • Up to six sounds can be used as four-operator melody sounds for variety.
+    • 18 simultaneous melody sounds, or 15 melody sounds with five rhythm sounds (with two oper-
+      ators).
+    • Six four-operator melody sounds and six two-operator melody sounds, or six four-operator
+      melody sounds, three two-operator melody sounds and five rhythm sounds (with four operators).
+    • Eight selectable waveforms.
+    • 4-channel sound output.
+    • YMF262 compatible DAC (Y AC512) is available.
+    • LFO for vibrato and tremolo effects.
+    • Two programmable timers.
+    • Shorter register access time compared with YM3812.
+    • 5V single supply silicon gate CMOS process.
+    • 24 Pin SOP Package (YMF262-M), 48 Pin SQFP Package (YMF262-S).
+
+
+
+
+          ()P,,L.™ is a trade mark of YAMAHA Corporation which represents a full register compatibility
+          with YAMAHA YM3812 (OPL2).
+
+--------YAMAHA CORPORATION--;==v=M=F2=62=cA=TA=Lo=G==;
+                                                                                        CATALOG No.: 4MF262A6
+                                                                                                 1994.11
+                                                                                                                                                                    YMF262
+• BLOCK DIAGRAM
+                                                                                    0
+                                         0                                          (]J
+                                         0::
+                                                                                    CL
+                                                                                    ::;;: ,
+                                                                                    Cf)
+
+                                                                                    u·
+                                                                                    <1:
+                                                                              >-    CL
+                                                               ::;;:          Cf)   ::;;:
+                                                               -s.            -s. Cf)
+                                     ll                                        ..0.
+
+                                                               1 •
+                            Data Bus                                Timing
+                                                                                                                     Timer
+                             Control                              - Control
+
+
+
+
+                                                                                                           Accumulator                             ~~--~P· DOA8
+                            Envelope
+                                                                       Operator
+                            Generator
+                                                                        (OP)
+                              (EG)                                                                         Accumulator                             ~ DOCD
+
+                                     l~~~-+-+-~~~~-t--~~--,
+                                     i                                    I                                             1
+                                                                   Phase                                      Vibrato,
+    DO - D7     9¢==J       Register
+                             Array
+                                                    t----         Generator                   ~              Amplitude
+                                                                    (PG)                                     Modulation
+
+
+
+
+• •PIN OUT DIAGRAM of YMF262-M
+    YMF262-M                                                                                         • YMF262-S
+
+                                                      ¢M                                                       -      ---         -     -  0
+        VDD                                                                                                  uc..if?§c..ic..ic..i::;;:ui;)ug
+       / IRQ       2
+                        0                      24
+
+                                               23     ¢SY
+                                                                                                             -<::.6-<::. > 66 6 -e-6 -e. 6                                           0
+
+
+
+                                                                                                                 oor-c..ol.l')...rMN-omoor-
+         / IC      3                           22     DOCD                                                       ...r ' ¢ <o::1' "O" <o::f" ...r q ...r -.:::t M M M
+                                                                                                                                                                                           36   DOAB
+
+                                                                                                             0
+                                                                                                AO     1
+        AO         4                           21     DOAB                                  (N .C)     2                                                                                   35   SM PAC
+                                                                                                Al     3                                                                                   34   (N.C.)
+        Al         5                           20     SM PAC
+                            ~                                                               /WR        4                                                                                   33   SMPBD
+
+        / WR       6        c'i                19     SMPBD
+                                                                                            (NC)       5                                                                                   32   (N.C.)
+                            <D                                                              (N.C.)     6                                                                                   31   (N.C.)
+                            N
+                                                      D7                                    (NC.)      7
+                                                                                                                                YMF262-S                                                        (N.C.)
+        / RD       7        l.J...             18                                                                                                                                          30
+                            ~                                                               (N.C.)     8                                                                                   29   (N.C.)
+        / CS       8        >-                 17     D6                                      / RD     9                                                                                   28   D7
+                                                                                            (NC.)      10                                                                                  27   (N.C)
+       TEST        9                           16     D5
+                                                                                              /CS      11                                                                                  26   D6
+        DO         10                          15     D4                                    TEST        12                                                                                 25   D5
+                                                                                                             M""""lJ"lwr-oomo-NM-.::t
+                                                                                                             ..-----.--..-NNNNN
+        DI         11                          14     D3
+
+        VSS        12                          13     D2                                                     0      --;- .--
+                                                                                                             0U0CfJUUUUOOU0
+                                                                                                                               CJ)   ----;- --;- --;- ....-;-   N   M   ....--;-   ""'1"
+
+
+                                                                                                                    ~          >~3~~                                    ~
+                    24PIN SOP Top View
+                                                                                                                          48pin SQFP top view
+
+
+2
+YMF262
+• PIN CONFIGURATION
+
+     No.
+                      uo          Pin name                                    Function
+24SOP 48SQFP
+  1         45          -        VDD         +5V supply
+  2         46        OD         /IRQ        Timer interrupt request
+  3        48          I+        /IC         Initial clear
+  4         1           I        AO          CPU interface                        Address select input
+  5         3           I        Al          CPU interface                        Address select input
+  6         4           I        /WR         CPU interface                        Write enable input
+  7         9           I        /RD         CPU interface                        Read enable input
+  8         11         I+       !CS          CPU interface                        Chip select input
+  9         12         0         TEST        LSI test pin (normally NC)
+  10        13         1/0       00          CPU interface                        Data bus (LSB)
+  11        15         1/0       DI          CPU interface                        Data bus
+  12        16                   Vss         Ground
+  13       21          1/0       D2          CPU interface                        Data bus
+  14       22          1/0       D3          CPU interface                        Data bus
+  15       24          1/0       D4          CPU interface                        Data bus
+  16       25          1/0       D5          CPU interface                        Data bus
+  17       26          1/0       D6          CPU interface                        Data bus
+  18       28          110       D7          CPU interface                        Data bus (MSB)
+  19       33          0        SMPBD        DAC interface                        B and D channel sample/hold
+  20       35          0        SMPAC        DAC interface                        A and C channel sample/hold
+  21       36          0         DOAB        DAC interface                        A and B channel serial data output
+  22       37          0         DOCD        DAC interface                       C and D channel serial data output
+ 23        39          0         0SY         DAC interface                        Data latch signal
+  24       41           I       0M           Master clock input (14.32 MHz)
+
+Note : OD is open drain output pin.
+       I+is pull up input pin.
+
+
+
+
+                                                                                                                       3
+                                                                                                YMF262
+•FUNCTIONS
+    1. Master Clock        <t>M
+      All operations in the LSI are controlled by the 14.32 MHz master clock signal applied to the <t>M pin.
+
+
+    2. CPU Interface       /CS, /RD, /WR, AO, Al, DO-D7
+       Sound generation is controlled by writing data in these registers. Writing data to a register or
+      reading the status from a register is accomplished through an 8 bit parallel CPU interface signal.
+      DO·D7 are a bidirectional data bus, and /CS, /RD, /WR, AO, and Al are data bus control signals.
+      The data bus is controlled as follows:
+
+         /CS    /RD     /WR       AO      Al           CPU Access Mode
+         H       x        x       x        x      Inactive mode
+          L      H        L       L       L/H     Address write mode
+          L      H        L       H        x      Data write mode
+         L        L       H       L        L      Status read mode
+                                                                                     X: Don 't care
+        Note: Operation in states other than those listed above is not guaranteed.
+
+
+      (a) Inactive mode
+          When /CS= 'H', the data bus DO-D7 are in a high impedance state.
+
+
+      (b) Address write mode
+          This mode is used to specify the write address. For register array 0, Al= 'L '. For register array
+          1, Al= 'H '. The address of the data should be output on the data bus. After this cycle, data
+          may be written in data write mode after a minimum of 32 master clock cycles.
+
+
+      (c) Data write mode
+          Write data at the address specified previously. The data to be written should be output on the
+          data bus. A wait of at least 32 master clock cycles is required before the next address write
+          or data write.
+
+
+      (d) Status read mode
+          Read the status of the LSI. The status is output on the data bus.
+
+
+
+
+4
+YMF262
+3. DAC Interface                  DOAB,DOCD,¢SY,SMPAC,SMPBD
+  YMF262 generates 4 channel sounds, which are output from DOAB and DOCD. Data streams of
+  A and B channel are output from pin DOAB and data streams of C and D channel are output
+  from pin DOCD. These sound data are transmitted as 16·bit offset serial binary data stream.
+  These data streams are designed as input to the YAC512 DIA converter. The YMF262's sampling
+  frequency is 49. 7 kHz. As part of the YMF262/Y AC512 interface, the YMF262 outputs three tim-
+  ing signals (¢SY, SMPBD, SMPAC). Fig 1 shows these timing. In this case, please take care
+  that the assignment of YAC512 audio output channel is changed according to connection of sam-
+  ple/hold signal (See Exsample).
+
+
+
+
+                                                                                                                                    ( MSB)
+
+
+                                                                                                                                    ( MSB)
+
+
+
+
+                                 YAC512(DAC I )
+          23    </> SY
+                OOCD      n1N
+          22                       4
+
+          11
+                DOAB     r ~5                                                                   Matrix t able of YMF 262 register and YAC512 output channel
+                SMP AC    SMP1                       CH1
+          10                        7           II                    -0 CHA
+                SMPSO     SMPI                       CHI              _,., CHS                            DOAB (DAC 1)      DOCD (DAC 2)
+           19                      8            I0
+                                                                                                          CHI    CH 2       CHI    CH 2
+                                                                                                  CHA             0
+                                 YAC5 I 2(DAC 2)
+                                                                                                  CHB      0
+                          DIN
+                                   4                                                              CHC                                  0
+                          CL K
+                         ~ 5                                                                      CHD                         0
+                          SMP2                       CH1
+                                   7            II                    --" CHC
+                          SMPI                       CHI              ;-,
+                                   8            I0                          CHO
+
+
+
+
+Example 2
+ YMF262
+                </>SY                     YAC5 I 2(DAC I)
+          23
+                DOCD               DIN
+          11                                4
+
+          21
+                OOAS
+                             J~ 5                                                               Matrix t able of YMF262 register and YAC512 output channel
+                                   SMP1                         CH1
+          208
+                                            7              II                             CHS             DOAB (DAC 1)      DOCD (DAC 2)
+             SMP8D                 SMPI                         CHI
+          19                                               I0                     ...()   CHA
+                                            8                                                             CHI    CH2        CHI    CH2
+                                                                                                 CHA       0
+                                          YACS I 2(D AC 2)
+                                                                                                 CHB              0
+
+
+
+
+                         ~
+                                   DIN
+                                            4                                                    CHC                          0
+                                   CLK
+                                 '----- 5                                                        CHD                                   0
+                                   SMP2                         CH2
+                                            7              II                     ...()   CHO
+                                   SMPI                         CHI
+                                            8              I0                     -0 CHC
+
+
+
+
+                                                                                                                                                        5
+                                                                                                                 YMF262
+• REGISTER MAP
+
+                 REGISTER ARRAY 0 (A 1 = 'L')                            REGISTER ARRAYl (A 1 = ' H')
+    ADDR
+    (HEX)
+            D7    D6    DS D4      D3       D2 D 1 DO D7 D6 DS                       D4        D3           D2         D 1 DO
+
+    $ 01                    LSI TEST
+                                                                       ~                   LSI TEST
+
+    $ 02                     TIMER 1
+
+    $ 03                     TIMER 2
+                                                                                         1       1
+    $04     RST MTl MT2
+                             ~                         ST2 STl
+                                                                       ~            T CON NECfION SEL T
+                                                                                    J_   _J_ _J_ _J_  l
+    $05
+                                                                        ~                                                        NEW
+
+    $08
+
+    $20
+
+    $35
+            ld   NTS
+
+
+            AM VIB EGT KSR
+                          ---------     T
+
+                                            MULT
+                                                 T          I
+
+                                                                       AM VIB EGT KSR
+                                                                                                        l
+
+                                                                                                             MULT
+                                                                                                                  I          I
+
+
+
+
+    $40
+                                        + + +                                                       + + +
+              KSL                     TL                                KSL                     TL
+    $55
+    $60
+                 +         +            + + +                            +          +               + + +
+                     AR                          DR                           AR                                 DR
+    $ 75
+
+    $80
+                 + + +                  + + +                            + + +                      + + +
+                     SL                          RR                           SL                                 RR
+    $95
+    $ AO
+                 + + +                  + + +                            + + +                      + + +
+                          F NUMBER( L)                                             F NUMBER(L)
+    $ A8
+
+    $ BO
+
+    $B8
+            0 KON                + +
+                                 BLOCK
+                                                            +
+                                                       FNUM(H)         0 KON              + +
+                                                                                          BLOCK
+                                                                                                                            +
+                                                                                                                       FNUM(H)
+
+
+
+
+                                                                         ----
+                                                                                          J_        _J_                     J_
+
+    $BD     DAM DVB RYT BD         SD TOM TC                      HH
+                                                                                                    I             l
+    $CO
+            CHD CHC CHB CHA                 FB                    CNT CHD CHC CHB CHA                       FB                   CNT
+    $ C8
+                                                 J_
+                                                                                                                 +
+            ~                                                          ~
+    $EO
+                                                       ws                                                              ws
+    $F5
+                                                 _J_        _J_                                                  _J_        J_
+
+Note: All registers are cleared at reset.
+
+
+
+
+6
+YMF262
+• FM SIGNAL SOURCE ORGANIZATION
+
+Channel signal                  1             2             3             4             5             6             7             s             9
+(two-operator)                                                                                                 RYT            RYT           RYT
+Channel signal              1             2             3
+(four-operator)                                                               1             2
+
+Slot 1 signal               1             2             3             7             s             9            13            14            15
+
+ Slot 2 signal                       4             5             6            10            11            12            16            17            lS
+
+Register settings for      20            21            22            2S            29            2A            30            31            32
+the slot (A 1 = 'L ')               23            24            25            2B            2C            2D            33            34            35
+                           40            41            42            4S            49            4A            50            51            52
+                                    43            44            45            4B        4C                4D            53            54            55
+                           60            61            62            6S            69            6A            70            71            72
+                                    63            64            65            6B            6C            6D            73            74            75
+                           SO            Sl            S2            SS            S9            SA            90            91            92
+                                    S3            S4            S5            SB            SC            SD            93            94            95
+                           EO            El            E2            ES            E9            EA            FO            Fl            F2
+                                    E3            E4            E5            EB            EC            ED            F3            F4            F5
+
+ Register settings for      AO            Al            A2            A3            A4            A5            A6            A7            AS
+ channel (twcroperator,     BO            Bl            B2            B3            B4            B5            B6            B7            BS
+ Al='L')                    co            Cl            C2            C3            C4            C5            C6            C7            cs
+Register settings for       AO            Al            A2            C3            C4            C5
+channel (four-operator,     BO            Bl            B2
+Al='L')                     co            Cl            C2
+
+Channel signal
+(twcroperator)              10            11            12            13            14            15            16                17        lS
+
+Channel signal
+(four-operator)
+
+Slot 1 signal
+                            4
+
+
+                           19
+                                          5
+
+
+                                         20
+                                                        6
+
+
+                                                       21            25
+                                                                              4
+
+                                                                                   26
+                                                                                            5
+
+                                                                                                 27
+                                                                                                          6    C2IZL2J
+                                                                                                               31            32            33
+
+ Slot 2 signal                      22            23            24            2S            29            30            34            35            36
+
+Register settings          20            21            22            2S            29            2A            30            31            32
+for the slot (Al= 'H')              23            24            25            2B            2C            2D            33            34            35
+                           40            41            42            4S            49            4A            50            51            52
+                                43                44        45                4B        4C                4D            53         54           55
+                           60            61            62            6S            69            6A            70            71            72
+                                    63        64            65                6B            6C            6D            73         74               75
+                           SO            Sl            S2            SS            S9            SA            90            91            92
+                                S3                S4            S5            SB            SC            SD            93         94               95
+                           EO            El            E2            ES            E9            EA            FO            Fl            F2
+                                    E3            E4            E5            EB            EC            ED            F3            F4            F5
+
+Register settings for       AO            Al            A2            A3            A4            A5            A6            A7            AS
+channel (twcroperator,      BO            Bl            B2            B3            B4            B5            B6            B7            BS
+Al='H')                     co            Cl            C2            C3            C4            C5            C6            C7            cs
+ Register settings for      AO            Al            A2            C3            C4            C5
+ channel (four-operator,    BO            Bl            B2
+ Al='H')                    co            Cl            C2
+
+
+
+                                                                                                                                                         7
+                                                                                                YMF262
+•REGISTERS
+    (1) Description
+
+       TIMER 1: Timer 1 preset value
+          Timer 1 is an 8 bit preset counter. This counter is every 80µ.S, and /IRQ is generated when the
+          counter overflows. TIMER 1 is the preset value. When overflow occurs, this value is auto-
+          matically re-loaded into the counter. The time until /IRQ is generated (tov) is calculated as
+          follows:
+              tov[ms]=(255-Nl)*0.08
+                  Nl=D7*27+D6*26+D5*25+ D4*24+ D3*23+ D2*22+ Dl *2+ DO
+
+
+       TIMER 2: Timer 2 preset value
+          Timer 2 is an 8 bit preset counter. This counter is every 320µ.S, and /IRQ is generated when the
+          counter overflows. TIMER 2 is the preset value. When overflow occurs, this value is auto-
+          matically re-loaded into the counter. The time until /IRQ is generated (tov) is calculated as
+          follows:
+              tov[ms]=(255-Nl)*0.32
+                    Nl=D7*27+ D6*26+ D5*25+ D4*24+ D3*23+ D2*22+ Dl *2+DO
+
+
+       RST (IRQ RESET): /IRQ reset
+          Reset the /IRQ signal generated by timers 1 and 2. RST= 'l' sets /IRQ= 'H '.
+
+       MTl (MASK TIMERl): Timer 1 mask
+          If MTl = '1 ', /IRQ is not generated when timer 1 overflows.
+
+
+       MT2 (MASK TIMER2): Timer 2 mask
+          If MT2= '1 ', /IRQ is not generated when timer 2 overflows.
+
+
+       STl (ST ART TIMERl): Timer 1 control
+          When STl = '1 ', timer 1 loads the preset value and starts counting. If STl = 'O ', timer 1 is stopped.
+
+       ST2 (ST ART TIMER2): Timer 2 control
+          When ST2= '1 ', timer 2 loads the preset value and starts counting. If ST2= 'O ', timer 2 is stopped.
+
+       NTS (NOTE SEL): Keyboard split selection
+          Selects the keyboard split method to determine the key scale number.
+
+
+
+
+8
+YMF262
+   When NTS=O
+
+    BLOCK Data                0           1           2           3                4             5             6             7
+    F-NUMBER MSB              *           *           *           *                *             *             *             *
+    F-NUMBER 2nd          0       1   0       1   0       1   0       1        0       1    0        1    0        1    0        1
+    Key scale No.         0       1   2       3   4       5   6       7        8       9    10       11   12       13   14       15
+
+
+   When NTS=l
+
+    BLOCK Data                0           1           2           3                4             5             6             7
+    F-NUMBER MSB          0       1   0       1   0       1   0       1        0       1    0        1    0        1    0        1
+    F-NUMBER 2nd          *       *   *       *   *       *   *       *        *       *    *        *    *        *    *        *
+    Key scale No.         0       1   2       3   4       5   6       7        8       9    10       11   12       13   14       15
+
+                                                                                                                   *: Don't care
+
+
+ AM (AMPLITUDE MODULATION): Tremolo on/off
+   Turns tremolo on for the corresponding slot when AM= 'l '. The repetition rate is 3. 7 Hz, and
+   the depth is controlled by DAM.
+
+
+ VIB (VIBRATO): Vibrato on/off
+   Turns vibrato on for the corresponding slot when VIB= 'l '. The repetition rate is 6.1 Hz and
+   the depth is controlled by DVB.
+
+
+ EGT (ENVELOPE TYPE): Select sustain/decay
+   EGT= 'l' selects sustained sound, and maintains the SUSTAIN LEVEL while KON is 1.
+   EGT= 'O' selects decay, and the RELEASE RATE takes effect even if KON is maintained at 1.
+
+
+
+
+                                                                          SL
+
+
+
+
+    _j         KE Y ON
+                                                  _j          KEY ON
+                                                                                           KEY OFF
+
+
+
+
+                                                                                                                                      9
+                                                                                                    VMF262
+     KSR (KEY SCALE RATE): Select key scale RATE
+       With normal musical instruments, the attack/decay rate becomes faster as the pitch increases.
+       The key scale RA TE controls simulation of this effect. An offset is added to the individual
+       ATTACK, DECAY and RELEASE rates as follows:
+           Actual rate=Rate value*4+ Rof
+               If rate value=O, actual rate =O.
+
+       Rof is set as follows depending on the KSR setting:
+
+        Key scale No.               0   1       2   3   4       5   6   7       8    9    10   11   12   13   14   15
+                     KSR=O          0   0       0   0   1       1   1   1       2    2    2    2    3    3    3    3
+        Rof
+                     KSR=l          0   1       2   3   4       5   6   7       8    9    10   11   12   13   14   15
+
+
+     MULT (MULTIPLE):             Frequency data multiplier
+       Sets the multiplier for the frequency data specified by BLOCK and F-NUMBER. This multi-
+       plier is applied to the FM carrier and modulation frequencies.
+
+        MULT            0     1     2   3       4   5   6       7   8   9       A    B    c    D    E    F
+        Multiplier      1/2   1     2   3       4   5   6       7   8   9       10   10   12   12   15   15
+
+
+     KSL (KEY SCALE LEVEL): Key scale level selection
+       With musical instruments, volume decreases as pitch increases. LEVEL key scale values are
+       used to simulate this effect:
+
+        KSL                   0             2               1               3
+        Attenuation           0         l.5dB/oct       3dB/oct         6dB/oct
+
+
+     TL (TOT AL LEVEL): Modulation, volume setting
+       Attenuation is performed according to the envelope generator output. The modulation or
+       volume is controlled.
+       Attenuation=24*D5+ 12*D4+6*D3+3*D2+ 1.5*Dl +0.75*DO (dB)
+
+
+     AR (ATTACK RATE): Attack rate setting
+       Attack rate=23*D7+22*D6+2*D5+D4
+
+
+     DR (DECAY RATE): Decay rate setting
+       Decay rate=23*D3+22*D2+2*Dl +DO
+
+
+
+
+10
+YMF262
+ SL (SUSTAIN LEVEL): Sustained level setting
+   Sustain level=24*D7+12*D6+6*D5+3*D4
+                 When D7=D6=D5=D4=1, level=93dB
+
+ RR (RELEASE RATE):       Release rate setting
+   Release rate=23*D3+2 2 *D2+2*Dl +DO
+
+ FNUM (F-NUMBER): Scale data within the octave
+   Gives pitch data along with BLOCK data.
+   F-NUMBER=f*219/fs/2BLOCK-1
+       (f: frequency; fs: sampling frequency; fs=fM /288)
+
+
+ KON (KEY-ON): /Sound generation ON/OFF
+   If KON= 'l ', the channel generates sound.
+
+
+ BLOCK: Octave data
+   Generates octave data with F-NUMBER data.
+
+ DAM (AMPLITUDE MODULATION DEPTH): Select amplitude modulation depth
+   When DAM='l', 4.8dB. When DAM='O', ldB.
+
+ DVB (VIBRATO DEPTH): Select vibrato depth
+   When DVB= 'l ', 14 percent. When DVB= 'O', 7 percent.
+
+ RYT (RHYTHM MODE): Select rhythm sound mode
+   Channels 7-9 are used for rhythm sounds when RYT= 'l '.
+
+ BD (BASS DRUM), SD (SNARE DRUM), TOM (TOM TOM), TC (TOP CYMBAL), HH (HI-HAT):
+   ON/OFF
+   Sound output on/off switch for each sound. When any of these is set to 1, the corresponding
+   sound is generated.
+
+                              Rhythm Sound          Slot Used
+
+                            BASS DR UM                13, 16
+                            SN ARE DRUM                 17
+                            TOM TOM                     15
+                            TO P-C YMBAL                18
+                            HI - HAT                    14
+
+
+
+                                                                                                 11
+                                                                                                                       YMF262
+     FB (FEED BACK):         Modulation depth for slot 1 FM feed back
+
+        FB                            0           1               2              3            4             5              6            7
+        Modulation                    0         7!"/16           7r/8         7r/4          7r/2            7r            27!"         47!"
+
+
+
+     NEW:    OPL3/0PL2 Operation selection
+       If NEW= 'l ', OPL3 operation is selected and data is written when Al= 'H '. To use OPL3 func-
+       tions, write NEW= 'l' during initialization.
+
+
+     CNT (CONNECTION): Operator connection
+       Two-operator mode uses the following connection:
+
+
+               Ci\T = '0'                                                                  CN T = ' l '
+
+
+
+                                                                              Pl ~
+                                                                              -©--1                OP I
+
+
+                     0 P I                  0 p 2                 OUT                                                     -      OUT
+
+                                                                              p 2
+                                                                                                  0 p 2
+
+
+
+
+       In four-operator mode, both CNT bits are used to specify the connection:
+
+        Channel No. (four-operator)         1              2              3            4              5            6
+        CNT Address                       CO,C3          Cl, C4         C2, C5       CO, C3        Cl, C4        C2, C5
+                     Al                                    'L'                                       'H'
+
+       The connection is as follows:
+
+
+
+
+12
+YMF262
+        CN T (C n) = 'O ' , CNT(C n +3) =' 0 '
+
+
+
+
+                    0 P I                  0 p 2     0 p 3    0 p 4   OUT
+
+
+
+
+        CNT(C n) = 'O', CNT(C n +3) = ' l '
+
+
+
+
+                   0 P I                   0 p 2
+
+
+                                                   OUT
+
+  p 3
+                   0 p 3                  0 p 4
+
+
+
+
+        CN T( Cn) = ' l ', CNT(C n +3) = ' 0'
+
+
+
+
+                   0 P I
+
+
+
+
+  p 2
+                   0 p 2                  0 p 3      0 p 4   OUT
+
+
+
+
+        CN T (C n) = ' l ' , CNT(C n +3) = ' l '
+
+
+
+
+                   0 P I
+
+
+
+
+  p 2
+                   0 p 2                  0 p 3
+
+
+
+
+ p 4
+                  0 p 4
+
+
+
+
+                                                                            13
+                                                                                         YMF262
+     WS (WA VE SELECT): Select waveform
+       Select the waveform used for carrier and modulation.
+
+
+
+
+                     "-
+                          WS = O
+                                     ~                 WS = 4
+                                                                     Liv          •
+
+
+                          \V S = I
+                                     Q       •         WS =5
+                                                                     fY\          •
+
+
+
+                          WS = 2     CL\               WS = 6        1
+                                                                            l     J
+
+                          WS = 3     11 11 •
+                                             -
+                                                       WS = 7
+                                                                     ~
+     CHA (CHANNEL A), CHB (CHANNEL B) , CHC (CHANNEL C), CHD (CHANNEL D):                       Select
+     output
+       When any of these bits is set to 1, data is output to the corresponding channel. CHA and
+       CHB are output from the DOAB pin, and CHC and CHD are output from the DOCD pin.
+
+
+     CONNECTION SEL: Four-operator mode
+
+        CONNECTION SEL                            D5            D4        D3      D2     Dl     DO
+        Four-operator channel                      6            5          4       3      2     1
+        -Two-operator channels used              12, 15     11, 14       10, 13   3, 6   2, 5   1,4
+
+
+
+
+14
+    YMF262
+    (2) Status
+
+           Bit                                   I I I I DO
+                                D7 D6 D5 D4 D3 D2 Dl
+           Status               IRQ FTl FT2
+
+
+       FTl (FLAG TIMERl): Timer 1 overflow flag
+          This flag is set to 1 when timer 1 overflow occurs.
+          This flag is not reset unless RST is written.
+
+
+       FT2 (FLAG TIMER2):       Timer 2 overflow flag
+          This flag is set to 1 when timer 2 overflow occurs.
+          This flag is not reset unless RST is written.
+
+
+       IRQ (INTERRUPT REQUEST):           Interrupt request
+          Set to 1 if FTl or FT2 is set. This flag is not reset unless RST is written.
+
+
+
+
+                                                                                         15
+
+
+
+
+r
+                                                                                                   YMF262
+    • YMF262 ELECTRICAL CHARACTERISTICS
+    1. Absolute Maximum Ratings
+                 Item               Symbol                    Rating                Unit
+    Power supply voltage             VDD                  -0.3-7.0                   v
+    Input voltage                     VI                  - 0.3 - Vnn+0.5            v
+    Operating temperature            Top                      0 - 70                oc
+    Storage temperature              Tstg                  -50-125                  oc
+
+    2. Recommended Operating Conditions
+                 Item               Symbol    Minimum         Typical   Maximum     Unit
+    Power supply voltage             VDD           4.75         5.00        5.25     v
+    Operating t emperature           Top            0            25         70      oc
+
+    3. DC Chateristics (Conditions; Ta=O - 70 °C, Vnn = 5.0 ± 0.25 V)
+                 Item               Symbol              Conditions          Min .   Typ.   Max .    Unit
+     Power cons umption                PD     VDD= 5.0V                                     50      mW
+                                              fM = 14. 32MHz
+     Input highlevel voltage 1        VIH1    *l                            2.2                      v
+     Input lowlevel voltage 2         VIL!    *l                                            0.8      v
+     Input highlevel voltage 2        VIH2    *2                            3.5                      v
+     Input lowlevel voltage 2         VIL2    *2                                            1.0      v
+     Input leakage current            lLI     VI=0-5V, *3                   -10             10      µA
+     Input capacity                    CI                                                   10      pF
+     Output highlevel voltage         VOH      Iott= -80µA              VDD -1.0                     v
+     Output lowlevel voltage          VOL      IOL=2.0mA                                   0.4       v
+     Output capacity                  Co                                                    10      pF
+     Output leakage current           ILO     VI=0-5V, *4                   -10             10      µA
+     Pull up registance               Ru                                     80            400      kfl
+
+    Note)   *l : Applied to /WR, /RD , /CS, AO, Al, DO- D7 (when used as input pins)
+            *2: Applied to ct>M, /IC
+            *3: Applied to ct>M, /WR, /RD, AO, Al, DO - D7 (When used as input pins)
+            *4: When DO - D7 are in high impedance
+
+
+
+
+    16
+
+
+
+
+r
+YMF262
+4. AC Characteristics (Conditions; Ta=O- 70 °C, Vnn=5.0 ± 0.25 V)
+
+             Item                 Symbol          Figure              Min.    Typ.    Max.   Unit
+ Master clock frequency             fM     Fig A-1                    10      14.32    16    MHz
+ Master clock duty                  D                                 40       50      60     %
+ Reset pulse width                 tr cw   Fig A-2                   400/fM                   s
+ Address setup time                tAS     Fig A-3, 4                  10                    ns
+ Address hold time                 tAH     Fig A-3 , 4                 10                    ns
+ Chip select write width          t csw    Fig A-3                    100                    ns
+ Chip select read width            tcsR    Fig A-4                    150                    ns
+ Write pulse width                 tww     Fig A-3                    100                    ns
+ Write data setup time            twos     Fig A-3                    10                     ns
+ Write data hold time             tWDH     Fig A-3                     20                    ns
+ Read pulse width                  tRW     Fig A-4                    150                    ns
+ Read data access time             tACC    Fig A-4                                    150    ns
+ Read data hold time              tRDH     Fig A-4                     10                    ns
+
+*l: Master clock cycle
+
+
+5. Timing Diagram
+
+
+   (1) Input clock timing
+
+
+                                  ¢M
+
+
+
+
+                                                           Fig A-1
+
+
+
+
+  (2) Reset pulse
+
+
+
+                            /IC
+
+
+
+                                                           Fig A-2
+
+
+
+
+                                                                                                    17
+                                                                       YMF262 .
+     (3) Address/Data write timing
+
+
+
+
+                AO
+
+
+                                               t csw
+
+
+               / CS
+
+
+
+
+               /WR- - 0   ~,                                          Note: t csw, tww, and
+                                                                            twoH are based on
+
+
+
+           oo~o?-{
+                                                       t N OS               either CS or WR
+                                                                            being driven to high
+                                                                            level.
+
+
+
+                                         Fig A-3
+
+
+
+
+     (4) Status read timing
+
+
+
+
+                AO
+
+
+
+
+                                                                      Note: tACC is based on
+                                                                            whichever of CS or
+                                                                            RD goes to the low
+                                                                            level last.
+
+                                                                            tcsw, tww , and
+                                                                            twoH are based on
+                                                                VoH         either CS or WR
+           D 0 ~D 7 ------------t                                           being driven to high
+                                                                VoL
+                                                                            level.
+                                     Fig A-4
+
+
+
+18
+YMF262
+• DIMENSIONS
+ • YMF262-M
+
+                                 0
+               15.50±0.30        N
+                                                   ---<~---i-.- 2 . 00 ± 0 . 1 5
+                                 ci
+                                 ti
+                                 0
+                                 <:t
+         24                 13   cri
+
+
+
+                                            0
+                                            <:t
+                                            ci
+                                            ti
+                                            0                           ,--._
+                                            CX)                          0
+                                                                         0
+
+
+
+
+                            12
+
+                                                  0-10
+
+
+                                       x
+                                       <(
+                                       ~
+                                       0
+                                       U)
+                                       N
+
+
+
+                                                     UNIT: mm
+
+
+
+  P - 1.27TYPJl    ~040±0.10     0
+
+                                 ci
+                                 ti
+                                 0
+                                 -
+                                 0
+
+
+
+
+                                                                                   19
+                                                                                                                    YMF262
+• YMF262-S
+
+
+
+
+                                                     37
+
+
+
+
+                                                     48
+
+
+
+
+                                                             1
+                                                            1
+
+
+                                              0 .20 i 0.10
+
+
+                                     ~
+                                     jo@:
+                           rL        :!:;
+                           LL
+                           0         t::
+                           0
+                           z         =-
+                                     ~        0
+                           ~
+                           (f)       x
+                                     <{       ci
+                           0         ::?       t-1
+                                     0        0
+                           ci        I'       <t                                    -------( 1.0)
+                            ~I
+                           0
+
+                           ci
+
+                           t         II
+                                 ~-=t-~ c\   : 0. 15 ± 0.05
+             (LEAD THICKNESS)                  l f: (;I: (OR) 0 . 125 ± 0.05
+
+ The specifications of this product are subject to improvement changes without prior notice.
+
+
+     ------AGENCY------                                             -          YAMAHA CORPORATION -
+                                                                        Address inquiries to:
+                                                                        Semi-conductor Sales Department
+                                                                        •Head Office      203, Matsunokijima, Toyooka-mura,
+                                                                                          Iwata-gun, Shizuoka-ken, 438-01
+                                                                                          Electronic Equipment business section
+                                                                                          Tel. 0539-62-4918     Fax. 0539-62-5054
+                                                                        •Tokyo Office     2-17-11, Takanawa, Minato-ku .
+                                                                                          Tokyo, 108
+                                                                                          Tel. 03-5488-5431     Fax. 03-5488-5088
+                                                                        • Osaka Office    3-12-9, Mina mi Senba. Chuo-ku.
+                                                                                          Osaka City, Osaka, 542
+                                                                                          Shinsaibashi Plaza Bldg. 4F
+                                                                                          Tel. 06-252-7980      Fax. 06-252-56 15
+                                                                        • U.S.A. Office   YAMAHA Systems Technology.
+                                                                                          100 Century Center Coun, San Jose. CA95 l l 2
+                                                                                          Tel. 408-467-2300     Fax. 408-437-8791
+
+
+
+                                                           COPYING PROHIBITED ~l 1988 YAMAHA CORPORATION              0.3K 9204   Printed in Japan@
+

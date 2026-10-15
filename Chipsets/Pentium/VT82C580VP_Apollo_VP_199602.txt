@@ -1,0 +1,2754 @@
+     VT82C580VP
+           APOLLO VP
+
+   Green Pentium/P54C/M1/K5
+          PCI/ISA System
+with Unified Memory Architecture,
+     Universal Serial Bus and
+ Master Mode PCI-IDE Controller
+
+
+
+
+          DATE : February, 1996
+
+
+
+      VIA TECHNOLOGIES, INC.
+Copyright Notice:
+Copyright © 1995, 1996 Via Technologies Incorporated.           Printed in Taiwan.    ALL RIGHTS
+RESERVED.
+
+No part of this document may be reproduced, transmitted, transcribed, stored in a retrieval
+system, or translated into any language, in any form or by any means, electronic, mechanical,
+magnetic, optical, chemical, manual or otherwise without the prior written permission of Via
+Technologies Incorporated.
+
+The VT82C580VP, VT82C585VP, VT82C586 and VT82C587VP may only be used to identify
+products of VIA Technologies.
+
+PS/2TM is a registered trademark of International Business Machines Corp.
+PentiumTM , and P54CTM are registered trademarks of Intel Corp.
+M1TM is a registered trademark of Cyrix Corp.
+K86TM (K5) is a registered trademark of Advanced Micro Devices Corp.
+Windows 95TM and Plug and PlayTM are registered trademarks of Microsoft Corp.
+PCITM is a registered trademark of the PCI Special Interest Group.
+CacheTM is a registered trademark of Mosys Inc.
+All trademarks are the properties of their respective owners.
+
+
+Disclaimer Notice:
+No license is granted, implied or otherwise, under any patent or patent rights of VIA Technologies.
+VIA Technologies makes no warranties, implied or otherwise, in regard to this document and to
+the products described in this document. The information provided by this document is believed
+to be accurate and reliable to the publication date of this document. However, VIA Technologies
+assumes no responsibility for any errors in this document. Furthermore, VIA Technologies
+assumes no responsibility for the use or misuse of the information in this document and for any
+patent infringements that may arise from the use of this document. The information and product
+specifications within this document are subject to change at any time, without notice and without
+obligation to notify any person of such change.
+
+
+
+Offices:
+        5020 Brandin Court                                       8th Floor, No. 533
+        Fremont, CA    94538                                     Chung-Cheng Rd., Hsin-Tien
+        USA                                                      Taipei, Taiwan ROC
+
+        Tel:    (510) 683-3300                                   Tel:     (886-2) 218-5452
+        Fax:    (510) 683-3301                                   Fax:     (886-2) 218-5453
+           VIA Technologies, Inc.                    VT82C580VP
+
+
+
+
+                                  REVISION HISTORY
+
+
+Document
+ Release                               Revision            Date
+
+            Revision 1.0                                  2/15/96
+
+            Preliminary Release                          10/25/95
+
+
+
+
+                                          -i-
+             VIA Technologies, Inc.                                                             VT82C580VP
+
+
+                                  Table of Contents
+Features............................................................................................................... 1
+Overview.............................................................................................................. 4
+Configuration Register of VT82C580VP............................................................ 7
+            VT82C585VP (Host -PCI) .............................................................................. 7
+
+            VT82C586 (PCI-ISA/IDE/USB) ...................................................................... 16
+
+AC Timing Characteristics ............................................................................... 33
+VT82C580VP Pin Description .......................................................................... 51
+Electrical Characteristics................................................................................. 67
+VT82C580VP Packages .................................................................................... 68
+Appendix A: Schematics
+Appendix B: Operating Guide of VT5063B
+Appendix C: Performance of VT82C580VP
+
+
+
+
+                                                          -ii-
+        VIA Technologies, Inc.                                                        VT82C580VP
+
+
+                 VIA VT82C580VP APOLLO-VP
+            PENTIUM/P54C PCI/ISA GREEN PC SYSTEMS
+                   WITH UNIFIED MEMORY ARCHITECTURE,
+                       UNIVERSAL SERIAL BUS AND
+                   MASTER MODE PCI-IDE CONTROLLER
+
+FEATURES
+∗   PCI/ISA Green PC Ready
+∗   High Integration
+    −    VT82C585VP system controller
+    −    VT82C586 PCI to ISA bridge
+    −    Two instances of the VT82C587VP data buffers
+    −    Six TTLs for a complete main board implementation
+∗   Flexible CPU Interface
+     − 64-bit P54CTM, K5TM and M1TM CPU interface
+     − CPU external bus speed up to 66Mhz (internal 200Mhz and above)
+     − Supports CPU internal write-back cache
+     − Concurrent CPU/cache and PCI/DRAM operation
+     − System management interrupt, memory remap and STPCLK mechanism
+     − Cyril M1 linear burst support
+     − CPU NA#/Address pipeline capability
+∗   Advanced Cache Controller
+    − Direct map write back or write through secondary cache
+    − Burst Synchronous (Pipelined or non-pipelined), asynchronous SRAM, and Cache Module support
+    − Eight-pin CWE# and GWE# control options
+    − Flexible cache size: 0K/256K/512K/1M/2MB
+    − 32 byte line size to match the primary cache
+    − Integrated 10-bit tag comparator
+    − 3-1-1-1 read/write timing for Burst Synchronous SRAM access at 66Mhz
+    − 3-1-1-1-1-1-1-1 back to back read timing for Burst Synchronous SRAM access at 66Mhz
+    − Sustained 3 cycle write access for Burst Synchronous SRAM access or CPU to DRAM and PCI bus
+         post write buffers at 66Mhz
+    −    3-2-2-2 (read) and 4-2-2-2 (write) timing for interleaved asynchronous SRAM access at 66Mhz
+    −    Data streaming for simultaneous primary and secondary cache line fill
+    −    System and video BIOS cacheable and write-protect
+    −    Programmable cacheable region and cache timing
+    −    Optional combined tag and alter bit SRAM for write-back scheme
+∗   Fast DRAM Controller
+     − Concurrent DRAM writeback
+     − Four Cache lines (16 quadwords) of CPU/cache to DRAM write buffers
+     − Fast Page Mode/EDO/Burst EDO/Synchronous-DRAM support in a mixed combination
+     − Mixed 256K/512K/1M/2M/4M/8M/16MxN DRAMs
+
+                                             -1-
+        VIA Technologies, Inc.                                                          VT82C580VP
+
+    −    6 banks up to 512MB DRAMs (maximum four banks of Synchronous DRAM)
+    −    Flexible row and column addresses
+    −    64 bit or 32 bit data width in arbitrary mixed combination
+    −    3.3v and 5v DRAM without external transceivers
+    −    Speculative DRAM access
+    −    Read around Write capability for non-stalled CPU read
+    −    Burst read and write operation
+    −    4-2-2-2 on page, 7-2-2-2 start page and 9-2-2-2 off page timing for EDO DRAMs at 50/60Mhz
+    −    4-2-2-2 on page, 8-2-2-2 start page and 11-2-2-2 off page timing for EDO DRAMs at 66Mhz
+    −    5-1-1-1 on page, 8-1-1-1 start page and 10-1-1-1 off page timing for Burst EDO DRAMs at 66Mhz
+    −    5-2-2-2-3-1-2-2 back-to-back access for EDO DRAM at 66Mhz
+    −    5-1-1-1-3-1-1-1 back-to-back access for BEDO DRAM at 66Mhz
+    −    BIOS shadow at 16KB increment
+    −    System management memory remapping
+    −    Decoupled and burst DRAM refresh with staggered RAS timing
+    −    Programmable refresh rate, CAS-before-RAS refresh and refresh on populated banks only
+∗   Unified Memory Architecture
+    − Supports VESA UMA handshake protocol
+    − Compatible with major video/GUI products
+    − Direct video frame buffer access
+    − Satisfies maximum latency requirement from REQ# to GNT# and from GNT# to REQ#
+∗   Intelligent PCI Bus Controller
+     − 32 bit PCI interface
+     − Supports 66Mhz and 3.3v/5v PCI bus
+     − PCI master snoop ahead and snoop filtering
+     − PCI master Peer Concurrency
+     − Synchronous Bus to CPU clock with divide-by-two from the CPU clock
+     − Automatic detection of data streaming burst cycles from CPU to the PCI bus
+     − Five levels (double-words) of CPU to PCI posted write buffers
+     − Byte merging in the write buffers to reduce the number of PCI cycles and to create further PCI
+         bursting possibilities
+    −    Zero wait state PCI master and slave burst transfer rate
+    −    PCI to system memory data streaming up to 132Mbyte/sec
+    −    Sixty-four levels (double-words) of post write buffers from PCI masters to DRAM
+    −    Thirty-two levels (double-words) of prefetch buffers from DRAM for access by PCI masters
+    −    Enhanced PCI command optimization (MRL, MRM, MWI, etc)
+    −    Complete steerable PCI interrupts
+    −    Supports L1 write-back forward to PCI master read to minimize PCI read latency
+    −    Supports L1 write-back merged with PCI master post-write to minimize DRAM utilization
+    −    Provides transaction timer to fairly arbitrate between PCI masters
+    −    PCI-2.1 compliant
+∗   Enhanced Master Mode PCI IDE Controller
+    − Dual channel master mode PCI supporting four Enhanced IDE devices
+    − Transfer rate up to 22MB/sec to cover PIO mode 4 and Multiword DMA mode 2 drivers and beyond
+    − Sixteen levels (doublewords) of prefetch and write buffers
+    − Interlaced commands between two channels
+    − Bus master programming interface for ATA controllers SFF-8038 rev.1.0 compliant
+    − Full scatter and gather capability
+    − Support ATAPI compliant devices
+    − Support PCI native and ATA compatibility modes
+
+                                              -2-
+      VIA Technologies, Inc.                                                        VT82C580VP
+
+    − Complete software driver support
+∗   Universal Serial Bus Controller
+    − USB v1.0 and Intel Universal HCI v1.0 compatible
+    − Eighteen levels(doublwords) of data FIFOs
+    − Root hub and two function parts with built-in physical layer transceivers
+    − Legacy keyboard and PS/2 mouse support
+∗   Plug and Play Controller
+     − Dual interrupt and DMA signal steering with plug and play control
+     − Microsoft Windows 95TM and plug and play BIOS compliant
+∗   Sophisticated Power Management Unit
+     − Normal, doze, sleep, suspend and conserve modes
+     − System event monitoring with two event classes
+     − One idle timer, one peripheral timer and one general purpose timer
+     − More than ten general purpose Input/Output ports
+     − Six external event input ports with programmable SMI condition
+     − Complete leakage control when external component is in power off state
+     − Primary and secondary interrupt differentiation for individual channels
+     − Clock stretching, clock throttling and clock stop control
+     − Multiple internal and external SMI sources for flexible power management models
+     − Two programmable output ports
+     − APM 1.1 compliant
+∗   PCI to ISA Bridge
+     − Integrated 82C206 peripheral controller
+     − Integrated keyboard controller with PS2 mouse supports
+     − Integrated DS12885 style real time clock with extended 128 byte CMOS RAM
+     − Integrated USB (universal serial bus) controller with hub and two function ports
+     − Integrated master mode enhanced IDE controller with enhanced PCI bus commands
+     − PCI-2.1 compliant with delay transaction
+     − Four double-word line buffer between PCI and ISA bus
+     − Supports type F DMA transfers
+     − Fast reset and Gate A20 operation
+     − Edge trigger or level sensitive interrupt
+     − Flash EPROM and combined BIOS support
+∗   Built-in nand-tree pin scan test capability
+∗   0.6um mixed voltage, high speed and low power CMOS process
+∗   208 pin PQFP for VT82C585VP
+∗   208 pin PQFP for VT82C586
+∗   100 pin PQFP for VT82C587VP
+
+
+
+
+                                              -3-
+       VIA Technologies, Inc.                                                            VT82C580VP
+
+OVERVIEW
+     The VT82C580VP Apollo-VP is a high performance, cost-effective and energy efficient chip set for the
+implementation of PCI/ISA desktop and notebook personal computer systems based on the 64-bit
+P54C/Pentium/K5/M1 super-scalar processors. CPU and cache interface is supported up to 66Mhz CPU
+external bus speed (with CPU internal speed up to 200Mhz and above). The CPU, DRAM and PCI bus are all
+independently powered so that each of the bus can be run at 3.3v or 5v, independently. The ISA bus always runs
+at 5v.
+     The VT82C580VP chip set consists of the VT82C585VP system controller, the VT82C586 PCI to ISA
+bridge, and two instances of the VT82C587VP data buffers. The CPU bus is minimally loaded with only the
+CPU, secondary cache and the chip set. The VT82C587VP data buffers isolate the CPU bus from the DRAM
+and PCI bus so that CPU and cache operation may run reliably at the high frequencies demanded by today's
+processors. The VT82C585VP contains arbitration logic to support the UMA (unified memory architecture)
+with video/GUI products from major video vendors. Multiple deep FIFOs (thirty-two double words) are
+included between multiple data paths to allow efficient concurrent operation and DRAM utilization. The
+VT82C586 PCI to ISA bridge includes integrated 206-style IPC (DMA, interrupt controller and timer),
+integrated keyboard controller with PS2 mouse support, integrated DS12885 style real time clock with extended
+128 byte CMOS RAM, integrated master mode enhanced IDE controller with full scatter and gather capability,
+and integrated USB (universal serial bus) interface with root hub and two function ports with built-in physical
+layer transceiver. A complete main board can be implemented with only six TTLs. Please refer to Figure 1 for
+the system block diagram.
+
+
+
+                  P54C/K5/M1
+                                                                        Cache
+                     CPU
+                                              CA
+                                                                                 CD
+
+                                  Dlink
+            VT82C585VP                                                                VT82C587VP
+                                                       Video/GUI
+             208PQFP              REQ/GNT                                              100PQFP
+                                                       Controller
+                                  PCI                                                      MD
+                                                MA/RAS/CAS
+                        VT82C586                                                DRAM
+                         208PQFP               ISA/IDE
+                                              USB
+
+                               Figure 1. Apollo-VP System Block Diagram
+
+
+     The secondary (L2) cache is based on Burst Synchronous (Pipelined or non-pipelined) SRAM,
+asynchronous SRAM or cache module from 128KB to 2MB. For burst synchronous SRAMs, 3-1-1-1 timing can
+be achieved for both read and write transactions at 66Mhz. Four cache lines (16 quadwords) of CPU/cache to
+DRAM write buffers with concurrent write-back capability are included in the VT82C587VP data buffer chips
+to speed up the cache read and write miss cycles. These buffers also minimizes DRAM utilization and allows
+minimum performance degradation due to unified memory architecture with the video/GUI controller.
+    The VT82C580VP supports six banks of DRAMs up to 512KB. The DRAM controller supports Standard
+Page Mode DRAM, EDO-DRAM, Burst EDO-DRAM and Synchronous DRAM in a flexible mixed/match
+
+                                               -4-
+       VIA Technologies, Inc.                                                              VT82C580VP
+
+manner. The Burst-EDO and Synchronous DRAM allows zero wait state bursting between the DRAM and the
+VT82C587VP data buffers at 66Mhz. The six banks of DRAM are grouped into three pairs with an arbitrary
+mixture of 256K/512K/1M/2M/4M/8M/16MxN DRAMs. Each bank may be populated either 32bit or 64bit data
+width.
+     The VT82C580VP supports Unified Memory Architecture with standard video/GUI controller based on the
+VESA UMA handshake protocols. The VT82C580VP includes the arbitration logic with multi-level of
+priorities, synchronous or asynchronous interface, programmable but guaranteed grant latency. The chip set is
+also responsible for DRAM refresh, direct frame buffer access, frame buffer memory mapping and arbitration
+control. With the intelligent arbitration, multiple deep buffers to minimize latency sensitivity and DRAM
+utilization and zero wait state bursting capability of Burst-EDO and Synchronous DRAMs, the UMA of the
+VT82C580VP can utilize DRAM most efficiently and deliver good performance for shared frame buffer
+applications.
+    The VT82C580VP supports the shadowing of the system, video and other BIOS to speed up the access. The
+video and system BIOS can also be write-protected and made cacheable. Access cycles to either E , D or C
+segment can be programmed to be an on-board EPROM cycle to allow the combination of system and video
+BIOS for an all-in-one system board implementation. The VT82C580VP can also be programmed to recognize
+write cycles as EPROM cycles to support field upgradability of flash EPROM BIOS.
+     The VT82C580VP supports 3.3/5v 32-bit PCI bus with 64-bit to 32-bit data conversion. Five levels
+(doublewords) of post write buffers are included to allow for concurrent CPU and PCI operation. Consecutive
+CPU addresses are converted into burst PCI cycles with byte merging capability for optimal CPU to PCI
+throughput. A 16-bit fast data link is established between the two VT82C587VP data units and the
+VT82C585VP so that the address, data and command information for CPU to PCI bus transactions is contained
+in the same chip. This arrangement, unique to the VT82C580VP chip set is crucial in achieving zero wait state
+buffer movement and implementing sophisticated and upgradable buffer management schemes such as the byte
+merging. For PCI master operation, Sixty-four levels (doublewords) of post write buffers and thirty two levels
+(doublewords) of prefetch buffers are included for concurrent PCI bus and DRAM/cache accesses. The chipset
+also supports enhanced PCI bus commands such as Memory-Read-Line, Memory-Read-Multiple and Memory-
+Write-Invalid commands to minimize snoop overhead. In addition, the chipset supports advanced features such
+as snoop ahead, snoop filtering, L1 write-back forward to PCI master and L1 write-back merged with PCI post
+write buffers to minimize PCI master read latency and DRAM utilization. The VT82C586 PCI to ISA bridge
+supports four levels (doublewords) of line buffers, type F DMA transfers and delay transaction to allow efficient
+PCI bus utilization and (PCI-2.1 compliant).
+
+     The integrated master mode IDE controller supports a dual channel/four device enhanced IDE bus with
+sixteen levels of double-word prefetch and write buffers. The data bus, control signals, write buffers and
+prefetch buffers are separated from those of the PCI bus so that performance and electrical loading are
+optimized. The command and recovery time of each IDE device can be individually programmed in units of PCI
+bus clock to achieve optimal speed of the device up to >22MB/s. Other features of the IDE controller include
+interlaced dual channel commands, full scatter and gather capability, bus master programming interface for ATA
+controllers SFF-8038 compliant and complete software driver support.
+
+    The VT82C580VP provides two plug and play ports for converting non plug and play devices into plug and
+play devices on the main board. The configuration mechanism is compliant with the plug and play BIOS and the
+Microsoft Windows 95TM operating system.
+     The integrated power management unit offers the following modes: normal, doze, sleep, suspend and
+conserve. To determine the power management mode, the power management unit monitors IO events,
+interrupt, DMA and PCI master request signals to detect the status of system activity. Each event can be turned
+off or assigned to one of two event classes tracked by an idle timers, a peripheral timer and a general purpose
+timer. The system management interrupt (SMI) may be triggered by multiple sources including time-out of
+individual timers, occurrence of system activities, external input and software programming for flexible
+applications. Clock throttling, IO and power control are functions performed by the SMI routine. The power
+management unit is APM 1.1 compliant.
+
+                                                -5-
+      VIA Technologies, Inc.                                                         VT82C580VP
+
+    The VT82C580VP is ideal for high performance, high quality, high energy efficient and high integration
+desktop and notebook PCI/ISA computer systems.
+
+
+
+
+                                             -6-
+       VIA Technologies, Inc.                                                      VT82C580VP
+
+
+                    Configuration Register of VT82C580VP
+
+
+   VT82C585VP
+   All registers are located in the PCI configuration space. They should be programmed using PCI
+configuration mechanism 1 through CF8/CFC.
+
+    Offset             Function
+       1,0              Vendor ID = 1106h (read only)
+
+        3,2             Device ID = 0585h (read only)
+
+        5,4              Command register
+              bit 0: IO space = 1 (read only)
+
+              bit 1: memory space = 1 (read only)
+              bit 2: bus master = 1 (read only)
+              bit 3: special cycle monitoring = 0 (read only)
+              bit 4: memory write and invalid command = 0 (read only)
+              bit 5: VGA palette snoop = 0 (read only)
+              bit 6: parity error response (read/write, default=0)
+              bit 7: address/data stepping = 0 (read only)
+              bit 8: SERR# enable (read/write, default=0)
+              bit 9: fast back-to-back cycle enable (read/write, default=0)
+              bit 15-10: reserved
+
+       7,6                Status register (or IDX06<15:0>)
+              bit 0-6: reserved
+              bit 7: fast back-to-back: reserved
+              bit 8: data parity detected: reserved
+              bit 9-10: DEVSEL# timing: reserved
+              bit 11: signalled target abort: reserved
+              bit 12: received target abort (read only, write one to clear)
+              bit 13: signalled master abort: reserved
+              bit 14: signalled system error: reserved
+              bit 15: detected parity error (write only, write one to clear)
+
+
+        08              Revision I.D. = 00h
+
+        09              Program Interface = 00h
+
+        0a              Sub class code = 00h
+
+        0b              Class code = 06h
+
+        0c              Reserved
+
+
+        0d               Latency Timer                       Default = 00
+
+
+                                                  -7-
+        VIA Technologies, Inc.                                                           VT82C580VP
+
+                 bit 2:0: reserved
+                 bit 7-3: guarantee time slice for CPU
+
+         0e                 Header Type                     Default = 00
+
+         0f                 BIST(Read Only)
+
+         10-3f              Reserved
+
+Cache Control
+         50                Cache Control Register 1           Default = 00
+                 bit 7-6:  Cache Enable
+                          Bit 7   Bit6
+                           0       0       - Cache disable
+                           0       1       - Cache Init       - always does L2 fill
+                           1       0       - Cache enable (normal operation)
+                           1       1       - Reserved
+                 bit 5:   Enable/Disable Linear Busrt (1/0)
+                 bit 4-3: Tag Configuration
+                          Bit 4 Bit 3
+                            0      0       - 8 Tags, no alt
+                            0      1       - 7 Tags, alt
+                            1      0       - 8 Tags, alt
+                            1      1       - 10 Tags, alt
+                 bit 2:   BWE/GWE BSRAM Interface is used Enable/Disable (1/0)
+                 bit 1-0: SRAM Type                  RBSRAMT<1:0>
+                            Bit 1 Bit 0
+                             0     0       - No SRAM
+                             0     1       - Async SRAM
+                             1     0       - Burst SRAM
+                             1     1        - Pipeline Burst SRAM
+
+         51                 Cache Control Register 2           Default = 00
+                 bit 7:    Read 1st dword wait state
+                            0 : 0 WS (3-x-x-x)
+                           1 : 1 WS (4-x-x-x)
+                 bit 6:    Read burst wait state
+                           0 : 0 WS (x-2-2-2)
+                           1 : 1 WS (x-3-3-3)
+                          Note: Bit 7 and 6 are for Async. SRAM only. The Sync. SRAM will always run
+                          at 3-1-1-1 for both read-hit and write-hit
+                 bit 5:    Backoff CPU if no streaming fill Enable/Disable (1/0)
+                           e.g. C/F or single read fill
+                 bit 4:   Reserved
+                 bit 3:   SRAM Banks
+                           0 : 1 Bank
+                           1 : 2 Banks
+                 bit 2:    Reserved
+                 bit 1-0: Cache Size
+                            Bit 1 Bit 0
+                             0       0       256K
+                             0       1       512K
+                             1       0       1M
+
+
+                                                  -8-
+        VIA Technologies, Inc.                                                          VT82C580VP
+
+                           1      1       2M
+
+
+        52                Non-Cachable Control             Default = 02
+               bit 7:     C0000-C7FFF Cachable/Write-Protect
+               bit 6:     D0000-DFFFF Cachable/Write-Protect
+               bit 5:     E0000-FFFFF Cachable/Write-Protect
+               bit 4:     F0000-FFFFF Cachable/Write-Protect
+               bit 3:     Allow Write-protect cached into L1
+               bit 2:     Enable L2 fill even CACHE is inactive
+               bit 1:     L1 Write Back/Write-Thru
+                           1 : write-back
+                           0 : write-thru
+               bit 0:     L2 Write Back/Write-Thru
+                           1 : write-thru
+                           0 : write-back
+
+        53                Misc. Control            Default = 00
+               bit 7:     Read around Write Enable/Disable (1/0)
+               bit 6:     Cache read pipeline cycle Enable/Disable (1/0)
+               bit 5:     Write pipeline cycle Enable/Disable (1/0)
+               bit 4:     Dram pipeline cycle Enable/Disable (1/0)
+               bit 3:     PCI master Peer Concurrency Enable/Disable (1/0)
+               bit 2-0:   Reserved
+
+        54-55          Non-Cachable Region #1          Default = 00
+             bit 15-3: Base address - A<28:16>
+             bit 2-0: Range
+                       Bit 2 Bit 1 Bit0
+                        0      0       0       disable
+                        0      0        1      64K
+                        0      1        0      128K
+                        0      1        1      256K
+                        1      0        0      512K
+                        1      0        1      1M
+                        1      1        0      2M
+                        1      1        1      4M
+
+        56-57             Non-Cachable Region #2          Default = 00
+
+DRAM Control
+        58                DRAM Configuration            Default = 40
+               bit 7-5:   Bank 0/1 MA Map Type
+                          Bit 7 Bit 6 Bit5
+                           0       0    0      8-bit
+                           0       0     1     9-bit
+                           0       1     0     10-bit
+                           0       1     1     11-bit (note : 11-bit/12-bit has same decoding)
+                                                      (see ma map)
+                           1       x     x     reserved
+               bit 4:     Reserved
+               bit3-1:    Bank 2/3 MA Map Type
+               bit 0:     Reserved
+
+
+                                                 -9-
+VIA Technologies, Inc.                                                               VT82C580VP
+
+
+59                 DRAM Configuration             Default = 05
+        bit 7-5:   Bank 4/5 MA Map Type
+        bit 4-3:   Reserved
+        bit 2-0:   Last Bank Dram populated
+                   Bit 2 Bit 1 Bit0
+                    0      0      0       bank 0
+                    0      0       1      bank 1
+                    0      1       0      bank 2
+                    0      1       1      bank 3
+                    1      0       0      bank 4
+                    1      0       1      bank 5
+                    1      1       x      reserved
+
+
+5a-5f              >>> DRAM ROW ENDING ADDRESS <<<
+
+5a                  Bank0 ending ( CA[29:22] )       Default = 01
+
+5b                  Bank1 ending ( CA[29:22] )       Default = 01
+
+5c                  Bank2 ending ( CA[29:22] )       Default = 01
+
+5d                  Bank3 ending ( CA[29:22] )       Default = 01
+
+5e                  Bank4 ending ( CA[29:22] )       Default = 01
+
+5f                  Bank5 ending ( CA[29:22] )       Default = 01
+
+        note : BIOS is required to fill ending for all banks even no memory is populated. The
+        bank     ending has to be in the incremental order
+
+60                  DRAM Type                    Default = 00
+        bit 7-6:   Reserved
+        bit 5-4:   DRAM type for Bank 4/5
+                   Bit 5 Bit 4
+                    0      0      Fast Page Mode
+                    0      1      EDO
+                    1      0      Burst EDO
+                    1      1      SDRAM
+        bit 3-2:   DRAM type for Bank 2/3
+        bit 1-0:   DRAM type for Bank 0/1
+
+
+61                  Shadow RAM Control - C0000-CFFFF          Default = 00
+        bit 7-6:   CC000h-CFFFFh
+                    0    0      read/write disable
+                    0    1      write enable
+                    1    0      read enable
+                    1    1      read/write enable
+        bit 5-4:   C8000H-CBFFFh
+        bit 3-2:   C4000h-C7FFFh
+        bit 1-0:   C0000H-C3FFFh
+
+
+                                         -10-
+VIA Technologies, Inc.                                                         VT82C580VP
+
+62               Shadow RAM Control - D0000-DFFFF       Default = 00
+     bit 7-6:   DC000h-DFFFFh
+     bit 5-4:   D8000H-DBFFFh
+     bit 3-2:   D4000h-D7FFFh
+     bit 1-0:   D0000H-D3FFFh
+
+
+63               Shadow RAM Control - E0000-FFFFF Default = 00
+     bit 7-6:   E0000h-EFFFFh
+     bit 5-4:   F0000h-FFFFFh
+     bit 3-2:   Memory Holes
+                Bit 3 Bit 2
+                 0     0        None
+                 0     1        512K-640K
+                 1     0        15M-16M (1M)
+                 1     1        14M-16M (2M)
+     bit 1:     SMI redirect to a0000h-bffffh Enable/Disable (1/0)
+     bit 0:     Enable/Disable a0000h-bffffh read/write to DRAM (1/0)
+
+64               DRAM Timing                      Default = AB
+     bit 7-6:   RAS precharge time
+                Bit 7 Bit 6
+                 0        0      2T
+                 0        1      3T
+                 1        0      4T
+                 1        1      6T
+     bit 5-4:   RAS pulse width
+                Bit 5 Bit 4
+                 0        0      3T
+                 0        1      4T
+                 1        0      5T
+                 1        1      6T
+     bit 3-2:   CAS pulse width
+                Bit 3 Bit 2
+                 0        0      1T
+                 0        1      2T
+                 1        0      3T
+                 1        1      4T
+     bit 1:     Write pulse width
+                 0       1T
+                 1       2T
+     bit 0:     RAS to CAS delay
+                 0      2T
+                 1      3T
+                 note : Must set to 1 for FPG or EDO DRAM for 60 or 66Mhz
+
+65             DRAM Control                    Default = 00
+     bit 7-6: Dram page mode control
+               Bit 7 Bit 6
+               0      0     Page close after each access
+               0      1     reserved
+               1      0     Page stays open after access
+               1      1     Page close, if next pipeline access pending is offpage
+     bit 5:   Fast DRAM decoding Enable/Disable (1/0)
+
+                                     -11-
+VIA Technologies, Inc.                                                        VT82C580VP
+
+     bit 4:     Reduce DRAM leadoff cycle by 1T Enable/Disable (1/0)
+                  note : this option is only allowed for BEDO and EDO
+     bit 3:     Reserved
+     bit 2:     32-bit DRAM control use TA9 Enable/Disable (1/0) (PLINK0 Strapping)
+     bit 1:     Fast EDO/BEDO access Enable/Disable (1/0)
+                 Note: for 50Mhz bus speed only
+     bit 0:     Delay DRAM read cycle 1T when Write-Buffer is not empty Enable/Disable
+                (1/0)
+
+66              BEDO/EDO Control                  Default = 00
+     bit 7:     EDO test mode Enable/Disable (1/0)
+     bit 6:     BEDO programming mode Enable/Disable (1/0)
+     bit 5:     BEDO cycle latency Enable/Disable (1/0)
+     bit 4-3:   Reserved
+     bit 2:     1ws for MD to CD pop Enable/Disable (1/0)
+     bit 1:     Reduce BEDO RAS precharge time by 1T Enable/Disable(1/0)
+     bit 0:     BEDO RAS to CAS Delay at 2T Enable/Disable(1/0)
+                 note: This bit overwrites RX64 bit 0 for BEDO
+
+67              32-bit DRAM width
+     bit 7-6:   Reserved
+     bit 5:     Bank 5 width : 1: 32-bit, 0 : 64 bit
+     bit 4:     Bank 4 width : 1: 32-bit, 0 : 64 bit
+     bit 3:     Bank 3 width : 1: 32-bit, 0 : 64 bit
+     bit 2:     Bank 2 width : 1: 32-bit, 0 : 64 bit
+     bit 1:     Bank 1 width : 1: 32-bit, 0 : 64 bit
+     bit 0:     Bank 0 width : 1: 32-bit, 0 : 64 bit
+
+68               UMA Control Register 1 Default = 00
+     bit 7:     Arbitration Mechanism
+                  0 - 2-pin
+                  1 - 3-pin
+     bit 6:     Arbitration Synchronous
+                  0 - Synchronous
+                  1 - Asynchronous
+     bit 5:     Enable/Disable direct frame-buffer access (1/0)       LFBAC
+                  * LFBAC=1 will direct cpu access in [LFBA,LFBA+UFBSZ-1]
+                     range to last dram bank defined in LSTBK[2:0]
+     bit 4:     Enable/Disable Unified Frame Buffer (1/0)             UFBON
+                 * UFBON will forward cpu access in [ENDxA,ENDxA-UFBSZ] to pci
+     bit 3:     Reserved
+     bit 2:     RAS# driven active after MGNT# deassertion
+                   0      1T
+                   1      2T
+
+     bit 1:     MREQ1 polarity
+                   0       active low
+                   1       active high
+     bit 0:     Invert A22 for 12MB DRAM
+                0 : not inverted
+                1 : inverted
+
+69              UMA Control Register 2             Default = 00
+     bit 7-3:   Frame buffer base for direct access, CA[31:27]
+
+                                        -12-
+         VIA Technologies, Inc.                                                            VT82C580VP
+
+                 bit 2-0:   Unified Frame buffer size
+
+                             Bit 2   Bit 1   Bit0
+                              0       0       0         512K
+                              0       0        1        1M
+                              0       1        0        1.5M
+                              0       1        1        2M
+                              1       0        0        2.5M
+                              1       0        1        3M
+                              1       1        0        3.5M
+                              1       1        1        4M
+
+         6a                Refresh Control                  Default = 00
+                 bit 7-0: Refresh Counter (in unit of 16 CPUCLK)
+                          note: When set to 00, DRAM refresh is diable
+
+         6b               Misc.                              Default = 00
+                 bit 7:   CBR( CAS-before-RAS) refresh Enable/Disable(1/0)
+                 bit 6:   Burst Refresh (burst 4 times) Enable/Disable (1/0)
+                 bit 5-0: Reserved
+
+         6c                SDRAM control (revision I.D. ≥ 10)
+                 bit 7:   Reserved
+                 bit 6:   SDRAM burst write
+                 bit 5:   MA11 bank interleave enable
+                 bit 4:   SDRAM turbo mode
+                          allow continuous burst at 1-1-1-1 rate
+                 bit 3:   SDRAM CAS latency
+                                  1 : cycle latency is 2
+                                  0 : cycle latency is 3
+                 bit 2-0: SDRAM operation Mode select
+                  000 : Normal SDRAM mode (default)
+                  001 : NOP command enable.
+                  010 : All Banks Precharge command enable.
+                          CPU to DRAM cycles are converted to all banks precharge command
+                  011 : CPU to DRAM cycle converted to commands, the command is driven
+                          on MA[11:0]. The BIOS selects an appropriate host address for each row
+                          of memory such that the right commands are generated on MA[11:0]
+                  100 : CBR Cycle enable
+                  101/11x : reserved
+
+         6d                  DRAM control drive strength (revision I.D.≥ 10)
+                 bit 7:     bank decoding test
+                 bit 6:     RAS precharge 2T when DRAM bank switch
+                 bit 5:     CAS precharge 2T for DRAM burst write
+                 bit 4:     Force SMM mode
+                 bit 3:     SDRAM control drive (0/1 : 12/24ma)
+                 bit 2:     MA/WE drive (0/1 : 12/24ma)
+                 bit 1:     CAS drive (0/1 : 8/12ma)
+                 bit 0:     RAS drive (0/1 : 12/24)
+
+         6e-6f               Reserved
+
+PCI Bus Control
+
+                                                    -13-
+VIA Technologies, Inc.                                                            VT82C580VP
+
+70              PCI Buffer Control                Default = 00
+     bit 7:     CPU to PCI post-write Enable/Disable (1/0)
+     bit 6:     PCI master to DRAM post-write Enable/Disable (1/0)
+     bit 5:     PCI master to DRAM prefetch Enable/Disable (1/0)
+     bit 4-1:   Reserved (all 0)
+     bit 0:     Delay transaction optimization Enable/Disable (0/1)
+
+71              CPU to PCI flow control 1           Default = 00
+     bit 7:     Dynamic burst Enable/Disable (1/0)
+     bit 6:     Byte merge Enable/Disable (1/0)
+     bit 5:     Reserved (all 0)
+     bit 4:     PCI IO cycle post write Enable/Disable (1/0)
+     bit 3:     PCI burst Enable/Disable (1/0)
+                 bit7=1 will override this option
+     bit 2:     PCI side fast back to back write Enable/Disable (1/0)
+     bit 1:     Quick frame generation Enable/Disable (1/0)
+     bit 0:     1 wait state pci cycle Enable/Disable (1/0)
+
+
+72             CPU to PCI flow control 2            Default = 00
+     bit 7:   Retry status over 16/64 times
+                0 - No retry occurred
+                1 - retry occurred (write 1 to clear)
+     bit 6:   Retry timeout action
+                0 - no action taken except record status
+                    (retry forever)
+                1 - take action to flush buffer or
+                    return FFFFFFFF for read
+     bit 5-4: Retry control
+               Bit 5 Bit 4
+                 0        0       retry 2 times, back off CPU
+                 0        1       retry 16 times
+                 1        0       retry 4 times, back off CPU
+                 1        1       retry 64 times
+     bit 3:   When the data is posting and retry fail, pop the failed data out, and
+              keep posting if there is any, Enable/Disable (1/0).
+     bit 2:   Backoff CPU when read data from pci and retry fail Enable/Disable (1/0)
+     bit 1-0: Reserved
+
+73              PCI master control 1              Default = 00
+     bit 7:     Local memory decoding
+                0 - fast (address phase)
+                1 - medium (1st data phase)
+     bit 6:     PCI master 1 wait state write
+                0 - Zero wait state TRDY
+                1 - One wait state TRDY response
+     bit 5:     PCI master 1 wait state read
+                0 - Zero wait state TRDY response
+                1 - One wait state TRDY response
+     bit 4:     Reserved (all 0)
+     bit 3:     Assert STOP after PCI master write timeout Enable/Disable (1/0)
+     bit 2:     Assert STOP after PCI master read timeout Enable/Disable (1/0)
+     bit 1:     LOCK function Enable/Disable (1/0)
+     bit 0:     PCI master broken timer enable
+
+                                        -14-
+VIA Technologies, Inc.                                                             VT82C580VP
+
+                Force into arbitration when there is no FRAME 16 PCICLK after the GRANT.
+
+74            PCI master control 2              Default = 00
+     bit 7:   PCI Enhance command support Enable/Disable (1/0)
+     bit 6:   PCI master single write merge Enable/Disable (1/0)
+     bit 5-0: Reserved
+
+75            PCI arbitration                      Default = 00
+     bit 7:   Arbitration Mechanism
+               0 - PCI has priority
+               1 - Fair arbitration between pci and cpu
+     bit 6:   Arbitration Mode
+               0 - REQ-based (arbitrate at end of REQ)
+               1 - Frame-based (arbitrate at end of each FRAME)
+     bit 5-4: Reserved
+     bit 3-0: PCI master bus time-out (force into arbitration after certain period of time)
+               Bit 3 Bit 2             Bit 1 Bit 0
+                0          0             0    0    disable
+                0          0             0    1    1x32 PCICLK
+                0          0             1    0    2x32 PCICLK
+                        ..................
+                1          1             1    1    15x32 PCICLK
+
+76            Extension (revision I.D. ≥ 10)     Default = 00
+     bit 7:   CPU arbitration mode
+               0 - CPU is granted between 3 PCI master
+               1 - CPU is granted between 2 PCI master
+     bit 6:   Reserved
+     bit 5-4: CPU fair arbitration in FRAME# based arbitration (revision I.D. ≥ 10)
+               00 - disable
+               01 - every 1 PCI master will grant to CPU
+               10 - every 2 PCI master will grant to CPU
+               11 - every 3 PCI master will grant to CPU
+     bit 3-1: Reserved (all 0)
+     bit 0:   Type of the configuration
+                0 - Mechanism #1, use CF8/CFC
+                1 - Mechanism #2, use C0xx
+
+
+
+
+                                       -15-
+         VIA Technologies, Inc.                                                                  VT82C580VP
+
+
+     VT82C586
+     All registers are located in the PCI configuration space. They should be programmed using PCI
+  configuration mechanism 1 through CF8/CFC.
+
+        Offset            Function
+         1,0               Vendor ID = 1106h (read only)
+
+          3,2              Device ID = 0586h (read only)
+
+          5,4               Command register
+                 bit 15-4: reserved
+                 bit 3:    special cycle enable
+                 bit 2:    bus master = 1 (read only)
+                 bit 1:    memory space = 1 (read only)
+                 bit 0:    IO space = 1 (read only)
+
+          7,6               Status register
+                 bit 15: detected parity error (write only, write one to clear)
+                 bit 14: signalled system error (read only)
+                 bit 13: signalled master abort (read only)
+                 bit 12: received target abort (read only, write one to clear)
+                 bit 11: signalled target abort: reserved
+                 bit 10-9: DEVSEL# timing: fixed to 01
+                 bit 8:    data parity detected: reserved
+                 bit 7:    fast back-to-back: reserved
+                 bit 6-0: Reserved
+
+          08               Revision I.D. = 00h
+
+          09               Program Interface = 00h
+
+          0a               Sub class code = 01h
+
+          0b               Class code = 06h
+
+          0c               Reserved
+
+          0d                Reserved
+
+          0e                Header Type - Multifunction device (Read only)        Default = 80
+
+          0f                BIST(Read Only)
+
+ISA Bus Control
+          40              ISA bus control             Default = 00
+                 bit 7:   Extra/normal ISA command delay (1/0)
+                 bit 6:   Enable/disable SRDY delay (1/0)
+                 bit 5:   5/4 ISA slave wait state (1/0)
+                 bit 4:   4/2 chip-set IO wait state (1/0)
+                 bit 3:   Enable/disable I/O recovery time (1/0)
+                 bit 2:   Enable/disable extend-ALE (1/0)
+
+                                                   -16-
+VIA Technologies, Inc.                                                        VT82C580VP
+
+     bit 1:     0/1 ROM wait state (1/0)
+     bit 0:     Enable/disable ROM write (1/0)
+
+
+41              Refresh and Port 92                 Default = 00
+     bit 7:     Disable/enable bus refresh arbitration (1/0)
+     bit 6:     Reserved
+     bit 5:     Enable/disable Port 92 fast reset (1/0)
+     bit 4:     Reserved
+     bit 3:     Enable/disable double DMA clock (1/0)
+     bit 2:     Reserved
+     bit 1:     Enable/disable refresh request test mode (1/0)
+     bit 0:     Reserved
+
+42              ISA clock control/Misc.            Default = 00
+
+     bit 7:   Disable/enable latch IO16# (1/0)
+     bit 6:    Enable/disable MS16 output (1/0)
+     bit 5:    Enable/disable master request test mode (1/0)
+     bit 4:    Enable/disable turbo pin (1/0)
+     bit 3:    Enable/disable ISA CLOCK from the following selections (1/0)
+               if disable, ISA CLOCK = PCICLK/4
+     bit 2-0: AT BUS CLOCK select
+                Bit 2 Bit 1      Bit 0
+                  0       0       0       PCICLK/3
+                  0       0       1       PCICLK/2
+                  0       1       0       PCICLK/4
+                  0       1       1       PCICLK/6
+                  1       0       0       PCICLK/5
+                  1       0       1       PCICLK/10
+                  1       1       0       PCICLK/12
+                  1       1       1       OSC/2
+     Note: Procedure for ISA CLOCK switching
+              1. Set bit 3 to 0
+              2. Change value of bit 2-0
+              3. Set bit 3 to 1
+
+
+43               ROM decoding control        Default = 00
+     bit 7-6:   Reserved
+     bit 5:     Include E8000H-EFFFFH into ROMCS decode Enable/Disable (1/0)
+     bit 4:     Include E0000H-E7FFFH into ROMCS decode Enable/Disable (1/0)
+     bit 3:     Include D8000H-DFFFFH into ROMCS decode Enable/Disable (1/0)
+     bit 2:     Include D0000H-D7FFFH into ROMCS decode Enable/Disable (1/0)
+     bit 1:     Include C8000H-CFFFFH into ROMCS decode Enable/Disable (1/0)
+     bit 0:     Include C0000H-C7FFFH into ROMCS decode Enable/Disable (1/0)
+
+44              Keyboard Controller control         Default = 00
+     bit 7-3:   Reserved ( for internal test only )
+     bit 2:     RKBLOCK
+     bit 1:     A0EN disable/enable PS2 mouse
+     bit 0:     Reserved
+
+45              Type F DMA control                 Default = 00
+
+                                        -17-
+VIA Technologies, Inc.                                                                VT82C580VP
+
+     bit 7:     Enable/disable ISA Master/DMA to PCI line buffer (1/0)
+     bit 6:     Enable/Disable DMA type F timing on channel 7 (1/0)
+     bit 5:     Enable/Disable DMA type F timing on channel 6 (1/0)
+     bit 4:     Enable/Disable DMA type F timing on channel 5 (1/0)
+     bit 3:     Enable/Disable DMA type F timing on channel 3 (1/0)
+     bit 2:     Enable/Disable DMA type F timing on channel 2 (1/0)
+     bit 1:     Enable/Disable DMA type F timing on channel 1 (1/0)
+     bit 0:     Enable/Disable DMA type F timing on channel 0 (1/0)
+
+47              Misc. control              Default = 00
+     bit 7:     1 to enable CPU software RESET (INIT)
+     bit 6:     Enable/Disable PCI delay transaction (1/0)
+     bit 5:     Enable/Disable EISA 4D0/4D1 port
+     bit 4-1:   Reserved
+     bit 0:     Software PCI reset ( write 1 to generate PCI reset )
+
+4a             IDE interrupt routing           Default = 04
+     bit 7:   Reserved
+     bit 6:   Put IO device below 100h to SD Enable/Disable (1/0)
+     bit 5-4: Reserved
+     bit 3-2: IDE second channel IRQ routing Default = 01 (IRQ15)
+                Bit 3 Bit 2
+                0       0       IRQ14
+                0       1       IRQ15
+                1       0       IRQ10
+                1       1       IRQ11
+     bit 1-0: IDE primary channel IRQ routing Default = 00 (IRQ14)
+                Bit 1 Bit 0
+                0       0       IRQ14
+                0       1       IRQ15
+                1       0       IRQ10
+                1       1       IRQ11
+
+4b              Reserved
+
+4c            ISA DMA/Master memory access control 1                   Default = 00
+     bit 7-0: PCI memory hole bottom address, CA[23:16]
+
+4d            ISA DMA/Master memory access control 2                   Default = 00
+     bit 7-0: PCI memory hole top address, CA[23:16]
+
+     Note: Access to the memory defined in the PCI memory hole will not be forwarded to
+          PCI. This function is disable if top address is not greater than the bottom address.
+
+4e              ISA DMA/Master memory access control 3           Default = 00
+     bit 7:     Enable/Disable forwarding DC000-DFFFF access to PCI (1/0)
+     bit 6:     Enable/Disable forwarding D8000-DBFFF access to PCI (1/0)
+     bit 5:     Enable/Disable forwarding D4000-D7FFF access to PCI (1/0)
+     bit 4:     Enable/Disable forwarding D0000-D3FFF access to PCI (1/0)
+     bit 3:     Enable/Disable forwarding CC000-DFFFF access to PCI (1/0)
+     bit 2:     Enable/Disable forwarding C8000-CBFFF access to PCI (1/0)
+     bit 1:     Enable/Disable forwarding C4000-C7FFF access to PCI (1/0)
+     bit 0:     Enable/Disable forwarding C0000-C3FFF access to PCI (1/0)
+
+
+                                        -18-
+         VIA Technologies, Inc.                                                         VT82C580VP
+
+          4f            ISA DMA/Master memory access control 4           Default = 03
+               bit 7-4: Top of memory in PCI side
+                         Bit 7 Bit 6           Bit 5 Bit 4
+                         0         0             0    0    1M
+                         0         0             0    1    2M
+                         0         0             1    0    3M
+                                ..................
+                         1         1             1    1    16M
+                        Note: All ISA DMA/Master that access address range higher than the top-of-PCI
+                        memory will not be directed to the PCI bus.
+               bit 3:   Enable/Disable forwarding E0000-EFFFF access to PCI (1/0)
+               bit 2:   Enable/Disable forwarding A0000-AFFFF access to PCI (1/0)
+               bit 1:   Enable/Disable forwarding 80000-9FFFF access to PCI (1/0)
+               bit 0:   Enable/Disable forwarding 00000-7FFFF access to PCI (1/0)
+
+Plug and Play Control
+          50            PNP DRQ routing               Default = 24
+               bit 7-6: Reserved
+               bit 5-3: MDRQ1 routing
+                         Bit 5 Bit 4 Bit3
+                          0      0     0      DRQ0
+                          0      0      1     DRQ1
+                          0      1      0     DRQ2
+                          0      1      1     DRQ3
+                          1      0      0     Disable
+                          1      0      1     DRQ5
+                          1      1      0     DRQ6
+                          1      1      1     DRQ7
+               bit 2-0: MDRQ0 routing
+                        Same as MDRQ1 routing
+
+          51-53           Reserved
+
+          54              PCI Interrupt polarity   Default = 00
+               bit 7-4:   Reserved
+               bit 3:     PIRQA# invert (edge) / non-invert (level) (1/0)
+               bit 2:     PIRQB# invert (edge) / non-invert (level) (1/0)
+               bit 1:     PIRQC# invert (edge) / non-invert (level) (1/0)
+               bit 0:     PIRQD# invert (edge) / non-invert (level) (1/0)
+
+          55            PNP IRQ routing 1          Default = 00
+               bit 7-4: PIRQD# routing
+                        Bit 7  Bit 5    Bit 4        Bit 3
+                          0      0        0           0      reserved
+                          0      0        0           1      IRQ1
+                          0      0        1           0      reserved
+                          0      0        1           1      IRQ3
+                          0      1        0           0      IRQ4
+                          0      1        0           1      IRQ5
+                          0      1        1           0      IRQ6
+                          0      1        1           1      IRQ7
+                          1      0        0           0      reserved
+                          1      0        0           1      IRQ9
+
+
+                                                 -19-
+       VIA Technologies, Inc.                                                      VT82C580VP
+
+                       1       0      1              0    IRQ10
+                       1       0      1              1    IRQ11
+                       1       1      0              0    IRQ12
+                       1       1      0              1    reserved
+                       1       1      1              0    IRQ14
+                       1       1      1              1    IRQ15
+             bit 3-0: MIRQ0 routing
+                      Same as PIRQD# routing
+
+        56            PNP IRQ routing 2      Default = 00
+             bit 7-4: PIRQA# routing
+                      Same as PIRQD# routing
+             bit 3-0: PIRQB# routing
+                      Same as PIRQD# routing
+
+        57            PNP IRQ routing 3      Default = 00
+             bit 7-4: PIRQC# routing
+                      Same as PIRQD# routing
+             bit 3-0: MIRQ1 routing
+                      Same as PIRQD# routing
+
+Power Management
+        80            Primary Activity Detector Enable (1/0 : enable/disable) Default = 00
+             bit 7:   KBC access enable (Port 60)
+             bit 6:   Serial port access enable (COM1, COM2, COM3, COM4)
+             bit 5:   Parallel port access enable (278-27F, 378-37F)
+             bit 4:   Video IO/memory port enable (3B0-3DF, Memory A and B segments)
+             bit 3:   DRV (HDD/FLOPPY) status (1F0-1F7, 170-177, 3F5)
+             bit 2:   Turbo pin toggle enable
+             bit 1:   Primary INTR activity enable
+             bit 0:   DMA/master activity enable
+
+        81            Reserved
+
+        82            Primary Activity Detector Status (write 1 to clear)
+             bit 7:   KBC access status
+             bit 6:   Serial port access status
+             bit 5:   Parallel port access status
+             bit 4:   Video IO/memory port status
+             bit 3:   DRV (HDD/FLOPPY) status
+             bit 2:   Turbo pin toggle status
+             bit 1:   Primary INTR activity status
+             bit 0:   DMA/Master activity status
+
+        83            Reserved
+
+        84            SMI Events Enable 1(1/0: enable/disable trigger SMI)    Default = 00
+             bit 7:   EXTSMI3 pin toggle enable SMI
+             bit 6:   EXTSMI2 pin toggle enable SMI
+             bit 5:   Second event timer time-out enable SMI
+             bit 4:   GP1 timer time out enable SMI
+             bit 3:   GP0 timer time out enable SMI
+             bit 2:   Primary activity enable SMI
+
+
+                                              -20-
+VIA Technologies, Inc.                                                      VT82C580VP
+
+     bit 1:     External SMI pin toggle enable SMI
+     bit 0:     Trigger software SMI (write 1 to trigger )
+
+85              SMI Events Enable 2(1/0: enable/disable trigger SMI)   Default = 00
+     bit 7-4:   Reserved
+     bit 3:     EXTSMI7 pin toggle enable SMI
+     bit 2:     EXTSMI6 pin toggle enable SMI
+     bit 1:     EXTSMI5 pin toggle enable SMI
+     bit 0:     EXTSMI4 pin toggle enable SMI
+
+86              SMI Status 1 (write 1 to clear)
+     bit 7:     External SMI3 pin toggle SMI
+     bit 6:     External SMI2 pin toggle SMI
+     bit 5:     Second event timer time-out SMI
+     bit 4:     GP1 timer time out SMI
+     bit 3:     GP0 timer time out SMI
+     bit 2:     Primary activity SMI
+     bit 1:     External SMI pin toggle SMI
+     bit 0:     Software SMI
+
+87              SMI Status 2 (write 1 to clear)
+     bit 7-4:   Reserved
+     bit 3:     External SMI7 pin toggle SMI
+     bit 2:     External SMI6 pin toggle SMI
+     bit 1:     External SMI5 pin toggle SMI
+     bit 0:     External SMI4 pin toggle SMI
+
+88            Timer Control 1          Default = 00
+     bit 7:   Enable/disable GP1 (1/0)
+     bit 6:   Enable/disable GP1 auto reload after count to 0 (1/0)
+     bit 5-4: GP1 Timer select/enable
+               Bit 1          Bit 0
+                0              0        Disable
+                0              1        Time base = 10 ms
+                1              0        Time base = 1 sec
+                1              1        Time base = 1 min.
+     bit 3:   Enable/disable GP0 (1/0)
+     bit 2:   Enable/disable GP0 auto reload after count to 0 (1/0)
+     bit 1-0: GP0 Timer select/enable
+               Bit 1          Bit 0
+                0              0        Disable
+                0              1        Time base = 10 ms
+                1              0        Time base = 1 sec
+                1              1        Time base = 1 min.
+
+89            Timer Control 2             Default = 00
+     bit 7-0: GP0 Timer load value
+
+8a            Timer Control 3             Default = 00
+     bit 7-0: GP1 Timer load value
+
+8b            Timer control 4             Default = 00
+     bit 7-6: Reserved
+     bit 5:   Reserved ( for internal test )
+
+                                        -21-
+VIA Technologies, Inc.                                                     VT82C580VP
+
+     bit 4:   Enable/disable GP0 timer reload by primary activity (1/0)
+     bit 3:   Enable/disable GP1 timer reload by DRV (HDD/FLOPPY) access (1/0)
+     bit 2:   Enable/disable GP1 timer reload by Video access (1/0)
+     bit 1:   Enable/disable GP1 timer reload by serial port access (1/0)
+     bit 0:   Enable /disableGP1 timer reload by KBC access (1/0)
+
+8c             Conserve mode / Secondary event           Default = 00
+     bit 7-6: Conserve mode clock select
+               Bit 7            Bit 6
+                 0               0       1/16 sec
+                 0               1       1/8 sec
+                 1               0       1 sec
+                 1               1       1 min.
+     bit 5:   Conserve mode indicator (read only)
+     bit 4:   Conserve mode enable/disable (1/0)
+     bit 3-2: Secondary event activity timer
+               Bit 3            Bit 2
+                 0               0       4 ms
+                 0               1       128 ms
+                 1               0       1 sec
+                 1               1       by EOI + 0.5 ms
+     bit 1:   Secondary event indicator (read only)
+     bit 0:   Secondary activity enable/disable (1/0)
+
+8d            Misc. control             Default = 00
+     bit 7:   Enable SMI only at SMI inactive enable/disable (1/0)
+     bit 6:   Wait for STPCLK acknowledge enable/disable (1/0)
+     bit 5:   Wait for HALT before STPCLK# asserted enable/disable (1/0)
+     bit 4:   STPCLK# Throttling time base
+                0 - 32 us
+                1 - 1 ms
+     bit 3:   Enable/disable STPCLK# Throttling (1/0)
+     bit 2:   Put cpu into suspend mode by STPCLK enable/disable (1/0)
+     bit 1:   Enable/disable internal SMI connect to IRQn (1/0)
+     bit 0:   Global SMI enable/disable (1/0)
+
+8e            STPCLK# duty cycle       Default = 00
+     bit 7-4: Reserved
+     bit 3-0: STPCLK# duty cycle
+              Bit 3    Bit 2 Bit 1      Bit 0
+               0        0     0          0      disable
+               0        0     0          1      1/16
+               0        0     1          0      2/16
+               0        0     1          1      3/16
+               0        1     0          0      4/16
+               0        1     0          1      5/16
+               0        1     1          0      6/16
+               0        1     1          1      7/16
+               1        0     0          0      8/16
+               1        0     0          1      9/16
+               1        0     1          0      10/16
+               1        0     1          1      11/16
+               1        1     0          0      12/16
+               1        1     0          1      13/16
+
+                                     -22-
+VIA Technologies, Inc.                                                            VT82C580VP
+
+               1        1         1          0      14/16
+               1        1         1          1      15/16
+
+90             ISA interrupt as primary event enable/disable (1/0)         Default = 00
+     bit 7:   IRQ7
+     bit 6:   IRQ6
+     bit 5:   IRQ5
+     bit 4:   IRQ4
+     bit 3:   IRQ3
+     bit 2:   IRQ2
+     bit 1:   IRQ1
+     bit 0:   IRQ0
+
+91             ISA interrupt as primary event enable/disable (1/0) Default = 00
+     bit 7:   IRQ15
+     bit 6:   IRQ14
+     bit 5:   IRQ13
+     bit 4:   IRQ12
+     bit 3:   IRQ11
+     bit 2:   IRQ10
+     bit 1:   IRQ9
+     bit 0:   IRQ8
+
+92             ISA interrupt as secondary event enable/disable (1/0)       Default = 00
+     bit 7:   IRQ7
+     bit 6:   IRQ6
+     bit 5:   IRQ5
+     bit 4:   IRQ4
+     bit 3:   IRQ3
+     bit 2:   IRQ2
+     bit 1:   IRQ1
+     bit 0:   IRQ0
+
+93             ISA interrupt as secondary event enable/disable (1/0)       Default = 00
+     bit 7:   IRQ15
+     bit 6:   IRQ14
+     bit 5:   IRQ13
+     bit 4:   IRQ12
+     bit 3:   IRQ11
+     bit 2:   IRQ10
+     bit 1:   IRQ9
+     bit 0:   IRQ8
+
+94            External pin status (read only)
+     bit 7:   EXTSMI7 pin status
+     bit 6:   EXTSMI6 pin status
+     bit 5:   EXTSMI5 pin status
+     bit 4:   EXTSMI4 pin status
+     bit 3:   EXTSMI3 pin status
+     bit 2:   EXTSMI2 pin status
+     bit 1:   EXTSMI pin status
+     bit 0:   TURBO pin status
+
+95            Power-up strap option 1 (read only)
+
+                                      -23-
+          VIA Technologies, Inc.                                              VT82C580VP
+
+                bit 7:    Keyboard RP16
+                bit 6:    Keyboard RP15
+                bit 5:    Keyboard RP14
+                bit 4:    Keyboard RP13
+                bit 3:    PISA/SIO (0/1)
+                bit 2:    Disable/enable internal RTC (0/1)
+                bit 1:    Disable/enable internal PS2 (0/1)
+                bit 0:    Disable/enable internal keyboard controller
+
+          96              Power-up strap option 2(read only)
+                bit 7:    DACK7
+                bit 6:    DACK6
+                bit 5:    DACK5
+                bit 4:    DACK3
+                bit 3:    DACK2
+                bit 2:    DACK1
+                bit 1:    Disable/enable External SMI2-7 (0/1)
+                bit 0:    Fixed/Flexible IDE address (0/1)
+
+Register Accessed using A8/A9
+          RXC8h:         General purpose output port 1 (controlled by PCW0)
+             bit 7:      SD15
+             bit 6:      SD14
+             bit 5:      SD13
+             bit 4:      SD12
+             bit 3:      SD11
+             bit 2:      SD10
+             bit 1:      SD9
+             bit 0:      SD8
+
+          RXC9h:         General purpose output port 1 (controlled by PCW1)
+             bit 7:      SD15
+             bit 6:      SD14
+             bit 5:      SD13
+             bit 4:      SD12
+             bit 3:      SD11
+             bit 2:      SD10
+             bit 1:      SD9
+             bit 0:      SD8
+
+Shadow Register for Interrupt Controllers
+   After RX47 bit 4 is set, the reading data from INTC as:
+          IOR 20h           Shadow of master interrupt controller
+               bit 7-5: Reserved
+               bit 4:      OCW3 bit 5
+               bit 3:      OCW2 bit 7
+               bit 2:      ICW4 bit 4
+               bit 1:      ICW4 bit 1
+               bit 0:      ICW1 bit 3
+
+          IOR 21h       Shadow of master interrupt controller
+               bit 7-5: Reserved
+               bit4-0: T7-T3 of interrupt vector address
+
+                                                   -24-
+VIA Technologies, Inc.                                 VT82C580VP
+
+
+IOR A0h         Shadow of slave interrupt controller
+    bit 7-5:   Reserved
+    bit 4:     OCW3 bit 5
+    bit 3:     OCW2 bit 7
+    bit 2:     ICW4 bit 4
+    bit 1:     ICW4 bit 1
+    bit 0:     ICW1 bit 3
+
+IOR A1h      Shadow of slave interrupt controller
+    bit 7-5: Reserved
+    bit4-0: T7-T3 of interrupt vector address
+
+
+
+
+                                       -25-
+         VIA Technologies, Inc.                                                                  VT82C580VP
+
+IDE Controller
+         Offset              Function
+          1-0                 Vendor ID : 1106h
+
+          3-2                 Device ID : 1571h
+
+          5-4                Command
+                  bit 15-10: Reserved
+                  bit 9:    Fast back to back cycles, default: disabled
+                  bit 8:    SERR# enable, default: disabled
+                  bit 7:    (address stepping), default: enabled
+                  bit 6:    Parity error response, default: disabled
+                  bit 5:    Fixed at 0 ( VGA palette snoop )
+                  bit 4:    Fixed at 0 (memory write and invalidate)
+                  bit 3:    Fixed at 0 (special cycles)
+                  bit 2:    Bus master, default: disabled S/G operation can be issued only when bus
+                            master is enabled.
+                  bit 1:    Memory space, default: disabled
+                  bit 0:    I/O space, default: disabled
+                             Memory map I/O operation: when I/O space is disabled, the device will not respond to
+                             any I/O address for both compatible and native mode and will tristate its interrupt output
+                             (ie, /IRQ15/INTA#/INTB#).
+
+          7-6               Status
+                  bit 15: Detected parity error
+                  bit 14: Signalled system error
+                  bit 13: Received master abort
+                  bit 12: Received target abort
+                  bit 11: Fixed at 0 (signalled target abort)
+                  bit 10-9: DEVSEL# timing, default : medium(01)
+                  bit 8:    Data parity detected
+                  bit 7:    Fixed at 0 (fast back to back)
+                  bit 6-0: Reserved
+
+          8       Revision ID.
+
+          9                  Programming interface
+                  bit 7:     Master IDE capability supported, fixed to 1
+                  bit 6-4:   Fixed at 0
+                  bit 3:     Fixed at 1
+                  bit 2:     Secondary channel mode indicator, default: strapped from pin SPKR
+                  bit 1:     Fixed at 1
+                  bit 0:     Primary channel mode indicator, default: strapped from pin SPKR
+
+          b-a                 Base class and sub-class code: 0101h
+
+          c                   Fixed at 0
+
+          d                   Latency timer
+
+          e                   Fixed at 80h
+
+          f                   Fixed at 0
+
+
+                                                    -26-
+VIA Technologies, Inc.                                                                 VT82C580VP
+
+
+13-10           Primary data/command base address an 8 byte IO address space, default=1F0h
+     bit 31-16: Reserved, must be 0
+     bit 15-3: Port address
+     bit 2-0: 001b
+
+17-14              Primary control/status base address a 4 byte IO space, default 3F4h (only the
+                   third byte is active, ie: 3F6h)
+        bit 31-16: must be 0
+        bit 15-2: port address
+        bit 1-0: 01b
+
+1b-18             Secondary data/command base address, default: 170h
+
+1f-1c             Secondary control/status base address, default 374h
+
+23-20              Base address for bus master control registers a 16 byte IO address space,
+                   detailed in the previous section
+        bit 31-16: must be 0
+        bit 15-4: port address
+        bit 3-0: 0001b
+
+27-24           Memory base address (8KB) for memory mapped I/O of the two channels
+     bit 31-13: port address
+     bit 12-0: must be 0
+
+3c                Interrupt line            Default = 0Eh
+
+3d                Interrupt pin (read only)
+                   01h for native mode interrupt routing,
+                   00h for legacy mode interrupt routing.
+
+3e                Min_gnt
+
+3f                Max_lat
+
+40               Chip enable register
+        bit 7-4: Chip ID (read only): inverted from the strapped value of
+                 DCS3A#, DCS1A#, DCS3B# and DCS1B# (00h-0Fh)
+        bit 3-2: Reserved
+        bit 1:   Primary channel enable/diable (1/0), default = 0
+        bit 0:   Secondary channel enable/disable (1/0), default = 0
+
+41               IDE configuration                 Default = 00
+        bit 7:   Primary IDE read prefetch buffer enable/disable (1/0)
+        bit 6:   Primary IDE post write buffer enable/disable (1/0)
+        bit 5:   Secondary IDE read prefetch buffer enable/disable (1/0)
+        bit 4:   Secondary IDE post write buffer enable/disable (1/0)
+        bit 3:   Status for PERR# response enable/disable (1/0)
+        bit 2:   Alternative native secondary channel interrupt enable/disable (1/0)
+        bit 1:   DCS16# source:
+                 1: Decode from BE[3:0]#
+                 0: From input pin DCS16#
+        bit 0:   Status for SERR# response enable/disable (1/0), default: disabled
+
+                                          -27-
+VIA Technologies, Inc.                                                               VT82C580VP
+
+
+42            Misc. control
+     bit 7:   Native/compatible IO base for the primary channel (default: DA1)
+               1: native mode, need relocation
+               0: compatible mode, fixed IO
+     bit 6:   Native/compatible IO base for the secondary channel (default: DA1)
+               1: native mode, need relocation
+               0: compatible mode, fixed IO
+     bit 5:   Fixed at 0
+     bit 4:   Fixed at 0
+     bit 3:   Reserved.
+     bit 2:   Monitor IDE command to start master action enable/disable (1/0) Default = 0
+     bit 1:   Reserved
+     bit 0:   DEVSEL# timing (also reflected in register 7)
+
+43             FIFO configuration
+     bit 7:    Reserved
+     bit 6-5: FIFO configuration between the two channels
+              bit(6:5) primary         secondary
+               00        16               0
+               01         8                8    (default)
+               10         8               8
+               11         0               16
+     bit 4:   Reserved.
+     bit 3-2: Threshold for the primary channel
+     bit 1-0: Threshold for the secondary channel
+               Bit 1 Bit 0
+                0       0      1
+                0       1      3/4
+                1       0      1/2
+                1       1      1/4
+
+44            Misc. control
+     bit 7:   Reserved
+     bit 6:   Master read cycle IRDY wait state
+              1: one wait (default)
+              0: zero wait
+     bit 5:   Master write cycle IRDY wait state
+              1: one wait (default)
+              0: zero wait
+     bit 4:   Enable/disable (1/0) FIFO output data 1/2 clock advance, Default = 0
+     bit 3:   Enable/disable (1/0) Retry Bus Master IDE status register read
+      when master write operation for DMA read is not complete, Default = 0
+     bit 2-0: Reserved.
+
+45            Misc. control
+     bit 7:   Reserved.
+     bit 6:   Swap the interrupt steering of the two channels enable/disable (1/0)
+              default = 0.
+     bit 5-2: Set to 0.
+     bit 1-0: Reserved.
+
+46             Misc. control            Default = C0h
+
+
+                                      -28-
+VIA Technologies, Inc.                                                        VT82C580VP
+
+     bit 7:    Enable/disable(1/0) FIFO flush for Read DMA when interrupt
+               asserts primary channel.
+     bit 6:    Enable/disable(1/0) FIFO flush for Read DMA when interrupt
+               asserts secondary channel.
+     bit 5:    Enable/disable(1/0) FIFO flush at the end of each sector for the
+      primary channel.
+     bit 4:    Enable/disable(1/0) FIFO flush at the end of each sector for the
+      secondary channel.
+     bit 3-2: Set to 0.
+     bit 1-0: Maximum DRDY pulse width after the cycle count. Command will
+      deassert inspite of DRDY status to avoid system ready hang.
+                Bit 1     Bit 0
+                 0         0    no limitation
+                 0         1    64 PCI cycles
+                 1         0    128 PCI cycles
+                 1         1    192 PCI cycles
+
+48            Secondary IDE drive #1 timing control     Default = A8h
+     bit 7-4: DIOR#/DIOW# active pulse width
+               Bit 7 Bit 6          Bit 5 Bit 4
+               0        0             0    0    1 x PCI CLOCK
+               0        0             0    1    2 x PCI CLOCK
+               0        0             1    0    3 x PCI CLOCK
+                     ..................
+               1        1             1    1    16 x PCI CLOCK
+     bit 3-0: DIOR#/DIOW# recovery time
+               Bit 3 Bit 2          Bit 1 Bit 0
+               0        0             0    0    1 x PCI CLOCK
+               0        0             0    1    2 x PCI CLOCK
+               0        0             1    0    3 x PCI CLOCK
+                     ..................
+               1        1             1    1    16 x PCI CLOCK
+
+49            Secondary IDE drive #0 timing control     Default = A8h
+     bit 7-4: DIOR#/DIOW# active pulse width
+     bit 3-0: DIOR#/DIOW# recovery time
+
+4a            Primary IDE drive #1 timing control       Default = A8h
+     bit 7-4: DIOR#/DIOW# active pulse width
+     bit 3-0: DIOR#/DIOW# recovery time
+
+4b            Primary IDE drive #0 timing control       Default = A8h
+     bit 7-4: DIOR#/DIOW# active pulse width
+     bit 3-0: DIOR#/DIOW# recovery time
+
+4c             Address setup time
+     bit 7-6: primary drive #0
+               Bit 1 Bit 0
+                 0      0      1 x PCI CLOCK
+                 0      1      2 x PCI CLOCK
+                 1      0      3 x PCI CLOCK
+                 1      1      4 x PCI CLOCK
+     bit 5-4: primary drive #1
+     bit 3-2: secondary drive #0
+
+                                     -29-
+VIA Technologies, Inc.                                                               VT82C580VP
+
+     bit 1-0: secondary drive #1
+
+4d              1/2 Clock Control
+     bit 7-6:   Primary drive #0
+     bit 5-4:   Primary drive #1
+     bit 3-2:   Secondary drive #0
+     bit 1-0:   Secondary drive #1
+
+       Note: If the number in bit 7-4 of register 4B to 48 is m, then the number is bit 3-0 of register 4B-
+       48 is n. The Active /Recovery cycle with respect to register 4D becomes:
+                       Active             Recovery
+              00:      m+1                n+1
+              01       m+1                n+0.5
+              10       m+0.5              n+1
+              11       m+0.5              n+1.5
+
+4e            Secondary IDE drive non-1F0 port access timing  Default = 0FFh
+     bit 7-4: DIOR#/DIOW# active pulse width
+               Bit 7 Bit 6          Bit 5 Bit 4
+               0        0             0    0    1 x PCI CLOCK
+               0        0             0    1    2 x PCI CLOCK
+               0        0             1    0    3 x PCI CLOCK
+                     ..................
+               1        1             1    1    16 x PCI CLOCK
+     bit 3-0: DIOR#/DIOW# recovery time
+               Bit 3 Bit 2          Bit 1 Bit 0
+               0        0             0    0    1 x PCI CLOCK
+               0        0             0    1    2 x PCI CLOCK
+               0        0             1    0    3 x PCI CLOCK
+                     ..................
+               1        1             1    1    16 x PCI CLOCK
+
+4f   Primary IDE drive non-1F0 port access timing           Default = 0FFh
+     bit 7-4: DIOR#/DIOW# active pulse width
+     bit 3-0 DIOR#/DIOW# recovery time
+
+61-60           Sector size for the primary IDE             Default = 200h
+     bit 15-12: Reserved
+     bit 11-0: Number of sectors
+
+69-68           Sector size for the secondary IDE           Default = 200h
+     bit 15-12: Reserved
+     bit 11-0: Number of sectors
+
+70              Primary IDE Status (read only)
+     bit 7:     Fixed at 0
+     bit 6:     Prefetch operation status
+     bit 5:     Post write operation status
+     bit 4:     DMA read operation status
+     bit 3:     DMA write operation status
+     bit 2:     S/G operation in progress
+     bit 1:     FIFO empty
+     bit 0:     DMA request input status
+
+
+                                       -30-
+VIA Technologies, Inc.                                                             VT82C580VP
+
+71             Primary Interrupt Gating
+     bit 7-1: Reserved
+     bit 0:   Interrupt gating. When enabled(1), interrupt output will be asserted only
+      when FIFO is empty. Default: disabled(0).
+
+74   Primary IDE command                Default = 80h
+     bit 7:   Enable/disable reload sector size after last command register write (1/0)
+     bit 6-0: Reserved
+
+75   Primary IDE command (write 1 to initiate)
+     bit 7:   Start IDE slave read prefetch
+     bit 6:   Start IDE slave post write
+     bit 5:   Start IDE master DMA read
+     bit 4:   Start IDE master DMA write
+     bit 3:   Stop S/G bus master
+     bit 2-0: Reserved
+
+78              Secondary IDE Status (read only)
+     bit 7:     Fixed at 0
+     bit 6:     Prefetch operation status
+     bit 5:     Post write operation status
+     bit 4:     DMA read operation status
+     bit 3:     DMA write operation status
+     bit 2:     S/G operation in progress
+     bit 1:     FIFO empty
+     bit 0:     DMA request input status
+
+79             Secondary Interrupt Gating
+     bit 7-1: Reserved
+     bit 0:   Interrupt gating. When enabled(1), interrupt output will be asserted only
+      when FIFO is empty. Default: disabled(0).
+
+7c            Secondary IDE command               Default = 80h
+     bit 7:   Enable/disable reload sector size after last command register write (1/0)
+     bit 6-0: Reserved
+
+7d              Secondary IDE command (write 1 to initiate)
+     bit 7:     Start IDE slave read prefetch
+     bit 6:     Start IDE slave post write
+     bit 5:     Start IDE master DMA read
+     bit 4:     Start IDE master DMA write
+     bit 3:     Stop S/G bus master
+     bit 2-0:   Reserved
+
+83-80           Primary channel PRD (physical region description) table address pointer (alias
+                with offset 7-4 of the PCI SIG defined bus master IDE registers).
+
+8b-88           Secondary channel PRD table address pointer (alias with offset 4-7 of the PCI
+                SIG defined bus master IDE registers).
+
+
+c0              Test register, should be set to 00h.
+
+
+
+
+                                        -31-
+VIA Technologies, Inc.          VT82C580VP
+
+
+
+
+                         -32-
+         VIA Technologies, Inc.                                                    VT82C580VP
+
+
+
+                         VT82C585VP PIN DESCRIPTION
+
+Signal Name   Pin No.   Power     I/O                     Signal Description
+
+                                CLOCK CONTROL
+HCLK            59       cpu       I    HOST CLOCK: This pin receives a buffered host
+                                        clock. This clock is used by all of the VT82C585VP
+                                        logic that is in the Host clock domain. This should be
+                                        the same clock net that is delivered to the CPU.
+PCLK            9        cpu       I    PCI CLOCK: This pin received a buffered divided-by-2
+                                        host clock. This clock is used by all of the
+                                        VT82C585VP logic that is in the PCI clock domain
+
+                                RESET CONTROL
+RESET#          52       pci       I    RESET: When asserted, this signal resets the
+                                        VT82C585VP and sets all register bits to the default
+                                        value.
+
+                                  CPU INTERFACE
+ADS#            66       cpu       I    ADDRESS STROBE: The CPU asserts ADS# in T1 of
+                                        the CPU bus cycle.
+M/IO#          54        cpu       I    MEMORY I/O.
+W/R#           69        cpu       I    WRITE/READ.
+D/C#           67        cpu       I    DATA/CONTROL
+BE#[7:0]      44-51      cpu       I    BYTE ENABLES: The CPU byte enables indicate
+                                        which byte lane the current CPU cycle is accessing.
+CA[31:3]      20, 22,    cpu      B     ADDRESS BUS: CA[31:3] connect to the address bus
+              23, 19,                   of the CPU. During CPU cycles CA[31:3] are inputs.
+              14, 17,                   These signals are driven by the VT82C585VP during
+              18, 13,                   cache snooping operation.
+              11, 16,
+              12, 36-
+              32, 42,
+              40, 41,
+              39, 30,
+              31, 37,
+              29, 25,
+              26, 28,
+              24, 21
+BRDY#           62       cpu      O     BUS READY: The VT82C585VP asserts BDRY# to
+                                        indicate to the CPU that data is available on reads or
+                                        has been received on writes.
+EADS#           65       cpu      O     EXTERNAL ADDRESS STROBE: Asserted by the
+                                        VT82C585VP to inquire the L1 cache when serving
+                                        PCI master accesses to main memory.
+KEN#/INV        56       cpu      O     CACHE ENABLE/INVALIDATE: KEN#/INV
+                                        functions as both the KEN# signal during CPU read
+                                        cycles and the INV signal during L1 cache snoop cycle.
+
+
+
+
+                                        -51-
+         VIA Technologies, Inc.                                                   VT82C580VP
+
+HITM#             68       cpu    I   HIT MODIFIED: Asserted by the CPU to indicate that
+                                      the address presented with the last assertion of EADS#
+                                      is modified in the L1 cache and needs to be written
+                                      back.
+HLOCK#            53       cpu    I   HOST LOCK: All CPU cycles sampled with the assertion
+                                      of HLOCK# and ADS#, until the negation of HLOCK#
+                                      must be atomic.
+CACHE#            55       cpu    I   CACHEABLE: Asserted by the CPU during a read cycle
+                                      to indicate the CPU can perform a burst line fill. Asserted
+                                      by the CPU during a write cycle to indicate that the CPU
+                                      will perform a burst write-back cycle.
+AHOLD             57       cpu    O   ADDRESS HOLD: The VT82C586 asserts AHOLD
+                                      when a PCI master is accessing main memory. AHOLD is
+                                      held for the duration of the PCI burst transfer.
+NA#               63       cpu    O   NEXT ADDRESS:
+BOFF#             64       cpu    O   BACK OFF: Asserted by the VT82C585VP when
+                                      required to terminate a CPU cycle that was in progress.
+SMIACT#           58       cpu    I   SYSTEM MANAGEMENT INTERRUPT ACTIVE:
+                                      This is asserted by the CPU when it is in system
+                                      management mode as a result of SMI.
+
+                                 CACHE CONTROL
+COE#              72       cpu    O   CACHE SRAM OUTPUT ENABLE:
+CWE#[7:0] /     76-73,     cpu    O   Multi-function pins:
+SWE#A-B,        93-90                 Global write option off (bit 2 of RX54h is 0): Cache
+SRAS#A-B,                             SRAM write enable of each byte.
+SCAS#A-B,
+BWE#,                                 Global write option on (bit 2 of RX 54h is 1):
+GWE#                                  Synchronous DRAM command indicators and
+                                      BWE#/GWE# for global write SRAM control.
+TWE#              89       cpu    O   TAG WRITE ENABLE: When asserted , new state and
+                                      tag addresses are written into the external tag.
+A3SEL/            71       cpu    O   CACHE ADDRESS 3/CACHE ADDRESS STROBE:
+CADS#                                 This pin has two modes depending on the type of SRAM
+                                      selected.
+                                      Async. SRAM: A3SEL is used to sequence through the
+                                      Qwords in a cache line during a burst operation.
+
+                                      Sync. SRAM: Its assertion causes the burst SRAM load
+                                      the BSRAM address register from BSRAM address pin.
+A4SEL/            70       cpu    O   CACHE ADDRESS 4/CACHE ADVANCE:
+CADV#                                 This pin has two modes depending on the type of SRAM
+                                      selected.
+                                      Async. SRAM: A4SEL is used to sequence through the
+                                      Qwords in a cache line during a burst operation.
+
+                                      Sync. SRAM: Its assertion causes the burst SRAM to
+                                      advance to advance to the next Qword in the cache line.
+TA[9] / DB32    88, 87,    cpu    B   TAG ADDRESS: These are inputs during CPU accesses
+TA[8:0]         80, 81,               and outputs during L2 cache line fills and L2 line
+                82, 85,               invalidates during inquire cycles.
+               86, 79-77                  TA9 is a multi-function pin. It will act as DB32 to
+                                          VT82C587VP when 32bit DRAM mode is enable.
+
+
+                                      -52-
+        VIA Technologies, Inc.                                                       VT82C580VP
+
+CALE/CE1#        94       cpu      O    CACHE ADDRESS LATCH/CHIP ENABLE 1: This pin
+                                        has two modes depending on the type of SRAM selected
+                                         1. Async. SRAM: CALE is used to control the cache
+                                            address latches.
+                                         2. Sync. SRAM: CE1 is used as chip -select 1 for the
+                                            BSRAM.
+
+                                  DRAM CONTROL
+MA[11:0]      125-120,    dram     O    MEMORY ADDRESS: DRAM address lines.
+              118-115,
+              113, 112
+RAS#[5:4]     103, 102    dram     O    ROW ADDRESS STROBE of each bank for
+                                        FPG/EDO/BEDO DRAM.
+RAS#[3:0]/     99-98,                   Multi-functional pins:
+CS#[3:0]      101-100                    1. FPG/EDO/BEDO DRAM: ROW ADDRESS
+                                            STROBE of each bank.
+                                         2. Synchronous DRAM: chip select of each bank.
+CAS#[7:0]/    104, 110,   dram     O    Multi-functional pins:
+DQM#[7:0]     106, 108,                  1. FPG/EDO/BEDO DRAM: COLUMN ADDRESS
+              105, 111,                     STROBE of each byte line.
+              107, 109                   2. Synchronous DRAM: data mask of each byte lane.
+WE#             126       dram     O    DRAM write enable.
+SRAS#A-B       73, 74     dram     O    ROW ADDRESS COMMAND INDICATOR: for
+                                        Synchronous DRAM, two identical copies for better
+                                        driving.
+SCAS#A-B       92, 93     dram     O    COLUMN ADDRESS COMMAND INDICATOR: for
+                                        Synchronous DRAM, two identical copies for better
+                                        driving.
+SWE#A-B        75, 76     dram     O    WRITE ENABLE COMMAND INDICATOR: for
+                                        Synchronous DRAM, two identical copies for better
+                                        driving.
+
+                          UNIFIED MEMORY INTERFACE
+MREQ0#          163       dram      I   MEMORY REQUEST 0: This pin is asserted by the
+                                        graphic controller to get access to local DRAM.
+MREQ1#          166       dram      I   MEMORY REQUEST 1: This pin is asserted by the
+                                        graphic controller to get access to local DRAM.(It is
+                                        reserved if 2 pin protocol selected)
+MGNT#           162       dram     O    MEMORY GRANT: VT82C585VP assert this pin to
+                                        relinquish DRAM bus to graphic controller.
+DGNT#            95       dram     O    DATA GRANT: Controls external buffer for UMA
+                                        interface.
+
+                                 VT82C587VP INTERFACE
+DB32             88       cpu      B    DRAM WIDTH: to control VT82C587VP if 32-bit
+                                        DRAM is used.
+PLINK[15:0]   151-148,    dram     B    PCI LINK: This is the data path between the CPU/main
+              146-143,                  memory and PCI. PCI main memory reads and CPU to PCI
+              134-127                   writes are driven onto these pins by the VT82C587VP. CPU
+                                        reads from PCI and PCI writes to main memory are received
+                                        on this bus by the VT82C587VP. Each VT82C587VP
+                                        connected to one byte of this bus.
+MSTB#           135       dram     O    MEMORY STROBE: Assertion causes data to be posted
+                                        in the DRAM Write Buffer.
+
+
+                                        -53-
+        VIA Technologies, Inc.                                                  VT82C580VP
+
+HSTB#         136       dram     O   HOST STROBE: Assertion causes data to be posted in
+                                     the CPU Read Buffer.
+CMD[4:0]     141-137    dram     O   COMMAND: VT82C585VP uses these signals to control
+                                     the buffers in VT82C587VP.
+
+                               PCI Bus Interface
+FRAME#       188        pci      B   FRAME: Assertion indicates the address phase of a PCI
+                                     transfer. Negation indicates that one more data transfer
+                                     is desired by the cycle initiator.
+AD[31:0]     167-       pci      B   ADDRESS DATA BUS: The standard PCI address and
+             174,                    data lines. The address is driven with FRAME#
+             177-                    assertion and data is driven or received in following
+             182,                    cycles.
+             185,
+             186,
+             197-
+             199,
+             202-
+             206,
+             208, 2-8
+C/BE#[3:0]   176,       pci      B   COMMAND, BYTE ENABLE: The command is
+             187,                    driven with FRAME# assertion. Byte enables
+             196,                    corresponding to supplied or requested data are driven
+             207                     on following clocks.
+IRDY#        189        pci      B   INITIATOR READY: Asserted when the initiator is
+                                     ready for data transfer.
+TRDY#        190        pci      B   TARGET READY: Asserted when the target is ready
+                                     for data transfer.
+STOP#        192        pci      B   STOP: Asserted by the target to request the master to
+                                     stop the current transaction.
+DEVSEL#      191        pci      B   DEVICE SELECT: This signal is driven by the
+                                     VT82C585VP when a PCI initiator is attempting to
+                                     access main memory. It is an input when VT82C585VP
+                                     is acted as a PCI initiator.
+PAR          194        pci      B   PARITY: A single parity bit is provided over AD[31:0]
+                                     and C/BE[3:0].
+SERR#        195        pci      B   SYSTEM ERROR: VT82C585VP will pulse this signal
+                                     when it detect a system error condition.
+LOCK#        193        pci      B   LOCK: Used to establish, maintain, and release
+                                     resource lock on PCI
+PREQ#        153        pci      I   PCI REQUEST: This signal comes from VT82C586.
+                                     PREQ# is the VT82C586 request for the PCI bus.
+PGNT#        152        pci      O   PCI GRANT: This signal driven by the VT82C585VP
+                                     to grant PCI access to VT82C586.
+REQ#[3:0]    155,       pci      I   REQUEST: PCI master requests for PCI.
+             157,
+             159,
+             161
+GNT#[3:0]    154,       pci      O   GRANT: Permission is given to the master to use PCI.
+             156,
+             158,
+             160
+
+
+
+                                     -54-
+      VIA Technologies, Inc.                                         VT82C580VP
+
+
+                             POWER AND GROUND
+VDD_CPU   10, 43,     cpu       I   Power supply for the CPU bus.
+          61, 84
+VDD_PCI  184, 201      pci      I   Power supply for PCI bus.
+VDD_DRAM 97, 114,     dram      I   Power supply for the DRAM bus.
+         147, 165
+VSS      1, 15, 27,    0v       I   Ground
+          38, 60,
+          83, 96,
+         119, 142,
+         164, 175,
+         183, 200
+
+
+
+
+                                    -55-
+         VIA Technologies, Inc.                                                       VT82C580VP
+
+                   VT82C585VP PIN OUT IN NUMERICAL ORDER
+
+Pin No      Pin Name   Pin No     Pin Name         Pin No     Pin Name      Pin No     Pin Name
+  1       VSS            53     HLOCK#               105    CAS3# / DQM3#     157    REQ2#
+  2       AD6            54     M/IO#                106    CAS5# / DQM5#     158    GNT1#
+  3       AD5            55     CAHCE#               107    CAS1# / DQM1#     159    REQ1#
+  4       AD4            56     KEN#                 108    CAS4# / DQM4#     160    GNT0#
+  5       AD3            57     AHOLD                109    CAS0# / DQM0#     161    REQ0#
+  6       AD2            58     SMIACT#              110    CAS6# / DQM6#     162    MGNT#
+  7       AD1            59     HCLK                 111    CAS2# / DQM2#     163    MREQ0#
+  8       AD0            60     VSS                  112    MA0               164    VSS
+  9       PCLK           61     VDD-cpu              113    MA1               165    VDD-dram
+  10      VDD-cpu        62     BRDY#                114    VDD-dram          166    MREQ1#
+  11      CA23           63     NA#                  115    MA2               167    AD31
+  12      CA21           64     BOFF#                116    MA3               168    AD30
+  13      CA24           65     EADS#                117    MA4               169    AD29
+  14      CA27           66     ADS#                 118    MA5               170    AD28
+  15      VSS            67     D/C                  119    VSS               171    AD27
+  16      CA22           68     HITM#                120    MA6               172    AD26
+  17      CA26           69     W/R                  121    MA7               173    AD25
+  18      CA25           70     A4SEL/CADV#          122    MA8               174    AD24
+  19      CA28           71     A3SEL/CADS#          123    MA9               175    VSS
+  20      CA31           72     COE#                 124    MA10              176    CBE3#
+  21      CA3            73     CWE4# / SRASA#       125    MA11              177    AD23
+  22      CA30           74     CWE5# / SRASB#       126    WE#               178    AD22
+  23      CA29           75     CWE6# / SWEA#        127    PLINK0            179    AD21
+  24      CA4            76     CWE7# / SWEB#        128    PLINK1            180    AD20
+  25      CA7            77     TA0                  129    PLINK2            181    AD19
+  26      CA6            78     TA1                  130    PLINK3            182    AD18
+  27      VSS            79     TA2                  131    PLINK4            183    VSS
+  28      CA5            80     TA7                  132    PLINK5            184    VDD-pci
+  29      CA8            81     TA6                  133    PLINK6            185    AD17
+  30      CA11           82     TA5                  134    PLINK7            186    AD16
+  31      CA10           83     VSS                  135    MSTB#             187    CBE2#
+  32      CA16           84     VDD-cpu              136    HSTB#             188    FRAME#
+  33      CA17           85     TA4                  137    CMD0              189    IRDY#
+  34      CA18           86     TA3                  138    CMD1              190    TRDY#
+  35      CA19           87     TA8                  139    CMD2              191    DEVSEL#
+  36      CA20           88     TA9 / DB32           140    CMD3              192    STOP#
+  37      CA9            89     TWE#                 141    CMD4              193    LOCK#
+  38      VSS            90     CWE0# / GWE#         142    VSS               194    PAR
+  39      CA12           91     CWE1# / BWE#         143    PLINK8            195    SERR#
+  40      CA14           92     CWE2# / SCASA#       144    PLINK9            196    CBE1#
+  41      CA13           93     CWE3# / SCASB#       145    PLINK10           197    AD15
+  42      CA15           94     CALE/CE1#            146    PLINK11           198    AD14
+  43      VDD-cpu        95     DGNT#                147    VDD-dram          199    AD13
+  44      BE7#           96     VSS                  148    PLINK12           200    VSS
+  45      BE6#           97     VDD-dram             149    PLINK13           201    VDD-pci
+  46      BE5#           98     RAS2# / CS2#         150    PLINK14           202    AD12
+  47      BE4#           99     RAS3# / CS3#         151    PLINK15           203    AD11
+  48      BE3#           100    RAS0# / CS0#         152    PGNT#             204    AD10
+  49      BE2#           101    RAS1# / XS1#         153    PREQ#             205    AD9
+  50      BE1#           102    RAS4#                154    GNT3#             206    AD8
+  51      BE0#           103    RAS5#                155    REQ3#             207    CBE0#
+  52      RESET#         104    CAS7# / DQM7#        156    GNT2#             208    AD7
+
+
+
+
+                                            -56-
+           VIA Technologies, Inc.                                                          VT82C580VP
+
+                                VT82C587VP PIN DESCRIPTION
+
+Signal Name      Pin No.          cpu      I/O                     Signal Description
+                                         CPU Data Port
+HD[31:0]       24-17, 14-         cpu      B        HOST DATA: These signals are connected to the
+               11, 9-2, 99-                         CPU data bus. The CPU data bus is interleaved
+               92, 89-86                            between the two VT82C587VP for every byte,
+                                                    effectively creating an even and odd 587VP.
+                                        DRAM Data Port
+MD[31:0]        78, 74, 69,      dram      B        MEMORY DATA: These signals are connected to
+                61, 56, 51,                         the DRAM data bus. The DRAM data bus is
+                46, 42, 76,                         interleaved between the two VT82C587VP for
+                72, 65, 63,                         every byte, effectively creating an even and odd
+                58, 54, 48,                         VT82C587VP.
+                44, 80, 75,
+                71, 62, 57,
+                52, 47, 43,
+                77, 73, 68,
+                64, 60, 55,
+                  49, 45
+                                   VT82C585VP Interface
+DB32                85           dram       I       DRAM WIDTH: This is used to control the width
+                                                    of DRAM
+CMD[5:0]         79, 25-29       dram       I       COMMAND: The buffers in the VT82C587VP
+                                                    are controlled by 585Vp through these command
+                                                    signals.
+HSTB#               38           dram       I       HOST DATA STROBE: Assertion causes data to
+                                                    be posted in the CPU read buffer
+MSTB#               39           dram       I       MEMORY STROBE: Assertion causes data to be
+                                                    posted in the DRAM write buffer.
+PLINK[7:0]        30-37          dram      B        PCI LINK: These signals are connected to the
+                                                    PLINK data bus on the VT82C585VP. This the
+                                                    data path between VT82C585VP and
+                                                    VT82C587VP. Each VT82C587VP connects to
+                                                    one-byte of the 16-bit bus.
+                                   Clock and Misc. Control
+HCLK                81            cpu       I       HOST CLOCK: Primary clock input used to drive
+                                                    the part.
+RESET#              84            cpu       I       HOST RESET: Primary reset signal for
+                                                    VT82C587VP.
+CAS#                83            cpu               Connects to DRAM CAS signal. It is sync. with DRAM
+                                                    CAS. It is recommended to maintain same skew among
+                                                    the 8 CAS of DRAM for Burst EDO operation.
+                                        Power and Ground
+VDD_DRAM       53, 67            dram       I       Power supply for DRAM
+VDD            41                dram       I       Power supply fixed 5V
+VDD_CPU        16, 91, 100        cpu       I       Power supply for the CPU bus (3.3v or 5v).
+VSS            1, 10, 15, 40,      0v       I       Ground
+                50, 59, 66,
+                 70, 79, 90
+
+
+                                                 -57-
+        VIA Technologies, Inc.                                                  VT82C580VP
+
+                   VT82C587VP PIN OUT IN NUMERICAL ORDER
+
+Pin No. Pin Name    Pin No. Pin Name      Pin No. Pin Name   Pin No. Pin Name
+
+1      VSS          31     PLINK6         51     MD26        81     HCLK
+2      HD12         32     PLINK5         52     MD10        82     VSS
+3      HD13         33     PLINK4         53     VDD-dram    83     CAS#
+4      HD14         34     PLINK3         54     MD18        84     RESET#
+5      HD15         35     PLINK2         55     MD2         85     DB32
+6      HD16         36     PLINK1         56     MD27        86     HD0
+7      HD17         37     PLINK0         57     MD11        87     HD1
+8      HD18         38     HSTB#          58     MD19        88     HD2
+9      HD19         39     MSTB#          59     VSS         89     HD3
+10     VSS          40     VSS            60     MD3         90     VSS
+11     HD20         41     VDD-fixed 5V   61     MD28        91     VDD-cpu
+12     HD21         42     MD24           62     MD12        92     HD4
+13     HD22         43     MD8            63     MD20        93     HD5
+14     HD23         44     MD16           64     MD4         94     HD6
+15     VSS          45     MD0            65     MD21        95     HD7
+16     VDD-cpu      46     MD25           66     VSS         96     HD8
+17     HD24         47     MD9            67     VDD-dram    97     HD9
+18     HD25         48     MD17           68     MD5         98     HD10
+19     HD26         49     MD1            69     MD29        99     HD11
+20     HD27         50     VSS            70     VSS         100    VDD-cpu
+21     HD28                               71     MD13
+22     HD29                               72     MD22
+23     HD30                               73     MD6
+24     HD31                               74     MD30
+25     CMD4                               75     MD14
+26     CMD3                               76     MD23
+27     CMD2                               77     MD7
+28     CMD1                               78     MD31
+29     CMD0                               79     CMD5
+30     PLINK7                             80     MD15
+
+
+
+
+                                               -58-
+            VIA Technologies, Inc.                                                           VT82C580VP
+
+                                  VT82C586 PIN DESCRIPTION
+Signal Name          Pin No.      cpu      I/O                     Signal Description
+
+                                        PCI Bus Interface
+PCLK             2                pci       I      PCI CLOCK: PCLK provides timing for all
+                                                   transactions on PCI Bus.
+FRAME#           181              pci       B      FRAME: Assertion indicates the address phase of a
+                                                   PCI transfer. Negation indicates that one more data
+                                                   transfer is desired by the cycle initiator.
+AD[31:0]         204-199, 196-    pci       B      ADDRESS DATA BUS: The standard PCI address
+                 195, 192-189,                     and data lines. The address is driven with FRAME#
+                 187-185, 183,                     assertion and data is driven or received in following
+                 172, 170-167,                     cycles.
+                 165-163, 161-
+                 158, 155-152
+C/BE#[3:0]       194, 182, 173,   pci       B      COMMAND, BYTE ENABLE: The command is
+                 162                               driven with FRAME# assertion. Byte enables
+                                                   corresponding to supplied or requested data are
+                                                   driven on following clocks.
+IRDY#            180              pci       B      INITIATOR READY: Asserted when the initiator is
+                                                   ready for data transfer.
+TRDY#            179              pci       B      TARGET READY: Asserted when the target is
+                                                   ready for data transfer.
+STOP#            176              pci       B      STOP: Asserted by the target to request the master
+                                                   to stop the current transaction.
+DEVSEL#          178              pci       B      DEVICE SELECT: VT82C586 asserts this signal to
+                                                   claim PCI transaction through positive or
+                                                   subtractive decoding.
+PAR              174              pci       B      PARITY: A single parity bit is provided over
+                                                   AD[31:0] and C/BE[3:0].
+SERR#            175              pci       I      SYSTEM ERROR: SERR# can be pulsed active by
+                                                   any PCI device that detect a system error condition.
+                                                   Upon sampling SERR# active, the VT82C586 can
+                                                   be programmed to generate a NMI to the CPU.
+IDSEL            193              pci       I      INITIALIZATION DEVICE SELECT: IDSEL is
+                                                   used as a chip select during configuration read and
+                                                   write cycles.
+PIRQA-D#         1, 207-205       pci       I      PCI INTERRUPT REQUEST:
+PREQ#            151              cpu       O      PCI REQUEST: This signal go to VT82C585VP.
+                                                   PREQ# is the VT82C586 request for the PCI bus.
+PGNT#            150              cpu       I      PCI GRANT: This signal driven by the
+                                                   VT82C585VP to grant PCI access to VT82C586.
+
+                                   ISA BUS CONTROL
+SA[15:0]/        20-25, 27-28,     5v       B      SYSTEM ADDRESS BUS/IDE DATA BUS:
+DD[15:0]         36-38, 40-44
+SA16                   19          5v       B      SYSTEM ADDRESS BUS:
+
+
+
+
+                                                 -59-
+           VIA Technologies, Inc.                                                   VT82C580VP
+
+LA23/DCS3B#,     63-67, 69-70   5v   B     Multifunction Pins:
+LA22/DCS1B#,                               ISA Bus Cycles:
+LA21/DCS3A#,                                 UNLATCHED ADDRESS: The LA[23:17]
+LA20/DCS1A#,                                 address lines are bi-directional. These address
+LA[19:17]/                                   lines allow accesses to physical memory on ISA
+DA[2:0]                                      bus up to 16mbytes.
+                                           PCI IDE Cycles:
+                                             CHIP SELECT: DCS1A# is for the ATA
+                                             command register block and corresponds to
+                                             CS1FX# on the primary IDE connector. DCS3A#
+                                             is for the ATA command register block and
+                                             corresponds to CS3FX# on the primary IDE
+                                             connector. DCS1B# is for the ATA command
+                                             register block and corresponds to CS17X# on the
+                                             primary IDE connector. DCS3B# is for the ATA
+                                             command register block and corresponds to
+                                             CS37X# on the primary IDE connector.
+                                               DISK ADDRESS: DA[2:0] are used to indicate
+                                               which byte in either the ATA command block or
+                                               control block is being access.
+SD[15:8]        86-85, 83-80,   5v   B     SYSTEM DATA: SD[15:8] provide the high order
+                78-77                      byte data path for devices residing on the ISA bus.
+SBHE#                 62        5v   B     SYSTEM BYTE HIGH ENABLE: SBHE# indicates,
+                                           when asserted, that a byte is being transferred on the
+                                           upper byte (SD[15:8]) of the data bus. SBHE# is
+                                           negated during refresh cycles.
+IOR#                  12        5v   B     I/O READ: IOR# is the command to an ISA I/O slave
+                                           device that the slave may drive data on to the ISA
+                                           data bus.
+IOW#                  11        5v   B     I/O WRITE: IOW# is the command to an ISA I/O
+                                           slave device that the slave may latch data from the
+                                           ISA data bus.
+MEMR#                123        5v   B     MEMORY READ: MEMR# is the command to a
+                                           memory slave that it may drive data onto the ISA data
+                                           bus.
+MEMW#                124        5v   B     MEMORY WRITE: MEMW# is the command to a
+                                           memory slave that it may latch data from the ISA data
+                                           bus.
+SMEMR#                10        5v   O     STANDARD MEMORY READ: SMEMR# is the
+                                           command to a memory slave, under 1MB, that it may
+                                           drive data onto the ISA data bus
+SMEMW#                9         5v   O     STANDARD MEMORY WRITE: SMEMW# is the
+                                           command to a memory slave, under 1MB, that it may
+                                           latch data from the ISA data bus.
+BALE                  35        5v   O     BUS ADDRESS LATCH ENABLE: BALE is an
+                                           active high signal asserted by the VT82C586 to
+                                           indicate that the address(SA[19:0], LA[23:17] and
+                                           SBHE# signal lines are valid
+IOCS16#              125        5v   I     16-BIT I/O CHIP SELECT: This signal is driven by
+                                           I/O devices on the ISA Bus to indicate that they
+                                           support 16-bit I/O bus cycles.
+
+
+
+                                         -60-
+           VIA Technologies, Inc.                                                         VT82C580VP
+
+MEMCS16#               76         5v       I     MEMORY CHIP SELECT 16: ISA slave that are 16-
+                                                 bit memory devices drive this line low to indicate they
+                                                 support 16-bit memory bus cycles.
+MASTER#                137        5v       I     BUS MASTER: Master cycle indicator.
+IOCHCK#                 5         5v       I     I/O CHANNEL CHECK: When this signal asserted, i
+                                                 indicates that a parity or an uncorrectable error has
+                                                 occurred for a device or memory on the ISA Bus.
+IOCHRDY                 8         5v       I     I/O CHANNEL READY: Devices on the ISA Bus
+                                                 negate IOCHRDY to indicate that additional time
+                                                 (wait states) is required to complete the cycle.
+REFRESH#               29         5v       B     REFRESH: As an output REFRESH# indicates when
+                                                 a refresh cycle is in progress. As an input REFRESH#
+                                                 is driver by 16-bit ISA Bus masters to indicate refresh
+                                                 cycle.
+AEN                    15         5v       O     ADDRESS ENABLE: AEN is asserted during DMA
+                                                 cycles to prevent I/O slaves from misinterpreting
+                                                 DMA cycles as valid I/O cycles.
+TC                     32         5v       O     TERMINAL COUNT: The VT82C586 asserts TC to
+                                                 DMA slaves as a terminal count indicator.
+IRQ15, 14,       128-129, 127-    5v       I     INTERRUPT REQUEST: The IRQ signals provide
+[11: 9], [7:3]   126, 61, 71-75                  both system board components and ISA Bus I/O
+                                                 devices with a mechanism for asynchronously
+                                                 interrupting the CPU.
+DRQ[7:5],        132, 130, 57,    5v       I     DMA REQUEST: The DREQ lines are used to
+[3:0]            30, 7, 16, 59                   request DMA services from VT82C586’s DMA
+                                                 controller.
+DACK[7:5],       133, 131, 58,    5v       O     Multifunction Pins:
+[3:0]            31, 33, 18, 60                   Normal Operation
+                                                    DMA ACKNOWLEDGE:The DACK output lines
+                                                    indicate that a request for DMA service has been
+                                                    granted.
+                                                  Power-up
+                                                    General purpose inputs
+SPKR             134              5v       B     Multi function pin:
+                                                  Normal Operation
+                                                    SPEAKER DRIVE: The SPKR signal is the
+                                                    output of counter 2.
+                                                  Power-up strapping
+                                                    0: IDE fixed I/O base
+                                                    1: IDE flexible I/O base
+                                       CPU Interface
+CPURST           142              cpu      O     CPU RESET: The VT82C586 asserts CPURST to
+                                                 reset the CPU during power-up.
+INTR             145              cpu      O     CPU Interrupt: INTR is driven by VT82C586 to
+                                                 signal the CPU that an interrupt request is pending
+                                                 and needs service.
+NMI              146              cpu      O     NON-MASKABLE INTERRUPT: NMI is used to
+                                                 force a non-maskable interrupt to the CPU. The
+                                                 VT82C586 generate an NMI when either SERR# or
+                                                 IOCHK# is asserted.
+
+
+
+
+                                               -61-
+          VIA Technologies, Inc.                                                    VT82C580VP
+
+INIT           143          cpu      O     INITIALIZATION: The VT82C586 asserts INIT if
+                                           it detects a shut-down special cycle on the PCI bus
+                                           or if a soft reset is initiated by the register
+STPCLK#        148          cpu      O     STOP CLOCK: STPCLK# is asserted by the
+                                           VT82C586 to CPU in response to different Power-
+                                           Management events.
+SMI#           149          cpu      O     SYSTEM MANAGEMENT INTERRUPT: SMI# is
+                                           asserted by the VT82C586 to CPU in response to
+                                           different Power-Management events.
+FERR#          141          cpu      O     NUMERICAL COPROCESSOR ERROR: This
+                                           signal is tied to the coprocessor error signal on the
+                                           CPU.
+IGENN#         139          cpu      O     IGNORE ERROR: This pin is connected to the
+                                           ignore error pin on the CPU.
+                            Enhanced IDE Interface
+DIORA#         50            5v      O    DISK I/O READ A: Primary IDE channel drive read
+                                          strobe.
+DIOWA#         51            5v      O    DISK I/O WRITE A: Primary IDE channel drive
+                                          write strobe.
+DIORB#         54            5v      O    DISK I/O READ B: Secondary IDE channel drive
+                                          read strobe.
+DIOWB#         55            5v      O    DISK I/O WRITE B: Secondary IDE channel drive
+                                          write strobe.
+DRDY#          49            5v      I    I/O CHANNEL READY: IDE drive ready indicator.
+SOE#           56            5v      O    SYSTEM ADDRESS TRANSCEIVER OUTPUT
+                                          ENABLE: This signal controls the output enables of
+                                          the 245 transceivers that interface the DD[15:0]
+                                          signals to the SA[15:0]
+DREQA          45            5v      I    DISK DMA REQUEST A: Primary IDE channel
+                                          DMA request.
+DREQB          46            5v      I    DISK DMA REQUEST B: IDE channel DMA
+                                          request.
+DDACKA#        47            5v      O    DISK DMA ACKNOWLEDGE A: Primary IDE
+                                          channel DMA acknowledge.
+DDACKB#        48            5v      O    DISK DMA ACKNOWLEDGE B: Secondary IDE
+                                          channel DMA acknowledge.
+                                            This pin is used as power-up strap option:
+                                                0/1: IDE fixed/relocatable I/O address
+                                  Reset and Clock
+PWRGD          138           5v      I    POWER GOOD: Connected to the POWERGOOD
+                                          signal on Power Supply.
+PCIRST#        3            pci      O    PCI RESET: An active low reset signal for the PCI
+                                          bus. The VT82C586 will generate PCIRST# during
+                                          the power-up or from the control register.
+RSTDRV         4             5v      O    RESET DRIVE: RSTDRV is the reset signal to the
+                                          ISA bus.
+BCLK           14            5v      O    BUS CLOCK: ISA bus clock
+OSC            6             5v      I    OSCILLATOR: OSC is the 14.31818 Mhz clock
+                                          signal. It is used by the internal 8254
+                                   XD Interface
+
+
+                                         -62-
+          VIA Technologies, Inc.                                                      VT82C580VP
+
+XD[7:0]        122-121, 119-      5v     B    X-BUS DATA BUS:
+               116, 114-113                     These pins are used as strap option during the
+                                                power-up:
+                                                   XD0: 0/1 - Disable/enable internal KBC
+                                                   XD1: 0/1 - Disable/enable internal PS/2 Mouse
+                                                   XD2: 0/1 - Disable/enable internal RTC
+                                                   XD3: 0/1 - PISA/SIO
+                                                   XD4~XD7: RP13~RP16 for internal KBC
+XDIR           112                5v     O    X-BUS DIRECTION: XIDR# is tied directly to the
+                                              direction control of a 74F245 that buffer the X-Bus
+                                              data and ISA-Bus data.
+RTCAS/         94                 5v     O    Multifunction Pin:
+PCWE0                                          Internal RTC disable:
+                                                REAL TIME CLOCK ADDRESS STROBE:
+                                                RTCAS is connected directly to the address strobe
+                                                input of the external RTC.
+                                               Internal RTC enable:
+                                                GENERAL PURPOSE WRITE ENABLE 1:
+                                                LATCH enable signal to a external 373 for general
+                                                outputs.
+ROMCS# /       135                5v     O    ROM CHIP SELECT / KEYBOARD
+KBCS#                                         CONTROLLER CHIP SELECT: Multi-function pin
+                                                Normal Operation
+                                                 ISA memory cycle: Chip-select to the ROM-BIOS
+                                                 ISA I/O cycle: Chip-select to the external
+                                                 keyboard controller.
+                                                Power-up
+                                                 0: DACKx by external 137, DACK0 as DACEN,
+                                                   DACK1-7 as EXTSMI
+                                                 1: DACKx as DACKx
+PCWE1          93                 5v     O    GENERAL PURPOSE WRITE ENABLE 1:
+                                              LATCH enable signal to a external 373 for general
+                                              outputs.
+                               Universal Serial Bus Interface
+USBDATA0+      95                 usb    B    USB PORT 0 DATA:
+USBDATA0-      96                 usb    B    USB PORT 0 DATA:
+USBDATA1+      97                 usb    B    USB PORT 1 DATA:
+USBDATA1-      98                 usb    B    USB PORT 1 DATA:
+USBCLK         99                 usb    I    USB CLOCK: Clock input for Universal serial bus
+                                              interface
+                                    Keyboard Interface
+KBCK /         108                5v     B    Multifunction Pin:
+KA20G                                         Internal Keyboard controller enable:
+                                                KEYBOARD CLOCK: CLOCK to keyboard
+                                                interface.
+                                              Internal Keyboard controller disable:
+                                                KEYBOARD GATE A20: GATE A20 output
+                                                from external keyboard controller.
+
+
+
+
+                                             -63-
+          VIA Technologies, Inc.                                                 VT82C580VP
+
+KBDT /         109           5v       B     Multifunction Pin:
+KBRC#                                        Internal Keyboard controller enable:
+                                               KEYBOARD DATA: DATA to keyboard
+                                               interface.
+                                             Internal Keyboard controller disable:
+                                               KEYBOARD RESET: Reset input from external
+                                               keyboard controller.
+MSCK / IRQ1    110           5v       B     Multifunction Pin:
+                                             PS/2 mouse enable:
+                                              MOUSE CLOCK: CLOCK to PS/2 mouse
+                                               interface.
+                                             PS/2 mouse disable and internal KBC disable:
+                                                INTERRUPT REQUEST 1: IRQ 1 input from
+                                               external KBC.
+MSDT /         111           5v       B     Multifunction Pin:
+IRQ12                                        PS/2 mouse enable:
+                                              MOUSE DATA: DATA to PS/2 mouse interface.
+                                             PS/2 mouse disable:
+                                                INTERRUPT REQUEST 12: IRQ 12 input from
+                                               external KBC
+A20M           147          cpu       O     A20 MASK: Direct connect A20 mask on CPU.
+KEYLOCK        106           5v       I     KEYBOARD LOCK: Keyboard lock signal for
+                                            internal keyboard controller
+TURBO          107           5v       I     TURBO: Turbo mode indicator input
+                                   On Board PnP
+MDRQ[1:0]      89, 91        5v       I     PLUG AND PLAY DMA REQUEST: DMA request
+                                            inputs from non-PNP device to support the PnP
+                                            function.
+MDACK[1:0]     90, 92        5v       O     PLUG AND PLAY DMA ACKNOWLEDGE:
+                                            DMA acknowledge outputs from non-PNP device to
+                                            support the PnP function.
+MIROQ[1:0]     88, 87        5v       I     PLUG AND PLAY INTERRUPT REQUEST:
+                                            Interrupt request inputs from non-PNP device to
+                                            support the PnP function.
+                                    Internal RTC
+RTCX1 /        104          vbat      I     Multifunction Pin:
+IRQ8#                                        Internal RTC enable:
+                                              RTC CRYSTAL INPUT: 32.768Khz crystal or
+                                               oscillator input.
+                                             Internal RTC disable:
+                                                INTERRUPT REQUEST 8: IRQ8 input from
+                                               external KBC
+RTCX2          105          vbat      O     RTC CRYSTAL OUTPUT: 32.768Khz crystal
+                                            output
+VBAT           102                    I     RTC BATTERY: BATTERY input for internal RTC
+VEXT           103
+                                   Misc.
+EXTSMI#        136           5v       I     EXTERNAL SMI: External input to trigger SMI
+                                            output to the CPU.
+                              Power and Ground
+
+
+                                           -64-
+       VIA Technologies, Inc.                                                   VT82C580VP
+
+VDD         17, 34, 53, 79,   5v    I    power supply of 4.5 to 5.5V.
+            115
+VDD_PCI     157, 171, 184,    pci   I    PCI voltage , 3.3 or 5V
+            198
+AVDD        100               usb   I    USB differential output power source
+AGND        101               0V    I    USB differential output ground
+VSS         13, 26, 39, 52,   0v    I    the ground
+            68, 84, 120,
+            156, 166, 177,
+            188, 197, 208
+VDD_CPU     144               cpu   I    CPU voltage, 3.3 or 5 volts
+
+
+
+
+                                        -65-
+         VIA Technologies, Inc.                                                     VT82C580VP
+
+                       VT82C586 PIN OUT IN NUMERICAL ORDER
+
+Pin No      Pin Name     Pin No     Pin Name         Pin No     Pin Name   Pin No     Pin Name
+   1      PIRQA#            53    VDD                  105    RTCX2          157    VDD-pci
+   2      PCICLK            54    DIORB#               106    KEYLOCK         158   AD4
+   3      PCIRST#           55    DIOWB#               107    TURBO          159    AD5
+   4      RSTDRV            56    HSOE#                108    KBCK           160    AD6
+   5      IOCHCK#           57    DRQ5                 109    KBDT           161    AD7
+   6      OSC               58    DACK5                110    MSCK           162    CBE0#
+   7      DRQ2              59    DRQ0                 111    MSDT           163    AD8
+   8      IOCHRDY           60    DACK0                112    XDIR           164    AD9
+   9      SMEMW#            61    IRQ9                 113    XD0            165    AD10
+  10      SMEMR#            62    SBHE                 114    XD1            166    VSS
+  11      IOW#              63    LA23/DCS3B#          115    VDD            167    AD11
+  12      IOR#              64    LA22/DCS1B#          116    XD2             168   AD12
+  13      VSS               65    LA21/DCS3A#          117    XD3            169    AD13
+  14      BCLK              66    LA20/DCS1A#          118    XD4             170   AD14
+  15      AEN               67    LA19/DA2             119    XD5            171    VDD-pci
+  16      DRQ1              68    VSS                  120    VSS            172    AD15
+  17      VDD               69    LA18/DA1             121    XD6            173    CBE1#
+  18      DACK1             70    LA17/DA0             122    XD7            174    PAR
+  19      SA16              71    IRQ7                 123    MEMR#          175    SERR#
+  20      SA15/DD15         72    IRQ6                 124    MEMW#          176    STOP#
+  21      SA14/DD14         73    IRQ5                 125    IOCS16#        177    VSS
+  22      SA13/DD13         74    IRQ4                 126    IRQ10          178    DEVSEL#
+  23      SA12/DD12         75    IRQ3                 127    IRQ11          179    TRDY#
+  24      SA11/DD11         76    MEMCS16#             128    IRQ15          180    IRDY#
+  25      SA10/DD10         77    SD8                  129    IRQ14          181    FRAME#
+  26      VSS               78    SD9                  130    DRQ6           182    CBE2#
+  27      SA9/DD9           79    VDD                  131    DACK6          183    AD16
+  28      SA8/DD8           80    SD10                 132    DRQ7           184    VDD-pci
+  29      REFRESH#          81    SD11                 133    DACK7           185   AD17
+  30      DRQ3              82    SD12                 134    SPKR           186    AD18
+  31      DACK3             83    SD13                 135    ROMCS#         187    AD19
+  32      TC                84    VSS                  136    EXTSMI#        188    VSS
+  33      DACK2             85    SD14                 137    MASTER#        189    AD20
+  34      VDD               86    SD15                 138    PWRGD          190    AD21
+  35      BALE              87    MIRQ0                139    IGNNE#          191   AD22
+  36      SA7/DD7           88    MIRQ1                140    VSS            192    AD23
+  37      SA6/DD6           89    MDRQ1                141    FERR#          193    IDSEL
+  38      SA5/DD5           90    MDACK1               142    CPURST         194    CBE3#
+  39      VSS               91    MDRQ0                143    INIT           195    AD24
+  40      SA4/DD4           92    MDACK0               144    VDD-cpu        196    AD25
+  41      SA3/DD3           93    PCWE1                145    INTR           197    VSS
+  42      SA2/DD2           94    RTCAS                146    NMI            198    VDD-pci
+  43      SA1/DD1           95    USBDATA0+            147    A20M           199    AD26
+  44      SA0/DD0           96    USBDATA0-            148    STPCLK#        200    AD27
+  45      DDRQA             97    USBDATA1+            149    SMI#           201    AD28
+  46      DDRQB             98    RTCCS#/USBDATA1-     150    PGNT#          202    AD29
+  47      DDACKA#           99    USBCLK               151    PREQ#           203   AD30
+  48      DDACKB#          100    AVDD                 152    AD0             204   AD31
+  49      HDRDY#           101    AGND                 153    AD1            205    PIRQD#
+  50      DIORA#           102    VBAT                 154    AD2            206    PIRQC#
+  51      DIOWA#           103    VEXT                 155    AD3            207    PIRQB#
+  52      VSS              104    RTCX1/IRQ8#          156    VSS            208    VSS
+
+
+
+
+                                            -66-
+          VIA Technologies, Inc.                                                                 VT82C580VP
+
+                                  ELECTRICAL CHARACTERISTICS
+                                    Absolute Maximum Ratings
+
+          Parameter                                   Min               Max             Unit
+          Ambient operating temperature                 0                 70             oC
+
+          Storage temperature                          -55               125             oC
+
+          Input voltage                               -0.5                5.5          Voltage
+          Output voltage (VDD = 5V)                   -0.5                5.5          Voltage
+          Output voltage (VDD = 3.1 - 3.6V)           -0.5             VDD + 0.5       Voltage
+
+
+  Note :
+     Stress above these listed cause permanent damage to device. Functional operation of this
+  device should be restricted to the conditions described under operating conditions.
+
+
+
+                                          DC Characteristics
+TA-0-70oC, VDD=5V+/-5%, GND=0V
+
+ Symbol              Parameter                Min             Max         Unit         Condition
+   VIL        Input low voltage               -.50             0.8          V
+   VIH        Inpute high voltage             2.0            VDD+0.5        V
+   VOL        Output low voltage               -              0.45          V      IOL=4.0mA
+   VOH        Output high voltage             2.4               -           V      IOH=-1.0mA
+    IIL       Input leakage current            -              +/-10        uA      0<VIN<VDD
+   IOZ        Tristate leakage current         -              +/-20        uA      0.45<VOUT<VDD
+   ICC        Power supply current             -               80          mA
+
+
+
+
+                                                     -67-
+VIA Technologies, Inc.                                                                   VT82C580VP
+
+                       208-PIN PLASTIC FLAT PACKAGE
+                                                 30.6+/-0.2
+
+                                                 27.2+/-0.4
+
+               156                                                            105
+
+
+
+
+ 0.85TYP
+      157                                                                                 104
+
+
+
+
+                                                                                          27.2+/-0.4
+
+
+
+
+                                                                                                   30.6+/-0.2
+
+
+
+
+      208                                                                                 53
+
+
+
+                 1                                                            52
+     0.85TYP                                           0.2+/-0.1
+                                                                   0.08   M
+                          0.5
+
+
+
+
+                                                                                    3.35+/-0.4
+
+                                                                                                4.60MAX
+
+
+
+                                  0.1                                                  0.55 +0.3
+                                                                                            -0.2
+                                            29.6+/-0.4
+
+
+
+
+                          +0.1
+                     0.15 -0.05
+                                        o
+                                   0~10
+
+                                  0.5+/-0.2
+
+
+
+
+                                    -68-
+      VIA Technologies, Inc.                                                          VT82C580VP
+
+                      100-PIN PLASTIC RECTANGULAR FLAT PACKAGE
+
+                                   25.0±0.25
+
+
+                                   20.0±0.1
+
+
+               80                                                         51
+
+
+
+
+ 81                                                                                    50
+
+
+
+
+                                                                                       14.0±0.1
+
+
+
+
+                                                                                              19.0±0.25
+
+
+
+
+100                                                                                    31
+
+
+
+
+                1                                                         30
+
+                                               0.3±0.1
+                                                               0.13   M
+                          0.65
+
+
+
+
+                                                                                  2.72±0.15
+                                                                                              3.302MAX
+
+
+1.20±0.15
+                                                                           0.25±0.2
+                                                                                       0.08
+            2.50TPY
+
+
+
+
+                                      0.15±0.05                o
+                                                         0~7
+
+
+
+
+                                        -69-
+

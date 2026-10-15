@@ -1,0 +1,1325 @@
+OPTi-486WB PC/AT Chipset
+ (82C491/82C392/82C206)
+
+
+
+       Preliminary
+
+
+
+ 82C491/82C392 DATA BOOK
+
+
+
+          Version 1.1
+         April 26, 1991
+                                     Disclaimer
+
+
+
+This specification is subject to change without notice. OPTi, Incorporated assumes no
+                     responsibility for any errors contained within.
+
+                     Copyright by OPTi, Inc. All rights reserved
+
+
+
+
+                                     OPTI, Inc.
+
+                   2525 Walsh Ave. Santa Clara, California 95051
+
+                                 Tel. (408) 980-8178
+                                 Fax (408) 980-8860
+
+
+
+
+                                         2
+TABLE OF CONTENTS
+
+1. OVERVIEW
+      1.1 Introduction
+      1.2 Features
+      1.3 System Block Diagram
+
+2. 82C491 SYSTEM CONTROLLER (SYSC)
+       2.1 Reset Logic
+       2.2 System Clock Generation
+       2.3 Cache Subsystem
+       2.4 CPU Burst Mode Control
+       2.5 Local DRAM Control Subsystem
+       2.6 Shadow RAM
+       2.7 AT Bus State Machine
+       2.8 Bus Arbitration Logic
+       2.9 Refresh Logic
+       2.10 System BIOS ROM and I/O Ports
+       2.11 Turbo Switch
+       2.12 Flexible Multiplexed DRAM Address
+
+3. 82C491 PIN DESCRIPTION
+       3.1 Clock and Reset
+       3.2 CPU Interface
+       3.3 NP Interface
+       3.4 Cache Control Interface
+       3.5 Local DRAM Interface
+       3.6 DBC Interface
+       3.7 Bus Arbitration
+       3.8 AT-Bus Interface
+
+4. 82C491 REGISTER DESCRIPTION
+
+5. 82C392 DATA BUFFER CONTROLLER (DBC)
+       5.1 Data Bus Conversion
+       5.2 Parity Generation/Detection Logic
+       5.3 Clock Generation and Reset Control
+       5.4 Numeric Processor Interface
+
+6. 82C392 PIN DESCRIPTION
+       6.1 Clock and Reset Logic
+       6.2 Bus Interface
+       6.3 Bus Arbitration
+       6.4 SYSC Interface
+       6.5 Numeric Processor Interface
+       6.6 Miscellaneous Pins
+
+7. 82C392 REGISTER DESCRIPTION
+
+
+
+
+                                          3
+LIST OF FIGURES
+     1. System Block Diagram
+     2. SYSC Pin-out
+     3. DBC Pin-out
+     4. Mechanical Dimensions
+
+
+
+
+                                4
+1 486WB OVERVIEW (82C491/82C392/82C206 CHIPSET)
+
+1.1 Introduction
+
+The OPTi 486WB is a three-chip solution offering optimal performance for high-end, 486-based
+AT systems. The OPTi 486WB is designed for systems running from 33 Mhz, to 40 Mhz, and
+up to 50 Mhz and combines three major functions: the 82C491 System Controller (SYSC), the
+82C392 Data Buffer Controller (DBC), and the 82C206 Integrated Peripheral Controller (IPC).
+Refer to the data book supplied by your third-party source for information on the 82C206.
+
+
+1.2 Features
+
+OPTi 486WB features include:
+
+   o   1X clock source, supporting systems running up to 50 Mhz
+   o   two 160-pin CMOS Plastic Flat Package (PFP), and one 84-pin PLCC
+   o   Copy-Back Direct-Mapped Cache with size of 64 KB, 128 KB, 256 KB and 512 KB
+   o   up to 10% performance enhancement from write-through cache scheme
+   o   supports 2,1,1,1 cache burst cycle as well as 3,1,1,1 cycle
+   o   on-chip comparitor determines cache hit or miss
+   o   up to 64-MB of local high-speed, page-mode, DRAM memory space
+   o   burst-line-fill during Cache-Read-Miss
+   o   control of two non-cacheable regions
+   o   shadow RAM support
+   o   optional caching of shadowed Video BIOS
+   o   hidden refresh
+   o   slow refresh available for a laptop application.
+   o   8042 emulation for fast CPU-reset and gateA20 generation
+   o   turbo/slow speed selection
+   o   AT bus clock selectable from CLKIN/4 or CLKIN/6
+   o   0 or 1 wait state selectable for 16-bit AT bus cycle
+   o   CAS# before RAS# refresh reduces power comsumption
+   o   optional 0 or 1 wait state for Cache-Write-Hit
+   o   WEITEK 4167 coprocessor support
+
+
+
+
+                                             5
+1.3 SYSTEM BLOCK DIAGRAM
+
+Figure 1 is a block diagram of a 486WB-based system
+
+
+
+
+                    Figure 1. 486WB Based System Block Diagram
+
+
+
+
+                                           6
+2 82C491 SYSTEM CONTROLLER (SYSC)
+
+2.0 Features
+
+The SYSC is a 160-pin PFP (Plastic Flat Package) device. The SYSC integrates a write-back-
+cache controller, local DRAM control, AT bus interface, and CPU interface. 82C491 features
+include:
+
+    o   CPU reset control
+    o   CPU internal cache control
+    o   CPU burst mode control
+    o   CPU interface control.
+    o   integrated write-back cache controller with tag comparitor.
+    o   page-mode DRAM controller
+    o   burst line fill control logic
+    o   two noncacheable address comparators
+    o   decoupling refresh for local DRAM and AT-bus memory
+    o   2 DMA upper address latches
+
+
+2.1 Reset Logic
+
+The SYSC handles two reset inputs, RST1# and RST2#, to generate the CPU reset signal,
+CPURST. RST1# is a "cold reset". output by the DBC when either PWRGD# (Powergood)
+goes low (from the power supply and indicating a low power condition) or the system reset
+button is pressed. RST2# is a "warm reset," asserted by a keyboard reset (CNTL + ALT +
+DEL simultaneously). Note that the keyboard reset is at first handled by either the keyboard
+controller (8042 or 8742 IC) or the DBC, and using the DBC may be advantageous, because it
+routes the reset faster to the SYSC.
+
+A software reset is also available. Programming bit 0 (from 0b to 1b) of Index Register 20h,
+then executing a "HALT" instruction causes the CPU to assert CPURST.
+
+
+2.2 System Clock Generation
+
+The SYSC has two high frequency clock inputs, CLKI and CLK2I. CLK2I clocks the internal
+cache controller. CLKI, which is driven by a single-phase output from a crystal oscillator,
+clocks the CPU as well as the SYSC's internal state machine.
+
+The SYSC generates the AT bus clock, ATCLK, depending on the level of the BCLKS input.
+ATCLK is derived from either CLK2I/4 (BCLKS high) or CLK2I/6 (BCLKS low). An onboard, 2-
+position jumper establishes the level of BCLKS.
+
+
+
+
+                                                7
+2.3 Cache Subsystem
+
+The SYSC has a non-pipeline mode with a 16-byte line size to simplify design without
+increasing cost or degrading system performance. Note that a buffer is required between the
+cache and the CPU data bus. A tag comparitor is built inside the SYSC to improve system
+performance and reduce board real-estate. The comparitor asserts HIT# when the addressed
+location points to a current cache entry. If HIT# is negated or NCA# (Non-Cacheable Address)
+is asserted, the current cycle is a cache-miss; otherwise the cycle is a cache-hit. Descriptions
+of possible cache cycles follow.
+
+        Cache-Read-Miss with the cache location's DIRTY bit negated. The cache controller
+        does not need to update memory with the cache's current data, because that data is
+        unmodified. The cache controller asserts TAGWE#, causing the tag RAMs to update
+        with the new address, and asserts CAWE(3:0)#, causing cache memory to update with
+        data from DRAM.
+
+        Cache-Read-Miss with DIRTY asserted. The cache controller must update memory
+        with data from the cache location that is going to be overwritten. The controller writes
+        the 16-byte line from cache memory to the DRAM, then reads the new line from DRAM
+        into cache memory. The controller asserts TAGWE# and CAWE(3:0). This cycle is
+        called a two-way interleave cache read/write.
+
+        Cache-Write-Hit. The cache controller does not need to update memory. The
+        controller updates the tag RAMs and cache memory and sets the DIRTY bit. (DIRTY
+        may already be set, but that does not affect this cycle.)
+
+        Cache-Write-Miss. The cache controller bypasses the cache entirely and writes the
+        line directly into DRAM. DIRTY is unchanged.
+
+The following table shows the cache sizes supported by the 82C491, with the corresponding
+tag RAM address bits, tag RAM size, cache RAM address bits, cache RAM size, and
+cacheable main memory size
+
+             Cache Size (Kb)     Tag Field Address/   Cache RAM Address      Cachable Main
+                                   Tag RAM size          /Cache RAMs          Memory(Mb)
+                   64               A23 - A16             A15 - A4                 16
+                                      4KX9                 8 8KX8
+                  128               A24 -A17              A16 - A4                 32
+                                      8KX9                16 8KX8
+                  256               A25 - A18             A17 - A4                 64
+                                     16KX9                 8 32KX8
+                  512               A25 - A19             A18 - A4                 64
+                                     32KX8                16 32KX8
+
+                 Speed             Cache SRAM             Tag SRAM               DRAM*
+                33MHz             25ns                      20ns                  80ns
+                50MHz             20ns                     12.5ns                 80ns
+                *DRAM at minimum wait state
+
+
+
+
+                                                8
+2.4 CPU Burst Mode Control
+
+The use of a secondary cache guarantees that data is burst immediately into the CPU when a
+cacheable location is read, whether it is a read-hit or read-miss. BRDY# (Burst Ready) is
+asserted at the middle of the first T2 state when zero wait states are required and at the middle
+of the second T2 state when one wait state is required, except during a cache read miss; then,
+BRDY# is asserted after cache memory is updated. Once asserted, BRDY# stays high until
+BLST# (Burst Last) is detected. BRDY# is never active during DMA and MASTER cycles.
+
+
+2.5 Local DRAM Control Subsystem
+
+The SYSC supports up to 4 banks of page-mode local memory. DRAM devices are either 256-
+Kb,1-Mb or 4-Mb large. Total memory is between 1 Mb and 64 Mb. The following table
+illustrates the configurations supported.
+
+
+
+
+                                               9
+Bank 0   Bank 1    Bank 2   Bank 3   Total
+256K       x            x     x       1M
+256K     256K           x     x       2M
+ 1M        x            x     x       4M
+256K      1M            x     x       5M
+256K     256K          1M     x       6M
+ 1M       1M            x     x       8M
+256K      1M           1M     x       9M
+256K     256K          1M    1M      10M
+ 1M       1M           1M     x      12M
+256K      1M           1M    1M      13M
+ 1M       1M           1M    1M      16M
+ 4M        x            x     x      16M
+ 1M       4M            x     x      20M
+ 4M       1M            x     X      20M
+ 1M       1M           4M     x      24M
+ 1M       4M           1M     x      24M
+ 4M       1M           1M     x      24M
+ 1M       1M           1M    4M      28M
+ 1M       4M           1M    1M      28M
+ 4M       1M           1M    1M      28M
+ 1M       4M            x     x      32M
+ 1M       4M           4M     x      36M
+ 4M       1M           4M     x      36M
+ 4M       4M           1M     x      36M
+ 4M       1M           4M    4M      40M
+ 1M       4M           4M    1M      40M
+ 4M       1M           4M    1M      40M
+ 4M       4M           1M    1M      40M
+ 4M       4M           4M     x      48M
+ 4M       4M           4M    4M      52M
+ 1M       1M           4M    4M      52M
+ 4M       4M           4M    1M      52M
+ 4M       4M           4M    4M      64M
+
+
+
+
+                  10
+2.6 Shadow RAM
+
+Because DRAM accesses are much faster than EPROM accesses, the SYSC provides
+shadow RAM capability to enhance system performance.. BIOS is copied, then write-
+protected, into a dedicated area in DRAM. Accesses to BIOS address space are redirected to
+the corresponding DRAM location. Shadow RAM addresses range from C0000h to FFFFFh.
+C0000h to EFFFFh are enabled in 16-Kb memory chucks. F0000h-FFFFFh, the location of
+system BIOS shadowing, are enabled in 64-Kb chucks. When shadowing is disabled (bit 7 of
+Index Register 22h is reset), BIOS is read from EPROM and (if applicable) written to DRAM.
+
+
+2.7 AT Bus State Machine
+
+The AT state machine monitors status signals, M16#, IO16#, Chrdy and Nows# from the AT
+bus. The machine outputs AT bus signals, including command, bus conversion, and control.
+The AT bus state machine also routes data and address when an AT bus master or DMA
+controller accesses memory.
+
+
+2.8 Bus Arbitration Logic
+
+82C391 arbitration is based on first-come, first serve basis. The SYSC arbitrates between
+memory requests from the CPU, DMA controller, AT bus masters, and refresh logic. During
+DMA and AT bus master write cycles, the SYSC asserts HOLD to the CPU, then the CPU
+relinquishes bus control, returning HLDA. The SYSC asserts AHOLD and BOFF# during an AT
+memory code read cycle. During refresh (and when hidden refresh is enabled), HOLD remains
+negated, and the CPU continues its current program execution as long as it achieves cache
+hits.
+
+
+2.9 Refresh Logic
+
+The SYSC supports both normal refresh and hidden refresh. The average refresh period (time
+between refresh cycles) is either 16us or 64us, the latter when slow refresh is enabled. (Slow-
+refresh DRAMs must be used with slow refresh.) Hidden refresh separates refreshing of AT-
+bus memory and local DRAM; the AT-bus controller arbitrates between CPU accesses to the
+AT bus, DMA, and AT refresh, while the DRAM controller arbitrates between CPU DRAM
+accesses and DRAM refresh cycles. Note that the DBC generates the refresh address during
+AT-bus refresh cycles.
+
+
+2.10 System BIOS ROM and I/O Ports
+
+The SYSC supports both 8-bit and 16-bit EPROM cycles. If the system BIOS is eight bits
+wide, the system BIOS EPROM resides on the XD bus. If the system BIOS is 16 bits wide,
+the EPROM resides on the SD bus, and ROMCS# is connected to M16# through a open
+collector; ROMCS# informs the SYSC that the current system BIOS is 16 bits wide. The XD-
+bus data buffers always drive toward the XD bus, except during an I/O read cycle at an
+address smaller than F0h (byte-wide I/O) or during an 8-bit BIOS ROM cycle.
+
+
+
+
+                                              11
+2.11 Turbo Switch
+
+The system is operating at the full speed if the TURBO pin is asserted high. When TURBO is
+low, the SYSC holds the CPU during two thirds of the cycle, decreasing CPU performance by
+a factor of three. OUT1, which is connected to the TURBO pin and input to the 82C391, tells
+the SYSC whether or not to hold the CPU.
+
+
+2.12 Flexible Multiplexed DRAM Address
+
+The following table describes how the DRAM address lines are multiplexed when different
+memory devices types are used.
+
+
+                              Address to MA bus Mapping
+
+                             Mem          256K                1M              4M
+                             addr       Col  Row        Col     Row     Col     Row
+                            MA0        A2         A12   A2      A12    A2       A23
+                            MA1        A3         A13   A3      A13    A3       A13
+                            MA2        A4         A14   A4      A14    A4       A14
+                            MA3        A5         A15   A5      A15    A5       A15
+                            MA4        A6         A16   A6      A16    A6       A16
+                            MA5        A7         A17   A7      A17    A7       A17
+                            MA6        A8         A18   A8      A18    A8       A18
+                            MA7        A9         A19   A9      A19    A9       A19
+                            MA8        A10        A11   A10     A20    A10      A20
+                            MA9        X          X     A11     A21    A11      A21
+                            MA10       X          X     X       X      A12      A22
+
+
+
+
+                                             12
+3 SYSC SIGNALS DESCRIPTIONS
+
+3.1 Clock and Reset
+
+    Name            Type     Pin No                         Description
+   CLK2I              I        82        Crystal oscillator Input which has a frequency
+                                         equal to twice the rated CPU clock. This signal is
+                                         used for secondary cache early write option only.
+    CLKI              I        79        Clk2 input for SYSC internal state machine. Single
+                                         phase.
+   BCLKS              I       142        ATCLK Selection.
+                                         Low ATCLK = CLKI/6.
+                                         High ATCLK = CLKI/4.
+   ATCLK             O        159        ATCLK to AT bus; it is a free running clock. It
+                                         could be either CLKI/4 or CLKI/6.
+   RST1#              I       134        Cold reset input either from Powergood signal of
+                                         power supply or from Reset Switch
+   RST2#              I       135        CPU Reset input from Keyboard Controller or
+                                         from DBC's ERST2# pin.
+  CPURST             O         25        Reset for 486 processor.
+
+
+3.2 CPU Interface
+
+  Name              Type     Pin No                         Description
+ CA(31:24)           B     88-83,68-67   CPU Address Lines 31-24. They are input pins
+                                         during CPU cycle, and forced to be low for DMA
+                                         and MASTER cycles which allow 486 invalidating
+                                         the internal TAGs. Note that the CPU isn't on
+                                         HOLD when AT refresh cycle undergoing.
+ CA(23:21)           I       66-64       CPU Address Lines 23-21; Input only.
+  CA20               B        63         CPU Address Lines 20; it's an input pin during
+                                         CPU and DMA cycles, and becomes an output pin
+                                         during MASTER cycle.
+ CA(19:17)           I       62-60       CPU Address Lines 19-17; Input only.
+ CA(16:8)            B       59-51       CPU Address Lines 16-8. These are input pins
+                                         during CPU and MASTER cycles. CA(16:9) are
+                                         output pins for DMA address A16-A9 by latching
+                                         XD(7:0) during 16-bit DMA cycle and CA(15:8)
+                                         are DMA address A15-A8 for 8-bit DMA cycle.
+   CA(7:2)           I       49-44       CPU Address Lines 7-2; Input only.
+   BE(3:0)           B       31-34       Byte Enable 3-0. These are inputs during CPU
+                                         cycle and are outputs during DMA and MASTER
+                                         cycle, derived from SA0, SA1 and SBHE# from
+                                         AT bus.
+
+
+
+
+                                         13
+Name    Type   Pin No                          Description
+ADS#     I      43           Status input from CPU. This active low signal
+                             indicates the CPU is starting a new cycle.
+WR#      I      36           CPU Write or Read Cycle Status. It indicates a
+                             write cycle if high and read cycle if low.
+ DC#     I      35           CPU Data or Code Cycle Status. It indicates
+                             data transfer operations when high, or control
+                             operations(code fetch, halt, etc.) when low.
+MIO#     I      37           CPU Memory or I/O Cycle Status. It indicates
+                             a memory cycle if high, and I/O cycle if low.
+LDEV#    I      18           Indication of CPU local Bus device Cycle, i.e.
+                             Weitek 4167 coprocessor. This signal is
+                             sampled at the end of 1st T2.
+BLST#    I      42           486 burst last cycle indication, SYSC
+                             terminates the burst cycle as long as the
+                             BLST# sampled low at the end of each T2
+                             when BRDY# is active.
+RDY#     O      38           Ready output for CPU to terminate the current
+                             cycle.This pin is not a tri-state output.
+RDYI#    I      19           Local Device Ready Input, It will be
+                             synchronized by SYSC before sending to CPU.
+BRDY#    O      39           Burst ready output for CPU to sample the read
+                             data during burst cycles. This pin is a tri-state
+                             output.
+KEN#     O      29           Cachable or non-cachable status for the
+                             internal cache of CPU. This signal is low
+                             normally, and is brought high at the end of T1.
+                             The SYSC will assert KEN# again if it is a
+                             cachable cycle.
+BOFF#    O      27           Backoff output for CPU. This output forces the
+                             80486 microprocessor to float its bus in the
+                             next clock.
+TURBO    I      140          Turbo Mode Selection. I f Turbo pin is tied to
+                             low; the system runs at full speed, otherwise,
+                             the SYSC will hold two third of the CPU time.
+TLB#     O      110          486 TLB Problem Fix.
+
+
+
+
+                        14
+3.3 Numeric Processor Interface
+
+     Name           Type           Pin No                            Description
+   NPERR#             I             24            Numeric Processor Error Indication. Used to
+                                                  generate IGERR# for CPU.
+    IGERR#            O             21            This is a normally high signal and will become
+                                                  low as soon as the NPERR# is asserted. An
+                                                  IO write to either port F0h or F1h, or CPU reset
+                                                  will force this signal back to high.
+
+
+3.4 External Cache Control
+
+
+     Name           Type           Pin No                           Descriptions
+   TAG(7:0)           B           77-71,69        TAG RAM Output Lines 7-0.
+    DRTY              B              78           Dirty Bit of Tag RAM to indicate its line has
+                                                  been written into.
+   TAGWE#             O             93            TAG RAM Write Enable. It is used to update
+                                                  the TAG RAM.
+   DTYWE#             O             94            Write strobe to Dirty Bit of TAG RAM
+    CAOE#             O             89            External Cache Output Enable.
+  CAWE(3:0)#          O           105-102         External Cache Write Enable; each signal
+                                                  corresponds to one byte of data
+    BECS#             O             91            External Cache Even Bank Chip Select; it is
+                                                  normally active and becomes high if CA2 is
+                                                  high during cache write cycle. Also it will toggle
+                                                  during cache line fill cycle.
+    BOCS#             O             92            External Cache Odd Bank Chip Select; it is
+                                                  normally active and becomes high if CA2 is
+                                                  low during cache write cycle. It will be a
+                                                  complement of BECS# during cache line fills.
+    BEOE#             O             98            External Cache Even Bank Data Buffers
+                                                  Enable; Activated for cache write cycle and, if
+                                                  CA2 is low, cache read cycle. Also, toggles
+                                                  during dirty write backs and CPU burst reads.
+    BOOE#             O             97            External Cache Odd Bank Data Buffers
+                                                  Enable. It is activated for cache write cycle
+                                                  and, if CA2 is high, cache read cycle. It will
+                                                  become a complement of BEOE# during dirty
+                                                  write back and CPU burst read cycle.
+    BDIR#             O             96            External Cache Data Buffers Direction Control.
+                                                  It is normally high and forced to be low when
+                                                  writing data into cache.
+
+
+
+
+                                             15
+     BEA3            O         101          External Cache Even Bank Address Bit 3.It is
+                                            tri-stated during T1 and first half T2 cycle.
+                                            Then it simply reflects the status of CA3 and
+                                            will toggle during dirty write back, cache line
+                                            fill, and CPU burst read cycles.
+     BOA3            O         99           External cache oven bank address bit 3.It is
+                                            tri-stated during T1 and first half T2 cycle.
+                                            Then it reflects the status of CA3 and will
+                                            toggle during dirty write back, cache line fill,
+                                            and CPU burst read cycles.
+    CA3S#            O         95           External cache address bit 3 select; use this
+                                            signal to choose between CA3 and BEA3 for
+                                            even bank cache address bit 3, or BOA3 for
+                                            odd bank cache address bit 3 respectively.
+                                            becomes active for T1 and the first T2 cycles.
+
+
+3.5 Local DRAM Interface
+
+     Name           Type      Pin No                          Description
+    DWE#             O         133          DRAM Write Enable signal.
+   RAS(3:0)#         O     132,131,129,     DRAM Row Address Strobe.
+                               128
+   CAS(3:0)#         O       127-124        DRAM Column Address Strobe.
+   MA(10:0)          O       123,122,       DRAM Row/Column Address Line 10-0.
+                             119-111
+
+
+
+
+                                       16
+3.6 DBC Interface
+
+
+     Name             Type   Pin No                         Description
+    LMEN#              O      109          Local Memory Acessed Indication. Used by
+                                           DBC to control the bus flow.
+      DLE              O      107          DRAM Read Data Latch Enable; used for parity
+                                           checking.
+    MIO16#             O      143          Latched AT-bus 16-bit Slave Status; used for
+                                           bus conversion.
+   PCKEN#              O      106          Parity Checking Enable; used by DBC to
+                                           perform parity checking.
+    ATCYC#             O      154          AT Cycle Indication for CPU cycle.
+
+
+3.7 Bus Arbitration
+
+     Name             Type   Pin NO                            Description
+     HRQ                I     145          DMA or Master Cycle Request from 82C206
+     OUT1               I     146          Refresh Request from Timer1 Output.
+     HLDA               I      41          CPU Hold Acknowledge.
+     ADS8               I     152          8-bit DMA Transfer Address Strobe. The SYSC
+                                           has to latch XD(7:0) by using ADS8 and
+                                           translate to CA(15:8) outputs.
+    AEN8#              I      147          8-bit DMA Cycle Indication.
+    ADS16              I      153          16-bit DMA Transfer Address Strobe. The
+                                           SYSC has to latch XD(7:0) by using ADS16
+                                           and translate to CA(16:9) outputs.
+    AEN16#             I      148          16-bit DMA Transfer Indication.
+     HOLD              O       28          HOLD Request to CPU. Hidden refresh will not
+                                           hold the CPU.
+    HLDA1              O       7           DMA or Master Cycle Granted Notice.
+    RFSH#              B      158          AT Refresh Cycle Indication. It is an input pin
+                                           during master or DMA cycle.
+    AHOLD              O       22          Address hold request to CPU; It will be
+                                           activated when HLDA is active and CPURST
+                                           isn't active, or right after AT memory code read
+                                           cycle if HOLD is pending. AHOLD will last until
+                                           HOLD is end.
+    EADS#              O       23          486 address snooping strobe; it's asserted for
+                                           two T states during DMA or MASTER cycles.
+
+
+
+
+                                      17
+3.8 AT-BUS Interface
+
+
+  Name      Type       Pin No                             Description
+   XA0       B          156     System Address Line 0. Input during master or 8-bit DMA
+                                cycles; output pin during CPU, 16-bit DMA, or refresh cycle.
+  XA1         B         157     System Address Line 1, it is an input pin during master or
+                                DMA cycle; becomes output pin during CPU or refresh cycle.
+ CHRDY        I         139     Channel Ready Input from AT-BUS. Schmit trigger input pin.
+ NOWS#        I         138     Zero Wait State Input from AT-BUS. It is a schmit trigger
+                                input pin. The system BIOS ROM is treated as AT one wait
+                                state cycle.
+ IO16#        I         137     16-bit IO Slave Cycle Status. It is a schmit trigger input pin.
+  M16#         I        136     16-bit Memory Slave Cycle Status; Schmitt trigger input pin.
+GATEA20       I         141     Gate A20 Input from 8042 or DBC emulated gateA20 pin. By
+                                default, SYSC uses this signal to qualify CA20 during CPU
+                                cycle.
+ A20M#        O          26     GateA20 ANDed with fast GATEA20 output to CPU; it will
+                                remain high during power up CPU reset period.
+ XD(7:0)      B    9-11,13-17   Peripheral Data Bus Line 7-0.Two purposes for these pins:
+                                program the internal index register.* latch the DMA high order
+                                address.
+ IORD#        B          4      AT IO Read Command. It is an input pin during DMA or
+                                master cycle.
+ IOWR#        B          5      AT IO Write Command. It is an input pin during DMA or
+                                master cycle.
+  MRD#        B          2      AT Memory Read Command. It is an input pin during DMA or
+                                master cycle.
+ MWR#         B          3      AT Memory Write Command. It is an input pin during DMA or
+                                master cycle.
+ SMRD#        O         149     AT Memory Read Command, for address below 1 Meg. It has
+                                to be activated during refresh cycle.
+ SBHE#        O         155     AT Bus High Enable. It is an input pin during master cycle.
+ SMWR#        O         151     AT Memory Write Command, for address below 1 MB
+                                memory space.
+  ALE         O          6      AT Bus Address Latch Enable to represent that the AT cycle
+                                has started. It is brought to high during non-CPU cycle.
+  INTA        O         144     Interrupt Acknowledge Cycle Indication. Hold will not send to
+                                CPU between the INTA* cycles.
+ROMCS#        O          8      System BIOS ROM Output Enable. System BIOS ROM
+                                accessing could be either 8-bit or 16-bit. This signal will be
+                                asserted from the end of the first T2 to the end of the last T2.
+
+
+
+
+                                           18
+3.9 Ground and VCC
+
+
+     Name             Type                             Pin No                       Description
+      VCC               I                         1,20,40,81,100,120                   +5V
+      GND               I               12,30,50,70,80,90,108,121,130,150,160      VSS or Ground
+
+
+
+
+4 SYSC REGISTERS DESCRIPTIONS
+
+There are twelve configuration registers inside the 82C491. An indexing scheme is used to
+access all the registers of OPTi-486WB chipset. Port 22h is the index register and port 24h is
+the data register. The index resets after every access; thus, every data access (via port 24h)
+must be preceded by a write to port 22h, even if the same register is being accessed. All
+reserved bits are set to zero by default and must be set to zero for future compatibility
+purpose.
+
+
+Control Register 1
+Index: 20h
+
+     BIT                                   FUNCTION                                  FAULT
+     7-6        Revision of 82C493 and is read-only.                                   00
+      4         Cache memory data buffer output enable control                         0
+                0 = disable 1 = enable
+                When enabled, it will be activated half T stste earlier during
+                read hit cycle.
+      3         Single ALE Enable- SYSC will activate single ALE instead of             0
+                multiple ALEs during bus conversion cycle if this bit is
+                enabled.
+                0 =disable 1 =enable
+      2         Extra AT Cycle Wait State Enable. Insert one extra wait state           0
+                in standard AT bus cycle. 0 = disable 1 =enable
+      1         Keyboard and Fast Reset Control - turn on this bit requires             0
+                "Halt" instruction to be executed before SYSC generates
+                CPURST. .from keyboard reset
+                0 =disable 1= enable
+      0         Fast Reset Enable- alternative fast CPU reset.                          0
+                0 = disable 1 =enable
+
+
+
+
+                                              19
+Control Register 2
+Index: 21h
+
+     BIT                                FUNCTION                     DEFAULT
+     7         Master Mode Byte Swap Enable                            0
+               0 = disable 1 = enable
+     6         Fast Keyboard Reset Delay Control                       0
+                0 = Generate reset pulse 2 us later
+                1 = Generate reset pulse immediately
+     5         Parity Check                                            0
+                0 = enable 1 =disable
+     4         Cache Enable                                            0.
+               0 = Cache is disabled and DRAM burst mode is enbled
+               1 = Cache enable and DRAM burst mode is disabled
+     3-2       Cache Size                                              00
+               3 2 Cache Size
+               00     64KB
+               01     128KB
+               10     256KB
+               11     512KB
+     1         Secondary Cache Read Burst Cycles Control               0
+               0 = 3 - 1 - 1 - 1 Cycle
+               1 = 2 - 1 - 1 - 1 Cycle
+     0         Cache Write Wait State Control                          0
+               0 = 1 Wait state
+               1 = 0 Wait state
+
+
+
+
+                                          20
+Shadow RAM Control Register I
+Index: 22h
+
+
+    BIT                                 FUNCTION                               DEFAULT
+     7        ROM Enable                                                         1
+              1 = read from ROM, write to DRAM.
+              0 = read/write on RAM and DRAM is write-protected
+     6        Shadow RAM at D0000h - DFFFFh Area                                 0
+              0 = Disable 1 = Enable
+     5        Shadow RAM at E0000h - EFFFFh Area                                 0
+              0 = Disable 1 = Enable
+     4        Shadow RAM at D0000h - DFFFFh Area Write Protect                   0
+              Enable
+              0 = Disable 1 = Enable
+     3        Shadow RAM at E0000h - EFFFFh Area Write Protect                   0
+              Enable
+              0 = Disable 1 = Enable
+     2        Hidden refresh enable (without holding CPU)                        1
+              1 = Disable 0 = Enable
+     1        Unused Bit                                                         0
+     0        Slow Refresh Enable (4 times slower than the normal refresh) 0     0
+              = Disable 1 = Enable
+
+
+Shadow RAM Control Register II
+Index: 23h
+
+
+    BIT                                 FUNCTION                               DEFAULT
+     7        Shadow RAM at EC000h-EFFFFh area                                   0
+              0 = Disable 1 = Enable
+     6        Shadow RAM at E8000h-EBFFFh area                                   0
+              0 = Disable 1 = Enable
+     5        Shadow RAM at E4000h-E7FFFh area                                   0
+              0 = Disable 1 = Enable
+     4        Shadow RAM at E0000h-E3FFFh area                                   0
+              0 = Disable 1 = Enable
+     3        Shadow RAM at DC000h-DFFFFh area                                   0
+              0 = Disable 1 = Enable
+     2        Shadow RAM at D8000h-DBFFFh area                                   0
+              0 = Disable 1 = Enable
+     1        Shadow RAM at D4000h-D7FFFh area                                   0
+              0 = Disable 1 = Enable
+     0        Shadow RAM at D0000h-D3FFFh area                                   0
+              0 = Disable 1 = Enable
+
+
+
+
+                                           21
+DRAM Control Register I
+Index: 24h
+
+
+    BIT                                  FUNCTION                                DEFAULT
+     7        0 = 256 K DRAM mode                                                  1
+              1 = 1M and 4 M DRAM mode. See the following table
+    6-4       DRAM types used for bank0 and bank1. See the following               000
+              table
+     3        Fast decode enable. This function may be enabled in 20/25            0
+              Mhz operation to speed up the DRAM access.
+              0 = Disable fast decode, DRAM wait state is not changed
+              1 = Enable fast decode, DRAM wait state is decreased by 1
+              This bit is automatically disabled even when it is set to 1 when
+              bit 4 of Index register 21h(cache enable bit) is enabled.
+    2-0       DRAM types used for bank 2 and bank 3. See the following             111
+              table.
+
+
+
+
+       Bits                   Bank 0                   Bank 1
+      7654
+      0000                     256K                       X
+      0001                     256K                     256K
+      0010                      1M                      256K
+      0011                       X                        X
+      01XX                       X                        X
+      1000                      1M                        X
+      1001                      1M                       1M
+      1010                      1M                       4M
+      1011                      4M                       1M
+      1100                      4M                        X
+      1101                      4M                       4M
+      111X                       X                        X
+
+
+       Bits                   Bank 2                   Bank 3
+      7210
+      1000                      1M                        X
+      1001                      1M                       1M
+      1010                       X                        X
+      1011                      4M                       1M
+      1100                      4M                        X
+      1101                      4M                       4M
+      111X                       X                        X
+
+
+
+
+                                            22
+DRAM Control Register II
+Index: 25h
+
+
+    BIT                                 FUNCTION                                DEFAULT
+    7-6       Read cycle wait state                                                11
+              7 6 Additional wait States
+              00     Not used
+              01     0
+              10     1
+              11     2
+              Note: Base wait states is "3".
+    5-3       Write cycle wait state                                               110
+              5 4 3 Additional wait states
+              0 0 0       0
+              0 1 0       1
+              1 0 0       2
+              1 1 0       3
+              0 0 1      not used
+              Note: Base wait states is "2".
+     2        unused                                                                0
+    1-0       ATCLK selection, bit 0 will reflect the BCLKS pin status when      00 or 01
+              82C493 is reset. Bit 0 is 0 if BCLKS is tighted low and 1 if    depending the
+              BCLKS is high                                                   low or high of
+              1 0 ATCLK selection                                                BCLKS
+              0 0 (default) : ATCLK = CLKI/6                                   respectively
+              0 1 (default) ATCLK = CLKI/4
+              1 0            ATCLK = CLKI/3
+              1 1            ATCLK = CLK2I/5
+
+
+
+
+Shadow RAM Control Register III
+Index: 26h
+
+
+    BIT                                FUNCTION                                DEFAULT
+     7        Not used                                                            0
+     6        Shadow RAM copy enable for address area C0000h-CFFFFh               0
+              0 = Read/write at AT bus
+              1 = Read from AT bus and write into shadow RAM
+     5        Shadow write protect at address area C0000h-CFFFFh                    0
+              0 = Write protect disable .
+              1 = Write protect enable
+     4        Shadow RAM enable at C0000h- CFFFFh area                              0
+               0 = Enable 1 = Disable
+
+
+
+
+                                           23
+3   Enable shadow RAM at CC000h-CFFFF area    0
+     0 = Disable 1 = Enable
+2   Enable shadow RAM at C8000h-CBFFF area    0
+    0 = disable 1 = Enable
+1   Enable shadow RAM at C4000h-C7FFFh area   0
+    0 = Disable 1 = Enable
+0   Enable shadow RAM at C0000h-C3FFFh area   0
+      0 = Disable 1 = Enable
+
+
+
+
+                             24
+Control Register 3
+Index: 27h
+
+
+     BIT                                   FUNCTION                                 DEFAULT
+      7         Enable NCA# pin to low state, 0=Disable 1 =Enable                       1
+     6-5        Unused                                                                  00
+      4         Video BIOS at C0000h-C8000h area non-cacheable                          1
+                0 = Cacheable 1 = Non-cacheable
+     3-0        Cacheable address range for local memory, see following table         0001
+
+Note. Memory area at 640K-1M is defaulted to be non-cacheable.
+
+         Bits               Cachable Address range
+        3210
+       0000                        0 - 64 Mb
+       0001                         0 - 4 Mb
+       0010                         0 - 8 Mb
+       0011                        0 - 12 Mb
+       0100                        0 - 16 Mb
+       0101                        0 - 20 Mb
+       0110                        0 - 24 Mb
+       0111                        0 - 28 Mb
+       1000                        0 - 32 Mb
+       1001                        0 - 36 Mb
+       1010                        0 - 40 Mb
+       1011                        0 - 44 Mb
+       1100                        0 - 48 Mb
+       1101                        0 - 52 Mb
+       1110                        0 - 56 Mb
+       1111                        0 - 60 Mb
+
+Note: If total memory is 1 Mb or 2Mb, the cacheable range is 0 - 1 or 0 - 2Mb respectively and
+indendent of the value of bit 0-3. .
+
+
+
+
+                                               25
+Non-cachable Block 1 Register
+Index: 28h
+
+This register is used in conjunction with Index 29h register to define a non-cacheable block.
+The starting address for the Non-Cacheable Block must have the same granularity as the block
+size. For example, if a 512 Kb non-cacheable block is selected, its starting address is a
+multiple of 512 Kb; consequently, only address bits of A19-A23 are significant, A16-A18 are
+"don't care".
+
+
+     BIT                                    FUNCTION                               DEFAULT
+     7-5         Size of non-cachable memory block 1, See following table            100
+     4-2         Unused                                                              000
+     1-0         Address bits of A25 and A24 of non-cachable memory block 1           00
+
+    765           Block Size
+    000              64K
+    001              128K
+    010              256K
+    011              512K
+    1xx            Disabled
+
+
+Non-cachable Block 1 Register II
+Index: 29h
+
+
+     BIT                                  FUNCTION                                  Default
+     7-0         Address bits A23-A16 of non-cachable memory block 1               0001xxxx
+
+
+                                   Valid Starting Address Bits
+
+  Block Size     A23     A22    A21       A20        A19   A18   A17   A16
+     64K          V       V      V         V         V      V    V      V
+    128K          V       V      V         V         V      V    V      x
+    256K          V       V      V         V         V      V    x      x
+    512K          V       V      V         V         V      x    x      x
+
+
+
+x = Don't Care
+V = Valid Bit
+
+
+
+
+                                                26
+Non-cachable Block 2 Register I
+Index: 2Ah
+
+This register is used in conjunction with Index 2Bh register to define a non-cacheable block.
+The starting address for the Non-Cacheable Block must have the same granularity as the block
+size. For example, if a 512 Kb non-cacheable block is selected, its starting address is a
+multiple of 512 Kb; consequently, only address bits of A19-A23 are significant, A16-A18 are
+"don't care".
+
+
+     BIT                                    FUNCTION                               DEFAULT
+     7-5         Size of non-cacheable memory block 1, See following table           100
+     4-2         Unused                                                              000
+     1-0         Address bits of A25 and A24 of non-cachable memory block 1           00
+
+    765            Block Size
+    000              64K
+    001             128K
+    010             256K
+    011             512K
+    1xx            Disabled
+
+
+
+
+Non-cachable Block 1 Register II
+Index: 2Bh
+
+
+     BIT         FUNCTION                                                           Default
+     7-0         Address bit A23-A16 of non-cachable memory block 1                0001xxxx
+
+
+                                   Valid Starting Address Bits
+
+  Block Size     A23      A22   A21       A20        A19   A18   A17   A16
+     64K          V         V     V        V         V      V    V      V
+    128K          V         V     V        V         V      V    V      x
+    256K          V         V     V        V         V      V    x      x
+    512K          V         V     V        V         V      x    x      x
+
+
+
+x = Don't Care
+V = Valid Bit
+
+
+
+
+                                                27
+5 82C392 DATA BUFFER CONTROLLER(DBC)
+
+The DBC is a 160-pin PFP (Plastic Flat Package) device. The DBC integrates data buffers,
+AT bus control, decode logic for an external keyboard controller, reset logic, and clock
+generation logic.. It performs the following functions:
+
+    o   data bus conversion
+    o   parity generation/detection
+    o   AT-BUS direction control
+    o   reset logic
+    o   clock source for 206 and 8042
+    o   chip select for keyboard controller and RTC
+    o   speaker control
+    o   port B, 70H and NMI Logic
+    o   floating-point coprocessor interface
+    o   keyboard reset and gate A20 emulation logic
+
+
+5.1 Data Bus Conversion
+
+The DBC performs data bus conversion when the CPU accesses 16- or 8-bit devices through
+32- and 16-bit instructions. The DBC also handles DMA and AT bus master cycles that
+transfer data between local DRAM or cache memory and locations on the AT bus. The DBC
+provides all of the signals necessary to control external bidirectional data buffers.
+
+
+5.2 Parity Generation/Detection Logic
+
+During local DRAM write cycles, the DBC generates a parity bit for each byte of write data from
+the processor. Parity bits are stored in dedicated local DRAM. Within the timing window of
+"PCKEN" during a DRAM read, the DBC checks if each parity bit is correct for its
+corresponding data byte. If it detects incorrect parity, the DBC generates a parity error.
+
+
+5.3 Clock Generation and Reset Control
+
+The DBC provides the clock sources for timer 1 of the 80C206 and for the 8042 keyboard
+controller to reduce the components count. The clocks are derived from 14.3 Mhz. The
+00C206 clock is 1.19 Mhz. (14.3Mhz divided by 12). The 8042 clock is 7.15 Mhz. (14.3Mhz
+divided by 2.) The DBC also monitors both the PWGD# (Powergood) signal from power supply
+and the reset signal, RST1. from the reset switch. The DBC routes RST1 to the SYSC to
+generate the "cold reset". The DBC can also supply the RST2 keyboard controller "warm
+reset" sequence, or RST2 can come from the keyboard controller. The reset sequence is
+much faster when the DBC supplies RST2.
+
+
+
+
+                                              28
+5.4 Floating-Point Coprocessor Interface
+
+The DBC monitors NPERR# and NPBUSY# to provide support for 387 and 3167 floating-point
+coprocessors. (The 486 has an internal coprocessor and does not need this support.) A
+coprocessor asserts NPERR# during a power on reset. to indicate it is there.. The coprocessor
+asserts NPBUSY# while executing a floating-point calculation, and asserts READY# when it is
+finished. If NPBUSY# is active and a coprocessor error occurs (the coprocessor asserts
+NPERR#), the DBC latches NPBUSY# and generates INT13. INT13 also come from WINT#
+from the Weitek 3167 coprocessor. Latched BUSY# and INT13 can be cleared by a I/O port
+F0H write command.
+
+
+
+
+6 82C392 (DBC) PIN DESCRIPTIONS
+
+6.1 Clock and Reset
+
+
+     Name             Type          Pin No                          Description
+    OSCX1              I              43          14.3 Mhz osc. input.
+    OSCX2              O              42          14.3 Mhz osc. output.
+     OSC               O              82          14.3 Mhz osc. Output to AT bus.
+    OSC12              O              83          1.19 Mhz output to 206
+     OSC2              O              85          14.3 Mhz/2 output for 8042 clock.
+    OSC2#              O              84          14.3 Mhz/2 inverted output for 8042 clock.
+    PWGD#              I              16          Power Good Status from power supply. It is
+                                                  buffered through a Schmitt-trigger gate.
+    RSTSW               I             4           Reset Switch Input. It is buffered through a
+                                                  Schmitt-trigger gate.
+     RST1#             O              10          Power-up or cold Reset signal derived from
+                                                  PWGD# or RSTSW.
+
+
+
+
+                                             29
+6.2 Address and Data Buses
+
+
+     Name             Type    Pin No                           Description
+    D(31:23)           B      79-71           CPU Data Bus
+    D(22:14)           B      69-61           CPU Data Bus
+    D(13:5)            B      59-51           CPU Data Bus
+     D(4:0)            B      49-45           CPU Data Bus
+     A(9:0)            I     119-110          Buffered AT SA (9:0) address lines.
+    SBHE#              I       25             Byte High Enable from AT bus and SYSC.
+    BE(3:0)#           I      39-36           CPU Byte Enables; used for data bus parity
+                                              checking of valid byte.
+   MD(31:26)           B      156-151         Local DRAM Data Bus.
+   MD(25:17)           B      149-141         Local DRAM Data Bus
+   MD(16:8)            B      139-131         Local DRAM Data Bus
+    MD(7:0)            B      129-122         Local DRAM Data Bus
+    MP(3:0)            B     2,159-157        Local DRAM data bus Parity Bits.
+    XD(7:4)            B      104-101         XD Data Lines 7-4.
+    XD(3:0)            B       99-96          XD Data Lines 3-0.
+
+
+
+
+6.3 Bus Arbitration
+
+
+     Name             Type    Pin No                           Description
+     HLDA              I        32            Hold Acknowledge from CPU in response to
+                                              hold request.
+    AEN8#              I        28            8-bit DMA Cycle Indication.
+    AEN16#             I        27            16-bit DMA Cycle Indication.
+     AEN#              O       106            DMA Cycle Indication.
+   MASTER#              I       26            Master Cycle Indication.
+    RFSH#              I        24            Refresh Cycle Indication.
+
+
+
+
+                                         30
+6.4 SYSC Interface
+
+
+    Name              Type         Pin No                            Description
+    INTA#               I            23           Interrupt Acknowledge; for data flow direction.
+   ROMCS#               I            22           System BIOS ROM Chip Select,, used to
+                                                  direct the data bus flow.
+    LMEN#               I             21          Local Memory Enable. Indicate the current
+                                                  cycle is local DRAM Access. It is used to
+                                                  control the bus direction.
+      WR#               I             31          CPU Write or Read Cycle Indication.
+      DLE               I             17          DRAM Read Data Latch, used to latch the data
+                                                  for parity checking.
+     DWE#               I             3           DRAM Write Enable, to enable DRAM write.
+    ATCYC#              I             15          AT Cycle Indication. If asserted, the current
+                                                  access is AT bus cycle.
+    PCKEN#              I             18          Parity Checking Enable, to enable the Parity
+                                                  error signal if any.
+     MIO16              I             30          16-bit slave devices access indication. It is
+                                                  used to control the data flow path.
+    IOWR#               I             11          AT bus I/O Write Command.
+     IORD#              I             12          AT bus I/O Read Command.
+   MEMRD#               I             14          AT bus Memory Read Command.
+   MEMWR#               I             13          AT bus Memory Write Command.
+
+
+6.5 Floating-Point Coprocessor Interfaces
+
+* Note these signals won't be necessary in 486 processor.
+
+
+     Name             Type          Pin No                          Description
+    NPERR#              I             87          Error from the coprocessor. It is an active low
+                                                  input indicating that an unmasked error
+                                                  happens.
+   NPBUSY#              I             88          Busy from the coprocessor to indicate a
+                                                  coprocessor instruction is under execution.
+    NPRST              O              89          Reset Numeric Processor
+    BUSY#              O              34          Latched Coprocessor Busy Output to 80386 to
+                                                  indicate a NPBUSY# or NPERR# signals has
+                                                  occurred.
+   BSYTOG#              I             9           Busy Toggled Control; used to toggle the
+                                                  BUSY# signal when the coprocessor is not
+                                                  installed.
+
+
+
+
+                                             31
+     Name           Type    Pin No                            Description
+     INT13           O        91          Coprocessor Interrupt; is an active high output.
+                                          It is an interrupt request from numeric
+                                          coprocessor and connected to IRQ13 of
+                                          interrupt controller.
+     ERR#            O        33          Error signal to 80386. It reflect the NPERR#
+                                          signal during the period from RST4# active to
+                                          first ROMCS#.
+     WINT            I        92          Weitek 3167 Co-processor Interrupt Request.
+    PREQI            I        90          80387 coprocessor Request Input.
+    PREQO            O        35          Numeric Processor Request to 80386.
+
+
+
+
+6.6 Miscellaneous Signals
+
+
+     Name           Type    Pin No                          Description
+   KBDCS#            O       105          Keyboard Controller Chip Select.
+     NMI             O        95          Non-maskable Interrupt; due to parity error
+                                          from local memory or AT bus channel check.
+    SPKD             O        8           Speaker Data Output, derived from the function
+                                          of OUT2 and port 61H bit1.
+    GATE2            O        93          Timer 2 Gate Control.
+    ASRTC            O        94          Real Time Clock Address Strobe.
+    CHCK#            I        29          AT-BUS Channel Check.
+     OUT2            O        44          Timer 2 output.
+     FAST            I        5           FAST is an active high input which will enable
+                                          the emulation of Fast GATEA20 and Reset
+                                          Control Enable.
+   EGTA20            O        7           GateA20 output. It is generated by emulating
+                                          Keyboard GATEA20.
+    ERST2#           O        6           RST2# output. It is generated by emulating
+                                          keyboard RST2#.
+     M16#            O        19          Master Access Local DRAM invalidation.
+    SDEN#            O       107          MD-bus to SD-bus Buffer Enable Signal.
+    SDIR1#           O       109          MD(7:0) to SD(7:0) Buffer Direction Control.
+    SDIR2#           O       108          MD(15:8) to SD(15:8) Buffer Direction Control.
+
+
+
+
+                                     32
+6.7 Ground and VCC
+
+
+      Name             Type                             Pin No                        Description
+      VCC                I                          20,40,86,100,140                     +5V
+      GND                I              1,40,41,50,70,80,81,120,121,130,150,160      VSS or Ground
+
+
+
+
+7 82C392(DBC) REGISTERS DESCRIPTIONS
+
+Control Register Index 21h(write only)
+
+        Bit 7-4 is a duplication of control register index 21h of 82C491.
+        Bit 3-0 are not used.
+
+
+I/O Port 60h
+
+Port 60h and 64h emulate the registers of a keyboard controller, allowing the generation of a
+fast gate A20 signal. The sequence here is BIOS transparent, and there is no need for the
+modification of the current BIOS. The fast gate A20 generation is enabled when the "Fast" pin
+is wired high. The sequence involves writing data D1h to port 64h, then writing data 02h to port
+60h.When "Fast" is asserted, I/O port 60h indicates the status of a system reset (bit 0) and
+gate A20 (bit 1).
+
+
+I/O Port 61h(Port B)
+
+                 Bit           Read/Write                 Function
+                  0           R/W            Timer 2 Gate.
+                  1           R/W            Speaker Output Enable.
+                  2           R/W            Parity Check Enable.
+                  3           R/W            I/O Channel Check Enable.
+                  4           R              Refresh Detect.
+                  5           R              Timer OUT2 Detect.
+                  6           R              I/O Channel Check.
+                  7           R              System Parity Check.
+
+
+
+
+                                               33
+I/O Port 64h
+
+I/O port 64h emulate the register inside a keyboard controller by generating a fast reset pulse.
+Writing data FEh to port 64h asserts the reset pulse. The pulse is generated immediately after
+the I/O write if bit 6 of Index 21h is set, otherwise the pulse is asserted 2us after the write.
+
+Port 70h
+
+               Bit         Read/write                Function                 Polarity
+               7             R/W                   NMI Enable                    0
+
+
+
+
+                                              34
+

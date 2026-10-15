@@ -1,0 +1,2389 @@
+                                                                 Standard ECMA-119
+                                                                          2 n d E d i t i o n - D e c e mb e r 1 9 8 7
+                                                                              Re p r in te d S e p te mb e r 1 9 9 8
+
+
+
+
+Standardizing Information and Communication Systems
+
+
+
+
+                         Volume and File Structure
+                         of CDROM for Information
+                         Interchange
+
+
+
+
+Phone: +41 22 849.60.00 - Fax: +41 22 849.60.01 - URL: http://www.ecma.ch - Internet: helpdesk@ecma.ch
+.
+                                                                 Standard ECMA-119
+                                                                          2 n d E d i t i o n - D e c e mb e r 1 9 8 7
+
+
+
+
+Standardizing Information and Communication Systems
+
+
+
+
+                         Volume and File Structure of
+                         CDROM for Information
+                         Interchange
+
+
+
+
+Phone: +41 22 849.60.00 - Fax: +41 22 849.60.01 - URL: http://www.ecma.ch - Internet: helpdesk@ecma.ch
+.
+                                                        Brief History
+
+In the past years compact disks originally developed for recording music have also been used for recording data as they allow
+recording of large amounts of information in a reliable and economic manner. As a read-only medium they are particularly
+suitable for use in applications such as auditing and legal documents. It appeared very quickly that there is an urgent need for a
+stable standard for the structure of such compact disks and of the files recorded thereon.
+In October 1985 a number of industrial and software companies in the USA invited experts to participate in the development
+of a working paper for such a project. The result of this work, in which also expert members of ECMA/TC15 as well as from
+Japan participated, was a report dated May 1986 and known as the “High Sierra Group” proposal.
+This proposal was submitted in Europe to ECMA for their consideration. ECMA TC15, in collaboration with experts from
+user organizations, invested a considerable amount of work into this proposal in order to clarify and complete its technical
+contents and to re-edit it in a form suitable for an Standard. Particular attention was given to conformance aspects by applying
+the same editing principles as for the other standards for labelling, such as ECMA-13 (ISO 1001) and ECMA-107 (ISO 9293).
+As a result Standard ECMA-119 was issued in December 1986.
+This ECMA Standard was submitted by ECMA to ISO for processing as an International Standard under the ISO fast-track
+procedure, which resulted in International Standard ISO 9660 in which a number of improvements and editorial amendments
+were introduced. This 2nd Edition of Standard ECMA-119 is technically identical with ISO 9660.
+
+
+
+
+Adopted as 2nd Edition of Standard ECMA-119 by the General Assembly of 10th December 1987.
+.
+                                                   i
+
+
+
+
+                                           Table of contents
+
+Section I - General                                            1
+
+1 Scope and field of application                               1
+
+2 Conformance                                                  1
+ 2.1 Conformance of a CD-ROM                                   1
+ 2.2 Conformance of an information processing system           1
+
+3 References                                                   1
+
+4 Definitions                                                  1
+ 4.1 application program                                       2
+ 4.2 byte                                                      2
+ 4.3 Data Field of a sector                                    2
+ 4.4 data preparer                                             2
+ 4.5 descriptor                                                2
+ 4.6 Extent                                                    2
+ 4.7 file                                                      2
+ 4.8 File Section                                              2
+ 4.9 implementation                                            2
+ 4.10 Logical Block                                            2
+ 4.11 originating system                                       2
+ 4.12 receiving system                                         2
+ 4.13 record                                                   2
+ 4.14 sector                                                   2
+ 4.15 standard for recording                                   2
+ 4.16 user                                                     3
+ 4.17 volume                                                   3
+ 4.18 Volume Set                                               3
+
+5 Notation                                                     3
+ 5.1 Decimal and hexadecimal notations                         3
+ 5.2 Other notation                                            3
+
+Section II: Requirements for the medium                        3
+
+6 Volume structure                                             3
+ 6.1 Arrangement of data on a CD-ROM                           3
+  6.1.1 Physical Addresses                                     3
+  6.1.2 Logical Sector                                         3
+  6.1.3 Volume Space                                           4
+ 6.2 Arrangement of the Volume Space                           4
+  6.2.1 System Area and Data Area                              4
+  6.2.2 Logical Block                                          4
+ 6.3 Arrangement of the Data Area                              4
+ 6.4 Arrangement of Extents                                    5
+  6.4.1 Extent                                                 5
+  6.4.2 Mode of recording a File Section                       5
+  6.4.3 Interleaved mode                                       5
+  6.4.4 Non-interleaved mode                                   6
+                                                    ii
+
+
+
+
+  6.4.5 Data length of a File Section                                   6
+  6.4.6 Relation of Extended Attribute Record to File Section           6
+  6.4.7 Recording of a Volume Partition                                 7
+ 6.5 File structure                                                     7
+  6.5.1 Relation to File Sections                                       7
+  6.5.2 Numbering of bytes in a file                                    7
+  6.5.3 Contents of a file                                              7
+  6.5.4 Associated file                                                 7
+ 6.6 Volume Set                                                         7
+ 6.7 Volume Descriptors                                                 8
+  6.7.1 Volume Descriptor Set                                           8
+ 6.8 Directory structure                                                8
+  6.8.1 Directory                                                       8
+  6.8.2 Directory Hierarchy                                             9
+  6.8.3 Relation of Directory Hierarchies                              10
+ 6.9 Path Table                                                        10
+  6.9.1 Order of Path Table Records                                    10
+  6.9.2 Path Table Group                                               11
+  6.9.3 Recorded Occurrences of the Path Table                         11
+  6.9.4 Consistency of Path Tables between volumes of a Volume Group   11
+ 6.10 Record structure                                                 11
+  6.10.1 Characteristics                                               11
+  6.10.2 Measured Data Units (MDU)                                     11
+  6.10.3 Fixed-length records                                          12
+  6.10.4 Variable-length records                                       12
+
+7 Recording of descriptor fields                                       12
+ 7.1 8-bit numerical values                                            12
+ 7.2 16-bit numerical value                                            12
+  7.2.1 Least significant byte first                                   12
+  7.2.2 Most significant byte first                                    12
+  7.2.3 Both-byte orders                                               13
+ 7.3 32-bit numerical values                                           13
+  7.3.1 Least significant byte first                                   13
+  7.3.2 Most significant byte first                                    13
+  7.3.3 Both-byte orders                                               13
+ 7.4 Character sets and coding                                         13
+  7.4.1 d-characters and a-characters                                  13
+  7.4.2 c-characters                                                   14
+  7.4.3 Separators                                                     14
+  7.4.4 Use of characters in descriptor fields                         14
+  7.4.5 Justification of characters                                    14
+ 7.5 File Identifier                                                   14
+  7.5.1 File Identifier format                                         14
+  7.5.2 File Identifier length                                         15
+ 7.6 Directory Identifier                                              15
+  7.6.1 Directory Identifier Format                                    15
+  7.6.2 Reserved Directory Identifiers                                 15
+  7.6.3 Directory Identifier length                                    15
+                                                    iii
+
+
+
+
+8 Volume Descriptors                                                            15
+ 8.1 Format of a Volume Descriptor                                              15
+  8.1.1 Volume Descriptor Type (BP 1)                                           15
+  8.1.2 Standard Identifier (BP 2 to 6)                                         15
+  8.1.3 Volume Descriptor Version (BP 7)                                        16
+  8.1.4 Depends on Volume Descriptor Type (BP 8 to 2 048)                       16
+ 8.2 Boot Record                                                                16
+  8.2.1 Volume Descriptor Type (BP 1)                                           16
+  8.2.2 Standard Identifier (BP 2 to 6)                                         16
+  8.2.3 Volume Descriptor Version (BP 7)                                        16
+  8.2.4 Boot System Identifier (BP 8 to 39)                                     16
+  8.2.5 Boot Identifier (BP 40 to 71)                                           16
+  8.2.6 Boot System Use (BP 72 to 2048)                                         16
+ 8.3 Volume Descriptor Set Terminator                                           17
+  8.3.1 Volume Descriptor Type (BP 1)                                           17
+  8.3.2 Standard Identifier (BP 2 to 6)                                         17
+  8.3.3 Volume Descriptor Version (BP 7)                                        17
+  8.3.4 Reserved for future standardization (BP 8 to 2048)                      17
+ 8.4 Primary Volume Descriptor                                                  17
+  8.4.1 Volume Descriptor Type (BP 1)                                           18
+  8.4.2 Standard Identifier (BP 2 to 6)                                         18
+  8.4.3 Volume Descriptor Version (BP 7)                                        18
+  8.4.4 Unused Field (BP 8)                                                     18
+  8.4.5 System Identifier (BP 9 to 40)                                          18
+  8.4.6 Volume Identifier (BP 41 to 72)                                         19
+  8.4.7 Unused Field (BP 73 to 80)                                              19
+  8.4.8 Volume Space Size (BP 81 to 88)                                         19
+  8.4.9 Unused Field (BP 89 to 120)                                             19
+  8.4.10 Volume Set Size (BP 121 to 124)                                        19
+  8.4.11 Volume Sequence Number (BP 125 to 128)                                 19
+  8.4.12 Logical Block Size (BP 129 to 132)                                     19
+  8.4.13 Path Table Size (BP 133 to 140)                                        19
+  8.4.14 Location of Occurrence of Type L Path Table (BP 141 to 144)            19
+  8.4.15 Location of Optional Occurrence of Type L Path Table (BP 145 to 148)   19
+  8.4.16 Location of Occurrence of Type M Path Table (BP 149 to 152)            19
+  8.4.17 Location of Optional Occurrence of Type M Path Table (BP 153 to 156)   19
+  8.4.18 Directory Record for Root Directory (BP 157 to 190)                    20
+  8.4.19 Volume Set Identifier (BP 191 to 318)                                  20
+  8.4.20 Publisher Identifier (BP 319 to 446)                                   20
+  8.4.21 Data Preparer Identifier (BP 447 to 574)                               20
+  8.4.22 Application Identifier (BP 575 to 702)                                 20
+  8.4.23 Copyright File Identifier (BP 703 to 739)                              20
+  8.4.24 Abstract File Identifier (BP 740 to 776)                               21
+  8.4.25 Bibliographic File Identifier (BP 777 to 813)                          21
+  8.4.26 Volume Creation Date and Time (BP 814 to 830)                          21
+  8.4.27 Volume Modification Date and Time (BP 831 to 847)                      21
+  8.4.28 Volume Expiration Date and Time (BP 848 to 864)                        21
+  8.4.29 Volume Effective Date and Time (BP 865 to 881)                         22
+  8.4.30 File Structure Version (BP 882)                                        22
+  8.4.31 Reserved for future standardization (BP 883)                           22
+  8.4.32 Application Use (BP 884 to 1395)                                       22
+  8.4.33 Reserved for future standardization (BP 1396 to 2048)                  22
+ 8.5 Supplementary Volume Descriptor                                            22
+  8.5.1 Volume Descriptor Type (BP 1)                                           23
+  8.5.2 Volume Descriptor Version (BP 7)                                        23
+                                                    iv
+
+
+
+
+  8.5.3 Volume Flags (BP 8)                                                     23
+  8.5.4 System Identifier (BP 9 to 40)                                          23
+  8.5.5 Volume Identifier (BP 41 to 72)                                         23
+  8.5.6 Escape Sequences (BP 89 to 120)                                         23
+  8.5.7 Path Table Size (BP 133 to 140)                                         24
+  8.5.8 Location of Occurrence of Type L Path Table (BP 141 to 144)             24
+  8.5.9 Location of Optional Occurrence of Type L Path Table (BP 145 to 148)    24
+  8.5.10 Location of Occurrence of Type M Path Table (BP 149 to 152)            24
+  8.5.11 Location of Optional Occurrence of Type M Path Table (BP 153 to 156)   24
+  8.5.12 Directory Record for Root Directory (BP 157 to 190)                    24
+  8.5.13 Volume Set Identifier (BP 191 to 318)                                  24
+  8.5.14 Publisher Identifier (BP 319 to 446)                                   24
+  8.5.15 Data Preparer Identifier (BP 447 to 574)                               25
+  8.5.16 Application Identifier (BP 575 to 702)                                 25
+  8.5.17 Copyright File Identifier (BP 703 to 739)                              25
+  8.5.18 Abstract File Identifier (BP 740 to 776)                               25
+  8.5.19 Bibliographic File Identifier (BP 777 to 813)                          25
+  8.5.20 Application Use (BP 884 to 1 395)                                      25
+ 8.6 Volume Partition Descriptor                                                25
+  8.6.1 Volume Descriptor Type (BP 1)                                           26
+  8.6.2 Standard Identifier (BP 2 to 6)                                         26
+  8.6.3 Volume Descriptor Version (BP 7)                                        26
+  8.6.4 Unused Field (BP 8)                                                     26
+  8.6.5 System Identifier (BP 9 to 40)                                          26
+  8.6.6 Volume Partition Identifier (BP 41 to 72)                               26
+  8.6.7 Volume Partition Location (BP 73 to 80)                                 26
+  8.6.8 Volume Partition Size (BP 81 to 88)                                     26
+  8.6.9 System Use (BP 89 to 2 048)                                             27
+
+9 File and Directory Descriptors                                                27
+ 9.1 Format of a Directory Record                                               27
+  9.1.1 Length of Directory Record (LEN_DR) (BP 1)                              27
+  9.1.2 Extended Attribute Record Length (BP 2)                                 27
+  9.1.3 Location of Extent (BP 3 to 10)                                         27
+  9.1.4 Data Length (BP 11 to 18)                                               27
+  9.1.5 Recording Date and Time (BP 19 to 25)                                   28
+  9.1.6 File Flags (BP 26)                                                      28
+  9.1.7 File Unit Size (BP 27)                                                  29
+  9.1.8 Interleave Gap Size (BP 28)                                             29
+  9.1.9 Volume Sequence Number (BP 29 to 32)                                    29
+  9.1.10 Length of File Identifier (LEN_FI) (BP 33)                             29
+  9.1.11 File Identifier [BP 34 to (33 + LEN-FI)]                               29
+  9.1.12 Padding Field [BP (34 + LEN_FI)]                                       29
+  9.1.13 System Use [BP (LEN_DR - LEN_SU + 1) to LEN_DR)                        30
+ 9.2 Consistency of File Attributes between Directory Records of a File         30
+ 9.3 Order of Directory Records                                                 30
+ 9.4 Format of a Path Table Record                                              31
+  9.4.1 Length of Directory Identifier (LEN_DI) (BP 1)                          31
+  9.4.2 Extended Attribute Record length (BP 2)                                 31
+  9.4.3 Location of Extent (BP 3 to 6)                                          31
+  9.4.4 Parent Directory Number (BP 7 to 8)                                     31
+  9.4.5 Directory Identifier [BP 9 to (8 + LEN_DI)]                             31
+  9.4.6 Padding Field [BP (9 + LEN_DI)]                                         31
+ 9.5 Format of an Extended Attribute Record                                     32
+  9.5.1 Owner Identification (BP 1 to 4)                                        32
+                                                       v
+
+
+
+
+     9.5.2 Group Identification (BP 5 to 8)                                           32
+     9.5.3 Permissions (BP 9 to 10)                                                   32
+     9.5.4 File Creation Date and Time (BP 11 to 27)                                  34
+     9.5.5 File Modification Date and Time (BP 28 to 44)                              34
+     9.5.6 File Expiration Date and Time (BP 45 to 61)                                35
+     9.5.7 File Effective Date and Time (BP 62 to 78)                                 35
+     9.5.8 Record Format (BP 79)                                                      35
+     9.5.9 Record Attributes (BP 80)                                                  35
+     9.5.10 Record Length (BP 81 to 84)                                               35
+     9.5.11 System Identifier (BP 85 to 116)                                          35
+     9.5.12 System Use (BP 117 to 180)                                                36
+     9.5.13 Extended Attribute Record Version (BP 181)                                36
+     9.5.14 Length of Escape Sequences (BP 182)                                       36
+     9.5.15 Reserved for future standardization (BP 183 to 246)                       36
+     9.5.16 Length of Application Use (BP 247 to 250)                                 36
+     9.5.17 Application Use [BP 251 to (250 + LEN-AU)]                                36
+     9.5.18 Escape Sequences [BP (251 + LEN_AU) to (250 + LEN_ESC + LEN_AU)]          36
+    9.6 Consistency of File Attributes between Extended Attribute Records of a File   36
+
+10 Levels of interchange                                                              36
+    10.1 Level 1                                                                      36
+    10.2 Level 2                                                                      36
+    10.3 Level 3                                                                      37
+
+Section three: Requirements for systems                                               37
+
+11 Requirement for the description of systems                                         37
+
+12 Requirements for an originating system                                             37
+    12.1 General                                                                      37
+    12.2 Files                                                                        37
+    12.3 Descriptors                                                                  37
+    12.4 System Area                                                                  39
+
+13 Requirements for a receiving system                                                39
+    13.1 General                                                                      39
+    13.2 Files                                                                        39
+    13.3 Descriptors                                                                  39
+    13.4 Restrictions                                                                 40
+    13.5 Levels of Implementation                                                     40
+     13.5.1 Level 1                                                                   40
+     13.5.2 Level 2                                                                   40
+
+Appendix A - Standard ECMA-6 : International Reference Version (IRV)                  42
+
+
+.
+vi
+Section I - General
+
+1      Scope and field of application
+       This Standard specifies the volume and file structure of compact read only optical disks (CD-ROM) for the
+       interchange of information between users of information processing systems.
+       This Standard specifies
+       − the attributes of the volume and the descriptors recorded on it;
+       − the relationship among volumes of a volume set;
+       − the placement of files;
+       − the attributes of the files;
+       − record structures intended for use in the input or output data streams of an application program when such data
+         streams are required to be organized as sets of records;
+       − three nested levels of medium interchange;
+       − two nested levels of implementation;
+       − requirements for the processes which are provided within information processing systems, to enable information to
+         be interchanged between different systems, utilizing recorded CD-ROM as the medium of interchange; for this
+         purpose it specifies the functions to be provided within systems which are intended to originate or receive CD-
+         ROM which conform to this Standard.
+
+
+2      Conformance
+ 2.1     Conformance of a CD-ROM
+         A CD-ROM sconforms to this Standard when all information recorded on it conforms to the requirements of
+         Section II of this Standard. A statement of conformance shall identify the lowest level of interchange to which the
+         contents of the CD-ROM conform.
+         A prerequisite to such conformance is conformance of the CD-ROM to a standard for recording (see 4.15).
+ 2.2     Conformance of an information processing system
+         An information processing system shall be in conformance with this Standard if it meets the requirements specified
+         in Sections II and III of this Standard either for an originating system, or for a receiving system, or for both types
+         of system. A statement of conformance shall identify which level of these requirements can be met by the system.
+
+
+3      References
+       ECMA-6             : 7-Bit Coded Character Set
+       ECMA-35           : Code Extension Techniques
+       ECMA-43           : 8-Bit Code – Structure and Rules
+       ISO 1539          : Programming languages - FORTRAN.
+       ISO 2375          : Data processing - Procedure for registration of escape sequences International Register of Coded
+                           Character Sets to Be Used With Escape Sequences
+       Standards for recording: This Standard assumes the existence of a standard for recording (see 4.15).
+
+
+4      Definitions
+       For the purposes of this Standard, the following definitions apply.
+                                                           - 2 -
+
+
+
+
+4.1    application program
+       A program that processes the contents of a file, and may also process selected attribute data relating to the file or to
+       the volume(s) on which the file is recorded.
+       NOTE 1
+       An application program is a specific class of user, as defined in this Standard.
+4.2    byte
+       A string of eight binary digits operated upon as a unit.
+4.3    Data Field of a sector
+       A field containing the data of a sector.
+4.4    data preparer
+       A person or other entity which controls the preparation of the data to be recorded on a volume group.
+       NOTE 2
+       A data preparer is a specific class of user as defined in this Standard.
+4.5    descriptor
+       A structure containing descriptive information about a volume or a file.
+4.6    Extent
+       A set of logical blocks, the logical block numbers of which form a continuous ascending sequence.
+4.7    file
+       A named collection of information.
+4.8    File Section
+       That part of a file that is recorded in any one extent.
+4.9    implementation
+       A set of processes which enable an information processing system to behave as an originating system, or as a
+       receiving system, or as both types of system.
+4.10   Logical Block
+       A group of 2n+9 bytes treated as a logical unit, where n equals 0 or a positive integer.
+4.11   originating system
+       An information processing system which can create a set of files on a volume set for the purpose of data
+       interchange with another system.
+4.12   receiving system
+       An information processing system which can read a set of files from a volume set which has been created by
+       another system for the purpose of data interchange.
+4.13   record
+       A sequence of bytes treated as a unit of information.
+4.14   sector
+       The smallest addressable part of the recorded area on a CD-ROM that can be accessed independently of other
+       addressable parts of the recorded area.
+4.15   standard for recording
+       A standard that specifies the recording method and the addressing method for the information recorded on a CD-
+       ROM.
+       The specifications of the standard for recording that are relevant for this Standard are
+                                                                 - 3 -
+
+
+
+
+              − a unique Physical Address for each recorded sector;
+              − the location of the Data Field within each sector;
+              − the length of the Data Field within each sector.
+              NOTE 3
+              The standard for recording used in conjunction with this Standard is subject to agreement between the originator
+              and the recipient of the volumes.
+4.16          user
+              A person or other entity (for example, an application program) that causes the invocation of the services provided
+              by an implementation.
+4.17          volume
+              A dismountable CD-ROM.
+4.18          Volume Set
+              A collection of one or more volumes, on which a set of files is recorded.
+
+
+5           Notation
+            The following notation is used in this Standard.
+5.1           Decimal and hexadecimal notations
+              Numbers in decimal notation are represented by decimal digits, namely 0 to 9.
+              Numbers in hexadecimal notation are represented by hexadecimal digits, namely 0 to 9 and A to F, shown in
+              parentheses.
+5.2           Other notation
+              BP              Byte position within a descriptor, starting with 1
+              RBP             Byte position within a descriptor field, starting with 1
+              ZERO            A single bit with the value 0
+              ONE             A single bit with the value 1
+              Digit(s)        Any digit from DIGIT ZERO to DIGIT NINE
+
+
+Section II: Requirements for the medium
+
+6           Volume structure
+6.1           Arrangement of data on a CD-ROM
+    6.1.1        Physical Addresses
+                 Each sector shall be identified by a unique Physical Address as specified in the relevant standard for recording.
+    6.1.2        Logical Sector
+                 The sectors of a volume shall be organized into Logical Sectors. Each Logical Sector shall consist of a number
+                 of bytes equal to 2048 or 2^n, whichever is larger, where n is the largest integer such that 2^n is less than, or
+                 equal to, the number of bytes in the Data Field of any sector recorded on the volume. The number of bytes in a
+                 Logical Sector shall be referred to as the Logical Sector size. Each Logical Sector shall begin in a different
+                 sector from any other Logical Sector, and shall begin with the first byte of the Data Field of the sector in which
+                 it begins. If the number of bytes of the Data Field of each sector recorded on the volume is less than 2048, a
+                 Logical Sector shall comprise more than one sector, and the set of the Physical Addresses of its constituent
+                 sectors shall form a consecutive ascending sequence. The data of a Logical Sector shall be recorded in the Data
+                 Fields of its constituent sectors.
+                 Each Logical Sector shall be identified by a unique Logical Sector Number. Logical Sector Numbers shall be
+                 integers assigned in an ascending sequence, in order of ascending Physical Addresses of the constituent sectors,
+                                                            - 4 -
+
+
+
+
+             starting with 0 for the Logical Sector containing the sector having the lowest Physical Address which may
+             contain recorded information. The numbering shall continue through successive Logical Sectors, each of which
+             begins with the sector with the next higher Physical Address than that of the last sector constituting the previous
+             Logical Sector.
+ 6.1.3       Volume Space
+             The information on a volume shall be recorded in the set of all Logical Sectors on the volume. This set shall be
+             referred to as the Volume Space of the volume.
+             The bytes in the Volume Space shall be numbered consecutively. The numbering shall start with 1, which shall
+             be assigned to the first byte of the first Logical Sector of the Volume Space. The numbering shall continue
+             through successive bytes of the first Logical Sector, and then through successive bytes of each successive
+             Logical Sector, of the Volume Space.
+6.2      Arrangement of the Volume Space
+ 6.2.1       System Area and Data Area
+             The Volume Space shall be divided into a System Area and a Data Area.
+             The System Area shall occupy the Logical Sectors with Logical Sector Numbers 0 to 15. The System Area shall
+             be reserved for system use. Its content is not specified by this Standard.
+             The Data Area shall occupy the remaining Logical Sectors of the Volume Space.
+ 6.2.2       Logical Block
+             The Volume Space shall be organized into Logical Blocks. Each Logical Block shall consist of 2n+9 bytes,
+             where n equals 0 or a positive integer. The number of bytes in a Logical Block shall be referred to as the Logical
+             Block size which shall not be greater than the Logical Sector size.
+             Each Logical Block shall be identified by a unique Logical Block Number. Logical Block Numbers shall be
+             integers assigned in ascending order starting with 0. Logical Block Number 0 shall be assigned to the Logical
+             Block which begins with the first byte of the Volume Space. Each successive Logical Block Number shall be
+             assigned to the Logical Block which begins with the byte in the Volume Space immediately following the last
+             byte of the preceding Logical Block.
+6.3      Arrangement of the Data Area
+         File Sections shall be recorded in the Data Area. More than one File Section of a file may be recorded on the same
+         volume.
+         The following types of descriptors shall be recorded in the Data Area to describe the use of the Data Area:
+         −   Volume Descriptors
+         −   File Descriptors
+         −   Directory Descriptors
+         −   Path Tables
+         The Volume Descriptors shall be recorded in consecutively numbered Logical Sectors starting with the Logical
+         Sector having Logical Sector Number 16. The Logical Sectors in the Data Area shall be available for the
+         assignment of Volume Partitions and the recording of File Sections, File Descriptors, Directory Descriptors and
+         Path Tables.
+         Each File Section shall be recorded in an Extent, and shall be identified by a descriptor in a directory. An Extended
+         Attribute Record can be associated with the File Section. If present, it shall be recorded in the same Extent as the
+         associated File Section, and shall be identified by the descriptor that identifies the associated File Section. Each
+         directory shall be recorded as a file in a single Extent, and shall be identified by a Directory Descriptor either in
+         another directory or in a Volume Descriptor. Each directory shall also be identified by a record in a Path Table.
+         Each Path Table shall be identified in a Volume Descriptor.
+         Space within the Data Area may be assigned to one or more Volume Partitions. Each Volume Partition shall be
+         recorded in an Extent and shall be identified by a Volume Descriptor.
+                                                          - 5 -
+
+
+
+
+6.4      Arrangement of Extents
+ 6.4.1      Extent
+            An Extent shall be a set of Logical Blocks, the Logical Block Numbers of which form a continuous ascending
+            sequence.
+ 6.4.2      Mode of recording a File Section
+            A File Section, and its associated Extended Attribute Record if any, shall be recorded in an Extent either in
+            interleaved mode or in non-interleaved mode.
+ 6.4.3      Interleaved mode
+  6.4.3.1     File Unit
+              A File Unit shall comprise a set of Logical Blocks that are within an Extent and the Logical Block Numbers
+              of which form a continuous ascending sequence.
+              When a File Section is recorded in interleaved mode, one or more File Units, each consisting of the same
+              number of Logical Blocks, shall be assigned to the File Section within the same Extent. The number of
+              Logical Blocks in the File Unit shall be the assigned File Unit size for the File Section.
+              The first Logical Block of each File Unit shall have a Logical Block Number which is the lowest Logical
+              Block Number in the Logical Sector that contains that Logical Block.
+              The sequence of the File Units in an Extent shall correspond to the sequence of the Logical Block Numbers
+              of the first Logical Block of each File Unit.
+              NOTE 4
+              The Logical Blocks comprising a File Unit assigned to a File Section may
+              − also each be assigned to a different File Section, and/or
+              − comprise part of one or more Volume Partitions.
+  6.4.3.2     Interleave Gap
+              An Interleave Gap shall comprise the set of Logical Blocks that are within an Extent and the Logical Block
+              Numbers of which lie between the last Logical Block Number of a File Unit and the first Logical Block
+              Number of the next File Unit, if any, in the sequence. All Interleave Gaps between the File Units assigned to
+              a File Section shall comprise the same number of Logical Blocks. This number shall be the assigned
+              Interleave Gap size for the File Section.
+              NOTE 5
+              The Logical Blocks comprising an Interleave Gap between the File Units assigned to a File Section may
+              − also each be assigned to a different File Section, and/or
+              − comprise part of one or more Volume Partitions.
+  6.4.3.3     Relation of File Section to File Unit
+              When a File Section is recorded in interleaved mode, the File Section, and its associated Extended Attribute
+              Record, if any, shall be recorded over the sequence of File Units assigned to the File Section.
+  6.4.3.4     Recording of an Extended Attribute Record
+              If an Extended Attribute Record is recorded, it shall be recorded in the first File Unit of the sequence. The
+              recording shall begin at the first byte of the first Logical Block of the File Unit. It shall continue through
+              successive bytes of that Logical Block, and then through successive bytes of successive Logical Blocks, if
+              any, of the File Unit, until all of the Extended Attribute Record is recorded.
+              The assigned Extended Attribute Record length shall be equal to the assigned File Unit size.
+  6.4.3.5     Recording of a File Section
+              The successive parts, if any, of the File Section shall be recorded in successive File Units, starting from the
+              second File Unit in the sequence if an Extended Attribute Record is recorded, and starting from the first File
+              Unit in the sequence if no Extended Attribute Record is recorded.
+                                                         - 6 -
+
+
+
+
+ 6.4.3.6     Data Space
+             The set of File Units in which the successive parts of the File Section are recorded shall be the Data Space of
+             the File Section.
+             The bytes in the Data Space shall be numbered consecutively. The numbering shall start from 1 which shall
+             be assigned to the first byte of the first Logical Block of the first File Unit, if any, of the Data Space. The
+             numbering shall continue through successive bytes of that Logical Block, then through successive bytes of
+             each successive Logical Block, if any, of the first File Unit, and then through successive bytes of the Logical
+             Block(s) of each successive File Unit, if any, assigned to the File Section.
+             The numbering shall end with a number equal to the number of bytes in which the File Section is recorded in
+             the Data Space; or this number shall equal zero if there are no bytes of the file recorded in the Data Space.
+6.4.4      Non-interleaved mode
+           When a File Section is recorded in non-interleaved mode, the File Section, and its associated Extended Attribute
+           Record, if any, shall be recorded over the sequence of Logical Blocks in an Extent.
+ 6.4.4.1     Recording of an Extended Attribute Record
+             If an Extended Attribute Record is recorded, it shall be recorded over one or more Logical Blocks, the
+             Logical Block Numbers of which form a continuous ascending sequence. The recording shall begin at the
+             first byte of the first Logical Block of the Extent. It shall continue through successive bytes of that Logical
+             Block, and then through successive bytes of successive Logical Blocks, if any, of the Extent, until all of the
+             Extended Attribute Record is recorded.
+             The number of Logical Blocks over which the Extended Attribute Record is recorded shall be the assigned
+             Extended Attribute Record length for the File Section.
+             NOTE 6
+             The Logical Blocks comprising an Extended Attribute Record assigned to a File Section may
+             − also each be assigned to a different File Section, and/or
+             − comprise part of one or more Volume Partitions.
+ 6.4.4.2     Recording of a File Section
+             The File Section shall be recorded over zero or more Logical Blocks, the Logical Block Numbers of which
+             form a continuous ascending sequence. If no Extended Attribute Record is recorded, the sequence shall start
+             with the first Logical Block of the Extent. If an Extended Attribute Record is recorded, the sequence shall
+             start with the first Logical Block, if any, immediately following the last Logical Block over which the
+             Extended Attribute Record is recorded.
+ 6.4.4.3     Data Space
+             The set of Logical Blocks over which the File Section is recorded shall be the Data Space of the File Section.
+             The bytes in the Data Space shall be numbered consecutively. The numbering shall start from 1 which shall
+             be assigned to the first byte of the first Logical Block, if any, of the Data Space. The numbering shall
+             continue through successive bytes of that Logical Block, and then through successive bytes of each
+             successive Logical Block, if any, of the Data Space.
+             The numbering shall end with a number equal to the number of bytes in which the File Section is recorded in
+             the Data Space; or this number shall equal zero if there are no bytes of the file recorded in the Data Space.
+6.4.5      Data length of a File Section
+           The data length of a File Section shall be the number of bytes in which the File Section is recorded in the Data
+           Space. If this number is less than the number of bytes in the Data Space, then any remaining bytes in the Data
+           Space shall be ignored in interchange.
+6.4.6      Relation of Extended Attribute Record to File Section
+           An Extended Attribute Record may be associated with a File Section. If present, the Extended Attribute Record
+           shall identify certain attributes of the file of which the File Section forms a part.
+                                                            - 7 -
+
+
+
+
+           A subset of those attributes shall apply to all File Sections of a file that contains records according to 6.10. If any
+           of those attributes are assigned to the file, an Extended Attribute Record shall be recorded in association with
+           each of the File Sections of the file.
+           The other attributes identified in an Extended Attribute Record shall apply to that File Section and all preceding
+           File Sections of the file (see 6.5.1). If no Extended Attribute Record is recorded in association with the last File
+           Section of a file, then these attributes are not specified for the file.
+ 6.4.7     Recording of a Volume Partition
+           If a Volume Partition is recorded, it shall be recorded over one or more Logical Blocks, the Logical Block
+           Numbers of which form a continuous ascending sequence. The recording shall begin at the first byte of the first
+           Logical Block of the Extent. It shall continue through successive bytes of that Logical Block, and then through
+           successive bytes of successive Logical Blocks, if any, of the Extent, until all of the Volume Partition is recorded.
+           The first Logical Block of each Volume Partition shall have a Logical Block Number which is the lowest
+           Logical Block Number in the Logical Sector that contains that Logical Block.
+           The number of Logical Blocks over which the Volume Partition is recorded shall be the assigned Volume
+           Partition size for the Volume Partition.
+6.5      File structure
+ 6.5.1     Relation to File Sections
+           Each file shall consist of one or more File Sections. Each File Section of a file shall be identified by a record in
+           the same directory. The sequence of the File Sections of a file shall be identified by the order of the
+           corresponding records in the directory.
+           A File Section may be part of more than one file and may occur more than once in the same file. A File Section
+           may be identified by more than one record in the same or a different directory.
+           Each File Section of a file may be recorded on a different volume.
+ 6.5.2     Numbering of bytes in a file
+           The bytes comprising a file shall be numbered consecutively. The numbering shall start from 1 which shall be
+           assigned to the first byte of the first File Section, if any. The numbering shall continue through successive bytes
+           of that File Section, and then through successive bytes of each successive File Section, if any, of the file.
+           The numbering shall end with a number equal to the sum of the number of bytes in all File Sections of the file.
+ 6.5.3     Contents of a file
+           The information in a file shall be interpreted according to the relevant standards for the coded representation of
+           information.
+           NOTE 7
+           The identfication of these standards is the subject of an agreement between the originator and the recipient of
+           the file.
+ 6.5.4     Associated file
+           An associated file has a relationship not specified by this Standard to another file that has been assigned the
+           same File Identifier (See 7.5) as that of the Associated File in the same directory.
+6.6      Volume Set
+         A Volume Set shall be the set of volumes on which a set of files is recorded.
+         A Volume Set shall consist of one or more volumes having common volume set identification and identifying the
+         same coded graphic character sets for use within selected descriptor fields (See 7.4). All volumes in a Volume Set
+         shall be numbered consecutively starting from 1.
+         A Volume Group within a Volume set shall consist of one or more consecutively numbered volumes the contents
+         of which are established at the same time. The sequence number of the volume that has the highest sequence
+         number within the Volume Group shall be the assigned Volume Set size.
+         Each volume of a Volume Set shall contain a description of all the directories and files that are recorded on those
+         volumes the sequence numbers of which are less than, or equal to, the assigned Volume Set size of the volume.
+                                                            - 8 -
+
+
+
+
+         NOTE 8
+         Such description recorded on a volume shall supersede the description recorded on any volume of the Volume Set
+         having a lower assigned Volume Set size.
+         The Logical Block size shall be the same for all volumes of a Volume Set.
+6.7      Volume Descriptors
+         A Volume Descriptor shall be one of the following types:
+         −   Primary Volume Descriptor
+         −   Supplementary Volume Descriptor
+         −   Volume Partition Descriptor
+         −   Boot Record
+         −   Volume Descriptor Set Terminator
+ 6.7.1       Volume Descriptor Set
+             A Volume Descriptor Set shall be a sequence of volume descriptors recorded in consecutively numbered Logical
+             Sectors starting with the Logical Sector Number 16. Each successive Volume Descriptor shall be recorded in the
+             Logical Sector with the next higher Logical Sector Number than that of the Logical Sector in which the previous
+             Volume Descriptor is recorded. The sequence shall consist of two or more volume descriptors consecutively
+             recorded as follows.
+  6.7.1.1      The sequence shall contain one Primary Volume Descriptor (see 8.4) recorded at least once.
+               The Primary Volume Descriptor shall describe the Volume Space, and identify the attributes of the volume,
+               the locations of a Root Directory and of a group of Path Tables, and the number of volumes in the Volume
+               Set.
+  6.7.1.2      The sequence may contain zero or more Supplementary Volume Descriptors (see 8.5) each recorded at least
+               once.
+               A Supplementary Volume Descriptor shall describe the Volume Space, and identify the attributes of the
+               volume, the locations of a Root Directory and a group of Path Tables, and the number of volumes in the
+               Volume Set. It shall also identify the coded graphic character sets used within selected fields of this
+               descriptor, and of the fields in associated File Descriptors, Directory Descriptors and Path Tables.
+  6.7.1.3      The sequence may contain zero or more Volume Partition Descriptors (see 8.6).
+               A Volume Partition Descriptor shall identify a Volume Partition within the Volume Space, its position and
+               size, and its attributes.
+  6.7.1.4      The sequence may contain zero or more Boot Records (see 8.2).
+               A Boot Record shall contain information which may be used to achieve a specific state in a receiving system
+               or an application program.
+  6.7.1.5      The sequence shall be terminated by the recording of one or more Volume Descriptor Set Terminators (see
+               8.3).
+6.8      Directory structure
+ 6.8.1       Directory
+             A directory shall be recorded as a file containing a set of records each of which identifies a File Section or
+             another directory. A directory shall not be recorded as an Associated file, shall not be recorded in interleaved
+             mode and shall consist of only one File Section.
+             The identification of a file shall be different from the identification of any other file, unless the file is an
+             Associated File (see 6.5.3), or of any directory identified in the same directory. The identification of a directory
+             shall be different from the identification of any file or of any other directory identified in the same directory.
+             The first Logical Block of the Extent in which a directory is recorded shall have a Logical Block Number which
+             is the lowest Logical Block Number in the Logical Sector that contains that Logical Block.
+  6.8.1.1      Directory Record
+               A Directory Record shall contain:
+                                                           - 9 -
+
+
+
+
+             −   information to locate a File Section;
+             −   information to locate any Extended Attribute Record associated with the File Section;
+             −   the identification of the file;
+             −   certain attributes of the file;
+             −   certain attributes of the File Section.
+             The first or only Directory Record recorded in a Logical Sector shall begin at the first byte of the first Data
+             Field of that Logical Sector. Each subsequent Directory Record recorded in that Logical Sector shall begin at
+             the byte immediately following the last byte of the preceding Directory Record in that Logical Sector. Each
+             Directory Record shall end in the Logical Sector in which it begins. Unused byte positions after the last
+             Directory Record in a Logical Sector shall be set to (00).
+ 6.8.1.2     Order of Directory Records
+             The records in a directory shall be ordered according to 9.3.
+ 6.8.1.3     Directory length
+             The length of a directory shall be the sum of
+             − the lengths of all Directory Records in the directory;
+             − the number of unused byte positions after the last Directory Record in all Logical Sectors in which the
+               directory is recorded.
+6.8.2      Directory Hierarchy
+           A Directory Hierarchy shall be a set of directories related to each other as follows.
+           The root of the hierarchy, called the Root Directory, shall be a directory identified either in a Primary Volume
+           Descriptor or in a Supplementary Volume Descriptor.
+           Each directory, other than the Root Directory, shall be identified by a record in another directory.
+           A directory identifying another directory shall be called the Parent Directory of the identified directory. Each
+           directory shall contain a record which identifies its Parent Directory. Different directories may have the same
+           Parent Directory.
+           A hierarchical relationship shall exist between the Root Directory and all other directories:
+                                                                         ROOT
+                                                                 SUB 1        SUB 2
+                                                         SUB 3
+
+
+
+           The hierarchy shall consist of a number of levels (i.e. for n levels: level 1, level 2, …, level n). The Root
+           Directory shall be the only directory at level 1 of the hierarchy.
+           If a Directory is at level m of the hierarchy, its Parent Directory shall be at level (m - 1). The Parent Directory of
+           the Root Directory shall be the Root Directory.
+ 6.8.2.1     Depth of Directory Hierarchy
+             The number of levels in the hierarchy shall not exceed eight. In addition, for each file recorded, the sum of
+             the following shall not exceed 255:
+             − the length of the File Identifier (see 7.5.2);
+             − the length of the Directory Identifiers (see 7.6) of all relevant directories;
+             − the number of relevant directories.
+ 6.8.2.2     Identification of directories
+             For a Root Directory:
+                                                          - 10 -
+
+
+
+
+              − the first Directory Record of the Root Directory shall describe the Root Directory and shall have a
+                Directory Identifier consisting of a single (00) byte;
+              − the second Directory Record of the Root Directory shall describe the Root Directory and shall have a
+                Directory Identifier consisting of a single (01) byte;
+              − a Directory Record describing the Root Directory shall be contained in the Root Directory field of the
+                volume descriptor that identifies the directory hierarchy.
+              For each directory other than the Root Directory
+              − the first Directory Record of the directory shall describe that directory and shall have a Directory
+                Identifier consisting of a single (00) byte;
+              − the second Directory Record of the directory shall describe the Parent Directory for that directory and
+                shall have a Directory Identifier consisting of a single (01) byte;
+              − a Directory Record in its Parent Directory shall describe the directory.
+ 6.8.3     Relation of Directory Hierarchies
+           One or more Directory Hierarchies shall be recorded on a volume.
+           A Directory Hierarchy shall be identified in the Primary Volume Descriptor.
+           Each additional Directory Hierarchy shall be identified in a Supplementary Volume Descriptor.
+           The directories within each hierarchy shall identify zero or more of the files that are recorded in those volumes,
+           the sequence numbers of which are less than, or equal to, the assigned Volume Set size of the volume.
+           A directory shall not be a part of more than one Directory Hierarchy.
+6.9      Path Table
+         A Path Table recorded on a volume of a Volume Set shall contain a set of records describing a directory hierarchy
+         for those volumes of the Volume Set the sequence numbers of which are less than, or equal to, the assigned
+         Volume Set size of the volume.
+         For each directory in the directory hierarchy other than the Root Directory, the Path Table shall contain a record
+         which identifies the directory, its Parent Directory and its location. The records in a Path Table shall be numbered
+         starting from 1. The first record in the Path Table shall identify the Root Directory and its location.
+         The directory number of a directory shall be the ordinal number of the Path Table Record that identifies the
+         directory.
+ 6.9.1     Order of Path Table Records
+           The records in a Path Table shall be ordered by the following criteria in descending order of significance:
+           − in ascending order according to level in the directory hierarchy;
+           − in ascending order according to the directory number of the Parent Directory of the directory identified by
+             the record;
+           − in ascending order according to the relative value of the Directory Identifier field in the record, where the
+             Directory Identifiers shall be valued as follows:
+               . If the two Directory Identifiers do not contain the same number of byte positions, the shorter Directory
+               Identifier shall be treated as if it were padded on the right with all padding bytes set to (20), and as if both
+               Directory Identifiers contained the identical number of byte positions.
+               . After any padding necessary to treat the Directory Identifiers as if they were of equal length, the characters
+               in the corresponding byte positions, starting with the first position, of the Directory Identifiers are compared
+               until a byte position is found that does not contain the same character in both Directory Identifiers. The
+               greater Directory Identifier is the one that contains the character with the higher code position value in the
+               coded graphic character sets used to interpret the Directory Identifier of the Path Table Record.
+                                                             - 11 -
+
+
+
+
+ 6.9.2       Path Table Group
+             A Path Table shall be either a Type L Path Table or a Type M Path Table. In a Type L Path Table, a numerical
+             value shall be recorded according to 7.2.1 if represented as a 16-bit number and according to 7.3.1 if represented
+             as a 32-bit number.
+             In a Type M Path Table, a numerical value shall be recorded according to 7.2.2 if represented as a 16-bit number
+             and according to 7.3.2 if represented as a 32-bit number.
+             A Path Table Group shall comprise one or two identical Type L Path Tables and one or two identical Type M
+             Path Tables.
+ 6.9.3       Recorded Occurrences of the Path Table
+             One or more Path Table Groups shall be recorded on a volume. The Primary Volume Descriptor shall identify
+             the size and locations of the constituent Path Tables of a Path Table Group. These Path Tables shall identify the
+             directories in the Directory Hierarchy which is identified by the Primary Volume Descriptor.
+             Corresponding to each additional Directory Hierarchy recorded on a volume an additional Path Table Group
+             shall be recorded on the volume. For each such Path Table Group, the corresponding Supplementary Volume
+             Descriptor shall identify the size and locations of its constituent Path Tables. These Path Tables shall identify the
+             directories in the corresponding Directory Hierarchy.
+ 6.9.4       Consistency of Path Tables between volumes of a Volume Group
+  6.9.4.1      The contents of a Type L Path Table identified in a Primary Volume Descriptor shall be identical with the
+               contents of any other Type L Path Table identified in a Primary Volume Descriptor on a volume of the same
+               Volume Group.
+               The contents of a Type M Path Table identified in a Primary Volume Descriptor shall be identical with the
+               contents of any other Type M Path Table identified in a Primary Volume Descriptor on a volume of the same
+               Volume Group.
+  6.9.4.2      The contents of a Type L Path Table identified in a Supplementary Volume Descriptor shall be identical with
+               the contents of any other Type L Path Table identified in a Supplementary Volume Descriptor, having the
+               same volume set identification and identifying the same coded graphic character sets for use within selected
+               descriptor fields (see 7.4), on a volume of the same Volume Group.
+               The contents of a Type M Path Table identified in a Supplementary Volume Descriptor shall be identical with
+               the contents of any other Type M Path Table identified in a Supplementary Volume Descriptor, having the
+               same volume set identification and identifying the same coded graphic character sets for use within selected
+               descriptor fields (see 7.4), on a volume of the same Volume Group.
+6.10      Record structure
+          The information in a file may be organized as a set of records according to this clause.
+ 6.10.1      Characteristics
+             A record shall be a sequence of bytes treated as a unit of information.
+             The length of a record shall be the number of bytes in the record.
+             A record shall be either a fixed-length record or a variable-length record.
+             All records in a file shall be either fixed-length records or variable-length records.
+ 6.10.2      Measured Data Units (MDU)
+  6.10.2.1     Contents of an MDU
+               A Measured Data Unit shall contain either a fixed-length record or a variable-length record. An MDU shall
+               comprise an even number of bytes.
+  6.10.2.2     Relationship to File
+               Each MDU shall comprise a set of successive bytes of the file. The first or only MDU shall begin at the first
+               byte of the file. Each successive MDU shall begin at the byte in the file immediately following the last byte of
+               the preceding MDU.
+                                                              - 12 -
+
+
+
+
+    6.10.3      Fixed-length records
+                A fixed-length record shall be a record contained in a file that is assigned to contain records that must have the
+                same length.
+                A fixed-length record shall be contained in an MDU. The MDU shall consist of the fixed-length record,
+                immediately followed by a (00) byte if necessary to give the MDU an even length.
+                The minimum assigned length of a fixed-length record shall be 1.
+    6.10.4      Variable-length records
+                A variable-length record shall be a record contained in a file that is assigned to contain records that may have
+                different lengths. The value recorded in the Record Format field of an Extended Attribute Record for a file
+                containing variable-length records shall contain the same value as that recorded in the Record Format field of
+                any other Extended Attribute Record of that same file.
+                A variable-length record shall be contained in an MDU. The MDU shall consist of a Record Control Word
+                (RCW) immediately followed by the variable-length record, immediately followed by a (00) byte if necessary to
+                give the MDU an even length.
+                The RCW shall specify as a 16-bit number the length of the record. The RCW shall be recorded according to
+                − 7.2.1, if the value in the Record Format field of the Extended Attribute Record associated with the File
+                  Section is 2, or
+                − 7.2.2, if the value in the Record Format field of the Extended Attribute Record associated with the File
+                  Section is 3.
+                A maximum record length shall be assigned for a file. The length of any record in the file shall not exceed this
+                value. The assigned maximum record length shall be in the range 1 to 32,767. The minimum length of a
+                variable-length record shall be 0.
+
+
+7           Recording of descriptor fields
+7.1           8-bit numerical values
+              A numerical value represented in binary notation by an 8-bit number shall be recorded in a field of a descriptor in
+              one of the following two formats. The applicable format is specified in the description of the descriptor fields.
+    7.1.1       8-bit unsigned numerical vaiues
+                An unsigned numerical value shall be represented in binary notation by an 8-bit number recorded in a one-byte
+                field.
+    7.1.2       8-bit signed numerical values
+                A signed numerical value shall be represented in binary notation by an 8-bit two's complement number recorded
+                in a one-byte field.
+7.2           16-bit numerical value
+              A numerical value represented in binary notation by a 16-bit number shall be recorded in a field of a descriptor in
+              one of the following three formats. The applicable format is specified in the description of the descriptor fields.
+    7.2.1       Least significant byte first
+                A numerical value represented by the hexadecimal representation (wx yz) shall be recorded in a two-byte field
+                as (yz wx).
+                NOTE 9
+                For example, the decimal number 4660 has (12 34) as its hexadecimal representation and is recorded as (34
+                12).
+    7.2.2       Most significant byte first
+                A numerical value represented by the hexadecimal representation (wx yz) shall be recorded in a two-byte field
+                as (wx yz).
+                NOTE 10
+                                                         - 13 -
+
+
+
+
+           For example, the decimal number 4660 has (12 34) as its hexadecimal representation and is recorded as (12
+           34).
+ 7.2.3     Both-byte orders
+           A numerical value represented by the hexadecimal representation (wx yz) shall be recorded in a four-byte field
+           as (yz wx wx yz).
+           NOTE 11
+           For example, the decimal number 4660 has (12 34) as its hexadecimal representation and is recorded as (34 12
+           12 34).
+7.3      32-bit numerical values
+         A numerical value represented in binary notation by a 32-bit number shall be recorded in a field of a descriptor in
+         one of the following three formats. The applicable format is specified in the description of the descriptor fields.
+ 7.3.1     Least significant byte first
+           A numerical value represented by the hexadecimal representation (st uv wx yz) shall be recorded in a four-byte
+           field as (yz wx uv st).
+           NOTE 12
+           For example, the decimal number 305419896 has (12 34 56 78) as its hexadecimal representation and is
+           recorded as (78 56 34 12).
+ 7.3.2     Most significant byte first
+           A numerical value represented by the hexadecimal representation (st uv wx yz) shall be recorded in a four-byte
+           field as (st uv wx yz).
+           NOTE 13
+           For example, the decimal number 305419896 has (12 34 56 78) as its hexadecimal representation and is
+           recorded as (12 34 56 78).
+ 7.3.3     Both-byte orders
+           A numerical value represented by the hexadecimal representation (st uv wx yz) shall be recorded in an eight-
+           byte field as (yz wx uv st st uv wx yz).
+           NOTE 14
+           For example, the decimal number 305419896 has (12 34 56 78) as its hexadecimal representation and is
+           recorded as (78 56 34 12 12 34 56 78).
+7.4      Character sets and coding
+ 7.4.1     d-characters and a-characters
+           Except as specified in 7.4.4, the characters in the descriptors shall be coded according to ECMA-6 (see
+           Appendix A).
+           The 37 characters in the following positions of the International Reference Version are referred to as
+           d-characters:
+              3/0 to 3/9
+              4/1 to 5/10
+              5/15
+           The 57 characters in the following positions of the International Reference Version are referred to as
+           a-characters:
+              2/0 to 2/2
+              2/5 to 2/15
+              3/0 to 3/15
+              4/1 to 4/15
+              5/0 to 5/10
+              5/15
+                                                            - 14 -
+
+
+
+
+            The applicable set of characters is specified in the description of the descriptor fields.
+ 7.4.2      c-characters
+            The characters of the coded graphic character sets identified by the escape sequences in a Supplementary
+            Volume Descriptor are referred to as c-characters.
+  7.4.2.1     a1-characters
+              A subset of the c-characters will be referred to as a1-characters. This subset shall be subject to agreement
+              between the originator and the recipient of the volume.
+  7.4.2.2     d1-characters
+              A subset of the a1-characters will be referred to as d1-characters. This subset shall be subject to agreement
+              between the originator and the recipient of the volume.
+ 7.4.3      Separators
+            The characters separating the components of a File Identifier shall be
+            SEPARATOR 1 represented by the bit combination (2E)
+            SEPARATOR 2 represented by the bit combination (3B)
+ 7.4.4      Use of characters in descriptor fields
+            The characters in the fields of the following descriptors shall be a-characters or d-characters as specified in
+            clause 9.
+            − Directory Records within a Directory Hierarchy that is identified in a Primary Volume Descriptor;
+            − Path Table Records within a Path Table Group identified in a Primary Volume Descriptor;
+            − Extended Attribute Records identified in a directory of a Directory Hierarchy that is identified in a Primary
+              Volume Descriptor.
+            The characters in the fields of the following descriptors shall be a1-characters or d1-characters as specified in
+            clause 9.
+            − Directory Records within a Directory Hierarchy that is identified in a Supplementary Volume Descriptor;
+            − Path Table Records within a Path Table Group identified in a Supplementary Volume Descriptor;
+            − Extended Attribute Records identified in a directory of a Directory Hierarchy that is identified in a
+              Supplementary Volume Descriptor.
+ 7.4.5      Justification of characters
+            In each fixed-length field the content of which is specified by this Standard to be characters, the characters shall
+            be left-justified and any remaining byte positions on the right shall be set to (20).
+7.5      File Identifier
+ 7.5.1      File Identifier format
+            A File Identifier shall consist of the following sequence:
+            − File Name: A sequence of zero or more d-characters or d1-characters;
+            − SEPARATOR 1;
+            − File Name Extension: A sequence of zero or more d-characters or d1-characters;
+            − SEPARATOR 2;
+            − File Version Number: Digits representing a number from 1 to 32 767.
+            This sequence shall meet the following requirements:
+            − If no characters are specified for the File Name then the File Name Extension shall consist of at least one
+              character.
+            − If no characters are specified for the File Name Extension then the File Name shall consist of at least one
+              character.
+                                                                   - 15 -
+
+
+
+
+                   − The sum of the following shall not exceed 30:
+                       . if there is a File Name, the length of the File Name;
+                       . if there is a File Name Extension, the length of the File Name Extension.
+    7.5.2          File Identifier length
+                   The length of the File Identifier shall be the sum of the following:
+                   −   if there is a File Name, the length of the File Name,
+                   −   if there is a File Name Extension, the length of the File Name Extension,
+                   −   the number of digits in the File Version Number,
+                   −   2 (the number of SEPARATORS).
+7.6           Directory Identifier
+    7.6.1          Directory Identifier Format
+                   A Directory Identifier shall consist of a sequence of one or more d-characters or d1-characters (see 7.4.4),
+                   except as specified in 7.6.2.
+    7.6.2          Reserved Directory Identifiers
+                   − The root directory shall be identified by a Directory Identifier consisting of a single (00) byte.
+                   − As specified in 6.8.2.2, certain Directory Identifiers shall consist of a single (00) byte or a single (01) byte.
+    7.6.3          Directory Identifier length
+                   The length of a Directory Identifier shall not exceed 31.
+
+
+8           Volume Descriptors
+            The Volume Descriptors shall identify the volume, the partitions recorded on the volume, the volume creator(s),
+            certain attributes of the volume, the location of other recorded descriptors and the version of the standard which
+            applies to the volume descriptor.
+8.1           Format of a Volume Descriptor
+              BP                     Field name                                                   Content
+              1                      Volume Descriptor Type                                       numerical value
+              2 to 6                 Standard Identifier                                          CD001
+              7                      Volume Descriptor Version                                    numerical value
+              8 to 2048              (Depends on Volume Descriptor Type)                          (Depends on Volume Descriptor
+                                                                                                  Type)
+
+
+    8.1.1          Volume Descriptor Type (BP 1)
+                   This field shall specify as an 8-bit number the Volume Descriptor Type.
+                   Number 0              shall mean that the volume Descriptor is a Boot Record;
+                   Number 1              shall mean that the Volume Descriptor is a Primary Volume Descriptor;
+                   Number 2              shall mean that the Volume Descriptor is a Supplementary Volume Descriptor;
+                   Number 3              shall mean that the Volume Descriptor is a Volume Partition Descriptor;
+                   Numbers 4 to 254      are reserved for future standardization;
+                   Number 255            shall mean that the Volume Descriptor is a Volume Descriptor Set Terminator.
+                   This field shall be recorded according to 7.1.1.
+    8.1.2          Standard Identifier (BP 2 to 6)
+                   This field shall specify an identification of this Standard.
+                                                                 - 16 -
+
+
+
+
+              The characters in this field shall be CD001.
+ 8.1.3        Volume Descriptor Version (BP 7)
+              This field shall specify as an 8-bit number the version of the specification of the Volume Descriptor.
+              The content and the interpretation of this field shall depend on the content of the Volume Descriptor Type field.
+              This field shall be recorded according to 7.1.1.
+ 8.1.4        Depends on Volume Descriptor Type (BP 8 to 2 048)
+              The content and the interpretation of this field shall depend on the content of the Volume Descriptor Type field.
+8.2      Boot Record
+         The Boot Record shall identify a system which can recognize and act upon the content of the field reserved for boot
+         system use in the Boot Record, and shall contain information which is used to achieve a specific state for a system
+         or for an application.
+
+
+         BP                     Field name                                                  Content
+         1                      Volume Descriptor Type                                      numerical value
+         2 to 6                 Standard Identifier                                         CD001
+         7                      Volume Descriptor Version                                   numerical value
+         8 to 39                Boot System Identifier                                      a-characters
+         40 to 71               Boot Identifier                                             a-characters
+         72 to 2 048            Boot System Use                                             not specified
+
+
+ 8.2.1        Volume Descriptor Type (BP 1)
+              This field shall specify an 8-bit number indicating that the Volume Descriptor is a Boot Record.
+              The number in this field shall be 0.
+              This field shall be recorded according to 7.1.1.
+ 8.2.2        Standard Identifier (BP 2 to 6)
+              This field shall specify an identification of this Standard.
+              The characters in this field shall be CD001.
+ 8.2.3        Volume Descriptor Version (BP 7)
+              This field shall specify as an 8-bit number the version of the specification of the Boot Record structure.
+              1 shall indicate the structure of this Standard.
+              This field shall be recorded according to 7.1.1.
+ 8.2.4        Boot System Identifier (BP 8 to 39)
+              This field shall specify an identification of a system which can recognize and act upon the content of the Boot
+              Identifier and Boot System Use fields in the Boot Record.
+              The characters in this field shall be a-characters.
+ 8.2.5        Boot Identifier (BP 40 to 71)
+              This field shall specify an identification of the boot system specified in the Boot System Use field of the Boot
+              Record.
+              The characters in this field shall be a-characters.
+ 8.2.6        Boot System Use (BP 72 to 2048)
+              This field shall be reserved for boot system use. Its content is not specified by this Standard.
+                                                                 - 17 -
+
+
+
+
+8.3      Volume Descriptor Set Terminator
+              The recorded set of Volume Descriptors shall be terminated by a sequence of one or more Volume Descriptor
+              Set Terminators.
+
+
+         BP                      Field name                                          Content
+         1                       Volume Descriptor Type                             numerical value
+         2 to 6                  Standard Identifier                                CD001
+         7                       Volume Descriptor Version                          numerical value
+         8 to 2048               (Reserved for future standardization)              (00) bytes
+
+
+ 8.3.1        Volume Descriptor Type (BP 1)
+              This field shall specify an 8-bit number indicating that the Volume Descriptor is a Volume Descriptor Set
+              Terminator.
+              The number in this field shall be 255.
+              This field shall be recorded according to 7.1.1.
+ 8.3.2        Standard Identifier (BP 2 to 6)
+              This field shall specify an identification of this Standard.
+              The characters in this field shall be CD001.
+ 8.3.3        Volume Descriptor Version (BP 7)
+              This field shall specify as an 8-bit number the version of the specification of the Volume Descriptor Set
+              Terminator.
+              1 shall indicate the structure of this Standard.
+              This field shall be recorded according to 7.1.1.
+ 8.3.4        Reserved for future standardization (BP 8 to 2048)
+              All bytes of this field shall be set to (00).
+8.4      Primary Volume Descriptor
+         The Primary Volume Descriptor shall identify the volume, a system which can recognize and act upon the content
+         of the Logical Sectors with Logical Sector Numbers 0 to 15, the size of the Volume Space, the version of the
+         standard which applies to the Volume Descriptor, the version of the specification which applies to the Directory
+         Records and the Path Table Records and certain attributes of the volume.
+
+
+         BP                      Field name                                          Content
+         1                       Volume Descriptor Type                             numerical value
+         2 to 6                  Standard Identifier                                CD001
+         7                       Volume Descriptor Version                          numerical value
+         8                       Unused Field                                       (00) byte
+         9 to 40                 System Identifier                                  a-characters
+         41 to 72                Volume Identifier                                  d-characters
+         73 to 80                Unused Field                                       (00) bytes
+         81 to 88                Volume Space Size                                  numerical value
+         89 to 120               Unused Field                                       (00) bytes
+         121 to 124              Volume Set Size                                    numerical value
+         125 to 128              Volume Sequence Number                             numerical value
+         129 to 132              Logical Block Size                                 numerical value
+                                                              - 18 -
+
+
+
+
+        133 to 140            Path Table Size                                          numerical value
+        141 to 144            Location of Occurrence of Type L Path Table              numerical value
+        145 to 148            Location of Optional Occurrence of Type L Path Table     numerical value
+        149 to 152            Location of Occurrence of Type M Path Table              numerical value
+        153 to 156            Location of Optional Occurrence of Type M Path           numerical value
+                              Table
+        157 to 190            Directory Record for Root Directory                      34 bytes
+        191 to 318            Volume Set Identifier                                    d-characters
+        319 to 446            Publisher Identifier                                     a-characters
+        447 to 574            Data Preparer Identifier                                 a-characters
+        575 to 702            Application Identifier                                   a-characters
+        703 to 739            Copyright File Identifier                                d-characters, SEPARATOR 1,
+                                                                                       SEPARATOR 2
+        740 to 776            Abstract File Identifier                                 d-characters, SEPARATOR 1,
+                                                                                       SEPARATOR 2
+        777 to 813            Bibliographic File Identifier                            d-characters, SEPARATOR 1,
+                                                                                       SEPARATOR 2
+        814 to 830            Volume Creation Date and Time                            Digit(s), numerical value
+        831 to 847            Volume Modification Date and Time                        Digit(s), numerical value
+        848 to 864            Volume Expiration Date and Time                          Digit(s), numerical value
+        865 to 881            Volume Effective Date and Time                           Digit(s), numerical value
+        882                   File Structure Version                                   numerical value
+        883                   (Reserved for future standardization)                    (00) byte
+        884 to 1395           Application Use                                          not specified
+        1396 to 2048          (Reserved for future standardization)                    (00) bytes
+
+
+8.4.1      Volume Descriptor Type (BP 1)
+           This field shall specify an 8-bit number indicating that the volume descriptor is a Primary Volume Descriptor.
+           The number in this field shall be 1.
+           This field shall be recorded according to 7.1.1.
+8.4.2      Standard Identifier (BP 2 to 6)
+           This Field shall specify an identification of this Standard.
+           The characters in this field shall be CD001.
+8.4.3      Volume Descriptor Version (BP 7)
+           This field shall specify as an 8-bit number an identification of the version of the specification of the Primary
+           Volume Descriptor.
+           1 shall indicate the structure of this Standard.
+           This field shall be recorded according to 7.1.1.
+8.4.4      Unused Field (BP 8)
+           This field shall be set to (00).
+8.4.5      System Identifier (BP 9 to 40)
+           This field shall specify an identification of a system which can recognize and act upon the content of the Logical
+           Sectors with logical Sector Numbers 0 to 15 of the volume.
+           The characters in this field shall be a-characters.
+                                                         - 19 -
+
+
+
+
+8.4.6    Volume Identifier (BP 41 to 72)
+         This field shall specify an identification of the volume.
+         The characters in this field shall be d-characters.
+8.4.7    Unused Field (BP 73 to 80)
+         All bytes of this field shall be set to (00).
+8.4.8    Volume Space Size (BP 81 to 88)
+         This field shall specify as a 32-bit number the number of Logical Blocks in which the Volume Space of the
+         volume is recorded.
+         This field shall be recorded according to 7.3.3.
+8.4.9    Unused Field (BP 89 to 120)
+         All bytes of this field shall be set to (00).
+8.4.10   Volume Set Size (BP 121 to 124)
+         This field shall specify as a 16-bit number the assigned Volume Set size of the volume.
+         This field shall be recorded according to 7.2.3.
+8.4.11   Volume Sequence Number (BP 125 to 128)
+         This field shall specify as a 16-bit number the ordinal number of the volume in the Volume Set of which the
+         volume is a member.
+         This field shall be recorded according to 7.2.3.
+8.4.12   Logical Block Size (BP 129 to 132)
+         This field shall specify as a 16-bit number the size in bytes of a Logical Block.
+         This field shall be recorded according to 7.2.3.
+8.4.13   Path Table Size (BP 133 to 140)
+         This field shall specify as a 32-bit number the length in bytes of a recorded occurrence of the Path Table
+         identified by this Volume Descriptor.
+         This field shall be recorded according to 7.3.3.
+8.4.14   Location of Occurrence of Type L Path Table (BP 141 to 144)
+         This field shall specify as a 32-bit number the Logical Block Number of the first Logical Block allocated to the
+         Extent which contains an occurrence of the Path Table. Multiple-byte numerical values in a record of this
+         occurrence of the Path Table shall be recorded with the least significant byte first.
+         This field shall be recorded according to 7.3.1.
+8.4.15   Location of Optional Occurrence of Type L Path Table (BP 145 to 148)
+         This field shall specify as a 32-bit number the Logical Block Number of the first Logical Block allocated to the
+         Extent which contains an optional occurrence of the Path Table. If the value is 0, it shall mean that the Extent
+         shall not be expected to have been recorded. Multiple-byte numerical values in a record of this occurrence of the
+         Path Table shall be recorded with the least significant byte first.
+         This field shall be recorded according to 7.3.1.
+8.4.16   Location of Occurrence of Type M Path Table (BP 149 to 152)
+         This field shall specify as a 32-bit number the Logical Block Number of the first Logical Block allocated to the
+         Extent which contains an occurrence of the Path Table. Multiple-byte numerical values in a record of this
+         occurrence of the Path Table shall be recorded with the most significant byte first.
+         This field shall be recorded according to 7.3.2.
+8.4.17   Location of Optional Occurrence of Type M Path Table (BP 153 to 156)
+         This field shall specify as a 32-bit number the Logical Block Number of the first Logical Block allocated to the
+         Extent which contains an optional occurrence of the Path Table. If the value is 0, it shall mean that the Extent
+                                                           - 20 -
+
+
+
+
+         shall not be expected to have been recorded. Multiple-byte numerical values in a record of this occurrence of the
+         Path Table shall be recorded with the most significant byte first.
+         This field shall be recorded according to 7.3.2.
+8.4.18   Directory Record for Root Directory (BP 157 to 190)
+         This field shall contain an occurrence of the Directory Record for the Root Directory.
+         This field shall be recorded according to 9.1.
+8.4.19   Volume Set Identifier (BP 191 to 318)
+         This field shall specify an identification of the Volume Set of which the volume is a member.
+         The characters in this field shall be d-characters.
+8.4.20   Publisher Identifier (BP 319 to 446)
+         This field shall specify an identification of the user who specified what shall be recorded on the Volume Group
+         of which the volume is a member.
+         If the first byte is set to (5F), the remaining bytes of this field shall specify an identifier for a file containing the
+         identification of the user. This file shall be described in the Root Directory. The File Name shall not contain
+         more than eight d-characters and the File Name Extension shall not contain more than three d-characters.
+         If all bytes of this field are set to (20), it shall mean that no such user is identified.
+         The characters in this field shall be a-characters.
+8.4.21   Data Preparer Identifier (BP 447 to 574)
+         This field shall specify an identification of the person or other entity which controls the preparation of the data
+         to be recorded on the Volume Group of which the volume is a member.
+         If the first byte is set to (5F), the remaining bytes of this field shall specify an identifier for a file containing the
+         identification of the data preparer. This file shall be described in the Root Directory. The File Name shall not
+         contain more than eight d-characters and the File Name Extension shall not contain more than three d-
+         characters.
+         If all bytes of this field are set to (20), it shall mean that no such data preparer is identified.
+         The characters in this field shall be a-characters.
+8.4.22   Application Identifier (BP 575 to 702)
+         This field shall specify an identification of the specification of how the data are recorded on the Volume Group
+         of which the volume is a member.
+         If the first byte is set to (5F), the remaining bytes of this field shall specify an identifier for a file containing the
+         identification of the application. This file shall be described in the Root Directory. The File Name shall not
+         contain more than eight d-characters and the File Name Extension shall not contain more than three d-
+         characters.
+         If all bytes of this field are set to (20), it shall mean that no such application is identified.
+         The characters in this field shall be a-characters.
+8.4.23   Copyright File Identifier (BP 703 to 739)
+         This field shall specify an identification for a file described by the Root Directory and containing a copyright
+         statement for those volumes of the Volume Set the sequence numbers of which are less than, or equal to, the
+         assigned Volume Set size of the volume. If all bytes of this field are set to (20), it shall mean that no such file is
+         identified.
+         The File Name of a Copyright File Identifier shall not contain more than eight d-characters. The File Name
+         Extension of a Copyright File Identifier shall not contain more than three d-characters.
+         The characters in this field shall be d-characters, SEPARATOR 1 and SEPARATOR 2.
+         This field shall be recorded as specified in 7.5.
+                                                            - 21 -
+
+
+
+
+8.4.24      Abstract File Identifier (BP 740 to 776)
+            This field shall specify an identification for a file described by the Root Directory and containing an abstract
+            statement for those volumes of the Volume Set the sequence numbers of which are less than, or equal to, the
+            assigned Volume Set size of the volume. If all bytes of this field are set to (20), it shall mean that no such file is
+            identified.
+            The File Name of an Abstract File Identifier shall not contain more than eight d-characters. The File Name
+            Extension of an Abstract File Identifier shall not contain more than three d-characters.
+            The characters in this field shall be d-characters, SEPARATOR 1 and SEPARATOR 2.
+            This field shall be recorded as specified in 7.5.
+8.4.25      Bibliographic File Identifier (BP 777 to 813)
+            This field shall specify an identification for a file described by the Root Directory and containing bibliographic
+            records interpreted according to standards that are the subject of an agreement between the originator and the
+            recipient of the volume. If all bytes of this field are set to (20), it shall mean that no such file is identified. The
+            File Name of a Bibliographic File Identifier shall not contain more than eight d-characters. The File Name
+            Extension of a Bibliographic File Identifier shall not contain more than three d-characters.
+            The characters in this field shall be d-characters, SEPARATOR 1 and SEPARATOR 2.
+            This field shall be recorded as specified in 7.5.
+8.4.26      Volume Creation Date and Time (BP 814 to 830)
+            This field shall specify the date and the time of the day at which the information in the volume was created. It
+            shall be recorded according to 8.4.26.1.
+ 8.4.26.1     Date and Time Format
+              The date and time shall be represented by a 17-byte field recorded as follows.
+
+         RBP                  Interpretation                                               Content
+         1 to 4               Year from I to 9999                                          Digits
+         5 to 6               Month of the year from 1 to 12                               Digits
+         7 to 8               Day of the month from 1 to 31                                Digits
+         9 to 10              Hour of the day from 0 to 23                                 Digits
+         11 to 12             Minute of the hour from 0 to 59                              Digits
+         13 To 14             Second of the minute from 0 to 59                            Digits
+         15 to 16             Hundredths of a second                                       Digits
+         17                   Offset from Greenwich Mean Time in number                    numerical value
+                              of 15 min intervals from -48 (West) to +52
+                              (East) recorded according to 7.1.2
+
+            If all characters in RBP 1 to 16 of this field are the digit ZERO and the number in RBP 17 is zero, it shall mean
+            that the date and time are not specified.
+8.4.27      Volume Modification Date and Time (BP 831 to 847)
+            This field shall specify the date and the time of the day at which the information in the volume was last
+            modified.
+            This field shall be recorded according to 8.4.26.1.
+8.4.28      Volume Expiration Date and Time (BP 848 to 864)
+            This field shall specify the date and the time of the day at which the information in the volume may be regarded
+            as obsolete. If the date and time are not specified then the information shall not be regarded as obsolete.
+            This field shall be recorded according to 8.4.26.1.
+                                                               - 22 -
+
+
+
+
+ 8.4.29     Volume Effective Date and Time (BP 865 to 881)
+            This field shall specify the date and the time of the day at which the information in the volume may be used. If
+            the date and time are not specified then the information may be used at once.
+            This field shall be recorded according to 8.4.26.1.
+ 8.4.30     File Structure Version (BP 882)
+            This field shall specify as an 8-bit number the version of the specification of the records of a directory and of a
+            Path Table.
+            1 shall indicate the structure of this Standard.
+            This field shall be recorded according to 7.1.1.
+ 8.4.31     Reserved for future standardization (BP 883)
+            This field shall be set to (00).
+ 8.4.32     Application Use (BP 884 to 1395)
+            This field shall be reserved for application use. Its content is not specified by this Standard.
+ 8.4.33     Reserved for future standardization (BP 1396 to 2048)
+            All bytes of this field shall be set to (00).
+8.5       Supplementary Volume Descriptor
+          The Supplementary Volume Descriptor shall identify the volume, a system which can recognize and act upon the
+          content of the Logical Sectors with Logical Sector Numbers 0 to 15, the size of the Volume Space, the version of
+          the standard which applies to the Volume Descriptor, the version of the specification which applies to the Directory
+          Records and the Path Table Records, certain attributes of the volume and the coded graphic character sets used to
+          interpret descriptor fields that contain characters.
+          Within a Volume Descriptor Set the contents of the fields of this descriptor shall be identical with the contents of
+          the corresponding fields in a Primary Volume Descriptor except for the following fields.
+      BP                    Field name                                                   Content
+      1                     Volume Descriptor Type                                       numerical value
+      2 to 6                Standard Identifier                                          CD001
+      7                     Volume Descriptor Version                                    numerical value
+      8                     Volume Flags                                                 8 bits
+      9 to 40               System Identifier                                            a-characters
+      41 to 72              Volume Identifier                                            d-characters
+      73 to 80              Unused Field                                                 (00) bytes
+      81 to 88              Volume Space Size                                            numerical value
+      89 to 120             Escape Sequences                                             32 bytes
+      121 to 124            Volume Set Size                                              numerical value
+      125 to 128            Volume Sequence Number                                       numerical value
+      129 to 132            Logical Block Size                                           numerical value
+      133 to 140            Path Table Size                                              numerical value
+      141 to 144            Location of Occurrence of Type L Path Table                  numerical value
+      145 to 148            Location of Optional Occurrence of Type L Path Table         numerical value
+      149 to 152            Location of Occurrence of Type M Path Table                  numerical value
+      153 to 156            Location of Optional Occurrence of Type M Path               numerical value
+                            Table
+      157 to 190            Directory Record for Root Directory                          34 bytes
+      191 to 318            Volume Set Identifier                                        d-characters
+      319 to 446            Publisher Identifier                                         a-characters
+                                                                - 23 -
+
+
+
+
+        447 to 574           Data Preparer Identifier                                     a-characters
+        575 to 702           Application Identifier                                       a-characters
+        703 to 739           Copyright File Identifier                                    d-characters, SEPARATOR 1,
+                                                                                          SEPARATOR 2
+        740 to 776           Abstract File Identifier                                     d-characters, SEPARATOR 1,
+                                                                                          SEPARATOR 2
+        777 to 813           Bibliographic File Identifier                                d-characters, SEPARATOR 1,
+                                                                                          SEPARATOR 2
+        814 to 830           Volume Creation Date and Time                                Digit(s), numerical value
+        831 to 847           Volume Modification Date and Time                            Digit(s), numerical value
+        848 to 864           Volume Expiration Date and Time                              Digit(s), numerical value
+        865 to 881           Volume Effective Date and Time                               Digit(s), numerical value
+        882                  File Structure Version                                       numerical value
+        883                  (Reserved for future standardization)                        (00) byte
+        884 to 1395          Application Use                                              not specified
+        1396 to 2048         (Reserved for future standardization)                        (00) bytes
+
+
+8.5.1        Volume Descriptor Type (BP 1)
+             This field shall specify an 8-bit number indicating that the Volume Descriptor is a Supplementary Volume
+             Descriptor.
+             The number in this field shall be 2.
+             This field shall be recorded according to 7.1.1.
+8.5.2        Volume Descriptor Version (BP 7)
+             This field shall specify as an 8-bit number an identification of the version of the specification of the
+             Supplementary Volume Descriptor.
+             1 shall indicate the structure of this Standard.
+             This field shall be recorded according to 7.1.1.
+8.5.3        Volume Flags (BP 8)
+             The bits of this field shall be numbered from 0 to 7 starting with the least significant bit.
+             This field shall specify certain characteristics of the volume as follows.
+             Bit 0:       if set to ZERO, shall mean that the Escape Sequences field specifies only escape sequences
+                          registered according to ISO 2375;
+                          if set to ONE, shall mean that the Escape Sequences field specifies at least one escape sequence not
+                          registered according to ISO 2375.
+             Bits 1 to 7: These bits are reserved for future standardization and shall all be set to ZERO.
+8.5.4        System Identifier (BP 9 to 40)
+             This field shall specify an identification of a system which can recognize and act upon the content of the Logical
+             Sectors with Logical Sector Numbers 0 to 15 of the volume.
+             The characters in this field shall be a1-characters.
+8.5.5        Volume Identifier (BP 41 to 72)
+             This field shall specify an identification of the volume. The characters in this field shall be d1-characters.
+8.5.6        Escape Sequences (BP 89 to 120)
+             This field shall specify one or more escape sequences according to ISO 2022 that designate the G0 graphic
+             character set and, optionally, the G1 graphic character set to be used in an 8-bit environment according to ISO
+                                                          - 24 -
+
+
+
+
+         2022 to interpret descriptor fields related to the Directory Hierarchy identified by this Volume Descriptor (see
+         7.4.4). If the G1 set is designated, it is implicitly invoked into columns 10 to 15 of the code table.
+         These escape sequences shall conform to ECMA-35, except that the ESCAPE character shall be omitted from
+         each designating escape sequence when recorded in this field. The first or only escape sequence shall begin at
+         the first byte of the field. Each successive escape sequence shall begin at the byte in the field immediately
+         following the last byte of the preceding escape sequence. Any unused byte positions following the last sequence
+         shall be set to (00).
+         If all the bytes of this field are set to (00), it shall mean that the set of a1-characters is identical with the set of a-
+         characters and that the set of d1-characters is identical with the set of d-characters. In this case both sets are
+         coded according to ECMA-6.
+8.5.7    Path Table Size (BP 133 to 140)
+         This field shall specify as a 32-bit number the length in bytes of a recorded occurrence of the Path Table
+         identified by this Volume Descriptor.
+         This field shall be recorded according to 7.3.3.
+8.5.8    Location of Occurrence of Type L Path Table (BP 141 to 144)
+         This field shall specify as a 32-bit number the Logical Block Number of the first Logical Block allocated to the
+         Extent which contains an occurrence of the Path Table. Multiple-byte numerical values in a record of this
+         occurrence of the Path Table shall be recorded with the least significant byte first.
+         This field shall be recorded according to 7.3.1.
+8.5.9    Location of Optional Occurrence of Type L Path Table (BP 145 to 148)
+         This field shall specify as a 32-bit number the Logical Block Number of the first Logical Block allocated to the
+         Extent which contains an optional occurrence of the Path Table. If the value is 0, it shall mean that the Extent
+         shall not be expected to have been recorded. Multiple-byte numerical values in a record of this occurrence of the
+         Path Table shall be recorded with the least significant byte first.
+         This field shall be recorded according to 7.3.1.
+8.5.10   Location of Occurrence of Type M Path Table (BP 149 to 152)
+         This field shall specify as a 32-bit number the Logical Block Number of the first Logical Block allocated to the
+         Extent which contains an occurrence of the Path Table. Multiple-byte numerical values in a record of this
+         occurrence of the Path Table shall be recorded with the most significant byte first.
+         This field shall be recorded according to 7.3.2.
+8.5.11   Location of Optional Occurrence of Type M Path Table (BP 153 to 156)
+         This field shall specify as a 32-bit number the Logical Block Number of the first Logical Block allocated lo the
+         Extent which contains an optional occurrence of the Path Table. If the value is 0, it shall mean that the Extent
+         shall not be expected to have been recorded. Multiple-byte numerical values in a record of this occurrence of the
+         Path Table shall be recorded with the most significant byte first.
+         This field shall be recorded according to 7.3.2.
+8.5.12   Directory Record for Root Directory (BP 157 to 190)
+         This field shall contain an occurrence of the Directory Record for the Root Directory.
+         This field shall be recorded according to 9.1.
+8.5.13   Volume Set Identifier (BP 191 to 318)
+         This field shall specify an identification of the Volume Set of which the volume is a member.
+         The characters in this field shall be d1-characters.
+8.5.14   Publisher Identifier (BP 319 to 446)
+         This field shall specify an identification of the user who specified what shall be recorded an the Volume Group
+         of which the volume is a member.
+                                                              - 25 -
+
+
+
+
+            If the first byte is set to (5F), the remaining bytes of this field shall specify an identifier for a file containing the
+            identification of the user. This file shall be described in the Root Directory.
+            If all bytes of this field are set to (20), it shall mean that no such user is identified.
+            The characters in this field shall be a1-characters.
+ 8.5.15     Data Preparer Identifier (BP 447 to 574)
+            This field shall specify an identification of the person or other entity which controls the preparation of the data
+            to be recorded on the Volume Group of which the volume is a member.
+            If the first byte is set to (5F), the remaining bytes of this field shall specify an identifier for a file containing the
+            identification of the data preparer. This file shall be described in the Root Directory.
+            If all bytes of this field are set to (20), it shall mean that no such data preparer is identified.
+            The characters in this field shall be a1-characters.
+ 8.5.16     Application Identifier (BP 575 to 702)
+            This field shall specify an identification of the specification of how the data are recorded on the Volume Group
+            of which the volume is a member.
+            If the first byte is set to (5F), the remaining bytes of this field shall specify an identifier for a file containing the
+            identification of the application. This file shall be described in the Root Directory.
+            If all bytes of this field are set to (20), it shall mean that no such application is identified.
+            The characters in this field shall be a1-characters.
+ 8.5.17     Copyright File Identifier (BP 703 to 739)
+            This field shall specify an identification for a file described by the Root Directory and containing a copyright
+            statement for those volumes of the Volume Set the sequence numbers of which are less than, or equal to, the
+            assigned Volume Set size of the volume. If all bytes of this field are set to (20), it shall mean that no such file is
+            identified.
+            The characters in this field shall be d1-characters, SEPARATOR 1 and SEPARATOR 2.
+            The field shall be recorded as specified in 7.5.
+ 8.5.18     Abstract File Identifier (BP 740 to 776)
+            This field shall specify an identification for a file described by the Root Directory and containing an abstract
+            statement for those volumes of the Volume Set the sequence numbers of which are less than, or equal to, the
+            assigned Volume Set size of the volume. If all bytes of this field are set to (20), it shall mean that no such file is
+            identified.
+            The characters in this field shall be d1-characters, SEPARATOR 1 and SEPARATOR 2.
+            The field shall be recorded as specified in 7.5.
+ 8.5.19     Bibliographic File Identifier (BP 777 to 813)
+            This field shall specify an identification for a file described by the Root Directory and containing bibliographic
+            records interpreted according to standards that are the subject of an agreement between the originator and the
+            recipient of the volume. If all bytes of this field are set to (20), it shall mean that no such file is identified.
+            The characters in this field shall be d1-characters, SEPARATOR 1 and SEPARATOR 2.
+            The field shall be recorded as specified in 7.5.
+ 8.5.20     Application Use (BP 884 to 1 395)
+            This field shall be reserved for application use. Its content is not specified by this Standard.
+8.6       Volume Partition Descriptor
+          The Volume Partition Descriptor shall identify a volume partition within the Volume Space, a system which can
+          recognize and act upon the content of fields reserved for system use in the Volume Descriptor, the position and size
+          of the volume partition, and the version of the standard which applies to the Volume Descriptor. The contents of
+          the volume partition are not specified by this Standard.
+                                                             - 26 -
+
+
+
+
+        BP                     Field name                                               Content
+        1                      Volume Descriptor Type                                   numerical value
+        2 to 6                 Standard Identifier                                      CD001
+        7                      Volume Descriptor Version                                numerical value
+        8                      Unused Field                                             (00) byte
+        9 to 40                System Identifier                                        a-characters
+        41 to 72               Volume Partition Identifier                              d-characters
+        73 to 80               Volume Partition Location                                numerical value
+        81 to 88               Volume Partition Size                                    numerical value
+        89 to 2048             System Use                                               not specified
+
+
+8.6.1     Volume Descriptor Type (BP 1)
+          This field shall specify an 8-bit number indicating that the Volume Descriptor is a Volume Partition Descriptor.
+          The number in this field shall be 3.
+          This field shall be recorded according to 7.1.1.
+8.6.2     Standard Identifier (BP 2 to 6)
+          This field shall specify an identification of this Standard.
+          The characters in this field shall be CD001.
+8.6.3     Volume Descriptor Version (BP 7)
+          This field shall specify as an 8-bit number an identification of the version of the specification of the Volume
+          Partition Descriptor.
+          1 shall indicate the structure of this Standard.
+          This field shall be recorded according to 7.1.1.
+8.6.4     Unused Field (BP 8)
+          This field shall be set to (00).
+8.6.5     System Identifier (BP 9 to 40)
+          This field shall specify an identification of a system which can recognize and act upon the content of the System
+          Use field in the Volume Descriptor.
+          The characters in this field shall be a-characters.
+8.6.6     Volume Partition Identifier (BP 41 to 72)
+          This field shall specify an identification of the Volume Partition.
+          The characters in this field shall be d-characters.
+8.6.7     Volume Partition Location (BP 73 to 80)
+          This field shall specify as a 32-bit number the Logical Block Number of the first Logical Block allocated to the
+          Volume Partition.
+          This field shall be recorded according to 7.3.3.
+8.6.8     Volume Partition Size (BP 81 to 88)
+          This field shall specify as a 32-bit number the number of Logical Blocks in which the Volume Partition is
+          recorded.
+          This field shall be recorded according to 7.3.3.
+                                                              - 27 -
+
+
+
+
+    8.6.9      System Use (BP 89 to 2 048)
+               This field shall be reserved for system use. Its content is not specified by this Standard.
+
+
+9           File and Directory Descriptors
+9.1          Format of a Directory Record
+
+              BP                          Field name                                              Content
+              1                           Length of Directory Record (LEN-DR)                     numerical value
+              2                           Extended Attribute Record Length                        numerical value
+              3 to 10                     Location of Extent                                      numerical value
+              11 to 18                    Data Length                                             numerical value
+              19 to 25                    Recording Date and Time                                 numerical values
+              26                          File Flags                                              8 bits
+              27                          File Unit Size                                          numerical value
+              28                          Interleave Gap Size                                     numerical value
+              29 to 32                    Volume Sequence Number                                  numerical value
+              33                          Length of File Identifier (LEN_FI)                      numerical value
+              34 to (33+LEN_FI)           File Identifier                                         d-characters,
+                                                                                                  d1-characters,
+                                                                                                  SEPARATOR 1,
+                                                                                                  SEPARATOR 2,
+                                                                                                  (00) or (01) byte
+              (34 + LEN_FI)         Padding Field                                                 (00) byte
+              (LEN_DR - LEN_SU + 1) System Use                                                    LEN_SU bytes
+              to LEN_DR
+
+
+             NOTE 15
+             LEN_SU denotes the length of the System Use field.
+    9.1.1      Length of Directory Record (LEN_DR) (BP 1)
+               This field shall specify as an 8-bit number the length in bytes of the Directory Record.
+               This field shall be recorded according to 7.1.1.
+    9.1.2      Extended Attribute Record Length (BP 2)
+               This field shall contain an 8-bit number. This number shall specify the assigned Extended Attribute Record
+               length if an Extended Attribute Record is recorded. Otherwise this number shall be zero.
+               This field shall be recorded according to 7.1.1.
+    9.1.3      Location of Extent (BP 3 to 10)
+               This field shall specify as a 32-bit number the Logical Block Number of the first Logical Block allocated to the
+               Extent.
+               This field shall be recorded according to 7.3.3.
+    9.1.4      Data Length (BP 11 to 18)
+               This field shall specify as a 32-bit number the data length of the File Section.
+               This field shall be recorded according to 7.3.3.
+               NOTE 16
+               This number does not include the length of any Extended Attribute Record.
+                                                                 - 28 -
+
+
+
+
+9.1.5           Recording Date and Time (BP 19 to 25)
+                This field shall indicate the date and the time of the day at which the information in the Extent described by the
+                Directory Record was recorded.
+                The date and time shall be represented by seven 8-bit numbers each of which shall be recorded according to
+                7.1.1 as follows.
+
+
+        RBP                         Interpretation                                               Content
+        1                           Number of years since 1900                                   numerical value
+        2                           Month of the year from 1 to 12                               numerical value
+        3                           Day of the month from 1 to 31                                numerical value
+        4                           Hour of the day from 0 to 23                                 numerical value
+        5                           Minute of the hour from 0 to 59                              numerical value
+        6                           Second of the minute from 0 to 59                            numerical value
+        7                           Offset from Greenwich Mean Time in number of 15              numerical value
+                                    min intervals from -48 (West) to + 52 (East) recorded
+                                    according to 7.1.2
+
+
+                If all seven numbers are zero, it shall mean that the date and time are not specified.
+9.1.6           File Flags (BP 26)
+                The bits of this field shall be numbered from 0 to 7 starting with the least significant bit.
+                If this Directory Record identifies a directory then bit positions 2, 3 and 7 shall be set to ZERO.
+                If no Extended Attribute Record is associated with the File Section identified by this Directory Record then bit
+                positions 3 and 4 shall be set to ZERO.
+                This field shall specify certain characteristics of the file as follows.
+
+
+            BP            Bit name
+            0             Existence          If set to ZERO, shall mean that the existence of the file shall be made known to
+                                             the user upon an inquiry by the user.
+                                             If set to ONE, shall mean that the existence of the file need not be made known to
+                                             the user.
+            1             Directory          If set to ZERO, shall mean that the Directory Record does not identify a directory.
+                                             If set to ONE, shall mean that the Directory Record identifies a directory.
+            2             Associated         If set to ZERO, shall mean that the file is not an Associated File.
+                          File
+                                             If set to ONE, shall mean that the file is an Associated File.
+            3             Record             If set to ZERO, shall mean that the structure of the information in the file is not
+                                             specified by the Record Format field of any associated Extended Attribute Record
+                                             (see 9.5.8).
+                                             If set to ONE, shall mean that the structure of the information in the file has a
+                                             record format specified by a number other than zero in the Record Format Field of
+                                             the Extended Attribute Record (see 9.5.8).
+            4             Protection         If set to ZERO, shall mean that
+                                             -   an Owner Identification and a Group Identification are not specified for the
+                                                 file (see 9.5.1 and 9.5.2);
+                                                              - 29 -
+
+
+
+
+                                           -   any user may read or execute the file (see 9.5.3).
+                                           If set to ONE, shall mean that
+                                           -   an Owner Identification and a Group Identification are specified for the file
+                                               (see 9.5.1 and 9.5.2);
+                                           -   at least one of the even-numbered bits or bit 0 in the Permissions field of the
+                                               associated Extended Attribute Record is set to ONE (see 9.5.3).
+         5 to 6        Reserved            These bits are reserved for future standardization and shall be set to ZERO.
+         7             Multi-Extent        If set to ZERO, shall mean that this is the final Directory Record for the file.
+                                           If set to ONE, shall mean that this is not the final Directory Record for the file.
+
+
+9.1.7        File Unit Size (BP 27)
+             This field shall contain an 8-bit number. This number shall specify the assigned File Unit size for the File
+             Section if the File Section is recorded in interleaved mode. Otherwise this number shall be zero.
+             This field shall be recorded according to 7.1.1.
+9.1.8        Interleave Gap Size (BP 28)
+             This field shall contain an 8-bit number. This number shall specify the assigned Interleave Gap size for the File
+             Section if the File Section is recorded in interleaved mode. Otherwise this number shall be zero.
+             This field shall be recorded according to 7.1.1.
+9.1.9        Volume Sequence Number (BP 29 to 32)
+             This field shall specify as a 16-bit number the ordinal number of the volume in the Volume Set on which the
+             Extent described by this Directory Record is recorded.
+             This field shall be recorded according to 7.2.3.
+9.1.10       Length of File Identifier (LEN_FI) (BP 33)
+             This field shall specify as an 8-bit number the length in bytes of the File Identifier field of the Directory Record.
+             This field shall be recorded according to 7.1.1.
+9.1.11       File Identifier [BP 34 to (33 + LEN-FI)]
+             The interpretation of this field depends as follows on the setting of the Directory bit of the File Flags field.
+             If set to ZERO, it shall mean:
+             − The field shall specify an identification for the file.
+             − The characters in this field shall be d-characters or d1-characters, SEPARATOR 1, SEPARATOR 2.
+             − The field shall be recorded as specified in 7.5.
+             If set to ONE, it shall mean:
+             − The field shall specify an identification for the directory.
+             − The characters in this field shall be d-characters or d1-characters, or only a (00) byte, or only a (01) byte.
+             − The field shall be recorded as specified in 7.6.
+9.1.12       Padding Field [BP (34 + LEN_FI)]
+             This field shall be present in the Directory Record only if the number in the Length of the File Identifier field is
+             an even number.
+             If present, this field shall be set to (00).
+                                                             - 30 -
+
+
+
+
+ 9.1.13       System Use [BP (LEN_DR - LEN_SU + 1) to LEN_DR)
+              This field shall be optional. If present, this field shall be reserved for system use. Its content is not specified by
+              this Standard. If necessary, so that the Directory Record comprises an even number of bytes, a (00) byte shall be
+              added to terminate this field.
+9.2       Consistency of File Attributes between Directory Records of a File
+          The following fields of each Directory Record for the same file shall contain the same values:
+          −   Existence bit of the File Flags field
+          −   Directory bit of the File Flags field
+          −   Associated File bit of the File Flags field
+          −   Record bit of the File Flags field
+          −   Reserved bits of the File Flags field
+          −   Length of File Identifier field
+          −   File Identifier field
+          −   Padding field
+9.3       Order of Directory Records
+          The records of a Directory shall be ordered according to the relative value of the File Identifier field by the
+          following criteria in descending order of significance:
+          − In ascending order according to the relative value of File Name, where File Names shall be valued as follows:
+              . If two File Names have the same content in all byte positions, then these two File Names are said to be equal
+                in value.
+              . If two File Names do not contain the same number of byte positions, the shorter File Name shall be treated as
+                if it were padded on the right with all padding bytes set to (20) and as if both File Names contained the
+                identical number of byte positions.
+              . After any padding necessary to treat the File Names as if they were of equal length, the characters in the
+                corresponding byte positions, starting with the first position, of the File Names are compared until a byte
+                position is found that does not contain the same character in both File Names. The greater File Name is the
+                one that contains the character with the higher code position value in the coded graphic character sets used to
+                interpret the File Identifier field of the Directory Record.
+          − in ascending order according to the relative value of File Name Extension, where File Name Extensions shall be
+            valued as follows:
+              . If two File Name Extensions have the same content in all byte positions, then these two File Name
+                Extensions are said to be equal in value.
+              . If two File Name Extensions do not contain the same number of byte positions, the shorter File Name
+                Extension shall be treated as if it were padded on the right with all padding bytes set to (20) and as if both
+                File Name Extensions contained the identical number of byte positions.
+              . After any padding necessary to treat the File Name Extensions as if they were of equal length, the characters
+                in the corresponding byte positions, starting with the first position, of the File Name Extensions are
+                compared until a byte position is found that does not contain the same character in both File Name
+                Extensions. The greater File Name Extension is the one that contains the character with the higher code
+                position value in the coded graphic character sets used to interpret the File Identifier field of the Directory
+                Record.
+          − in descending order according to the relative value of File Version Number, where File Version Numbers shall
+            be valued as follows:
+              . If two File Version Numbers have the same content in all byt~6 positions, then these two File Version
+                Numbers are said to be equal in value.
+              . If two File Version Numbers do not contain the same number of byte positions, the shorter File Version
+                Number shall be treated as if it were padded on the left with all padding bytes set to (30) and as if both File
+                Version Numbers contained the identical number of byte positions.
+                                                            - 31 -
+
+
+
+
+            . After any padding necessary to treat the File Version Numbers as if they were of equal length, the characters
+              in the corresponding byte positions, starting with the first position, of the File Version Numbers are
+              compared until a byte position is found that does not contain the same character in both File Version
+              Numbers. The greater File Version Number is the one that contains the character with the higher code
+              position value in the coded graphic character sets used to interpret the File Identifier field of the Directory
+              Record.
+         − in descending order according to the value of the Associated File bit of the File Flags field.
+         − The order of the File Sections of the file.
+9.4      Format of a Path Table Record
+
+      BP                     Field name                                                 Content
+      1                      Length of Directory Identifier (LEN_DI)                    numerical value
+      2                      Extended Attribute Record Length                           numerical value
+      3 to 6                 Location of Extent                                         numerical value
+      7 to 8                 Parent Directory Number                                    numerical value
+      9 to (8 +              Directory Identifier                                       d-characters, d1-characters,
+      LEN_DI)                                                                           (00) byte
+      (9 + LEN_DI)           Padding Field                                              (00) byte
+
+ 9.4.1     Length of Directory Identifier (LEN_DI) (BP 1)
+           This field shall specify as an 8-bit number the length in bytes of the Directory Identifier field of the Path Table
+           Record.
+           This field shall be recorded according to 7.1.1.
+ 9.4.2     Extended Attribute Record length (BP 2)
+           This field shall contain an 8-bit number. This number shall specify the assigned Extended Attribute Record
+           length if an Extended Attribute Record is recorded. Otherwise this number shall be zero.
+           This field shall be recorded according to 7.1.1.
+ 9.4.3     Location of Extent (BP 3 to 6)
+           This field shall specify as a 32-bit number the Logical Block Number of the first Logical Block allocated to the
+           Extent in which the directory is recorded.
+           This field shall be recorded according to 7.3.
+ 9.4.4     Parent Directory Number (BP 7 to 8)
+           This field shall specify as a 16-bit number the record number in the Path Table for the parent directory of the
+           directory.
+           This field shall be recorded according to 7.2.
+ 9.4.5     Directory Identifier [BP 9 to (8 + LEN_DI)]
+           This field shall specify an identification for a directory.
+           The characters in this field shall be d-characters or d1-characters or only a (00) byte.
+           This field shall be recorded according to 7.6.
+ 9.4.6     Padding Field [BP (9 + LEN_DI)]
+           This field shall be present in the Path Table Record only if the number in the Length of Directory Identifier field
+           is an odd number.
+           If present, this field shall be set to (00).
+                                                               - 32 -
+
+
+
+
+9.5       Format of an Extended Attribute Record
+          If present, an Extended Attribute Record shall be recorded over at least one Logical Block. It shall have the
+          following contents.
+
+
+         BP                      Field name                                                     Content
+         1 to 4                 Owner Identification                                            numerical value
+         5 to 8                 Group Identification                                            numerical value
+         9 to 10                Permissions                                                     16 bits
+         11 to 27               File Creation Date and Time                                     Digit(s), numerical value
+         28 to 44               File Modification Date and Time                                 Digit(s), numerical value
+         45 to 61               File Expiration Date and Time                                   Digit(s), numerical value
+         62 to 78               File Effective Date and Time                                    Digit(s), numerical value
+         79                     Record Format                                                   numerical value
+         80                     Record Attributes                                               numerical value
+         81 to 84               Record Length                                                   numerical value
+         85 to 116              System Identifier                                               a-characters, a1-characters
+         117 to 180             System Use                                                      not specified
+         181                    Extended Attribute Record Version                               numerical value
+         182                    Length of Escape Sequences (LEN_ESC)                            numerical value
+         183 to 246             (Reserved for future standardization)                           (00) bytes
+         247 to 250             Length of Application Use (LEN_AU)                              numerical value
+         251 to (250 +          Application Use                                                 LEN_AU bytes
+         LEN_AU)
+         (251 + LEN_AU)          Escape Sequences                                               LEN_ESC bytes
+         to (250 +
+         LEN_ESC +
+         LEN_AU)
+
+
+ 9.5.1        Owner Identification (BP 1 to 4)
+              This field shall specify as a 16-bit number an identification of the file owner who is a member of the group
+              identified by the Group Identification field of the Extended Attribute Record.
+              If the number in this field is 0, this shall indicate that there is no owner identification specified for the file. In
+              this case, the Group Identification field shall contain zero.
+              This field shall be recorded according to 7.2.3.
+ 9.5.2        Group Identification (BP 5 to 8)
+              This field shall specify as a 16-bit number an identification of the group of which the file owner is a member.
+              The values for this number from 1 to a number subject to agreement between the data preparer and receiving
+              system shall identify the group as belonging to the class of user referred to as System.
+              If the number in this field is 0, this shall indicate that there is no group identification specified for the file. In this
+              case, the Owner Identification field shall contain zero.
+              This field shall be recorded according to 7.2.3.
+ 9.5.3        Permissions (BP 9 to 10)
+              The bits of this 16-bit field shall be numbered from 0 to 15 starting with the least significant bit of the byte
+              recorded in byte position 10.
+              Bits 0 to 3 may be ignored in interchange.
+                                               - 33 -
+
+
+
+
+If requested by the owner, bits 4 to 7 may be ignored in interchange.
+This field shall specify access permission for certain classes of users as follows.
+                                                       - 34 -
+
+
+
+
+        Bit 0        If set to ZERO, shall mean that an owner who is a member of a group of the System class of user
+                     may read the file.
+                     If set to ONE, shall mean that an owner who is a member of a group of the System class of user
+                     may not read the file.
+        Bit 1        Shall be set to ONE.
+        Bit 2        If set to ZERO, shall mean that an owner who is a member of a group of the System class of user
+                     may execute the file.
+                     If set to ONE, shall mean that an owner who is a member of a group of the System class of user
+                     may not execute the file.
+        Bit 3        Shall be set to ONE.
+        Bit 4        If set to ZERO, shall mean that the owner may read the file.
+                     If set to ONE, shall mean that the owner may not read the file.
+        Bit 5        Shall be set to ONE.
+        Bit 6        If set to ZERO, shall mean that the owner may execute the file.
+                     If set to ONE, shall mean that the owner may not execute the file.
+        Bit 7        Shall be set to ONE.
+        Bit 8        If set to ZERO, shall mean that any user who is a member of the group specified by the Group
+                     Identification field may read the file.
+                     If set to ONE, shall mean that of the users who are members of the group specified by the Group
+                     Identification field, only the owner may read the file.
+        Bit 9        Shall be set to ONE.
+        Bit 10       If set to ZERO, shall mean that any user who is a member of the group specified by the Group
+                     Identification field may execute the file.
+                     If set to ONE, shall mean that of the users who are members of the group specified by the Group
+                     Identification field, only the owner may execute the file.
+        Bit 11       Shall be set to ONE.
+        Bit 12       If set to ZERO, shall mean that any user may read the file.
+                     If set to ONE, shall mean that a user not a member of the group specified by the Group
+                     Identification field may not read the file.
+        Bit 13       Shall be set to ONE.
+        Bit 14       If set to ZERO, shall mean that any user may execute the file.
+                     If set to ONE, shall mean that a user not a member of the group specified by the Group
+                     Identification field may not execute the file.
+        Bit 15       Shall be set to ONE.
+
+
+9.5.4   File Creation Date and Time (BP 11 to 27)
+        This field shall specify the date and the time of the day at which the information in the file was created.
+        This field shall be recorded according to 8.4.26.1.
+9.5.5   File Modification Date and Time (BP 28 to 44)
+        This field shall specify the date and the time of the day at which the information in the file was last modified.
+                                                        - 35 -
+
+
+
+
+         This field shall be recorded according to 8.4.26.1.
+9.5.6    File Expiration Date and Time (BP 45 to 61)
+         This field shall specify the date and the time of the day at which the information in the file may be regarded as
+         obsolete. If the date and time are not specified then the information shall not be regarded as obsolete.
+         This field shall be recorded according to 8.4.26.1.
+9.5.7    File Effective Date and Time (BP 62 to 78)
+         This field shall specify the date and the time of the day at which the information in the file may be used. If the
+         date and time are not specified then the information may be used at once.
+         This field shall be recorded according to 8.4.26.1.
+9.5.8    Record Format (BP 79)
+         This field shall contain an 8-bit number specifying the format of the information in the file.
+         Number 0     shall mean that the structure of the information recorded in the file is not specified by this field;
+         Number 1     shall mean that the information in the file is a sequence of fixed-length records (see 6.10.3);
+         Number 2 shall mean that the information in the file is a sequence of variable-length records (see 6.10.4), in
+                  which the RCW is recorded according to 7.2.1;
+         Number 3 shall mean that the information in the file is a sequence of variable-length records (see 6.10.4), in
+                  which the RCW is recorded according to 7.2.2.
+         Numbers 4 to 127 are reserved for future standardization.
+         Numbers 128 to 255 are reserved for system use.
+         This field shall be recorded according to 7.1.1.
+9.5.9    Record Attributes (BP 80)
+         This field shall contain an 8-bit number specifying certain processing of the records in a file when they are
+         displayed on a character-imaging device.
+         Number 0 shall mean that each record shall be preceded by a LINE FEED character and followed by a
+                  CARRIAGE RETURN character.
+         Number 1 shall mean that the first byte of a record shall be interpreted as specified in ISO 1539 for vertical
+                  spacing.
+         Number 2     shall mean that the record contains the necessary control information.
+         Numbers 3 to 255 are reserved for future standardization.
+         If the Record Format field contains zero then the Record Attribute field shall be ignored in interchange.
+         This field shall be recorded according to 7.1.1.
+9.5.10   Record Length (BP 81 to 84)
+         This field shall specify a 16-bit number as follows.
+         If the Record Format field contains the number 0, the Record Length field shall contain zero.
+         If the Record Format field contains the number 1, the Record Length field shall specify the length in bytes of
+         each record in the file.
+         If the Record Format field contains the number 2 or 3, the Record Length field shall specify the maximum
+         length in bytes of a record in the file.
+         This field shall be recorded according to 7.2.3.
+9.5.11   System Identifier (BP 85 to 116)
+         This field shall specify an identification of a system which can recognize and act upon the content of the System
+         Use fields in the Extended Attribute Record and associated Directory Record.
+                                                                 - 36 -
+
+
+
+
+              The characters in this field shall be a-characters or a1-characters.
+ 9.5.12       System Use (BP 117 to 180)
+              This field shall be reserved for system use. Its content is not specified by this Standard.
+ 9.5.13       Extended Attribute Record Version (BP 181)
+              This field shall specify as an 8-bit number the version of the specification of the Extended Attribute Record.
+              1 shall indicate the structure of this Standard.
+              This field shall be recorded according to 7.1.1.
+ 9.5.14       Length of Escape Sequences (BP 182)
+              This field shall specify as an 8-bit number the length in bytes of the Escape Sequences field in the Extended
+              Attribute Record.
+              This field shall be recorded according to 7.1.1.
+ 9.5.15       Reserved for future standardization (BP 183 to 246)
+              All bytes of this field shall be set to (00).
+ 9.5.16       Length of Application Use (BP 247 to 250)
+              This field shall specify as a 16-bit number the length in bytes of the Application Use field in the Extended
+              Attribute Record.
+              This field shall be recorded according to 7.2.3.
+ 9.5.17       Application Use [BP 251 to (250 + LEN-AU)]
+              This field shall be reserved for application use. Its content is not specified by this Standard.
+ 9.5.18       Escape Sequences [BP (251 + LEN_AU) to (250 + LEN_ESC + LEN_AU)]
+              This field shall be optional. If present, this field shall contain escape sequences that designate the coded
+              character sets to be used to interpret the contents of the file. These escape sequences shall conform to ISO 2022,
+              except that the ESCAPE character shall be omitted from each escape sequence.
+              The first or only escape sequence shall begin at the first byte of the field. Each successive escape sequence shall
+              begin at the byte in the field immediately following the last byte of the preceding escape sequence. Any unused
+              positions following the last escape sequence shall be set to (00).
+9.6       Consistency of File Attributes between Extended Attribute Records of a File
+              The following fields of the Extended Attribute Record associated with the File Sections of a file shall contain the
+              same values:
+          − Record Format field:
+          − Record Attributes field;
+          − Record Length field, if the records are fixed-length records (see 6.10.3).
+
+
+10     Levels of interchange
+       This Standard specifies three nested levels of interchange.
+10.1      Level 1
+          At Level 1 the following restrictions shall apply:
+          −   each file shall consist of only one File Section;
+          −   a File Name shall not contain more than eight d-characters or eight d1-characters;
+          −   a File Name Extension shall not contain more than three d-characters or three d1-characters;
+          −   a Directory Identifier shall not contain more than eight d-characters or eight d1-characters.
+10.2      Level 2
+          At Level 2 the following restriction shall apply:
+          − each file shall consist of only one File Section.
+                                                            - 37 -
+
+
+
+
+10.3      Level 3
+          At Level 3 no restrictions shall apply.
+
+
+Section three: Requirements for systems
+
+11     Requirement for the description of systems
+       This Standard specifies that certain information shall be communicated between a user and an implementation (see
+       clauses 12 and 13).
+       An information processing system that conforms to this Standard shall be the subject of a description which identifies
+       the means by which the user may supply such information, or may obtain it when it is made available, as specified in
+       this Standard.
+
+
+12     Requirements for an originating system
+12.1      General
+          The implementation shall be capable of recording a set of files, and all descriptors that are specified in this
+          Standard, on a Volume Set in accordance with one of the interchange levels specified in this Standard.
+12.2      Files
+          The implementation shall obtain from the data preparer the information that constitutes the set of files to be
+          recorded.
+12.3      Descriptors
+ 12.3.1     The implementation shall allow the data preparer to supply the information that is to be recorded in each of the
+            descriptor fields listed below, and shall supply the information for a field if the data preparer does not supply it.
+            For the Primary Volume Descriptor:
+            −     System Identifier
+            −     Volume Identifier
+            −     Logical Block Size
+            −     Location of Occurrence of Type L Path Table
+            −     Location of Optional Occurrence of Type L Path Table
+            −     Location of Occurrence of Type M Path Table
+            −     Location of Optional Occurrence of Type M Path Table
+            −     Volume Set Identifier Publisher Identifier Data Preparer Identifier
+            −     Application Identifier
+            −     Copyright File Identifier
+            −     Abstract File Identifier
+            −     Bibliographic File Identifier
+            −     Volume Creation Date and Time
+            −     Volume Modification Date and Time
+            −     Volume Expiration Date and Time
+            −     Volume Effective Date and Time
+            −     Application Use
+            For each Path Table Record:
+            −     Extended Attribute Record Length
+            −     Location of Extent
+            −     Parent Directory Number
+            −     Directory Identifier
+            For each Directory Record:
+            − Extended Attribute Record Length
+            − Location of Extent
+                                                           - 38 -
+
+
+
+
+         −   Data Length
+         −   Recording Date and Time
+         −   Existence bit of the File Flags field
+         −   Directory bit of the File Flags field
+         −   Associated File bit of the File Flags field
+         −   Record bit of the File Flags field
+         −   Protection bit of the File Flags field
+         −   File Unit Size
+         −   Interleave Gap Size
+         −   Volume Sequence Number
+         −   File Name of a File Identifier
+         −   File Name Extension of a File Identifier
+         −   File Version Number of a File Identifier
+         −   System Use
+12.3.2   The implementation shall allow the data preparer to supply the information that is to be recorded in the
+         descriptor fields listed below, and shall not record the Supplementary Volume Descriptor if the data preparer
+         does not supply the information.
+         For each Supplementary Volume Descriptor:
+         −   System Identifier
+         −   Volume Identifier
+         −   Logical Block Size
+         −   Location of Occurrence of Type L Path Table
+         −   Location of Optional Occurrence of Type L Path Table
+         −   Location of Occurrence of Type M Path Table
+         −   Location of Optional Occurrence of Type M Path Table
+         −   Bit 0 of the Volume Flags field
+         −   Escape Sequences
+         −   Volume Set Identifier
+         −   Publisher Identifier
+         −   Data Preparer Identifier
+         −   Application Identifier
+         −   Copyright File Identifier
+         −   Abstract File Identifier
+         −   Bibliographic File Identifier
+         −   Volume Creation Date and Time
+         −   Volume Modification Date and Time
+         −   Volume Expiration Date and Time
+         −   Volume Effective Date and Time
+         −   Application Use
+12.3.3   The implementation shall allow the data preparer to supply the information that is to be recorded in the
+         descriptor fields listed below, and shall not record the Volume Partition Descriptor if the data preparer does not
+         supply the information.
+         For each Volume Partition Descriptor:
+         −   System Identifier
+         −   Volume Partition Identifier
+         −   Volume Partition Location
+         −   Volume Partition Size
+         −   System Use
+12.3.4   The implementation shall allow the data preparer to supply the information that is to be recorded in the
+         descriptor fields listed below, and shall not record the Boot Record if the data preparer does not supply the
+         information.
+         For each Boot Record:
+                                                          - 39 -
+
+
+
+
+            − Boot System Identifier
+            − Boot Identifier
+            − Boot System Use
+ 12.3.5     The implementation shall allow the data preparer to supply the information that is to be recorded in the
+            descriptor fields listed below, and need not record the Extended Attribute Record if the data preparer does not
+            supply the information for any of the descriptor fields listed below. If the Extended Attribute Record is recorded,
+            the implementation shall supply the information for a field if the data preparer does not supply it.
+            For each Extended Attribute Record:
+            −     Owner Identification
+            −     Group Identification
+            −     Permissions
+            −     File Creation Date and Time
+            −     File Modification Date and Time
+            −     File Expiration Date and Time
+            −     File Effective Date and Time
+            −     Record Format
+            −     Record Attributes
+            −     Record Length
+            −     System Identifier
+            −     System Use
+            −     Length of Escape Sequences
+            −     Length of Application Use
+            −     Application Use
+            −     Escape Sequences
+12.4      System Area
+          The implementation shall allow the data preparer to supply the information that is to be recorded on the Logical
+          Sectors with Logical Sector Numbers 0 to 15.
+
+
+13     Requirements for a receiving system
+13.1      General
+          The implementation shall be capable of reading the files and the recorded descriptors from a Volume Set that has
+          been recorded in accordance with one of the interchange levels specified in this Standard, except Associated Files.
+13.2      Files
+          The implementation shall make available to the user the information that constitutes the recorded files, except any
+          Associated File.
+          If the implementation allows the user to specify that the information constituting a file is to be interpreted
+          according to 6.10, the implementation shall make available to the user the length of each record in the file.
+13.3      Descriptors
+ 13.3.1     The implementation shall allow the user to supply in formation sufficient to enable the implementation to locate
+            the files required by the user, and to locate the volumes on which these are recorded.
+ 13.3.2     The implementation shall make available to the user the information that is recorded in each of the descriptor
+            fields listed below.
+            For the Primary Volume Descriptor:
+            −     Volume Identifier
+            −     Volume Set Identifier
+            −     Copyright File Identifier
+            −     Abstract File Identifier
+            −     Bibliographic File Identifier
+            For each Supplementary Volume Descriptor:
+                                                           - 40 -
+
+
+
+
+            −   Volume Identifier
+            −   Bit 0 of the Volume Flags field
+            −   Escape Sequences
+            −   Volume Set Identifier
+            −   Copyright File Identifier
+            −   Abstract File Identifier
+            −   Bibliographic File Identifier
+            For each Path Table Record:
+            −   Parent Directory Number
+            −   Directory Identifier
+            −   For each Directory Record:
+            −   File Name of a File Identifier
+            −   File Name Extension of a File Identifier
+            −   Directory bit of the File Flags field
+13.4      Restrictions
+          The implementation may impose a limit on the length of a record to be made available to the user. The
+          implementation is not required to make available to the user any byte beyond the first n bytes of a record, where n
+          is the value of the imposed limit.
+13.5      Levels of Implementation
+          This Standard specifies two nested levels of implementation.
+ 13.5.1     Level 1
+            At Level 1 the implementation is permitted not to make available to the user:
+            − the information that constitutes the files identified in a Directory Hierarchy that is identified in a
+              Supplementary Volume Descriptor;
+            − the information that is recorded in the descriptor fields of a Supplementary Volume Descriptor and of the
+              associated Path Table Records, associated Directory Records, and Extended Attribute Records identified by
+              the associated Directory Records.
+ 13.5.2     Level 2
+            At Level 2 no such restrictions shall apply.
+- 41 -
+                                                - 42 -
+
+
+
+
+                                           Appendix A
+
+           Standard ECMA-6 : International Reference Version (IRV)
+
+                                 b7 0  0 0 0 1 1 1 1
+                                 b6 0   0 1 1 0 0 1 1
+                                 b5   0 1 0 1 0 1 0 1
+                b4 b3 b2 b1 0 1 2 3 4 5 6 7
+                 0 0 0 0 0 NUL DLE SP 0 @ P   p
+
+
+
+
+                                                                      '
+                 0 0 0 1 1 SOH DC1 ! 1 A Q a q
+                 0 0 1 0 2 STX DC2 " 2 B R b r
+                 0 0 1 1 3 ETX DC3    3 C S c s
+                 0 1 0 0 4 EOT DC4 ¤ 4 D T d t
+                 0 1 0 1 5 ENQ NAK % 5 E U e u
+                 0 1 1 0 6 ACK SYN & 6 F V f v
+                 0 1 1 1 7 BEL ETB ' 7 G W g w
+                 1 0 0 0 8 BS CAN ( 8 H X h x
+                 1 0 0 1 9 HT EM ) 9 I Y i y
+                 1 0 1 0 10 LF SUB * : J Z j z
+                 1 0 1 1 11 VT ESC + ; K    k
+                 1 1 0 0 12 FF IS4 , < L    l
+                 1 1 0 1 13 CR IS3 - = M    m
+                 1 1 1 0 14 SO IS2 . > N    n
+                 1 1 1 1 15 SI IS1 / ? O _ o DEL
+                98-0076-A
+
+
+
+
+The d-characters are those which are not shaded in the above table.
+                                                - 43 -
+
+
+
+
+                                 b7 0  0 0 0 1 1 1 1
+                                 b6 0   0 1 1 0 0 1 1
+                                 b5   0 1 0 1 0 1 0 1
+                b4 b3 b2 b1 0 1 2 3 4 5 6 7
+                 0 0 0 0 0 NUL DLE SP 0 @ P   p
+
+
+
+
+                                                                      '
+                 0 0 0 1 1 SOH DC1 ! 1 A Q a q
+                 0 0 1 0 2 STX DC2 " 2 B R b r
+                 0 0 1 1 3 ETX DC3    3 C S c s
+                 0 1 0 0 4 EOT DC4 ¤ 4 D T d t
+                 0 1 0 1 5 ENQ NAK % 5 E U e u
+                 0 1 1 0 6 ACK SYN & 6 F V f v
+                 0 1 1 1 7 BEL ETB ' 7 G W g w
+                 1 0 0 0 8 BS CAN ( 8 H X h x
+                 1 0 0 1 9 HT EM ) 9 I Y i y
+                 1 0 1 0 10 LF SUB * : J Z j z
+                 1 0 1 1 11 VT ESC + ; K    k
+                 1 1 0 0 12 FF IS4 , < L    l
+                 1 1 0 1 13 CR IS3 - = M    m
+                 1 1 1 0 14 SO IS2 . > N    n
+                 1 1 1 1 15 SI IS1 / ? O _ o DEL
+                98-0077-A
+
+
+
+
+The a-characters are those which are not shaded in the above table.
+.
+.
+Printed copies can be ordered from:
+ECMA
+114 Rue du Rhône
+CH-1204 Geneva
+Switzerland
+Fax:         +41 22 849.60.01
+Internet:    documents@ecma.ch
+Files can be downloaded from our FTP site, ftp.ecma.ch, logging in as anonymous and giving your E-mail address as
+password. This Standard is available from library ECMA-ST as a compacted, self-expanding file in MSWord 6.0
+format (file E119-DOC.EXE) and as an Acrobat PDF file (file E119-PDF.PDF). File E119-EXP.TXT gives a short
+presentation of the Standard.
+Our web site, http://www.ecma.ch, gives full information on ECMA, ECMA activities, ECMA Standards and Technical
+Reports.
+ECMA
+114 Rue du Rhône
+CH-1204 Geneva
+Switzerland
+This Standard ECMA-119 is available free of charge in printed form and as a file.
+See inside cover page for instructions
+

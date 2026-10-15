@@ -1,0 +1,1439 @@
+E                         INTEL 380FB PCISET: 82380AB MOBILE
+                               PCI-TO-ISA BRIDGE (MISA)
+                                                                                                                                          PRELIMINARY
+
+
+
+
+    PCI Bus at 25 MHz to 33 MHz                                                                  PC/PCI DMA Protocol for Software
+    ISA Bus at 7.5 MHz to 8.33 MHz                                                               Transparent, Low Pin Count DMA
+                                                                                                 on ISA
+    5 Volt ISA and PCI Interfaces
+                                                                                                 Supports 3 ISA Slots
+    Full ISA Support Including ISA Masters
+                                                                                                 160-lead MQFP Package
+
+
+The Intel 380FB PCIset (380FB) consists of the 82380FB Mobile PCI-to-PCI Bridge (MPCI2) and the 82380AB
+Mobile PCI-to-ISA Bridge (MISA). The 380FB provides the logic necessary to build a full Hot Docking capable
+docking station with 5V PCI and ISA add-in expansion slots. MPCI2 provides the docking control for Hot-
+Insertion, power management and a PCI-to-PCI bridge to a 5V PCI desktop style add-in bus. MISA provides a
+PCI-to-ISA bridge for a 5V ISA desktop style add-in bus.
+
+MISA provides both a master and slave interface to the PCI bus. As a PCI master, MISA runs cycles on behalf
+of ISA masters. As a PCI slave, MISA accepts cycles initiated by PCI masters targeted for the MISA’s internal
+configuration registers or ISA Bus.
+
+MISA incorporates a fully ISA Bus compatible master and slave interface. MISA directly drives 3 ISA slots
+without external data or address buffering. The ISA interface also provides byte swap logic, I/O recovery
+support, wait-state generation, refresh and SYSCLK generation. MISA supports compatible ISA DMA timings for
+all 7 DMA channels. MISA integrates ISA refresh logic including refresh address generation and a refresh timer.
+
+MISA implements the PC/PCI DMA protocol for the serialization of the docking station DMA and ISA master
+requests over the PCI Bus. MISA regenerates ISA DMA cycles from the PC/PCI DMA cycles taking place
+across the PCI Bus.
+
+
+
+
+   Information in this document is provided in connection with Intel products. No license, express or implied, by estoppel or otherwise, to any intellectual property rights is
+   granted by this document or by the sale of Intel products. Except as provided in Intel’s Terms and Conditions of Sale for such products, Intel assumes no liability
+   whatsoever, and Intel disclaims any express or implied warranty, relating to sale and/or use of Intel products including liability or warranties relating to fitness for a
+   particular purpose, merchantability, or infringement of any patent, copyright or other intellectual property right. Intel products are not intended for use in medical, life
+   saving, or life sustaining applications. Intel retains the right to make changes to specifications and product descriptions at any time, without notice. The Intel 380FB
+   PCIset may contain design defects or errors known as errata. Current characterized errata are available on request. Third-party brands and names are the property of
+   their respective owners.
+
+  © INTEL CORPORATION 1997                                                   February 1997                                                  Order Number: 290563-001
+82380AB (MISA)                                                        E
+            AD[31:0]                                              BALE
+          C/BE[3:0]#                                              AEN
+                PAR                                               IOCHRDY
+           FRAME#                                                 IOCS16#
+             TRDY#              PCI
+                                                                  IOCHK#
+                             Interface
+              IRDY#                                               IOR#
+             STOP#                                                IOW#
+                                                    ISA
+          DEVSEL#                                   Bus           LA[23:17]
+              IDSEL                              Interface        SA[16:0]
+              SERR                                                SA[19:17]
+                                                                  SBHE#
+                               PCI                                MEMCS16#
+           PCIRST#
+                             Clocks &                             MEMR#
+            PCICLK            Reset
+                                                                  MEMW#
+                                                                  SMEMR#
+           ISAREQ#                                                SMEMW#
+           ISAGNT#                                                ZEROWS#
+                              PC/PCI                              SD[15:0]
+                             Interface
+      DREQ[7:5,3:0]#                                              MASTER#
+      DACK[7:5,3:0]#                                              REFRESH
+                 TC
+
+
+                             Docking               ISA
+                                                                  RSTDRV
+                             Station             Clocks &
+         DSPWRGD                                  Reset           SYSCLK
+                              Power
+                              Good
+
+
+                                                   MPCI
+                                                 Interface        NOGO
+
+
+
+                                                                              MISA_BLK
+
+
+                       82380AB MISA Simplified Block Diagram
+
+
+
+
+2
+                                                               PRELIMINARY
+E                                                                 CONTENTS
+                                                                                                                                         82380AB (MISA)
+
+
+
+
+                                                                                                                                                              PAGE
+
+1.0. ARCHITECTURE OVERVIEW ........................................................................................................................4
+
+2.0. SIGNAL DESCRIPTION ..................................................................................................................................5
+   2.1. PCI Signals ...................................................................................................................................................5
+   2.2. PC/PCI Signals .............................................................................................................................................6
+   2.3. ISA Interface Signals ....................................................................................................................................6
+   2.4. MPCI2 Signals ..............................................................................................................................................8
+   2.5. Test and Power Signals ................................................................................................................................8
+
+3.0. REGISTER DESCRIPTION .............................................................................................................................9
+   3.1. PCI Configuration Registers .......................................................................................................................10
+       3.1.1. VIDVendor Identification Register ....................................................................................................10
+       3.1.2. DIDDevice Identification Register ....................................................................................................10
+       3.1.3. PCICMDPCI Command Register.....................................................................................................10
+       3.1.4. PCISTSPCI Status Register ............................................................................................................11
+       3.1.5. REVIDRevision Identification Register.............................................................................................12
+       3.1.6. CCODEClass Code Register...........................................................................................................12
+       3.1.7. HEADTHeader Type Register..........................................................................................................12
+       3.1.8. IO_RCVRIO Recovery Register ......................................................................................................13
+       3.1.9. MISA_STSMISA Error Status Register............................................................................................14
+
+4.0. MISA BUS FUNCTIONAL DESCRIPTION ...................................................................................................15
+   4.1. MISA’s Retry Mode .....................................................................................................................................15
+   4.2. MISA Error Generation ...............................................................................................................................15
+   4.3. MISA’s PC/PCI Support..............................................................................................................................15
+
+5.0. PINOUT INFORMATION ...............................................................................................................................16
+
+6.0. MISA PACKAGE INFORMATION.................................................................................................................19
+
+7.0. TESTABILITY.................................................................................................................................................20
+
+
+
+
+                                                                                                                                                                      3
+     PRELIMINARY
+82380AB (MISA)
+
+
+1.0.   ARCHITECTURE OVERVIEW
+                                                                                                                                                       E
+In an Intel 380FB PCIset system, MISA is connected to the secondary bus of the MPCI2 device (Figure 1).
+MPCI2 and MISA use a sideband signal to communicate arbitration information between the two devices. MISA
+provides the functionality described on the first page of this data sheet.
+
+The 380FB provides the logic necessary to build a full Hot Docking capable docking station with 5V PCI and ISA
+add-in expansion slots. MPCI2 provides the docking control for Hot-Insertion, power management and a PCI-to-
+PCI bridge to a 5V PCI desktop style add-in bus. MISA provides a PCI-to-ISA bridge for a 5V ISA desktop style
+add-in bus. This document describes the MISA component.
+
+MPCI2’s Primary and Secondary PCI bus units control the PCI-to-PCI bridge functions. The PCI Arbitration logic
+provides a secondary PCI arbitrator that handles four PCI request grant pairs for docking station slots. The
+PC/PCI arbitration interface logic provides PC/PCI bridge support. The Docking Control logic controls all
+docking, undocking and suspend/resume sequences for the docking station. The E2PROM interface logic
+provides an industry standard interface to a non-volatile memory device (E2PROM) for supporting dynamic
+autoconfiguration of a previously configured notebook/docking station combination. The Power management
+logic provides a control and status interface between the docking station and notebook that allows the docking
+station to know and control the state of the notebook.
+
+A typical 380FB-based docking system is illustrated in Figure 1. This diagram illustrates all of the major
+components, busses, important logic blocks, and interconnects.
+
+
+
+                            Notebook                               Docking Station
+                                                                                                                         EEPROM
+
+
+                                                                 CD1#, CD2#                                                                         PCI Slots
+            Notebook
+             Primary
+            PCI Bus                                            Primary PCI Bus                                              Secondary PCI Bus
+                                                                                        82380FB
+                             Q Buffers                          QPCIEN#                  MPCI2                                Power
+                                           Docking Connector
+
+
+
+
+                                                                QEN0                                                          Supply
+          Notebook Status
+                                                                                                                              Docking
+          Notebook Control                                                                                                   Mechanism
+
+
+                                                                                 QEN1                                      NOGO                    82380AB
+                                                                                                                                                     MISA
+               Switched Pass Thrus
+                                                                                                  Pass Thru Connectors
+
+
+
+
+                                                                         Q Buffer
+                                                                                                                                  ISA Bus
+
+               Unswitched Pass Thrus
+
+
+                                                                                                                                       ISA Slots
+
+
+
+
+                                                                                                                                                                mpci_sys
+
+
+
+
+                                         Figure 1. MISA System Block Diagram
+
+
+
+
+4
+                                                                                                                                       PRELIMINARY
+E
+2.0.     SIGNAL DESCRIPTION
+                                                                                                  82380AB (MISA)
+
+
+
+
+This section provides a detailed description of each signal. The signals are arranged in functional groups
+according to their associated interface.
+
+The “#” symbol at the end of a signal name indicates that the active, or asserted state occurs when the signal is
+at a low voltage level. When “#” is not present after the signal name, the signal is asserted when at the high
+voltage level.
+
+The terms assertion and negation are used extensively. This is done to avoid confusion when working with a
+mixture of “active-low” and “active-high” signals. The term assert, or assertion indicates that a signal is active,
+independent of whether that level is represented by a high or low voltage. The term negate, or negation
+indicates that a signal is inactive.
+
+All 3V output signals can drive 5V TTL inputs. The I/O buffer types are shown below:
+
+Buffer Type             Description
+
+I           input-only signal
+O           totem pole output
+I/O         bi-direction, tri-state input/output pin
+s/t/s       sustained tri-state
+od          open drain
+
+
+2.1.        PCI Signals
+    Name             Type                                         Description
+
+ PCICLK          I          PCI Bus System Clock. PCICLK provides timing for all transactions on the PCI bus.
+                            All other PCI signals are sampled on the rising edge of PCICLK, and all timing
+                            parameters are defined with respect to this edge. PCI operates from 0–33 MHz.
+
+ AD[31:0]        I/O        PCI Bus Address and Data Signals. The standard PCI address and data lines.
+                            Address is driven with FRAME# assertion, data is driven or received in following
+                            clocks.
+
+ C/BE[3:0]#      I/O        PCI Bus Command and Byte Enables. During the address phase of a transaction
+                            C/BE[3:0]# define the bus command. During the data phase C/BE[3:0]# are used as
+                            Byte Enables.
+
+ FRAME#          I/O        Frame Signal. FRAME# is driven by the current PCI bus master to indicate the
+                 (s/t/s)    beginning and duration of an access.
+
+ TRDY#           I/O        Target Ready. TRDY# indicates the target agent’s ability to complete the current data
+                 (s/t/s)    phase of the PCI bus transaction.
+
+ IRDY#           I/O        Initiator Ready. IRDY# indicates the initiating agent’s ability to complete the current
+                 (s/t/s)    data phase of the PCI bus transaction.
+
+ STOP#           I/O        Bus Stop#. STOP# indicates the current target is requesting the master to stop the
+                 (s/t/s)    current PCI bus transaction.
+
+ IDSEL           I          Initialization Device Select. IDSEL is used as a chip select during configuration read
+                            and write transactions. This signal should be externally tied to one of the upper 21
+                            address signals.
+
+                                                                                                                      5
+    PRELIMINARY
+82380AB (MISA)                                                                                          E
+     Name           Type                                            Description
+
+DEVSEL#         I/O            Device Select. MPCI2 drives DEVSEL# to indicate that it is the target of the current
+                (s/t/s)        PCI bus transaction. MISA uses subtractive decoding and the NOGO protocol to claim
+                               PCI transactions.
+
+PAR             I/O            Parity Signal. MISA generates even parity across AD[31:0] and C/BE[3:0]#.
+
+SERR#           od             System Error. SERR# can be pulsed active by any PCI agent that detects a system
+                               error condition.
+
+
+
+2.2.         PC/PCI Signals
+     Name           Type                                            Description
+ISAREQ#         O              ISA Bus Request. This signal is a point-to-point signal between MISA and a PC/PCI
+                               arbiter (like the MPCI2). The MISA asserts this signal according to the PC/PCI protocol.
+
+ISAGNT#         I              ISA Bus Grant. This signal is a point-to-point signal between MISA and the MPCI2’s
+                               secondary bus PCPCIGNT# signal. MISA asserts this signal according to the PC/PCI
+                               protocol.
+
+DREQ            I              DMA Request. The DREQ signal indicates that either a slave DMA device is
+[3:0, 7:5]                     requesting DMA services, or an ISA bus master is requesting use of the ISA bus.
+
+DACK#           O              DMA Acknowledge. The DACK# signal indicates that either a DMA channel or an ISA
+[3:0, 7:5]                     bus master has been granted the ISA bus.
+
+TC              O              Terminal Count. The MISA asserts TC to DMA slaves as a terminal count indicator.
+
+
+
+2.3.         ISA Interface Signals
+       Name             Type                                          Description
+BALE                O             Bus Address Latch Enable. BALE is an active high signal asserted by the MISA to
+                                  indicate that the address (SA[19:0], LA[23:17]) and SBHE# signal lines are valid.
+                                  The LA[23:17] address lines are latched on the trailing edge of BALE. BALE remains
+                                  asserted throughout DMA and ISA master cycles. BALE is driven low upon
+                                  PCIRST#.
+
+AEN                 O             Address Enable. AEN is asserted during DMA cycles. This signal is also driven
+                                  high during MISA initiated refresh cycles. AEN is driven low upon PCIRST#.
+
+SYSCLK              O             ISA System Clock. SYSCLK is the reference clock for the ISA bus. The SYSCLK is
+                                  generated by dividing PCICLK by 3 or 4.
+
+IOCHRDY             I/O           I/O Channel Ready. Resources on the ISA Bus negate IOCHRDY to indicate that
+                                  additional time (wait states) is required to complete the cycle.
+
+IOCS16#             I             16-bit I/O Chip Select. This signal is driven by I/O devices on the ISA Bus to
+                                  indicate that they support 16-bit I/O bus cycles.
+
+
+
+6
+                                                                                            PRELIMINARY
+E                                                                                     82380AB (MISA)
+
+
+
+   Name         Type                                      Description
+
+IOCHK#      I          I/O Channel Check. IOCHK# can be driven by any resource on the ISA bus during
+                       on detection of an error.
+
+IOR#        I/O        I/O Read. IOR# is the command to an ISA I/O slave device that the slave may drive
+                       data on to the ISA data bus (SD[15:0]).
+
+IOW#        I/O        I/O Write. IOW# is the command to an ISA I/O slave device that the slave may latch
+                       data from the ISA data bus (SD[15:0]).
+
+LA[23:17]   I/O        Unlatched Address. The LA[23:17] address lines are bi-directional. These address
+                       lines allow accesses to physical memory on the ISA Bus up to 16 Mbytes. LA[23:17]
+                       are outputs when the MISA owns the ISA Bus.
+
+SA[19:17]   O          System Address Bus. These are the upper address lines that define the ISA’s byte
+                       granular address space (up to 1 Mbyte). SA[19:17] are at an unknown state upon
+                       PCIRST#.
+
+SA[16:0]    I/O        System Address Bus. These are the bi-directional lower address lines that define
+                       the ISA’s byte granular address space (up to 1 Mbyte). SA[16:0] are at an unknown
+                       state upon PCIRST#.
+
+SBHE#       I/O        System Byte High Enable. SBHE# asserted indicates that a byte is being
+                       transferred on the upper byte (SD[15:8]) of the data bus. SBHE# is at an unknown
+                       state upon PCIRST#.
+
+MEMCS16#    OD         Memory Chip Select 16. MEMCS16# asserted indicates that the memory slave
+                       supports 16-bit accesses.
+
+MEMR#       I/O        Memory Read. MEMR# asserted indicates the current ISA bus cycle is a memory
+                       read.
+
+MEMW#       I/O        Memory Write. MEMW# asserted indicates the current ISA bus cycle is a memory
+                       write.
+
+SMEMR#      O          Standard Memory Read. SMEMR# asserted indicates the current ISA bus cycle is
+                       a memory read cycle to an address below 1 Mbyte.
+
+SMEMW#      O          Standard Memory Write. SMEMW# asserted indicates the current ISA bus cycle is
+                       a memory write cycle to an address below 1 Mbyte.
+
+ZEROWS#     I          Zero Wait States. An ISA slave asserts ZEROWS# after its address and command
+                       signals have been decoded to indicate that the current cycle can be executed as an
+                       ISA zero wait state cycle. ZEROWS# has no effect during 16-bit I/O cycles.
+
+MASTER#     I          MASTER#. This signal is used with a DREQ line by an ISA master to gain control of
+                       the ISA Bus.
+
+SD[15:0]    I/O        System Data. SD[15:0] provide the 16-bit data path for devices residing on the ISA
+                       Bus. The MISA tri-states SD[15:0] during PCIRST#.
+
+REFRESH#    I/O        Refresh. REFRESH# asserted indicates that a refresh cycle is in progress, or that
+                       an ISA master is requesting the MISA to generate a refresh cycle. Upon PCIRST#,
+                       this signal is tri-stated.
+
+PCIRST#     I          PCI Reset. MISA receives PCIRST# as a reset from the PCI Bus.
+
+
+
+                                                                                                            7
+  PRELIMINARY
+82380AB (MISA)                                                                                  E
+       Name       Type                                        Description
+
+RSTDRV        O          Reset Drive. MISA asserts RSTDRV to reset devices that reside on the ISA Bus.
+                         The MISA asserts this signal while the PCIRST# is asserted.
+
+DSPWRGD       I          Docking Station Power Good. This signal should be asserted active when the
+                         MISA’s power source is stable.
+
+
+
+
+2.4.      MPCI2 Signals
+
+       Name       Type                                        Description
+NOGO          I          NO GO. This signal indicates which master initiated the current transaction and also
+                         indicates whether or not the current bus cycle is targeted for the ISA bus. This signal
+                         is a point-to-point connection between MPCI2 and MISA.
+
+
+
+2.5.      Test and Power Signals
+       Name       Type                                        Description
+
+TESTIN#       I          Test Input. This signal should always be high.
+
+VCC                      5V Supply.
+
+VSS                      Ground.
+
+
+
+
+8
+                                                                                    PRELIMINARY
+E
+3.0.    REGISTER DESCRIPTION
+                                                                                             82380AB (MISA)
+
+
+
+
+All of the MISA registers are located in PCI configuration space. The registers can be accessed as Byte, Word
+(16-bit), or Dword (32-bit) quantities. All multi-byte numeric fields use “little-endian” ordering (i.e., lower
+addresses contain the least significant parts of the field). The following nomenclature is used for access
+attributes.
+
+RO        Read Only. If a register is read only, writes to this register have no effect.
+R/W       Read/Write. A register with this attribute can be read and written.
+R/WC      Read/Write Clear. A register bit with this attribute can be read and written. However, a write of
+          1 clears (sets to 0) the corresponding bit and a write of 0 has no effect.
+
+Some of the MISA registers described in this section contain reserved bits. Software must deal correctly with
+fields that are reserved. On reads, software must use appropriate masks to extract the defined bits and not rely
+on reserved bits being any particular value. On writes, software must ensure that the values of reserved bit
+positions are preserved. That is, the values of reserved bit positions must first be read, merged with the new
+values for other bit positions and then written back.
+
+In addition to reserved bits within a register, the MISA contains address locations in the PCI configuration space
+that are marked “Reserved” (Table 2). The MISA responds to accesses to these address locations by
+completing the Host cycle. Software should not write to reserved MISA configuration locations in the device-
+specific region (above address offset 3Fh).
+
+During a hard reset (PCIRST# asserted), MISA sets its internal configuration registers to predetermined
+default states.
+
+
+                                     Table 1. PCI Configuration Registers
+ Address Offset        Mnemonic                               Register Name                             Access
+                                            PCI Specific Registers
+
+00−01h             VID                Vendor Identification                                         RO
+
+02−03h             DID                Device Identification                                         RO
+
+04−05h             PCICMD             PCI Command Register                                          R/W
+
+06−07h             PCISTS             PCI Status Register                                           R/WC
+
+08h                RID                Revision Identification                                       RO
+
+09−0Bh             CCODE              Class Code                                                    RO
+
+0C−39h                               Reserved                                                      
+
+                                           MISA Specific Registers
+
+40h                IO_RCVR            I/O Recovery Register                                         R/W
+
+41h                                  Reserved                                                      
+
+42h                MISA_STS           MISA Error Status Register                                    RO
+
+43−FFh                               Reserved                                                      
+
+
+
+
+                                                                                                                 9
+   PRELIMINARY
+82380AB (MISA)
+
+
+3.1.        PCI Configuration Registers
+                                                                                                E
+3.1.1.           VENDOR IDENTIFICATION REGISTER
+             VID
+
+Address Offset:          00−01h
+Default Value:           8086h
+Attribute:               Read Only
+
+The VID Register contains the Intel vendor identification number (8086h). This 16-bit register combined with the
+Device Identification Register (DID) uniquely identifies MISA device. Writes to this register have no effect.
+
+     Bits                                              Description
+     15:0   Vendor Identification Number. This is a 16-bit value assigned to Intel (8086h).
+
+
+3.1.2.           DEVICE IDENTIFICATION REGISTER
+             DID
+
+Address Offset:          02−03h
+Default Value:           123Ch
+Attribute:               Read Only
+
+This register contains the device identification number. This register along with the Vendor ID (VID), uniquely
+identifies the MISA. Writes to this register have no effect.
+
+     Bits                                              Description
+     15:0   Device Identification Number. This is a 16-bit value assigned to MISA.
+
+
+3.1.3.              PCI COMMAND REGISTER
+             PCICMD
+
+Address Offset:          04−05h
+Default Value:           0007h
+Attribute:               Read/Write
+
+The PCICMD register provides coarse control over the MISA’s ability to generate and respond to PCI cycles.
+When a 0 is written to this register, MISA is logically disconnected from the PCI bus for all accesses except
+configuration accesses.
+
+     Bits                                              Description
+  15:10     Reserved.
+
+      9     Fast Back to Back Enable. This bit always returns a zero. The MISA does not initiate fast back to
+            back cycles to different devices on the PCI interface.
+
+      8     SERR# Enable. 1=Enable. 0=Disable. Controls the enable for the SERR# driver on the PCI
+            interface.
+
+      7     Wait Cycle Control (Not Implemented). Hardwired to 0. The MISA does not initiate address
+            stepping.
+
+      6     Parity Error Response (Not Implemented). Hardwired to 0. The MISA does not support parity
+            checking.
+
+10
+                                                                                     PRELIMINARY
+E                                                                                           82380AB (MISA)
+
+
+
+   Bits                                                Description
+
+    5      VGA Palette Snoop Enable (Not Implemented). Hardwired to 0. MISA does not support VGA
+           palette snoops.
+
+    4      Memory Write and Invalidate Enable (Not Implemented). Hardwired to 0. The MISA does not
+           initiate memory write and invalidate commands.
+
+    3      Special Cycle Enable (Not Implemented). Hardwired to 0. The MISA does not respond as a target
+           to any special cycle transactions.
+
+    2      Bus Master Enable. Hardwired to 1. The MISA masters are always able to generate PCI bus
+           master cycles.
+
+    1      Memory Space Enable. Hardwired to 1. The MISA’s Memory Space is always enabled.
+
+    0      I/O Space Enable. Hardwired to 1. The MISA’s I/O Space is always enabled.
+
+
+3.1.4.            PCI STATUS REGISTER
+           PCISTS
+
+Address Offset:         06−07h
+Default Value:          0200h
+Attribute:              Read/Write
+
+This register records status information for PCI bus related events. Reads to this register behave normally. Bits
+in this register can only be set by MISA events (through hardware).
+
+   Bits                                                Description
+    15     Detected Parity Error. Hardwired to 0. The MISA does not check bus parity.
+
+    14     Signaled System Error. This bit is set when the MISA asserts SERR# on the PCI bus.
+
+    13     Received Master Abort Status. This bit is set when the MISA is target aborted as a master on the
+           PCI bus. Software sets this bit to 0 by writing a 1 to it.
+
+    12     Received Target Abort Status. This bit is set when the MISA target aborts a PCI transaction as a
+           target. Software sets this bit to 0 by writing a 1 to it.
+
+    11     Signaled Target Abort Status. This bit is set when the MISA signals a target abort for a PCI
+           transaction. Software sets this bit to 0 by writing a 1 to it.
+
+   10:9    DEVSEL# Timing. This 2-bit field always returns a 01b (medium decode). MISA always does a
+           medium decode for PCI configuration accesses (the only types of accesses that MISA does a
+           positive decode for). MISA responds to all other types of accesses through subtractive decoding and
+           the NOGO signal.
+
+    8      Data Parity Detected. Hardwired to 0. The MISA does not check bus parity.
+
+    7      Fast Back-to-Back. Hardwired to 0. MISA does not support fast back-to-back cycles.
+
+    6      66 MHz/33 MHz. Hardwired to 0. MISA’s maximum PCI bus frequency is 33 MHz.
+
+    5      User Defineable Features (UDF). Hardwired to 0. The MISA does not support any User Definable
+           Features (USF).
+
+   4:0     Reserved.
+
+                                                                                                              11
+   PRELIMINARY
+82380AB (MISA)                                                                                     E
+3.1.5.            REVISION IDENTIFICATION REGISTER
+            REVID
+
+Address Offset:          08h
+Default:                 See latest stepping information
+Access:                  Read Only
+
+This register contains the revision number of the MISA.
+
+     Bits                                                 Description
+     15:0   Revision Identification Number. This is an 8-bit value that indicates the revision identification
+            number for the MISA (A-Stepping value is 0).
+
+
+
+3.1.6.            CLASS CODE REGISTER
+            CCODE
+
+Address Offset:          09−0Bh
+Default Value:           060100h
+Attribute:               Read Only
+
+The class code register is a read-only register used to identify the MISA. The MISA returns a value of 060100h
+when this register is read, indicating a base class of 06h (Bridge), a sub-class code of 01h (PCI-to-ISA bridge),
+and a programming interface of 00h. Writes to this register have no effect.
+
+     Bits                                                 Description
+  23:16     Base Class Code. Value=06h               Bus Bridge
+
+     15:8   Sub-Class Code. Value=01h                PCI to ISA Bridge
+
+     7:0    Programming Interface. Value=00h
+
+
+
+3.1.7.            HEADER TYPE REGISTER
+            HEADT
+
+Address Offset:          0Eh
+Default Value:           00h
+Attribute:               Read Only
+
+This register is used to indicate that the MISA configuration space adheres to PCI local bus specification. It also
+indicates that MISA is not a multifunction device.
+
+     Bits                                                 Description
+      7     Multifunction Indicator. Value=0 (Not a multifunction device)
+
+     6:0    Layout Code. Value=0 (PCI layout type 00).
+
+
+
+
+12
+                                                                                        PRELIMINARY
+E
+3.1.8.             IO RECOVERY REGISTER
+           IO_RCVR
+                                                                                          82380AB (MISA)
+
+
+
+Address Offset:         40h
+Default Value:          4Dh
+Attribute:              Read/Write
+
+The I/O recovery mechanism in the MISA is used to add additional recovery delay between PCI Initiated 16-bit
+and 8-bit I/O cycles to the ISA Bus. The MISA automatically forces a minimum delay of 3.5 SYSCLKs between
+back-to-back 16-bit and 8-bit I/O cycles to the ISA Bus. This delay is measured from the rising edge of the I/O
+command (IOR# or IOW#) to the falling edge of the next command. No additional delay is inserted for back-to-
+back I/O “sub cycles” generated as a result of byte assembly or disassembly.
+
+   Bits                                                 Description
+    7     SYSCLK Divider Select. 1=Divide PCI clock by 3. 0=Divide PCI clock by 4. Sets how the SYSCLK
+          is generated from the PCI clock.
+
+    6     8-bit I/O Recovery Enable. 1=Enables bits 5:3. 0=Disables bits 5:3 and MISA uses the default
+          3.5 SYSCLKs for 8-bit I/O recovery times.
+
+   5:3    8-bit I/O Recovery Times. This 3-bit field defines the recovery times for 8-bit I/O cycles.
+          Programmable delays between back-to-back 8-bit PCI cycles to an ISA I/O slave is shown in terms
+          of additional ISA clock recovery cycles (SYSCLK). The selected delay programmed into this field is
+          enabled or disabled through bit 6 of this register.
+          Bits [5:3]      SYSCLK              Bits [5:3]       SYSCLK
+              001             1                   101             5
+              010             2                   110             6
+              011             3                   111             7
+              100             4
+
+    2     16-bit I/O Recovery Enable.
+
+   1:0    16-bit I/O Recovery Times. This 2-bit field defines the recovery times for 8-bit I/O cycles.
+          Programmable delays between back-to-back 16-bit PCI cycles to an ISA I/O slave is shown in terms
+          of additional ISA clock recovery cycles (SYSCLK). The selected delay programmed into this field is
+          enabled or disabled through bit 2 of this register.
+          Bits [1:0]        SYSCLK
+              01                  1
+              10                  2
+              11                  3
+              00                  4
+
+
+
+
+                                                                                                           13
+   PRELIMINARY
+82380AB (MISA)
+
+3.1.9.               MISA ERROR STATUS REGISTER
+            MISA_STS
+                                                                                                 E
+Address Offset:           42h
+Default Value:            00h
+Attribute:                Read Only
+
+This register reflects the error status of the ISA interface.
+
+     Bits                                                  Description
+     7:3    Reserved.
+
+      2     IOCHK# Pin State. This bit reflects the inverse state of IOCHK# pin on the ISA Bus. When this bit is
+            set, the MISA pulses SERR# (if enabled via the PCICMD register).
+
+      1     Reserved.
+
+      0     Byte Lane Error (BYTERR). This bit is set if MISA detects an illegal byte lane combination for a PCI
+            I/O cycle. When this condition is detected, the MISA signals a target abort and pulses the SERR#
+            signal (if enabled via the PCICMD register).
+
+
+
+
+14
+                                                                                     PRELIMINARY
+E
+4.0.    MISA BUS FUNCTIONAL DESCRIPTION
+                                                                                               82380AB (MISA)
+
+
+
+
+MISA masters are only allowed to access system memory on the PCI bus. I/O accesses from an ISA Master to
+a PCI slave are not supported. The MISA is configured through type 0 configuration cycles to its PCI
+configuration space. The MISA performs the following functions:
+
+•   Translates PCI cycles to MISA configuration accesses or ISA bus cycles.
+•   Translates MISA master accesses to PCI bus cycles.
+•   Translates PC/PCI DMA cycles to ISA DMA accesses.
+•   Performs ISA bus refresh cycles initiated by a 15 µs timer or requested by an ISA master.
+
+
+4.1.      MISA’s Retry Mode
+Because ISA masters cannot be backed off the ISA bus or ISA DMA agents can not handle interrupted services,
+MISA provides a mechanism that prevents any PCI master from accessing it when an ISA DMA agent or
+PC/PCI DMA agents are still active. When MISA is processing a DMA access or ISA master access that gets
+retried, MISA will release control of the bus to allow the retrying target to empty its write buffers (by executing a
+passive retry). While in a passive retry state, MISA will retry all PCI master accesses targeted for the ISA bus.
+MISA continues in this state until MISA is granted the bus again and is allowed to complete.
+
+
+4.2.      MISA Error Generation
+MISA checks all PCI master transactions for legal byte lane combinations. If MISA detects a PCI I/O command
+with an illegal byte lane combination, it will terminate the cycle and not pass it on to the ISA bus. MISA does not
+support PCI bursting and disconnects accesses after the first transaction has completed.
+
+MISA only generates a system error (SERR#) if an ISA card asserts the IOCHK# signal active or if MISA detects
+a byte lane mismatch condition. To enable generation of a system error, the SERR enable bit in the PCICMD
+register must be set to 1.
+
+
+4.3.      MISA’s PC/PCI Support
+MISA supports PC/PCI DMA and arbitration protocols. See the Intel “Mobile PC/PCI DMA Arbitration And
+Protocols Revision 1.0” for further details.
+
+
+
+
+                                                                                                                 15
+    PRELIMINARY
+82380AB (MISA)
+
+
+5.0.   PINOUT INFORMATION
+                                                                    E
+
+
+
+                           REFRESH#
+
+
+                           DSPWRGD
+
+
+                           ISAREQ#
+                           ISAGNT#
+                           PCIRST#
+                           RSTDRV
+                           DACK1#
+
+
+                           DACK3#
+
+
+                           PCICLK
+                           DREQ1
+
+
+                           DREQ3
+                           NOGO
+                           SA15
+                           SA14
+                           SA13
+                           SA12
+                           SA11
+                           SA10
+
+
+
+
+                           AD0
+                           AD1
+                           AD2
+                           AD3
+                           SA9
+                           SA8
+
+                           SA7
+                           SA6
+                           SA5
+                           SA4
+                           SA3
+                           SA2
+                           SA1
+                           SA0
+                           Vss
+                           Vcc
+
+
+
+
+                           Vss
+                           Vcc
+
+
+
+
+                           Vss
+                           Vcc
+
+
+
+
+                           Vss
+                           Vcc
+                           160
+                           159
+                           158
+                           157
+                           156
+                           155
+                           154
+                           153
+                           152
+                           151
+                           150
+                           149
+                           148
+                           147
+                           146
+                           145
+                           144
+                           143
+                           142
+                           141
+                           140
+                           139
+                           138
+                           137
+                           136
+                           135
+                           134
+                           133
+                           132
+                           131
+                           130
+                           129
+                           128
+                           127
+                           126
+                           125
+                           124
+                           123
+                           122
+                           121
+                Vcc   1                                       120   Vss
+                Vss   2                                       119   Vcc
+             SA16     3                                       118   AD4
+             SA17     4                                       117   AD5
+             SA18     5                                       116   AD6
+             SA19     6                                       115   AD7
+           DACK2#     7                                       114   Vcc
+            DREQ2     8                                       113   Vss
+           SYSCLK     9                                       112   C/BE0#
+                Vss   10                                      111   AD8
+               SD7    11                                      110   AD9
+               SD6    12                                      109   AD10
+               SD5    13                                      108   AD11
+               SD4    14                                      107   AD12
+           IOCHK#     15                                      106   AD13
+        ZEROWS#       16                                      105   AD14
+               SD3    17                                      104   Vss
+               SD2    18                                      103   Vcc
+               SD1    19                                      102   AD15
+               SD0    20                                      101   C/BE1#
+                Vcc   21                                      100   PAR
+                Vss   22                                       99   SERR#
+        IOCHRDY       23                                       98   Vss
+         SMEMR#       24                                       97   Vcc
+               AEN    25                                       96   STOP#
+         SMEMW#       26                                       95   DEVSEL#
+              IOR#    27                                       94   TRDY#
+             IOW#     28                                       93   IRDY#
+             BALE     29                                       92   Vss
+       MEMCS16#       30                                       91   Vcc
+          IOCS16#     31                                       90   FRAME#
+              LA17    32                                       89   C/BE2#
+              LA18    33                                       88   AD16
+              LA19    34                                       87   AD17
+              LA20    35                                       86   AD18
+              LA21    36                                       85   AD19
+              LA22    37                                       84   AD20
+              LA23    38                                       83   AD21
+                Vcc   39                                       82   Vss
+                Vss   40                                       81   Vcc
+                           41
+                           42
+                           43
+                           44
+                           45
+                           46
+                           47
+                           48
+                           49
+                           50
+                           51
+                           52
+                           53
+                           54
+                           55
+                           56
+                           57
+                           58
+                           59
+                           60
+                           61
+                           62
+                           63
+                           64
+                           65
+                           66
+                           67
+                           68
+                           69
+                           70
+                           71
+                           72
+                           73
+                           74
+                           75
+                           76
+                           77
+                           78
+                           79
+                           80
+                            DACK0#
+
+
+                            DACK5#
+                                 SD8
+                                 SD9
+                                SD10
+                                SD11
+                            DACK6#
+                                SD12
+                                SD13
+                                SD14
+                                SD15
+                            DACK7#
+
+
+
+
+                                AD31
+                              AAD30
+                                AD29
+                                AD28
+
+                                AD27
+                                AD26
+                                AD25
+                                AD24
+
+
+
+                                AD23
+                                AD22
+                             DREQ0
+                             MEMR#
+                             MEMW#
+                             DREQ5
+
+
+
+
+                             DREQ6
+
+
+
+
+                             DREQ7
+
+                           MASTER#
+                              SBHE#
+                                  TC
+                            TESTIN#
+
+
+
+
+                             C/BE3#
+                               IDSEL
+                                 Vcc
+                                 Vss
+
+
+
+
+                                 Vcc
+                                 Vss
+
+
+
+                                 Vcc
+                                 Vss
+
+
+
+
+                             Figure 2. 82380AB MISA Pinout
+
+
+
+
+16
+                                                             PRELIMINARY
+E                                                                    82380AB (MISA)
+
+
+
+Table 2. MISA Alphabetical   Table 2. MISA Alphabetical    Table 2. MISA Alphabetical
+     Pin Assignment               Pin Assignment                Pin Assignment
+  Name        Pin   Type       Name          Pin   Type      Name          Pin   Type
+AD0         124     I/O      C/BE0#      112       I/O     LA21        36        I/O
+AD1         123     I/O      C/BE1#      101       I/O     LA22        37        I/O
+AD2         122     I/O      C/BE2#      89        I/O     LA23        38        I/O
+AD3         121     I/O      C/BE3#      77        I/O     MASTER#     61        I
+AD4         118     I/O      DACK0#      41        O       MEMCS16# 30           OD
+AD5         117     I/O      DACK1#      135       O       MEMR#       43        I/O
+AD6         116     I/O      DACK2#      7         O       MEMW#       44        I/O
+AD7         115     I/O      DACK3#      131       O       NOGO        138       I
+AD8         111     I/O      DACK5#      45        O       PAR         100       I/O
+AD9         110     I/O      DACK6#      51        O       PCICLK      127       I
+AD10        109     I/O      DACK7#      57        O       PCIRST#     128       I
+AD11        108     I/O      DEVSEL#     95        s/t/s   REFRESH# 137          I/O
+AD12        107     I/O      DREQ0       42        I       RSTDRV      134       O
+AD13        106     I/O      DREQ1       136       I       SA00        141       I/O
+AD14        105     I/O      DREQ2       8         I       SA1         142       I/O
+AD15        102     I/O      DREQ3       132       I       SA2         143       I/O
+AD16        88      I/O      DREQ5       46        I       SA3         144       I/O
+AD17        87      I/O      DREQ6       52        I       SA4         145       I/O
+AD18        86      I/O      DREQ7       58        I       SA5         146       I/O
+AD19        85      I/O      DSPWRGD     133       I       SA6         147       I/O
+AD20        84      I/O      FRAME#      90        s/t/s   SA7         148       I/O
+AD21        83      I/O      IDSEL       78        I       SA8         151       I/O
+AD22        80      I/O      IOCHK#      15        I       SA9         152       I/O
+AD23        79      I/O      IOCHRDY     23        I/O     SA10        153       I/O
+AD24        74      I/O      IOCS16#     31        I       SA11        154       I/O
+AD25        73      I/O      IOR#        27        I/O     SA12        155       I/O
+AD26        72      I/O      IOW#        28        I/O     SA13        156       I/O
+AD27        71      I/O      IRDY#       93        s/t/s   SA14        157       I/O
+AD28        68      I/O      ISAGNT#     130       I       SA15        158       I/O
+AD29        67      I/O      ISAREQ#     129       O       SA16        3         I/O
+AD30        66      I/O      LA17        32        I/O     SA17        4         O
+AD31        65      I/O      LA18        33        I/O     SA18        5         O
+AEN         25      O        LA19        34        I/O     SA19        6         O
+BALE        29      O        LA20        35        I/O     SBHE#       62        I/O
+                                                                                       17
+PRELIMINARY
+82380AB (MISA)
+
+
+ Table 2. MISA Alphabetical   Table 2. MISA Alphabetical
+                                                                         E
+                                                            Table 2. MISA Alphabetical
+      Pin Assignment               Pin Assignment                Pin Assignment
+     Name      Pin   Type          Name       Pin   Type      Name          Pin   Type
+ SD0         20      I/O      SYSCLK      9         O       VCC         159       
+ SD1         19      I/O      TC          63        O       VSS         2         
+ SD2         18      I/O      TESTIN#     64        I       VSS         10        
+ SD3         17      I/O      TRDY#       94        s/t/s   VSS         22        
+ SD4         14      I/O      ZEROWS#     16        I       VSS         40        
+ SD5         13      I/O      VCC         1                VSS         60        
+ SD6         12      I/O      VCC         21               VSS         70        
+ SD7         11      I/O      VCC         39               VSS         76        
+ SD8         47      I/O      VCC         59               VSS         82        
+ SD9         48      I/O      VCC         69               VSS         92        
+ SD10        49      I/O      VCC         75               VSS         98        
+ SD11        50      I/O      VCC         81               VSS         104       
+ SD12        53      I/O      VCC         91               VSS         114       
+ SD13        54      I/O      VCC         97               VSS         120       
+ SD14        55      I/O      VCC         103              VSS         125       
+ SD15        56      I/O      VCC         113              VSS         140       
+ SERR#       99      OD       VCC         119              VSS         150       
+ SMEMR#      24      O        VCC         125              VSS         160       
+ SMEMW#      26      O        VCC         139       
+ STOP#       96      s/t/s    VCC         149       
+
+
+
+
+18
+                                                                  PRELIMINARY
+E
+6.0.    MISA PACKAGE INFORMATION
+                                                                                  82380AB (MISA)
+
+
+
+
+The MISA comes in an industry standard 160-lead MQFP package.
+
+
+
+                                        D
+
+                                        D1
+                                                                     T                     A1
+                    120                              81
+
+
+
+             121                                            80
+                                                                         L1             e1
+
+
+
+
+                                                                                                A
+
+
+
+
+                                                                              b        C
+                                                                     Y
+
+
+
+             160                                            41
+
+
+
+
+                   1                                  40                               Units: mm
+
+       Note: Height Measurements same
+       as Width Measurements
+
+
+
+                                                                                                    pkg_160
+
+
+
+
+                                   Figure 3. 82380AB 160-Pin MQFP
+
+                              Table 3. 82380AB 160-Pin MQFP Dimensions
+          Symbol                                   Dimension in Millimeters
+                                  Minimum                  Nominal                 Maximum
+            A                                               3.70                     4.10
+            A1                      0.25                    0.33                     0.45
+             b                      0.24                    0.32                     0.40
+            C                       0.10                    0.15                     0.25
+            D                       30.3                    30.6                     30.9
+            D1                      27.9                    28.0                     28.1
+            e1                      0.55                    0.65                     0.75
+            L1                      0.5                      0.6                     0.7
+            Y                                                                        0.10
+            T                            0                                            10
+
+
+                                                                                                      19
+   PRELIMINARY
+82380AB (MISA)
+
+
+7.0.    TESTABILITY
+                                                                                                E
+The MISA provides Tri-state and NAND Tree test modes. The test modes are selected from DREQ[6:5] inputs
+when the TESTIN# is active (Table 4).
+
+                                             Table 4. Test Modes
+        Test Mode                    TESTIN#                      DREQ6                       DREQ5
+Normal operation                         1                           x                           x
+
+Tristate Test                            0                           0                           0
+
+NAND Chain Test                          0                           0                           1
+
+Reserved                                 0                           1                           x
+NOTES:
+1. Care should be taken to avoid the “reserved” input combination
+
+Tri-state Test
+
+This test mode tristates all outputs including the NAND tree outputs, BALE, and RSTDRV.
+
+NAND Tree Mode
+
+This test mode tristates all outputs and bi-directional buffers except for BALE and RSTDRV. Every output buffer,
+except BALE and RSTDRV, is configured as an input in NAND Tree mode and included in the NAND chain. The
+first input of the NAND chain is SA16. The NAND chain is routed counter-clockwise around the chip (e.g., SA16,
+SA17, SA18,...). BALE is an intermediate output and RSTDRV is the final output. TESTIN#, DREQ6, DREQ5,
+BALE and RSTDRV pins are not included in the NAND chain.
+
+To perform a NAND Tree test, all pins included in the NAND tree should be driven to 1, beginning with SA16 and
+working counter-clockwise around the chip. Each pin can be toggled and a resulting toggle can be observed on
+BALE or RSTDRV.
+
+
+
+
+20
+                                                                                    PRELIMINARY
+E                                                    82380AB (MISA)
+
+
+
+
+     SA16
+
+
+
+     SA17
+
+
+
+
+                                 BALE
+                                              BALE
+      AD23
+
+
+
+      AD22                     NAND Chain
+                                 Select
+
+
+
+
+      SA14
+                                   RSTDRV
+
+                                                 RSTDRV
+      SA15
+
+
+
+                                 NAND Chain
+                                   Select
+                                                                 nand
+
+
+
+
+              Figure 4. NAND Tree Diagram
+
+
+
+
+                                                                 21
+PRELIMINARY
+82380AB (MISA)                                                                   E
+            Table 5. NAND Chain Order                       Table 5. NAND Chain Order
+    Pin #   Signal Names            Note            Pin #   Signal Names          Note
+1           VCC                                    35       LA20
+2           VSS                                    36       LA21
+3           SA16           Input to NAND Chain     37       LA22
+4           SA17                                   38       LA23
+5           SA18                                   39       VCC
+6           SA19                                   40       VSS
+7           DACK2#                                 41       DACK0#
+8           DREQ2                                  42       DREQ0
+9           SYSCLK                                 43       MEMR#
+10          VSS                                    44       MEMW#
+11          SD7                                    45       DACK5#
+12          SD6                                    46       DREQ5          Not in NAND Chain
+13          SD5                                    47       SD8
+14          SD4                                    48       SD9
+15          IOCHK#         Inverted input signal   49       SD10
+16          ZEROWS#        Inverted input signal   50       SD11
+17          SD3                                    51       DACK6#
+18          SD2                                    52       DREQ6          Not in NAND Chain
+19          SD1                                    53       SD12
+20          SD0                                    54       SD13
+21          VCC                                    55       SD14
+22          VSS                                    56       SD15
+23          IOCHRDY                                57       DACK7#
+24          SMEMR#                                 58       DREQ7
+25          AEN                                    59       VCC
+26          SMEMW#                                 60       VSS
+27          IOR#                                   61       MASTER#
+28          IOW#                                   62       SBHE#
+29          BALE           Not in NAND Chain       63       TC
+30          MEMCS16#                               64       TESTIN#        Not in NAND Chain
+31          IOCS16#                                65       AD31
+32          LA17                                   66       AD30
+33          LA18                                   67       AD29
+34          LA19                                   68       AD28
+
+22
+                                                                        PRELIMINARY
+E        Table 5. NAND Chain Order
+                                                                          82380AB (MISA)
+
+
+                                                        Table 5. NAND Chain Order
+ Pin #   Signal Names           Note            Pin #   Signal Names            Note
+69       VCC                                   104      VSS
+70       VSS                                   105      AD14
+71       AD27                                  106      AD13
+72       AD26                                  107      AD12
+73       AD25                                  108      AD11
+74       AD24                                  109      AD10
+75       VCC                                   110      AD9
+76       VSS                                   111      AD8
+77       CBE3#                                 112      C/BE0#
+78       IDSEL                                 113      VCC
+79       AD23                                  114      VSS
+80       AD22           Middle of NAND chain   115      AD7
+81       VCC                                   116      AD6
+82       VSS                                   117      AD5
+83       AD21                                  118      AD4
+84       AD20                                  119      VCC
+85       AD19                                  120      VSS
+86       AD18                                  121      AD3
+87       AD17                                  122      AD2
+88       AD16                                  123      AD1
+89       CBE2#                                 124      AD0
+90       FRAME#                                125      VCC
+91       VCC                                   126      VSS
+92       VSS                                   127      PCICLK
+93       IRDY#                                 128      PCIRST#        Inverted input signal
+94       TRDY#                                 129      ISAREQ#
+95       DEVSEL#                               130      ISAGNT#
+96       STOP#                                 131      DACK3#
+97       VCC                                   132      DREQ3
+98       VSS                                   133      DSPWG          Inverted input signal
+99       SERR#                                 134      RSTDRV         Not in NAND Chain
+100      PAR                                   135      DACK1#
+101      C/BE1#                                136      DREQ1
+102      AD15                                  137      REFRESH#
+103      VCC                                   138      NOGO
+
+                                                                                               23
+     PRELIMINARY
+82380AB (MISA)
+
+
+         Table 5. NAND Chain Order
+                                                                     E
+                                               Table 5. NAND Chain Order
+ Pin #   Signal Names          Note    Pin #   Signal Names           Note
+139      VCC                          150      VSS
+140      VSS                          151      SA8
+141      SA0                          152      SA9
+142      SA1                          153      SA10
+143      SA2                          154      SA11
+144      SA3                          155      SA12
+145      SA4                          156      SA13
+146      SA5                          157      SA14
+147      SA6                          158      SA15           End of Nand Chain
+148      SA7                          159      VCC
+149      VCC                          160      VSS
+
+
+
+
+24
+                                                           PRELIMINARY
+

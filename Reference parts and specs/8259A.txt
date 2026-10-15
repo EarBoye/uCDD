@@ -1,0 +1,1037 @@
+                          8259A
+            PROGRAMMABLE INTERRUPT CONTROLLER
+                     (8259A/8259A-2)
+Y   8086, 8088 Compatible                                   Y   Single a 5V Supply (No Clocks)
+Y   MCS-80, MCS-85 Compatible                               Y   Available in 28-Pin DIP and 28-Lead
+Y   Eight-Level Priority Controller                             PLCC Package
+                                                                (See Packaging Spec., Order Ý231369)
+Y   Expandable to 64 Levels                                 Y   Available in EXPRESS
+Y   Programmable Interrupt Modes                                Ð Standard Temperature Range
+                                                                Ð Extended Temperature Range
+Y   Individual Request Mask Capability
+
+The Intel 8259A Programmable Interrupt Controller handles up to eight vectored priority interrupts for the CPU.
+It is cascadable for up to 64 vectored priority interrupts without additional circuitry. It is packaged in a 28-pin
+DIP, uses NMOS technology and requires a single a 5V supply. Circuitry is static, requiring no clock input.
+
+The 8259A is designed to minimize the software and real time overhead in handling multi-level priority inter-
+rupts. It has several modes, permitting optimization for a variety of system requirements.
+
+The 8259A is fully upward compatible with the Intel 8259. Software originally written for the 8259 will operate
+the 8259A in all 8259 equivalent modes (MCS-80/85, Non-Buffered, Edge Triggered).
+
+                                                                                                       DIP
+
+
+
+
+                                                                                                           231468 – 2
+
+                                                                                                       PLCC
+
+
+
+
+                                                                                                          231468 – 31
+                                                                                                  Figure 2. Pin
+                                                                           231468 – 1
+                             Figure 1. Block Diagram                                             Configurations
+
+
+
+
+    December 1988                                                                               Order Number: 231468-003
+8259A
+
+
+                                         Table 1. Pin Description
+      Symbol      Pin No.     Type                             Name and Function
+    VCC             28         I     SUPPLY: a 5V Supply.
+    GND             14         I     GROUND
+    CS               1         I     CHIP SELECT: A low on this pin enables RD and WR communication
+                                     between the CPU and the 8259A. INTA functions are independent of
+                                     CS.
+    WR               2         I     WRITE: A low on this pin when CS is low enables the 8259A to accept
+                                     command words from the CPU.
+    RD               3         I     READ: A low on this pin when CS is low enables the 8259A to release
+                                     status onto the data bus for the CPU.
+    D7 –D0         4–11       I/O    BIDIRECTIONAL DATA BUS: Control, status and interrupt-vector
+                                     information is transferred via this bus.
+    CAS0 –CAS2   12, 13, 15   I/O    CASCADE LINES: The CAS lines form a private 8259A bus to control
+                                     a multiple 8259A structure. These pins are outputs for a master 8259A
+                                     and inputs for a slave 8259A.
+    SP/EN           16        I/O    SLAVE PROGRAM/ENABLE BUFFER: This is a dual function pin.
+                                     When in the Buffered Mode it can be used as an output to control
+                                     buffer transceivers (EN). When not in the buffered mode it is used as
+                                     an input to designate a master (SP e 1) or slave (SP e 0).
+    INT             17         O     INTERRUPT: This pin goes high whenever a valid interrupt request is
+                                     asserted. It is used to interrupt the CPU, thus it is connected to the
+                                     CPU’s interrupt pin.
+    IR0 –IR7      18–25        I     INTERRUPT REQUESTS: Asynchronous inputs. An interrupt request
+                                     is executed by raising an IR input (low to high), and holding it high until
+                                     it is acknowledged (Edge Triggered Mode), or just by a high level on an
+                                     IR input (Level Triggered Mode).
+    INTA            26         I     INTERRUPT ACKNOWLEDGE: This pin is used to enable 8259A
+                                     interrupt-vector data onto the data bus by a sequence of interrupt
+                                     acknowledge pulses issued by the CPU.
+    A0              27         I     AO ADDRESS LINE: This pin acts in conjunction with the CS, WR, and
+                                     RD pins. It is used by the 8259A to decipher various Command Words
+                                     the CPU writes and status the CPU wishes to read. It is typically
+                                     connected to the CPU A0 address line (A1 for 8086, 8088).
+
+
+
+
+2
+                                                                                              8259A
+
+
+FUNCTIONAL DESCRIPTION
+
+Interrupts in Microcomputer Systems
+Microcomputer system design requires that I.O de-
+vices such as keyboards, displays, sensors and oth-
+er components receive servicing in a an efficient
+manner so that large amounts of the total system
+tasks can be assumed by the microcomputer with
+little or no effect on throughput.
+
+The most common method of servicing such devic-
+es is the Polled approach. This is where the proces-
+sor must test each device in sequence and in effect
+‘‘ask’’ each one if it needs servicing. It is easy to see
+that a large portion of the main program is looping
+through this continuous polling cycle and that such a
+method would have a serious detrimental effect on
+system throughput, thus limiting the tasks that could
+be assumed by the microcomputer and reducing the
+cost effectiveness of using such devices.                                                 231468 – 3
+
+A more desirable method would be one that would              Figure 3a. Polled Method
+allow the microprocessor to be executing its main
+program and only stop to service peripheral devices
+when it is told to do so by the device itself. In effect,
+the method would provide an external asynchronous
+input that would inform the processor that it should
+complete whatever instruction that is currently being
+executed and fetch a new routine that will service
+the requesting device. Once this servicing is com-
+plete, however, the processor would resume exactly
+where it left off.
+
+This method is called Interrupt . It is easy to see that
+system throughput would drastically increase, and
+thus more tasks could be assumed by the micro-
+computer to further enhance its cost effectiveness.
+
+The Programmable Interrupt Controller (PIC) func-
+tions as an overall manager in an Interrupt-Driven
+system environment. It accepts requests from the
+peripheral equipment, determines which of the in-
+coming requests is of the highest importance (priori-
+ty), ascertains whether the incoming request has a
+higher priority value than the level currently being
+serviced, and issues an interrupt to the CPU based
+on this determination.
+
+Each peripheral device or structure usually has a
+special program or ‘‘routine’’ that is associated with
+its specific functional or operational requirements;
+this is referred to as a ‘‘service routine’’. The PIC,                                    231468 – 4
+after issuing an Interrupt to the CPU, must somehow
+input information into the CPU that can ‘‘point’’ the       Figure 3b. Interrupt Method
+Program Counter to the service routine associated
+with the requesting device. This ‘‘pointer’’ is an ad-
+dress in a vectoring table and will often be referred
+to, in this document, as vectoring data.
+
+
+                                                                                                       3
+8259A
+
+
+The 8259A is a device specifically designed for use       INTA (INTERRUPT ACKNOWLEDGE)
+in real time, interrupt driven microcomputer systems.
+It manages eight levels or requests and has built-in      INTA pulses will cause the 8259A to release vector-
+features for expandability to other 8259A’s (up to 64     ing information onto the data bus. The format of this
+levels). It is programmed by the system’s software        data depends on the system mode (mPM) of the
+as an I/O peripheral. A selection of priority modes is    8259A.
+available to the programmer so that the manner in
+which the requests are processed by the 8259A can
+be configured to match his system requirements.           DATA BUS BUFFER
+The priority modes can be changed or reconfigured
+                                                          This 3-state, bidirectional 8-bit buffer is used to inter-
+dynamically at any time during the main program.
+                                                          face the 8259A to the system Data Bus. Control
+This means that the complete interrupt structure can
+                                                          words and status information are transferred
+be defined as required, based on the total system
+                                                          through the Data Bus Buffer.
+environment.
+
+                                                          READ/WRITE CONTROL LOGIC
+INTERRUPT REQUEST REGISTER (IRR) AND
+IN-SERVICE REGISTER (ISR)                                 The function of this block is to accept OUTput com-
+                                                          mands from the CPU. It contains the Initialization
+The interrupts at the IR input lines are handled by
+                                                          Command Word (ICW) registers and Operation
+two registers in cascade, the Interrupt Request Reg-
+                                                          Command Word (OCW) registers which store the
+ister (IRR) and the In-Service (ISR). The IRR is used
+                                                          various control formats for device operation. This
+to store all the interrupt levels which are requesting
+                                                          function block also allows the status of the 8259A to
+service; and the ISR is used to store all the interrupt
+                                                          be transferred onto the Data Bus.
+levels which are being serviced.
+
+                                                          CS (CHIP SELECT)
+PRIORITY RESOLVER
+                                                          A LOW on this input enables the 8259A. No reading
+This logic block determines the priorites of the bits
+                                                          or writing of the chip will occur unless the device is
+set in the IRR. The highest priority is selected and
+                                                          selected.
+strobed into the corresponding bit of the ISR during
+INTA pulse.
+                                                          WR (WRITE)
+INTERRUPT MASK REGISTER (IMR)                             A LOW on this input enables the CPU to write con-
+                                                          trol words (ICWs and OCWs) to the 8259A.
+The IMR stores the bits which mask the interrupt
+lines to be masked. The IMR operates on the IRR.
+Masking of a higher priority input will not affect the    RD (READ)
+interrupt request lines of lower quality.
+                                                          A LOW on this input enables the 8259A to send the
+                                                          status of the Interrupt Request Register (IRR), In
+INT (INTERRUPT)                                           Service Register (ISR), the Interrupt Mask Register
+                                                          (IMR), or the Interrupt level onto the Data Bus.
+This output goes directly to the CPU interrupt input.
+The VOH level on this line is designed to be fully
+compatible with the 8080A, 8085A and 8086 input           A0
+levels.
+                                                          This input signal is used in conjunction with WR and
+                                                          RD signals to write commands into the various com-
+                                                          mand registers, as well as reading the various status
+                                                          registers of the chip. This line can be tied directly to
+                                                          one of the address lines.
+
+
+
+
+4
+                                     8259A
+
+
+
+
+                                 231468 – 5
+
+Figure 4a. 8259A Block Diagram
+
+
+
+
+                                              5
+8259A
+
+
+
+
+                                         231468 – 6
+
+        Figure 4b. 8259A Block Diagram
+
+
+
+
+6
+                                                                                                          8259A
+
+
+THE CASCADE BUFFER/COMPARATOR                                  leased at the first INTA pulse and the higher 8-bit
+                                                               address is released at the second INTA pulse.
+This function block stores and compares the IDs of          7. This completes the 3-byte CALL instruction re-
+all 8259A’s used in the system. The associated                 leased by the 8259A. In the AEOI mode the ISR
+three I/O pins (CAS0-2) are outputs when the 8259A             bit is reset at the end of the third INTA pulse.
+is used as a master and are inputs when the 8259A              Otherwise, the ISR bit remains set until an appro-
+is used as a slave. As a master, the 8259A sends               priate EOI command is issued at the end of the
+the ID of the interrupting slave device onto the               interrupt sequence.
+CAS0–2 lines. The slave thus selected will send its
+preprogrammed subroutine address onto the Data              The events occuring in an 8086 system are the
+Bus during the next one or two consecutive INTA             same until step 4.
+pulses. (See section ‘‘Cascading the 8259A’’.)
+                                                            4. Upon receiving an INTA from the CPU group, the
+                                                               highest priority ISR bit is set and the correspond-
+INTERRUPT SEQUENCE                                             ing IRR bit is reset. The 8259A does not drive the
+                                                               Data Bus during this cycle.
+The powerful features of the 8259A in a microcom-
+puter system are its programmability and the inter-         5. The 8086 will initiate a second INTA pulse. Dur-
+rupt routine addressing capability. The latter allows          ing this pulse, the 8259A releases an 8-bit pointer
+direct or indirect jumping to the specific interrupt rou-      onto the Data Bus where it is read by the CPU.
+tine requested without any polling of the interrupting      6. This completes the interrupt cycle. In the AEOI
+devices. The normal sequence of events during an               mode the ISR bit is reset at the end of the sec-
+interrupt depends on the type of CPU being used.               ond INTA pulse. Otherwise, the ISR bit remains
+                                                               set until an appropriate EOI command is issued
+The events occur as follows in an MCS-80/85 sys-               at the end of the interrupt subroutine.
+tem:
+1. One or more of the INTERRUPT REQUEST lines               If no interrupt request is present at step 4 of either
+   (IR7–0) are raised high, setting the correspond-         sequence (i.e., the request was too short in duration)
+   ing IRR bit(s).                                          the 8259A will issue an interrupt level 7. Both the
+                                                            vectoring bytes and the CAS lines will look like an
+2. The 8259A evaluates these requests, and sends            interrupt level 7 was requested.
+   an INT to the CPU, if appropriate.
+3. The CPU acknowledges the INT and responds                When the 8259A PIC receives an interrupt, INT be-
+   with an INTA pulse.                                      comes active and an interrupt acknowledge cycle is
+                                                            started. If a higher priority interrupt occurs between
+4. Upon receiving an INTA from the CPU group, the
+                                                            the two INTA pulses, the INT line goes inactive im-
+   highest priority ISR bit is set, and the correspond-
+                                                            mediately after the second INTA pulse. After an un-
+   ing IRR bit is reset. The 8259A will also release a
+                                                            specified amount of time the INT line is activated
+   CALL instruction code (11001101) onto the 8-bit
+                                                            again to signify the higher priority interrupt waiting
+   Data Bus through its D7–0 pins.
+                                                            for service. This inactive time is not specified and
+5. This CALL instruction will initiate two more INTA        can vary between parts. The designer should be
+   pulses to be sent to the 8259A from the CPU              aware of this consideration when designing a sys-
+   group.                                                   tem which uses the 8259A. It is recommended that
+6. These two INTA pulses allow the 8259A to re-             proper asynchronous design techniques be fol-
+   lease its preprogrammed subroutine address               lowed.
+   onto the Data Bus. The lower 8-bit address is re-
+
+
+
+
+                                                                                                                7
+8259A
+
+
+
+
+                                                                                            231468 – 7
+
+
+                                 Figure 4c. 8259A Block Diagram
+
+                                                    INTERRUPT SEQUENCE OUTPUTS
+
+                                                    MCS-80, MCS-85
+                                                    This sequence is timed by three INTA pulses. During
+                                                    the first INTA pulse the CALL opcode is enabled
+                                                    onto the data bus.
+                                                           Content of First Interrupt Vector Byte
+                                                                       D7 D6 D5 D4 D3 D2 D1 D0
+                                                    CALL CODE          1   1   0   0   1    1    0       1
+
+                                                    During the second INTA pulse the lower address of
+                                                    the appropriate service routine is enabled onto the
+                                                    data bus. When Interval e 4 bits A5 –A7 are pro-
+                                                    grammed, while A0 –A4 are automatically inserted by
+                                                    the 8259A. When Interval e 8 only A6 and A7 are
+                                       231468 – 8   programmed, while A0 –A5 are automatically insert-
+                                                    ed.
+        Figure 5. 8259A Interface to
+           Standard System Bus
+
+8
+                                                                                                            8259A
+
+
+      Content of Second Interrupt Vector Byte            composed as follows (note the state of the ADI
+                                                         mode control is ignored and A5 –A11 are unused in
+ IR                       Interval e 4                   8086 mode):
+        D7     D6   D5     D4    D3      D2    D1   D0          Content of Interrupt Vector Byte
+                                                                      for 8086 System Mode
+ 7      A7     A6   A5      1     1       1    0    0
+                                                                 D7    D6     D5    D4     D3    D2    D1     D0
+ 6      A7     A6   A5      1     1       0    0    0
+                                                          IR7    T7     T6    T5    T4     T3     1     1      1
+ 5      A7     A6   A5      1     0       1    0    0
+                                                          IR6    T7     T6    T5    T4     T3     1     1      0
+ 4      A7     A6   A5      1     0       0    0    0
+                                                          IR5    T7     T6    T5    T4     T3     1     0      1
+ 3      A7     A6   A5      0     1       1    0    0
+                                                          IR4    T7     T6    T5    T4     T3     1     0      0
+ 2      A7     A6   A5      0     1       0    0    0
+                                                          IR3    T7     T6    T5    T4     T3     0     1      1
+ 1      A7     A6   A5      0     0       1    0    0
+                                                          IR2    T7     T6    T5    T4     T3     0     1      0
+ 0      A7     A6   A5      0     0       0    0    0
+                                                          IR1    T7     T6    T5    T4     T3     0     0      1
+ IR                       Interval e 8                    IR0    T7     T6    T5    T4     T3     0     0      0
+        D7     D6   D5     D4    D3      D2    D1   D0
+ 7      A7     A6     1     1     1       0    0    0
+                                                         PROGRAMMING THE 8259A
+ 6      A7     A6     1     1     0       0    0    0
+                                                         The 8259A accepts two types of command words
+ 5      A7     A6     1     0     1       0    0    0    generated by the CPU:
+ 4      A7     A6     1     0     0       0    0    0    1. Initialization Command Words (ICWs): Before
+                                                            normal operation can begin, each 8259A in the
+ 3      A7     A6     0     1     1       0    0    0
+                                                            system must be brought to a starting pointÐby a
+ 2      A7     A6     0     1     0       0    0    0       sequence of 2 to 4 bytes timed by WR pulses.
+ 1      A7     A6     0     0     1       0    0    0    2. Operation Command Words (OCWs): These are
+                                                            the command words which command the 8259A
+ 0      A7     A6     0     0     0       0    0    0       to operate in various interrupt modes. These
+                                                            modes are:
+During the third INTA pulse the higher address of the       a. Fully nested mode
+appropriate service routine, which was programmed           b. Rotating priority mode
+as byte 2 of the initialization sequence (A8 –A15), is
+enabled onto the bus.                                       c. Special mask mode
+     Content of Third Interrupt Vector Byte                 d. Polled mode
+  D7     D6      D5      D4     D3   D2    D1 D0
+                                                         The OCWs can be written into the 8259A anytime
+ A15     A14    A13       A12   A11      A10   A9   A8   after initialization.
+
+
+8086, 8088                                               INITIALIZATION COMMAND WORDS
+                                                         (ICWS)
+8086 mode is similar to MCS-80 mode except that
+only two Interrupt Acknowledge cycles are issued by
+the processor and no CALL opcode is sent to the          General
+processor. The first interrupt acknowledge cycle is
+similar to that of MCS-80, 85 systems in that the        Whenever a command is issued with A0 e 0 and D4
+                                                         e 1, this is interpreted as Initialization Command
+8259A uses it to internally freeze the state of the
+interrupts for priority resolution and as a master it    Word 1 (ICW1). ICW1 starts the intiitalization se-
+issues the interrupt code on the cascade lines at the    quence during which the following automatically oc-
+end of the INTA pulse. On this first cycle it does not   cur.
+issue any data to the processor and leaves its data      a. The edge sense circuit is reset, which means that
+bus buffers disabled. On the second interrupt ac-           following initialization, an interrupt request (IR) in-
+knowledge cycle in 8086 mode the master (or slave           put must make a low-to-high transistion to gener-
+if so programmed) will send a byte of data to the           ate an interrupt.
+processor with the acknowledged interrupt code
+
+                                                                                                                   9
+8259A
+
+
+b. The Interrupt Mask Register is cleared.                case SNGL e 0. It will load the 8-bit slave register.
+c. IR7 input is assigned priority 7.                      The functions of this register are:
+d. The slave mode address is set to 7.                    a. In the master mode (either when SP e 1, or in
+                                                             buffered mode when M/S e 1 in ICW4) a ‘‘1’’ is
+e. Special Mask Mode is cleared and Status Read is           set for each slave in the system. The master then
+   set to IRR.                                               will release byte 1 of the call sequence (for MCS-
+f. If IC4 e 0, then all functions selected in ICW4           80/85 system) and will enable the corresponding
+   are set to zero. (Non-Buffered mode*, no Auto-            slave to release bytes 2 and 3 (for 8086 only byte
+   EOI, MCS-80, 85 system).                                  2) through the cascade lines.
+                                                          b. In the slave mode (either when SP e 0, or if BUF
+                    *NOTE:                                   e 1 and M/S e 0 in ICW4) bits 2 – 0 identify the
+Master/Slave in ICW4 is only used in the buffered            slave. The slave compares its cascade input with
+mode.                                                        these bits and, if they are equal, bytes 2 and 3 of
+                                                             the call sequence (or just byte 2 for 8086) are
+                                                             released by it on the Data Bus.
+Initialization Command Words 1 and 2
+(ICW1, ICW2)
+A5 –A15: Page starting address of service routines .
+In an MCS 80/85 system, the 8 request levels will
+generate CALLs to 8 locations equally spaced in
+memory. These can be programmed to be spaced at
+intervals of 4 or 8 memory locations, thus the 8 rou-
+tines will occupy a page of 32 or 64 bytes, respec-
+tively.
+
+The address format is 2 bytes long (A0 –A15). When
+the routine interval is 4, A0 –A4 are automatically in-
+serted by the 8259A, while A5 –A15 are programmed
+externally. When the routine interval is 8, A0 –A5 are
+automatically inserted by the 8259A, while A6 –A15
+are programmed externally.
+
+The 8-byte interval will maintain compatibility with
+current software, while the 4-byte interval is best for
+a compact jump table.
+
+In an 8086 system A15 –A11 are inserted in the five
+most significant bits of the vectoring byte and the
+8259A sets the three least significant bits according
+to the interrupt level. A10 –A5 are ignored and ADI
+(Address interval) has no effect.
+LTIM: If LTIM e 1, then the 8259A will operate in
+        the level interrupt mode. Edge detect logic
+        on the interrupt inputs will be disabled.
+ADI:    CALL address interval. ADI e 1 then inter-
+        val e 4; ADI e 0 then interval e 8.
+SNGL: Single. Means that this is the only 8259A in
+        the system. If SNGL e 1 no ICW3 will be
+        issued.
+IC4:    If this bit is setÐICW4 has to be read. If
+        ICW4 is not needed, set IC4 e 0.
+                                                                                                    231468 – 9
+
+Initialization Command Word 3 (ICW3)                               Figure 6. Initialization Sequence
+This word is read only when there is more than one
+8259A in the system and cascading is used, in which
+
+
+10
+                                                                                              8259A
+
+
+Initialization Command Word 4 (ICW4)                       master, M/S e 0 means the 8259A is pro-
+                                                           grammed to be a slave. If BUF e 0, M/S
+SFNM: If SFNM e 1 the special fully nested mode
+                                                           has no function.
+      is programmed.
+                                                   AEOI:   If AEOI e 1 the automatic end of interrupt
+BUF: If BUF e 1 the buffered mode is pro-
+                                                           mode is programmed.
+      grammed. In buffered mode SP/EN be-
+      comes an enable output and the master/       mPM:    Microprocessor mode: mPM e 0 sets the
+      slave determination is by M/S.                       8259A for MCS-80, 85 system operation,
+                                                           mPM e 1 sets the 8259A for 8086 system
+M/S:   If buffered mode is selected: M/S e 1
+                                                           operation.
+       means the 8259A is programmed to be a
+
+
+
+
+                                                                                         231468 – 10
+
+
+
+
+                                                                                         231468 – 11
+
+                           Figure 7. Initialization Command Word Format
+
+
+
+
+                                                                                                       11
+8259A
+
+
+
+
+                                                                                     231468 – 12
+
+
+
+
+                                                                                     231468 – 13
+
+
+
+
+                                                                                     231468 – 14
+
+
+ NOTE:
+ Slave ID is equal to the corresponding master IR input.
+
+                          Figure 7. Initialization Command Word Format (Continued)
+
+
+
+
+12
+                                                                                                 8259A
+
+
+OPERATION COMMAND WORDS                                Operation Control Words (OCWs)
+(OCWS)                                                                   OCW1
+                                                       A0    D7   D6     D5 D4 D3 D2 D1 D0
+After the Initialization Command Words (ICWs) are
+programmed into the 8259A, the chip is ready to ac-    1     M7   M6     M5    M4 M3 M2 M1 M0
+cept interrupt requests at its input lines. However,
+during the 8259A operation, a selection of algo-                         OCW2
+rithms can command the 8259A to operate in vari-        0     R    SL    EOI    0 0 L2         L1     L0
+ous modes through the Operation Command Words
+(OCWs).                                                                  OCW3
+                                                        0     0   ESMM   SMM    0   1   P     RR      RIS
+
+
+
+
+                                                                                        231468 – 15
+
+
+
+
+                                                                                            231468 – 16
+
+                               Figure 8. Operation Command Word Format
+
+
+
+
+                                                                                                          13
+8259A
+
+
+Operation Control Word 1 (OCW1)                        Operation Control Word 2 (OCW2)
+OCW1 sets and clears the mask bits in the interrupt    R, SL, EOIÐThese three bits control the Rotate and
+Mask Register (IMR). M7 –M0 represent the eight        End of Interrupt modes and combinations of the two.
+mask bits. M e 1 indicates the channel is masked       A chart of these combinations can be found on the
+(inhibited), M e 0 indicates the channel is enabled.   Operation Command Word Format.
+
+                                                       L2, L1, L0ÐThese bits determine the interrupt level
+                                                       acted upon when the SL bit is active.
+
+
+
+
+                                                                                              231468 – 17
+
+                         Figure 8. Operation Command Word Format (Continued)
+
+
+
+
+14
+                                                                                                            8259A
+
+
+Operation Control Word 3 (OCW3)                               When a mode is used which may disturb the fully
+                                                              nested structure, the 8259A may no longer be able
+ESMMÐEnable Special Mask Mode. When this bit                  to determine the last level acknowledged. In this
+is set to 1 it enables the SMM bit to set or reset the        case a Specific End of Interrupt must be issued
+Special Mask Mode. When ESMM e 0 the SMM bit                  which includes as part of the command the IS level
+becomes a ‘‘don’t care’’.                                     to be reset. A specific EOI can be issued with OCW2
+                                                              (EOI e 1, SL e 1, R e 0, and L0 – L2 is the binary
+SMMÐSpecial Mask Mode. If ESMM e 1 and SMM                    level of the IS bit to be reset).
+e 1 the 8259A will enter Special Mask Mode. If
+ESMM e 1 and SMM e 0 the 8259A will revert to                 It should be noted that an IS bit that is masked by an
+normal mask mode. When ESMM e 0, SMM has no                   IMR bit will not be cleared by a non-specific EOI if
+effect.                                                       the 8259A is in the Special Mask Mode.
+
+
+Fully Nested Mode                                             Automatic End of Interrupt (AEOI)
+                                                              Mode
+This mode is entered after initialization unless anoth-
+er mode is programmed. The interrupt requests are             If AEOI e 1 in ICW4, then the 8259A will operate in
+ordered in priority from 0 through 7 (0 highest).             AEOI mode continuously until reprogrammed by
+When an interrupt is acknowledged the highest pri-            ICW4. in this mode the 8259A will automatically per-
+ority request is determined and its vector placed on          form a non-specific EOI operation at the trailing
+the bus. Additionally, a bit of the Interrupt Service         edge of the last interrupt acknowledge pulse (third
+register (ISO-7) is set. This bit remains set until the       pulse in MCS-80/85, second in 8086). Note that
+microprocessor issues an End of Interrupt (EOI)               from a system standpoint, this mode should be used
+command immediately before returning from the                 only when a nested multilevel interrupt structure is
+service routine, or if AEOI (Automatic End of Inter-          not required within a single 8259A.
+rupt) bit is set, until the trailing edge of the last INTA.
+While the IS bit is set, all further interrupts of the        The AEOI mode can only be used in a master 8259A
+same or lower priority are inhibited, while higher lev-       and not a slave. 8259As with a copyright date of
+els will generate an interrupt (which will be acknowl-        1985 or later will operate in the AEOI mode as a
+edged only if the microprocessor internal Interupt            master or a slave.
+enable flip-flop has been re-enabled through soft-
+ware).
+                                                              Automatic Rotation
+After the initialization sequence, IR0 has the highest        (Equal Priority Devices)
+prioirity and IR7 the lowest. Priorities can be
+changed, as will be explained, in the rotating priority       In some applications there are a number of interrupt-
+mode.                                                         ing devices of equal priority. In this mode a device,
+                                                              after being serviced, receives the lowest priority, so
+                                                              a device requesting an interrupt will have to wait, in
+End of Interrupt (EOI)                                        the worst case until each of 7 other devices are
+                                                              serviced at most once . For example, if the priority
+The In Service (IS) bit can be reset either automati-         and ‘‘in service’’ status is:
+cally following the trailing edge of the last in se-
+quence INTA pulse (when AEOI bit in ICW1 is set) or           Before Rotate (IR4 the highest prioirity requiring
+by a command word that must be issued to the                  service)
+8259A before returning from a service routine (EOI
+command). An EOI command must be issued twice
+if in the Cascade mode, once for the master and
+once for the corresponding slave.
+
+There are two forms of EOI command: Specific and                ‘‘IS’’ Status                          231468 – 18
+Non-Specific. When the 8259A is operated in modes
+which perserve the fully nested structure, it can de-
+termine which IS bit to reset on EOI. When a Non-
+Specific EOI command is issued the 8259A will auto-
+matically reset the highest IS bit of those that are
+set, since in the fully nested mode the highest IS
+                                                                Priority Status                        231468 – 19
+level was necessarily the last level acknowledged
+and serviced. A non-specific EOI can be issued with
+OCW2 (EOI e 1, SL e 0, R e 0).
+
+                                                                                                                     15
+8259A
+
+
+After Rotate (IR4 was serviced, all other priorities       ture during its execution under software control. For
+rotated correspondingly)                                   example, the routine may wish to inhibit lower priori-
+                                                           ty requests for a portion of its execution but enable
+                                                           some of them for another portion.
+
+                                                           The difficulty here is that if an Interrupt Request is
+                                                           acknowledged and an End of Interrupt command did
+  ‘‘IS’’ Status                            231468 – 20
+                                                           not reset its IS bit (i.e., while executing a service
+                                                           routine), the 8259A would have inhibited all lower
+                                                           priority requests with no easy way for the routine to
+                                                           enable them.
+
+                                                           That is where the Special Mask Mode comes in. In
+                                                           the special Mask Mode, when a mask bit is set in
+  Priority Status                          231468 – 21
+                                                           OCW1, it inhibits further interrupts at that level and
+                                                           enables interrupts from all other levels (lower as well
+There are two ways to accomplish Automatic Rota-           as higher) that are not masked.
+tion using OCW2, the Rotation on Non-Specific EOI
+Command (R e 1, SL e 0, EOI e 1) and the Ro-               Thus, any interrupts may be selectively enabled by
+tate in Automatic EOI Mode which is set by (R e 1,         loading the mask register.
+SL e 0, EOI e 0) and cleared by (R e 0, SL e 0,
+                                                           The special Mask Mode is set by OWC3 where:
+EOI e 0).
+                                                           SSMM e 1, SMM e 1, and cleared where SSMM e
+                                                           1, SMM e 0.
+Specific Rotation
+(Specific Priority)                                        Poll Command
+The programmer can change priorities by program-           In Poll mode the INT output functions as it normally
+ming the bottom priority and thus fixing all other pri-    does. The microprocessor should ignore this output.
+orities; i.e., if IR5 is programmed as the bottom prior-   This can be accomplished either by not connecting
+ity device, then IR6 will have the highest one.            the INT output or by masking interrupts within the
+                                                           microprocessor, thereby disabling its interrupt input.
+The Set Priority command is issued in OCW2 where:          Service to devices is achieved by software using a
+R e 1, SL e 1, L0–L2 is the binary priority level          Poll command.
+code of the bottom priority device.
+                                                           The Poll command is issued by setting P e ‘1’’ in
+Observe that in this mode internal status is updated       OCW3. The 8259A treats the next RD pulse to the
+by software control during OCW2. However, it is in-        8259A (i.e., RD e 0, CS e 0) as an interrupt ac-
+dependent of the End of Interrupt (EOI) command            knowledge, sets the appropriate IS bit if there is a
+(also executed by OCW2). Priority changes can be           request, and reads the priority level. Interrupt is fro-
+executed during an EOI command by using the Ro-            zen from WR to RD.
+tate on Specific EOI command in OCW2 (R e 1, SL
+e 1, EOI e 1 and LO–L2 e IR level to receive               The word enabled onto the data bus during RD is:
+bottom priority).                                           D7    D6   D5    D4     D3    D2     D1    D0
+                                                              I    Ð      Ð      Ð      Ð     W2      W1     W0
+
+Interrupt Masks                                              W0 – W2: Binary code of the highest priority level
+                                                                      requesting service.
+Each Interrupt Request input can bem masked indi-
+                                                                   I: Equal to ‘‘1’’ if there is an interrupt.
+vidually by the Interrupt Mask Register (IMR) pro-
+grammed through OCW1. Each bit in the IMR masks            This mode is useful if there is a routine command
+one interrupt channel if it is set (1). Bit 0 masks IR0,   common to several levels so that the INTA se-
+Bit 1 masks IR1 and so forth. Masking an IR channel        quence is not needed (saves ROM space). Another
+does not affect the other channels operation.              application is to use the poll mode to expand the
+                                                           number of priority levels to more than 64.
+Special Mask Mode
+                                                           Reading the 8259A Status
+Some applications may require an interrupt service
+routine to dynamically alter the system priority struc-    The input status of several internal registers can be
+                                                           read to update the user information on the system.
+
+16
+                                                                                                              8259A
+
+
+
+
+                                             NOTES:
+                                                                                                      231468 – 22
+                                             1. Master clear active only during ICW1.
+                                             2. FREEZE is active during INTA and poll sequences only.
+                                             3. Truth Table for a D-Latch.
+                                                  C D       Q     Operation
+                                                  1      Di    Di    Follow
+                                                  0      X    Qn-1    Hold
+
+                              Figure 9. Priority CellÐSimplified Logic Diagram
+
+The following registers can be read via OCW3 (IRR             There is no need to write an OCW3 before every
+and ISR or OCW1 [IMR] ).                                      status read operation, as long as the status read
+                                                              corresponds with the previous one; i.e., the 8259A
+Interrupt Request Register (IRR): 8-bit register which        ‘‘remembers’’ whether the IRR or ISR has been pre-
+contains the levels requesting an interrupt to be ac-         viously selected by the OCW3. This is not true when
+knowledged. The highest request level is reset from           poll is used.
+the IRR when an interrupt is acknowledged. (Not af-
+fected by IMR.)                                               After initialization the 8259A is set to IRR.
+
+In-Service Register (ISR): 8-bit register which con-          For reading the IMR, no OCW3 is needed. The out-
+tains the priority levels that are being serviced. The        put data bus will contain the IMR whenever RD is
+ISR is updated when an End of Interrupt Command               active and A0 e 1 (OCW1).
+is issued.
+                                                              Polling overrides status read when P e 1, RR e 1
+Interrupt Mask Register: 8-bit register which con-            in OCW3.
+tains the interrupt request lines which are masked.
+
+The IRR can be read when, prior to the RD pulse, a            Edge and Level Triggered Modes
+Read Register Command is issued with OCW3 (RR
+e 1, RIS e 0.)                                                This mode is programmed using bit 3 in ICW1.
+
+The ISR can be read, when, prior to the RD pulse, a           If LTIM e ‘0’, an interrupt request will be recognized
+Read Register Command is issued with OCW3 (RR                 by a low to high transition on an IR input. The IR
+e 1, RIS e 1).                                                input can remain high without generating another in-
+                                                              terrupt.
+
+
+                                                                                                                    17
+8259A
+
+
+
+
+                                                                                                    231468 – 23
+
+                                Figure 10. IR Triggering Timing Requirements
+
+If LTIM e ‘1’, an interrupt request will be recognized     ing ICW4). This mode is similar to the normal nested
+by a ‘high’ level on IR Input, and there is no need for    mode with the following exceptions:
+an edge detection. The interrupt request must be           a. When an interrupt request from a certain slave is
+removed before the EOI command is issued or the               in service this slave is not locked out from the
+CPU interrupts is enabled to prevent a second inter-          master’s priority logic and further interrupt re-
+rupt from occurring.                                          quests from higher priority IR’s within the slave
+                                                              will be recognized by the master and will initiate
+The priority cell diagram shows a conceptual circuit          interrupts to the processor. (In the normal nested
+of the level sensitive and edge sensitive input circuit-      mode a slave is masked out when its request is in
+ry of the 8259A. Be sure to note that the request             service and no higher requests from the same
+latch is a transparent D type latch.                          slave can be serviced.)
+In both the edge and level triggered modes the IR          b. When exiting the Interrupt Service routine the
+inputs must remain high until after the falling edge of       software has to check whether the interrupt serv-
+the first INTA. If the IR input goes low before this          iced was the only one from that slave. This is
+time a DEFAULT IR7 will occur when the CPU ac-                done by sending a non-specific End of Interrupt
+knowledges the interrupt. This can be a useful safe-          (EOI) command to the slave and then reading its
+guard for detecting interrupts caused by spurious             In-Service register and checking for zero. If it is
+noise glitches on the IR inputs. To implement this            empty, a non-specific EOI can be sent to the
+feature the IR7 routine is used for ‘‘clean up’’ simply       master too. If not, no EOI should be sent.
+executing a return instruction, thus ignoring the inter-
+rupt. If IR7 is needed for other purposes a default        Buffered Mode
+IR7 can still be detected by reading the ISR. A nor-
+mal IR7 interrupt will set the corresponding ISR bit, a    When the 8259A is used in a large system where
+default IR7 won’t. If a default IR7 routine occurs dur-    bus driving buffers are required on the data bus and
+ing a normal IR7 routine, however, the ISR will re-        the cascading mode is used, there exists the prob-
+main set. In this case it is necessary to keep track of    lem of enabling buffers.
+whether or not the IR7 routine was previously en-
+tered. If another IR7 occurs it is a default.              The buffered mode will structure the 8259A to send
+                                                           an enable signal on SP/EN to enable the buffers. In
+                                                           this mode, whenever the 8259A’s data bus outputs
+The Special Fully Nest Mode                                are enabled, the SP/EN output becomes active.
+
+This mode will be used in the case of a big system         This modification forces the use of software pro-
+where cascading is used, and the priority has to be        gramming to determine whether the 8259A is a mas-
+conserved within each slave. In this case the fully        ter or a slave. Bit 3 in ICW4 programs the buffered
+nested mode will be programmed to the master (us-          mode, and bit 2 in ICW4 determines whether it is a
+                                                           master or a slave.
+
+18
+                                                                                                      8259A
+
+
+CASCADE MODE                                            The cascade bus lines are normally low and will con-
+                                                        tain the slave address code from the trailing edge of
+The 8259A can be easily interconnected in a system      the first INTA pulse to the trailing edge of the third
+of one master with up to eight slaves to handle up to   pulse. Each 8259A in the system must follow a sep-
+64 priority levels.                                     arate initialization sequence and can be pro-
+                                                        grammed to work in a different mode. An EOI com-
+The master controls the slaves through the 3 line       mand must be issued twice: once for the master and
+cascade bus. The cascade bus acts like chip selects     once for the corresponding slave. An address de-
+to the slaves during the INTA sequence.                 coder is required to activate the Chip Select (CS)
+                                                        input of each 8259A.
+In a cascade configuration, the slave interrupt out-
+puts are connected to the master interrupt request      The cascade lines of the Master 8259A are activat-
+inputs. When a slave request line is activated and      ed only for slave inputs, non-slave inputs leave the
+afterwards acknowledged, the master will enable the     cascade line inactive (low).
+corresponding slave to release the device routine
+address during bytes 2 and 3 of INTA. (Byte 2 only
+for 8086/8088).
+
+
+
+
+                                                                                                 231468 – 24
+
+                                      Figure 11. Cascading the 8259A
+
+
+
+
+                                                                                                               19
+8259A
+
+
+ABSOLUTE MAXIMUM RATINGS*                                   NOTICE: This is a production data sheet. The specifi-
+                                                            cations are subject to change without notice.
+Ambient Temperature Under Bias ÀÀÀÀÀÀ0§ C to 70§ C
+                                                        *WARNING: Stressing the device beyond the ‘‘Absolute
+Storage Temperature ÀÀÀÀÀÀÀÀÀÀ b 65§ C to a 150§ C      Maximum Ratings’’ may cause permanent damage.
+Voltage on Any Pin                                      These are stress ratings only. Operation beyond the
+  with Respect to GroundÀÀÀÀÀÀÀÀÀÀ b 0.5V to a 7V       ‘‘Operating Conditions’’ is not recommended and ex-
+                                                        tended exposure beyond the ‘‘Operating Conditions’’
+Power Dissipation ÀÀÀÀÀÀÀÀÀÀÀÀÀÀÀÀÀÀÀÀÀÀÀÀÀÀÀ1W         may affect device reliability.
+
+
+D.C. CHARACTERISTICS TA e 0§ C to 70§ C, VCC e 5V g 10%
+     Symbol            Parameter               Min            Max           Units         Test Conditions
+     VIL         Input Low Voltage             b 0.5          0.8             V
+     VIH         Input High Voltage            2.0*     VCC a 0.5V            V
+     VOL         Output Low Voltage                           0.45            V         IOL e 2.2 mA
+     VOH         Output High Voltage           2.4                            V         IOH e b 400 mA
+     VOH(INT)    Interrupt Output High         3.5                            V         IOH e b 100 mA
+                 Voltage
+                                               2.4                            V         IOH e b 400 mA
+     ILI         Input Load Current            b 10           a 10            mA        0V s VIN s VCC
+     ILOL        Output Leakage Current        b 10           a 10            mA        0.45V s VOUT s VCC
+     ICC         VCC Supply Current                            85            mA
+     ILIR        IR Input Load Current                       b 300            mA        VIN e 0
+                                                               10             mA        VIN e VCC
+
+*NOTE:
+For Extended Temperature EXPRESS VIH e 2.3V.
+
+
+
+CAPACITANCE TA e 25§ C; VCC e GND e 0V
+  Symbol           Parameter             Min   Typ     Max       Unit               Test Conditions
+  CIN           Input Capacitance                      10           pF                 fc e 1 MHz
+  CI/O          I/O Capacitance                        20           pF     Unmeasured Pins Returned to VSS
+
+
+
+
+20
+                                                                                                                       8259A
+
+
+A.C. CHARACTERISTICS TA e 0§ C to 70§ C, VCC e 5V g 10%
+
+TIMING REQUIREMENTS
+                                                               8259A             8259A-2
+ Symbol                      Parameter                                                        Units       Test Conditions
+                                                            Min      Max      Min      Max
+ TAHRL         AO/CS Setup to RD/INTA        v                0                  0                ns
+ TRHAX         AO/CS Hold after RD/INTA       u               0                  0                ns
+ TRLRH         RD Pulse Width                               235               160                 ns
+ TAHWL         AO/CS Setup to WR v                            0                  0                ns
+ TWHAX         AO/CS Hold after WRu                           0                  0                ns
+ TWLWH         WR Pulse Width                               290               190                 ns
+ TDVWH         Data Setup to WR     u                       240               160                 ns
+ TWHDX         Data Hold after WR    u                        0                  0                ns
+ TJLJH         Interrupt Request Width (Low)                100               100                 ns         See Note 1
+ TCVIAL        Cascade Setup to Second or Third
+                                                             55               40                  ns
+                     v
+               INTA (Slave Only)
+ TRHRL         End of RD to Next RD
+               End of INTA to Next INTA within              160               100                 ns
+               an INTA Sequence Only
+ TWHWL         End of WR to Next WR                         190               100                 ns
+ *TCHCL        End of Command to Next Command
+                                                            500               150                 ns
+               (Not Same Command Type)
+               End of INTA Sequence to Next
+                                                            500               300
+               INTA Sequence.
+*Worst case timing for TCHCL in an actual microprocessor system is typically much greater than 500 ns (i.e. 8085A e
+1.6 ms, 8085A-2 e 1 ms, 8086 e 1 ms, 8086-2 e 625 ns)
+NOTE:
+This is the low time required to clear the input latch in the edge triggered mode.
+
+
+TIMING RESPONSES
+                                                              8259A         8259A-2
+ Symbol                     Parameter                                                      Units         Test Conditions
+                                                            Min    Max     Min       Max
+ TRLDV       Data Valid from RD/INTA       v                       200               120     ns
+                                                                                                       C of Data Bus e
+                                                                                                       100 pF
+ TRHDZ       Data Float after RD/INTA      u                10     100      10       85      ns        C of Data Bus
+                                                                                                       Max Test C e 100 pF
+ TJHIH       Interrupt Output Delay                                350               300     ns
+                                                                                                       Min Test C e 15 pF
+ TIALCV      Cascade Valid from First INTA      v                  565               360     ns        CINT e 100 pF
+             (Master Only)
+ TRLEL       Enable Active from RD v or INTAv                      125               100     ns
+                                                                                                       CCASCADE e 100 pF
+ TRHEH       Enable Inactive from RDu or INTAu                     150               150     ns
+ TAHDV       Data Valid from Stable Address                        200               200     ns
+ TCVDV       Cascade Valid to Valid Data                           300               200     ns
+
+
+
+                                                                                                                           21
+8259A
+
+
+A.C. TESTING INPUT/OUTPUT WAVEFORM                                     A.C. TESTING LOAD CIRCUIT
+
+
+
+
+                                                     231468 – 25
+ A.C. Testing: Inputs are driven at 2.4V for a logic ‘‘1’’ and 0.45V                                        231468 – 26
+ for a logic ‘‘0’’. Timing measurements are made at 2.0V for a logic          CL e 100 pF
+ ‘‘1’’ and 0.8V for a logic ‘‘0’’.                                            CL Includes Jig Capacitance
+
+
+
+
+WAVEFORMS
+
+WRITE
+
+
+
+
+                                                                                                            231468 – 27
+
+
+
+
+22
+                             8259A
+
+
+WAVEFORMS (Continued)
+
+READ/INTA
+
+
+
+
+                        231468 – 28
+
+
+
+OTHER TIMING
+
+
+
+
+                        231468 – 29
+
+
+
+
+                                      23
+8259A
+
+
+WAVEFORMS (Continued)
+
+INTA SEQUENCE
+
+
+
+
+                                                                                                 231468 – 30
+
+
+NOTES:
+Interrupt output must remain HIGH at least until leading edge of first INTA.
+1. Cycle 1 in 8086, 8088 systems, the Data Bus is not active.
+
+
+Data Sheet Revision Review
+The following changes have been made since revision 2 of the 8259A data sheet.
+1. The first paragraph of the Poll Command section was rewritten to clarify the status of the INT pin.
+2. A paragraph was added to the Interrupt Sequence section to indicate the status of the INT pin during
+   multiple interrupts.
+3. A reference to PLCC packaging was added.
+4. All references to the 8259A-8 have been deleted.
+
+
+
+
+           INTEL CORPORATION, 2200 Mission College Blvd., Santa Clara, CA 95052; Tel. (408) 765-8080
+
+                   INTEL CORPORATION (U.K.) Ltd., Swindon, United Kingdom; Tel. (0793) 696 000
+
+                                    INTEL JAPAN k.k., Ibaraki-ken; Tel. 029747-8511
+
+                                             Printed in U.S.A./xxxx/1196/B10M/xx xx
+

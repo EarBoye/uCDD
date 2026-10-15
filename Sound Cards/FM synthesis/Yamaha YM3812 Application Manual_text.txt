@@ -1,0 +1,1936 @@
+                       1
+FM OPERATOR TYPE-L (OPLII)
+                           2
+ APPLICATION MANUAL
+
+
+
+
+                               CATALOG No.: LSI-2438124
+                                       1994.6
+                                                        TABLE OF CONTENTS
+
+      1.        OPLII                                                                                                                                                                       TATE
+                                                                                                                                                                                            EE
+                                                                                                                                                                                            EE
+                                                                                                                                                                                             pe
+
+                                                                                                                 ae Saaemenne toate mentee eT
+                Ps1. CO  VIEW vce jasseccacesccs vciereas rast gnsivavrnroon ener ssi rteala pean tarot oeteaane
+                       eLV
+                                                                                                   tvossasenscnrneasaranerssoatarsonsr    tsrer"
+                                                                                                                                      eseansen
+                [<2 Features cccscrssssecsssnenesaccsssvcsvsncncanansenstasisseusannonvesten
+                                                                                             sssnrserncneaecrensanncnenenseasec   nneseg    gee"
+                                                                                                                                       gerness
+                1-3 Overview of FM System........ccssescerssssesresssss
+
+
+      2. Overview of Functions
+                                                                   snrsssenss                                                      seansenre
+                                                                                                                                ocens                 annso
+                                                                                                                                              seanscancean
+                                                                                                                                       sesnasorenanen        anees
+                                                                                                                                                           ensrene e ees
+                9-1] Main Functions .........:.:cesccsssceossscsse
+                2-2 Pin Layout            cryin           |
+                                                      ce Guislag Giga   valewou utauls sew anapauendaeawedenns   sueuagns eoeesbetN EC tesa cae ea   site teseerstase   meer      SS
+
+
+
+
+                2-3 Description of Pin Functions Sa vidielclus GUR ans sie sinpe¥s Sas
+                                                                                                                                                                        see eessen”
+                                                                                       cemide cape                        aesneese emecss eveens seinen esis Seeces
+
+
+                                                                                   nenntoncanpnasonannns senbneanaenenarnansnsnsvensnaneres
+                FA Bus Control ccccasssecssssissvososrvaessrsaurssisenssnsanente
+                                                                                           esssnsssnananaconsaacsenamsenncarensneassngseee       i228
+                4.5 Chanmels and Slots ..........:ccccsssscersencenrencenecnseans
+                                                                                          ssnaseneanaranansnensonesssesesnereeneeeeeeeeeee9
+                9-6 Block Diagram ...........ccssssssceescesecesessesesseeessnscnen
+                                                                                         nsai      aevs
+                                                                                               tinania     ncvi
+                                                                                                       entpven acitans enannannnnn
+                                                                                                                    nenn             nsst
+                                                                                                                               arnsn sects eaino
+                                                                                                                                             NFOReest
+                B27 GAPORG TRAD wiscsiesccessuceeorsnovsnane bs
+
+
+
+                                                                                                ecansonsuunrancnnacenenaconennevensensense420e
+                 Jal Registers ......se-ssesvecsneerrsenecnsssnonvonseveennsensessousnosonenscr
+                                                                                            senssnanenornenesanncssansorvonssannersnneenenens
+                 3-2 Phase Generator (PG) .......--sc-csersnsssssrstnsessescescnev
+                                                                                            eenessnenctsneencensnsnen      sneseenenss  stee
+                                                                                                                                 eee eens
+                 3-3. Envelope Generator (EG)........ccssectessssreeses
+                                                                                               eeeescenesscnsseestenpeneesennncnsannenanans
+                 3-4 Operator (OP) and Accumulator (ACC) .......ccccees
+                                                                                                     reeceerreretetterseesnrereresessrns
+                 3-5 Status Information and Interrupt Sigmals..........-ssssce
+
+       4.        Interfacing
+                                                                                                                                           2 sass islenmsnailid
+                  4-1 Generation of System ClOCK.........cccssreeseseetersesserstsenarenaennerenseesesenees
+                                                                                                                                                    ersernh try
+                  4-2 Audio Output Interface saa Wale TEC ede alnieoun Won eed sawsa Bera waseed
+                                                                                                 tap ier nds e ee Sed Sem eee secese sees secewurnc
+
+a
+
+                  43 Interface to Microprocessor/MicrocOmputer ......-.+sccecssssesreeretsenersercnscersnesseneenersee
+
+
+           5,     Creation of Music
+                                                                                                         serensenen
+                                                                          nrerersssrneneananenennsnennnerenee re2204
+                  5-1 Concept of Sound Creation ........ssscserserscsesre
+                                                                                                                                             escovesesseneoueresossonnensnes®
+                   5-2 Basics of Sound Creation
+                                                                                                                        snncnegusceenser
+                                                                            ppaev'dunad eda bs cdbegedeusedisucnenucces
+
+
+
+                   5-3 Example of Sound Creation Kuaeu weep eoeaoe Seda We Keene
+                                                                                                                                                ence’                                  el
+                                                                                          wresheonacsseee Roun sgeeesadeew ime aregeecss
+
+
+
+                   5.4 Creation of Rhythm Sounds weeea ony Hae No ouled wan WOE Tea Tes
+                                                                                                                                               selsn ste
+                                                                                        Ts Heme Maw wNeens ees ren kes ees ex eeaconesteseeose
+
+
+
+
+                                                                                                                        gage
+                                                                                         essearenssnnsnnennenanansaseesatyg
+           6.      Electrical Characteristics ............cscccsesececessseeteeseeseneen
+
+
+                   Timing Diagrams
+                                                                                                                                                                          essec    hoses
+                                                                                                                        cundycegesecensisccesedebaseesccsesnanes
+           7.                                        Lice heddaadennsGsWseaseaecs        aeaceearncanenen ned obauts
+
+eed
+1.        OPLII
+
+1-1         Overview
+                                                                                            for use with Captain
+         FM  Operator    Type-LII    (OPLID)    is a new type of sound generator designed
+    The                                                                                     (FM) system used in
+                                                ce uses the same frequency modulation
+systems and videotext systems. This devi                                                           the production
+            Synt hesi zer  Yam aha  -DX  7    and    othe r similar instruments. This allows for
+our Music                                                                                           with functions
+                                                  control. This sound generator is also equipped
+of a wide variety of sounds using software                                                               es sound
+             ucti on   of rhyt hm   soun ds.   This    does  not use the FM system, but instead creat
+for the prod
+                                                   ies, including white noise.
+through combining various sound frequenc                                                              reducing the
+          I  has  also  has  a built -in  low  freq   uenc y oscillator for vibrato and AM effects,
+The OPLI
+                                                   uce special effects.
+ amount of programming required to prod                                                      is necessary.
+                                                    al, a D/A converter such as YM3014
+     As this sound output from LSI is digit
+
+
+             Features
+                                                   sound
+          FM sound generation system for realistic
+                                                                                      rhythm sounds
+                                                 of 9 sounds or 6 melody sounds and 5
+          Mode selection of simultaneous voicing
+
+                                                     lation oscillator (AM)
+          Built-in vibrato oscillator/amplitude modu
+
+                                                    possible
+          Composite sine wave speech synthesis also
+
+          input/output TTL compatible
+
+          Si-gate CMOS-LSI
+
+      *   5V single power supply
+1-3.       Overview of FM System
+                                                                            of the higher harmonics
+    FM refers to Frequency Modulation and is a system using combinations
+                                                                           ing  high harmonics and
+created by modulation. This allows for the generation of waveforms contain
+                                                                      correspondence between the
+non-harmonic sounds using circuitry which is relatively simple. The
+                                                                           ly natural allowing for
+modulation index and spectrum distribution of higher harmonics is extreme
+                                                                          ic sounds.
+production of a wide range of sounds from natural instruments to electron
+                                                                           FM sound generation.
+       The following formula (1) expresses the four parameters relevant to
+                                                                                                             (1)
+             F = Asin(oct + Isin omt)
+
+                                                                  wm and we are the frequencies of
+Where A is the output amplitude, I is the modulation index, and
+                                                             be expressed in the following manner :
+the carrier and modulator respectively. Formula (1) can also
+
+             F=AfJo(Isin act + J1(1) {sin(oc + om)t — sin(@c — @m)t}
+                                                                                                              (2)
+                + J2(I){sin(@c + 2em)t + sin(@c — 2am)t + .....]
+
+                                                                   tes, the amplitude of each of the harmonics
+ Jn (I) is a type 1 Bessel function of the n series. As (2) indica
+                                                                        Formula (1) indicates that FM sound
+ is expresed by the Bessel function of the modulation index.
+                                                                        sound effects. This is not a string- type
+ generation is highly effective for combining special music and
+                                                                      of higher harmonics. The feedback FM
+sound source which does not provide an even distribution
+ of this system is shown in (3) below :
+                                                                                                              (3)
+             F= Asin(oct + BF)
+
+                                                           possible by string-type sound generation
+ Where 8 .is the feedback factor. This feedback RM is also
+ where the higher harmonic spectrum is a sawtooth wave.
+
+                                                           sound generation :
+  The following three function blocks are necessary for FM
+
+              a. Phase generator (PG) to generate ot
+                                                                             tion index to be expressed
+              b. Envelope generator (EG) allowing for amplitude A and modula
+                 as time functions
+              c. Sin table (sin)
+
+                                                                    uration of the FM system shown in
+  Combining these three elements into a single allows for config
+                                                                : OP) is used, FM sound generation is a
+  Fig. 1-1. Thus, if the concept of these units (operator cells                                   data
+                                                           the units, and then combining the
+  matter of setting the frequency and EG parameters within
+  between units.
+                                                                        Fi)
+
+
+
+
+                                             c. F(t)}=A SIN (at+ BFW)
+b. F(t)=AiSEN ott + A2SIN w2t
+
+
+
+               Fig. 1-1 FM sound generation using unit cells
+4.         Overview of Functions
+
+
+2-1         Main Functions
+                                                                     sound simultaneous voicing
+    The OPILL is equipped with a total of three voicing modes : nine
+                                                               wave speech synthesis mode. Each
+mode, 6 melody/5 rhythm sound voicing mode, and composite sine
+of these modes can be selected by software.
+      a)    9 sound simultaneous voicing mode :
+                                                                        having different voices.          Both
+            This mode allows for simultaneous voicing of nine FM sounds
+                                                                          to mF
+            the rhythm bit (R) and speech synthesis bit (CSM) must he set
+      b)    6 melody/5 rhythm sound voicing mode :
+                                                                          sounds which be simultaneously
+            When the OPLII is set to this mode, the number of melody
+                                                                       are added (bass drum, snare drum,
+            voiced is reduced by three to six, but five rhythm sounds
+                                                                           is created using FM sound gen-
+            tom tom, top cymbal, and high hat cymbal). The bass drum
+                                                                      rhythm instruments are simulated by
+            eration, the tom tom by sine waves, and the other three
+                                                                                 Captain or similar systems
+            composite frequencies. This mode is effective when connected to
+            using text.
+      c} Speech synthesis mode :
+                                                                         speech synthesis method. Voices
+         Speech synthesis using the OPLII is by the composite sine wave
+                                                                                                        :
+         are simulated using 3 to 6 sine waves and pitch.
+                                                                      ed with a built-in vibrato oscillator
+     In addition to the above voicing modes, the OPLH is also equipp
+                                                                to create a sound which closely simulates
+ and amplitude modulation oscillator. These effects can be used                                   required
+ the sound of natural instrumnents.        Inclusion of these functions allows for a reduction is
+                                                         timer allowing for use as reference signals
+ programming. The OPLII also has both a long and short
+                                                         timer can be used as a pitch generator for
+ for scanning of key switches and tempo clock. The short
+ composite sine wave speech synthesis.
+
+
+ 2-2          Pin Layout
+
+                                           < 23                       8   z
+                                                   2                   osy
+
+                                                   3
+                                                   4
+                                           WR      [5
+                                                   6
+                                                   7
+
+                                                   8
+                                                    9
+                                                    —   o                 7)   >
+
+
+
+
+                                                                          D;       * NC : Ne Connection
+
+
+
+
+                                             TOP VIEW(24pin DIP, 24pin SOP)
+2-3   Description of Pin Functions
+  a) oM
+           Master clock for OPLII
+  b) oSY:SH                                                                    signals (PSY) and syncron-
+           Clock needed for converting digital output of OPLII into analog
+                                                                                  YM3014 D/A convetor.
+           ization signal (SH). These signals allow for direct connection to the
+           Do~D7
+           8 bit bidirectional data bus.
+           CS:RD-WR:A0
+           Control data bus comprised of Do~ D7.
+
+
+
+                         Write address of register to OPLII
+
+                         Write contents of register to OPLII
+
+                         Status of OPLII is read.
+
+                         Data of data bus   Do~ D7 not assured.
+
+                         Set data bus Do~Dr to high impedance
+
+      e) IRQ
+           Interrupt signal sent from either of two timers. When the time programmed for the timer elapses,
+           driven to low level. Interrupts can be masked by program.
+           IC
+           Clears the contents of all registers of OPLII, and initializes OPLH.
+
+      g) MO
+            Outputs music or audio signal converted into 13 bit serial signal. D/A convertor (YM3014
+            or equivalent) is need for converting this digital output signal into its analog equivalent.
+      h) GND
+            Ground pin
+
+      i)    Vee
+            +5V power supply pin
+     2-4         Bus Control
+                                                              and data of the registers of the OPLII is
+                                                                                                                             e
+                                                                                                                             eee
+                                                                                                                             -
+
+
+           Data bus control for reading and writing addresses                s can be set according to
+                                               ls. The following four mode
+     performed by the CS, WR, RD, and AO signa
+bd   the state of this four signals.
+
+                                                     Table 2-1 Mode Selection
+
+
+
+                                                                  Inactive mode
+                                                                  Address write mode
+                                                                  Data write mode
+                                                                  Status write mode
+                                                                  Inhibit
+
+
+
+
+           a)    Inactive mode:
+                                                           D7 has high impedance.
+                 When level of CS is “1”, the data bus Do~
+
+           b)    Address write mode :                                                                         and
+                                                              ol signals are set to the address write mode
+                 When an address is to be written, the contr                                                is set
+                                                               address of the designated internal register
+                 the address data is set in the data bus. The                                           12 cycles
+                                                            d that after address data has been written,
+                 and data can be written. It should be note
+                                                                    e music data is written.
+                 of the master clock (¢M) must elapse befor
+            c)   Data write mode :                                                             D7 (data bus) is
+                                                      the data write mode, the data of Do~
+                 When the control signals are set to                                                      after a
+                                                             ed address. A wait period is also required
+                 written to the register having the designat                                         is 84 cycles
+                                                            ess write. In this case, the wait period
+                 data write, in the same manner as an addr
+                                                           data or addr          ess is written.
+                  of the master clock ($M) before the next
+
+            d)    Status read mode :                                                                      stored in
+                          the cont rol signa ls to this mode allo ws for output of the status information
+                  Setting                                                                                       ,
+                  the status register of OPLII.
+            e)Inhibit :                                                                                        Control of
+                    data  of  the bus   is mean  ingl ess   when    the control signals are set to this mode.
+              The
+              this data is not possible.
+                                                                                                        modes.
+                                                            n regarding the address and data write
+           The following precautions must be take                                                                period is
+                           or  data  is  writ ten  to  an  inter nal  register of the OPLII, the following wait
+       When an addr   ess                                                                          address write and data
+                                                          ormed. The period varies between the
+       required before the next operation is perf                                                           Data integrity
+                      The   CPU    gene rate s   the  wait  peri  od shown in Table 2-2 for the OPLII.
+       write modes.
+                                                             red.
+       cannot be assured is this wait period is igno
+                                                         Table 2-2 Wait period
+
+                                       ec                                       12 cycles
+                                            Address write mode
+
+
+                                                Data write mode                 84 cycles
+
+
+                                                                                           wait period
+                                        Note:    The indicated number of cycles for the
+                                                                                      s.
+                                                 is the number of master clock cycle
+     2-5      Channels and Slots
+                                                                                       sounds has two operator
+          The OPLII is capable of voicing 9 FM sounds (9 channels). Each of these
+                                                                                       signal must pass through
+     cells. There is, however, actually one operator cell for the system, and thus the
+                                                                                           channel signals
+     this operator cell a total of 18 times for 9 FM sounds. The order (slot number) which
+                                                                                     of the various sounds ts
+     pass this operator cell corresponds to the register numbers. Voicing control
+     possible through control of the registers corresponding to the slots.
+          The F-number data for each channel! controls two slots.
+                                                                                                         mode
+          The relationship between these two slots (first slot and second slot) in the FM modulation
+                                                                                            carrier wave. This
+     is such that the first slot is always the modulating wave, and the second slot is the
+     first slot can also be set to the FM feedback mode. Refer to (2-1-9) for settings in this mode.
+          The relationship between channels and slots is shown in Table 2-3.
+
+                       Table 2-3 Channels and Slots
+
+
+      [fo [e[stela] ss [ro]osfs2] 3/1415}s6]se                         Slot number
+
+
+        a[s[r|zfofets|elelsto|z]s[o]7fel>                              Channel number
+
+
+
+
+      ey               e del
+                   de dete
+oo
+                                                                       Slot number for each channel
+
+
+
+      ass [alo          coow es                                        Relationship between data for each slot and
+
+
+      ciferlefelcle sees xxx
+                                                                       registers (ex. $20~$35)
+                                                                       Relationship between data for each channel
+                                                                       and registers (ex. 3CO~$C8)
+
+
+
+
+     2-6       Block Diagram
+
+                          AO CS RD WR                 eM   @SY   SH              TRO
+
+
+
+
+                           —
+
+
+
+
+                                                                                                 6 MO
+
+
+
+
+            Do~ D7           Register array
+2-7        Address Map
+             D7    Dé    Ds   Ds   D3   In   Di    Do                               COMMENT
+ADDRESS                                                    a
+                                                               TEST DATA OF LSI                 When the value is “0”, Ds is
+      01
+                                                               DATA GF TIMER-1                  compatible with YM3526.
+
+                                                               DATA OF TIMER-2
+                                                               IRQ-RESET/CONTROL OF TIMER-1,2
+                                                               CSM SPEECH SYNTHESIS MODE/NOTE     SELECT
+
+
+                                                               AM-MOD/VIBRATO/EG-TYPE
+                                                               KEY-SCALE RATE/MULTIPLE
+
+                                                               A
+
+
+
+                                                               KEY-SCALE LEVEL/TOTAL LEVEL
+
+
+                                                               A
+
+
+
+                                                                ATTACK RATE/DECAY   RATE
+
+
+                                                               A
+
+
+
+                                                                SUSTAIN LEVEL/RELEASE RATE
+
+
+                                                               a
+
+
+                                                                KEY-ON/BLOCK/F-NUMBER
+
+
+
+                                                                DEPTH(AM/VIB)/RHYTHM(BD, SD, TOM, TC, HH)
+
+                                                                 FEEDBACK/CONNECTION
+                                                               ee
+                                                                WAVE SELECT
+                                                               on
+
+
+
+
+  Status registers
+
+                  Dr    De    Ds   Da   Di    D2    Di_   De
+                        FLG|FLG
+                        Ti]   T2
+aa
+
+
+
+
+3.      Description of Operation
+                                                                        microprocessor to the register
+    All functions of the OPLII are controlled by data written from the
+                                                                 frequency, voicing, mode, and other
+array. The shape of the envelope for music, modulation factor,
+                                                                                     Data can be combined
+parameters are determined according to the data which is written to the registers.
+                                                                                     ly large number of
+to generate the sound of a piano, violin, or other instrument. There is an extreme
+                                                                              the functio n of the various
+combinations with a high degree of complexity. This chapter deals solely with
+                                                                                       combinations.
+registers. Refer to the chapter on creating music for details on the various possible
+
+
+3-1         =Registers
+                                                                                                        in
+    The registers comprise an area of 777 bits as shown in the address map of 2-7. The addresses
+                                                                                          data is written
+this diagram are the subaddresses allocated to the various registers in the OPLII. Music
+                                                                  is stored in the OPLII by first sending
+to the internal registers through these subaddresses. Thus, data
+                                                                                                 the same
+the subaddress data which will hold this data, and then sending the music data itself. When
+                                                                                          the beginning.
+subaddress is to be accessed a number of times, the subaddress data need only be sent in
+Music data can then be sent, without address data, to update the data.
+                                                                                                             )
+      The initial setting for all registers is “Q” (initial clear = “O”).
+
+
+3-1-1       Test : Address ($01)
+    The only use of this address is for testing of the LSI device by Yamaha.
+The bits are normally all “0”. The D5 bit, however, has a special meaning. The output waveform can
+be controlled by setting this bit to 1. (Refer to 3-1-2)
+
+
+3-1-2 Timer
+     There are two timers: Timer | which has a resolution of 80ps and Timer 2 which: has a resolution
+ of 320s. Starting, stopping, and flag contro! of both timers is possible. When a timer flag is set, the
+ IRQ pin is driven to low level, and the microprocessor is notified of a timer interrupt.
+      i) Timer-1 : Address ($02)
+         Timer 1 is an 8 bit presettable counter. If an overflow occurs, the flag 1s set, and the preset     3
+             value is loaded. In addition to normal timer functions, Timer 1 is also used for control of
+             composite speech synthesis. When an overflow occurs in this mode, all slots are set to Key-ON
+             (voicing), and then immediately to Key-OFF. This operation allows for composite speech
+             synthesis.
+
+      $02      D7   De   Ds   Da   D3   D2   Th   Do
+
+
+
+               Tov(ms) = (256-N1)+#0.08            @eM =3.6MHz
+
+               Ni= D702?
+                     + De*26            +...... +Dit2+Do
+    ii)     Timer-2 : Address ($03)
+                                                              er            1. The diference between the two timers is
+          - ‘Timer 2 is an 8 bit presettable counter like Tim
+                                                                     on of Timer 2 is 320ps.
+            that the resolution of Timer 1 is 80ps, and the resoluti
+
+                 D7   De          Ds   Da   Ds   D2   Mi   Do
+    $03
+
+
+                 Tov(ws) = (256-N2)#0.32                    @oM = 3.6MHz
+
+                 No = D7027 + Dor2* + |... +Di+#2 + Do
+
+
+
+    iii)     Timer Control : Address ($04}
+                                                                     of Timers ! and 2. These operations are
+             This register is used for start, stop, and flag control
+                                                               and D7.
+             controlled by the bit state of Do, Di, Ds, De,
+
+
+
+
+                           &
+                           Mews
+                           <
+                           2
+
+
+                                                        1.
+     Do (STi) : Controls starting and stopping of Timer
+                                                                                   d into Timer 1, and counting started.
+                                  When this bit is “1”, the preset value is loade
+                                                                               te.
+                                  When this bit is “0”, Timer 1 does not opera
+
+                                                   (ST1) for Timer 2.
+)     D1 (ST2) : Performs the same operation as Do
+                                                                                                no
+                                                    for Timer 2 is masked (always “0”), and has
+      Ds (MASK T2) : When this bit is “1”, the flag
+               effect on operation of Timer 2.
+
+                                                 Timer 1.
+      De (MASK 11) : This bit masks the flag for
+
+                                                      s | and 2.
+)         D7 (IRQ RESET) : Resets the flags for Timer                                              auto-
+                    When the D7 bit is set to “1”, the data of Do~Ds is ignored, and the D7 bit is
+                    matically reset to “0”.
+
+
+                                                         )
+    3-1-3         CSM Mode/Keyboard Split : Address ($08
+                                                       or speech synthesis mode, and             determines the keyboard
+         This register sets the mode to the music mode
+    split for keyboard scaling of rate.
+
+
+                                   De|Ds    D4   Ds   D2   Di   Do
+           $08
+
+
+
+
+                                   SEL
+                                   NOTE
+                                                          keyboard. When “0”, the keyboard split
+ De (NOTE SEL) : This bit controls the split point of the
+                                                                             ber. The MSB of
+          is the second bit from the most significant bit (MSB) of the F-Num
+          the F- Number is controlled when “1”. This is illustrated below.
+
+
+
+
+                                                                      Octave
+
+                                                                      Block data
+
+                                                                      F-Num’MSB
+
+                                                                      F-Num‘2nd
+
+                                                                      Keyboard split number
+
+
+
+
+                                                                      Octave
+
+                                                                      Block Data
+
+                                                                      F-Num‘MSB
+
+                                                                      F-Num2nd
+
+                                                                      Keyboard split number
+
+
+                                                       * DON’T CARE
+
+
+
+
+  D7 (CSM) : The composite sine wave speech synthesis mode is selected when “1”. All channels
+            must be in the Key-OFF state when this mode is selected.
+
+
+                                             ~ 35)
+3-1-4 AM/VIB/EG-TYP/KSR/Multiple : Address ($20
+    This register controls the multiple for the conversion of the frequency data given by the envelope
+shape and F-Number into carrier and modulating wave frequencies corresponding to the frequency
+components of music.
+
+
+   $20~3$35        fos[b:[b [dsb
+                               D:_De
+
+
+
+
+                                                  11
+                                                      r and modulating waves              are controlled by the
+    Do~Ds3 (MULTIPLE) : The frequencies of the carrie
+              multiples shown in Table 3-1.
+
+}             < Example >
+                    Frequency of F-Number                 of
+                    Multiple for carrier wave             —
+
+
+                    Multiple for modulating wave          7
+
+                      F(t)=Esin (oft + Isin(7oft))
+                                           Table 3-1 Multiples
+                                    MUL    | Multiple | MUL            Multiple             Multiple
+                                                 4            oo
+
+
+
+
+     Ds (KSR) : This bit gives the key scaling for the rate.
+                                                                   of the sound of natural instruments
+                The leading and trailing edges (attack and decay)
+                                                                        scaling of the rate allows for a
+                tends to increase as the interval becomes higher. Key
+                                                                  the value of the offset which is added
+                simulation of this phenomenon. Table 3-2 shows
+                                                                        l rate for ADSR (attack, decay, sustain,
+                 to the speed for each the intervals. Thus, the actua
+                                                                     indicated offset added            .
+)                and release) becomes the rate set for each with the
+
+
+                    RATE= 4#R + Rks.
+
+                         © R is the value set for ADSR
+                         © Rks is the key scaling offset value
+                         © The RATE=0 when R=0
+
+
+
+
+                                                                   * Nis the key scaling number
+
+
+
+                                                        12
+                                                 sound and diminishing sound.
+ Ds (EG-TYP) : Switches between connecting
+                                                                       connecting sound is selected
+           A diminishing sound is selected when Ds=“Q”", and a
+                                                                             in the use of the release
+           when “1”. The difference between these two voicing modes lies
+           rate. This is illustrated in Fig. 3-1.
+
+ Ds =“0” Diminishing sound                                   Ds=“1” Continuing sound
+
+
+                DR                                                  DR
+                                                                              SL
+                      SL
+
+
+
+
+                                                                         Key-ON    Key-OFF
+             Key-ON
+
+
+                               AR=ATTACK      RATE    DR=DECAY    RATE
+                               $L=SUSTAIN     LEVEL   RR=RELEASE    RATE
+
+
+                                   Fig. 3-1    Two Types of Voicing Modes
+
+
+                                                                                         to be applied
+  De (VIB) ; ON/OFF switch for vibrato. Settting this bit to “1” causes a vibrato effect
+              to the slot. The frequency for this is 6.4Hz (@ ¢M=3.6MHz), and the depth of the
+              vibrato is determined by VIB-DEPTH of the BD register.
+
+                                                                                               n to
+  D7 (AM) : ON/OFF switch for AM modulation. Setting this bit to “1” causes AM modulatio
+             be applied to the slot. The frequency for this is 3.7Hz (@ oM = 3.6MHz), and the depth
+             of the vibrato is determined by AM-DEPTH of the BD register.
+
+
+                                  ~$55)
+3-1-5 KSL/Total Level : Address ($40
+                                                                                                     the
+    The total level is used to control the modulation factor (voice) and volume for the output of
+                                                                                        for  simulatio n
+envelope generator. Level key scaling (KSL) is similar to rate key scaling. This allows
+of the tendency for the output level of natural instruments to decrease as the interval increases.
+
+
+   $40~$55           [D7 Ds|Ds D4 Ds D2 Di De
+
+
+
+
+   Do~Ds       (Total Level) : The minimum resolution for attenuation is 0.75dB, and the volume can
+                   attenuated by a maximum of 47.25dB.
+
+
+
+
+                                                        13
+                                                                                Tabte 3-3 Total Level
+                                                                                              Ds         Ds            D3    Dz           Di        Do
+ee
+
+                                                                                              24         «12            6     3001S                 0.75
+                                                                      attenuation
+                                                              Degree of
+F                                                                                             dB         dB            @B    dB           dB        4B
+
+
+
+
+                                           level key scaling.
+        De~ D7 (KSL) : Bits for control of                                                         of atten-
+                                                           l as the interval increases. The degree
+                  The key scale mode attenuates the leve                                        octa ve.
+                                                          , 1.5dB/octave, 3dB/octave, or 6dB/
+                  uation can be set as 0 (no attenuation)
+
+                                                                                         Table 3-4
+                                                                                                   Degree of Attenuation
+
+
+
+
+                                                                                                                   ee       eee           ------- I------- =I-----+-- 13
+                 RE                        ne
+                                                8 3  fr
+                                                     + 4         S&S t    6   2 F
+                                                                               eee      sae        naa
+                                                                                                                                  «
+                 mr        pr      bt or 2                       wf      @    2.8%ca 4|
+                 jo     a----oe                   ee taelanaaae SS
+                                        oe 5-+- teen
+                                 a oe o---                                     Ce
+    }            [on--NM-     ey                                    0 I o.000 1  9,000 T
+                                                                                                              To. 000             7            9.00
+                                                    T         0,00     I       oud      T o.00%                                                                             L        6,000       7
+                 I        0        1       9.008                                                                 o.oco            T            Of. 000     I       ooo)
+                                   I       0,000    IT        0,000    1       0. ean   IO, Oboe              1
+                                                                                                                              er.                                  I                aE      AE
+                 es Ce ais00T Oe                     ee                                                                                                                                          I
+                                                                       T  5.000 1 0.000 1 6.900
+                          0,000 1 9,0      0.000 IT o,000 T G00                     2.6275 I 3.000                                                                                               I
+                 1   | I                               1-800 1  1.875  1  2,250 §
+                        I 0.9000 1 0.750 I |. 125 I                    [--- -46- -[e--- a    |
+                 I                       ns         Cora line Coca ine
+                 [onna- lan      enn                                                 1.875 1 2. 625                                                                                              I
+                                                                        I 4.125   1                            T        0,606
+                                                     1        «9.000   T       o.000    1     o.006                                                                         1            6.000   I
+                 t         2       I       o,.000                                                              1        46.875        1        5.250       1       S.625
+                                                     I        3.750    I       4. 125   1     4.500                                                                                              I
+                 I                 I       3.000                                                                      35              t-                   | -20 een            lane
+                                                                                        [oss                   foes
+                                           wejyerrcee
+                 I----" I+------~" l-----"                                                                     1   3.000              1 & 125              1    4.875       1     5S. 625        1
+                                             1    000                                   L 1.975                                                                                                      I
+                 I      I   o.ooo  LL G.oun
+                                                                                      1   6.250                                                                1    @,625       1        3.000
+                                                                    7.500 1    7.875                            ----~ 1
+                                                                          - I-------" 1-------- Jo-w =n [---
+                                                     1          1
+                                                              6.750%           7.125
+                           3       1       §.000
+                     1
+                                 ---- - {--- -+-- - [--- ---- - ta-- --4n
+                     I----- 1---                                            1  6.00 8 .   7.225  1]  7.075  1  8.625  [
+                     I      I  vw. ogg  To, bod     xy 3.000    JT  4. B75
+                                                                        500 110, 875  1  11.25 9 1  11,6 25 1 12,000 1
+                                                                71 10.
+                     1 4 2 3.000 1 9.750 1 10,125                                      [~------- I-------- I-------- I
+    )
+                                                     --~-- [-------- I-------~- 1
+                     1----- J-<------ Y+------- [---6.000                                                                                      10,1285         §   10.875       1    11.625          1
+                                                           ©  7.875  TF 3,000
+                     I        5        I    Ooo          TL    B.mo                                                                                  250       1   14.625       I    49.000          I
+                                                                                            113.503                1    17,975            1    14
+                                           12.000        I    12.750       T   15.125                                                                                           [oe---== t
+                     1                 1                                                                ~ leer                                                 foro
+                     \----- [-~<----—- iow                                 [-------- \ernenco- l--+----               1 1Z.975   1 14.625                                                            I
+                                                                                      To id. @75  1 12.000  1 13.125
+                                       06.000
+                                       I                 I   Bond          Y   B.ueo                                             1 18.a00                                                            I
+                     1        5                                                                             1 17.258  | 17.625
+                                                                           416.125    1 16.500    $ 16.875                                                                                           I
+                                    t 15.000             1 15. 750                                                             - |----c--r"
+                     I                                                                                eres— {-------- \------7
+                                                         t--<2---~-"       ]-------"- {--"<e<c= [ose                             1 17.625                                                                !
+                     F aecombaataal lernrerr                                                      1 15.000  116,125   1 16. 975
+                                                                           To ized     lo ls. p75                                                                                            I
+                     I      7       1  o.000             F   3. ooo                                                     20.625    1 21.000
+                                                                                                                               7 20,750                            1
+                                                                               0                                   1 19,875
+                         I       1 18.00     1 18.750 i 49. 125 1 19.50                                                                                            ated             {-corcce i
+                                                  ---- - {--- e--77 , a aaaian a                                   Lesa meiner Lees
+                         1---- - t--- ---- " J--"
+                                                                                                                                               Unit : dB
+
+
+                                                                                      ficant four bits
+                                  Note:         + F-Number is the value of most signi
+                                                » 1.54B is 1/2 of above
+                                                » 6dB is twice above
+
+
+
+
+                                                                                                         14
+3-1-6 Attack/Decay Rate : Address ($60 ~$75)
+                                                                                                    the
+   The attack rate sets the rising time for the sound. The decay rate is the diminishing time after
+attack. The time settings for each of these rates are shown in Table 3-6.
+
+
+   $60 ~$75     D7    De        Ds   D4a| D3     D2    Dm       hm
+
+
+                           AR                     DR
+
+
+                 oP   2F)       Ze   ae    ae”   ea             ae
+
+
+
+
+3-1-7   Sustain Level/Release Rate : Address ($80
+                                               ~ $95)
+    For continuing sounds, the sustain level gives the point of change where the attenuated sound in
+the decay mode changes to a sound having a constant level. For diminishing sounds, the sustain level
+gives the point where the decay mode changes to the release mode.
+     For continuing sounds, the release rate defines the rate at which the sound disappears after
+Key-OFF. For diminishing sounds, the sustain level indicates the attenuation prior to reaching the
+sustain level (point of change) while the release rate indicates the attenuation after the sustain level
+is reached.
+
+
+
+    $80~S$95     D7   De        Ds   D4}   D3    D2        Di   Do
+
+
+                                                      DR
+
+                 dB   dB        dB   4B|2*       27        2'    2°
+
+
+
+                “93dB when bits Da~D7(SL) are all “1”.
+                * The attenuation time for the release rate is the same as
+                  that shown in table for decay rate.
+
+
+
+
+                                                                      15
+                                           Table 3-6                     Attack and Decay Times for Various Rates
+
+                                                                                        by taking
+                                                key scaling. The rate value is obtained
+      The rates indicated below are those after                         significant two bits (RL)
+                                              subtracting the least
+      the most significant four bits (RM) and
+          (RM-RL). RATE = RM*4 + RL
+                                                                                                                                                  «ee    EG          DECAY     TIME    »**
+                                                                                                                 ATTACK     TIME        #44
+                     ATTACK     TIME       +4           wee    EG        DECAY     TIME      *0%   eee     EG
+                                                                                                                             ws                   RATE                          pee
+    eee    EG
+                                                        RATE                        ms             RATE
+    RATE                         ms                                                                                                (@   OdB   -   36GB           }
+                                                                                                                                                                          2.40
+                                      (@   10%      -   90%    }
+                                                                                =                  is 3               0. 00                       is 3                     :
+    15 3                      0.00                      15 is
+                                                            3                o.51                  1% z               0. 00                       15 2                    2,40
+                                                        15 2                 0.51                  151                0.00                        151                     2.40
+                                                                                                                                                                            .
+    15 2                      D.00                                            , St                                                                 15. 6                  2.40
+                              0, 00                     iS   1               o.
+                                                                             aoa                    15 6              0,00
+    {51
+    race                      aes                        ans                                                                                      14 5                       2.74
+                                                                                 0.58              aie                    o. 20                                              3.20
+    14 3                      O11                       14 3                                       14 2                     +26                   14 2
+                              O.13              .       14 2
+                                                        ee                       0.63
+                                                                                 oe                14.1                   o.3e                    14     1                   4
+    1a 2
+    ie                        ees
+                                                                                                   140                    Oo. 28                  14     0                   4.80
+                                                                                                                                                                              :
+                                                                                    .
+     44 0                     0.19                       144 6                    1.01             13 3                   O42 ;                   13     3                   5.48
+                                                                                                                                                                              .
+                                                                                  1.15                                                            1s     2                   6.40
+     13 3                     0.22                       1% 3
+                                                                                  1.25
+                                                                                                   13 2                    : 26
+                                                                                                                          0.
+                                                                                                                                                                             7.68
+     13 2                     O. 26:                     13 2                                      tz 1                   a, S6                    131
+                                                                                                                                                                          9.66
+                              o.73> 1                    131                      1.62               a
+                                                                                                   13.4                   0. 7G                    13 0
+     131                                                                          2.02                                    0.80                     12 3                  10. 96
+     120                      0.37                       13.0                                      iz 3                                                                  12. 80
+                                                         12 3                     2.32             12: 2                  0. 92                    12 2
+     123                      0. a3                                               2.68                                                             1z 1                  15.35
+                              0.43                       iz 2                                      tz                     1. tz
+      iz2                                                 iz 1                    3.22              iz5 a                  1.40                    12 0                  13. 20
+      121                     0.61                                                4.02                                                             11 3                   21.92
+      iz                       0.73                       iz 0                                      ik sZ                  1.56
+                                                                                                                                                                             25. 56
+‘                              0. 8S                      11 3                    4.62              11 2                   1.84                    11 2
+      11 3                                                                        5.28                                     2.20                    42 4                      30.68
+      ii 2                     0. 37                      41 2                                      111                                                                      38. 36
+                                                          ait                      6.42             110                    2.76                    11 0
+      14 1                     1.45                                                                                                                10 3                      43. BA
+                                1.45                      110                      a,c              10 3                   3.12
+      11 0                                                10 3                     3.24                                    3.6B5                   10 2                      51.12
+      10 3                      1.70                                                                 10; 2
+                                1. 9%                      10 2                  10. 76              1% 2                  4.40                     1G       1               61.36
+      id 2                                                                       12.64                                     S. 52                    10 0                  76.72
+      10 1                     2.26                        10 1                                      19.9                                                                 87.68
+                                                           19 0                  15.04                 93                  &. 24                     a3
+       40 0                     2.99                                                                                                                 32                  102. 24
+        33                      3.39                        33                   15.48;                92                   7.76
+                                                             22                  21.52                 91                   a. 90                    $1                  122. 72
+         92                     3.87                                             25.68                                         4                     30                  153.44
+                                4.31                         31                                        30                 11.0
+        31
+                                5.79                         a0                   22.08                a3=                12.2 4Ba                    BS                 175.36
+         30°                                                 BS                    56.36                a2?               14, 72                      B2                 204. 48
+         et                     5.78                                              43, 04                                                              Bi                 245.44
+         a2                      7.74                        a2                                         Bi                17.60
+                                                                                                                                                      Bo                 306. 6
+         a1                      3. 012                      al                   31.3
+                                                                                  Ba. 16
+                                                                                                        80                - 8
+                                                                                                                          22.0
+                                                                                                                                                         73              350.72
+         80                    11.58                         50                                          cae              24. 36
+                                                                                      z 2
+                                                              mae                 73.4                                    23. At                         72              408, 96
+          7%                   13.5: 7                                                                   72
+                                                                                                                          35. 20                         71              490. if89
+          72                   15.49                          72                   : 08
+                                                                                   BE.                   71
+                                                                                                                                                         70              G13. 7€
+                               19.05                          74                 102.
+                                                                                 eae   72                70               46.16
+          74
+          oh                   ae                             8                                                           49. 92                         & 3             701.44
+                               23.                                                 abe 84                & 3si                                                           @17.92
+                               27,14                          &3                 147.                    & 2               59, 688                       6 2
+          63                                                                     172.16
+          & 2                  30. 98                         62                                                                                         61                  981.76
+                                                                                 205.64                  pode
+                                                                                                         Bo
+                                                                                                                           Fn Se
+                                                                                                                           BB. 32                        6 0             1227.52
+           6    i              36.1 wi0                       6     ti           205.                                                                    53              1402.88
+                               46.54                          ran)
+                                                              ides               256. BG                 53                99. B4
+           & 0                                                                   295.68                                                                                  1655. Be
+           53                  $4.27                          5 3                                        ae               eis                            S2
+           52                  51.35                          sz                 Baa. 32                 =504             140. BO                        3               1963.52
+                                                              51                 410. BB                                  176. 64                        50              2455. 04
+           51                  72.13                                              513.268                                                                43              2805. 76
+           so                       7
+                               92.6cBe                        50                  en xe                   43              199, 68
+           is                 inai                            ae
+                                                                                                          42              235. 52                        42              3271.68
+           Rs                 igen                            ne                  oan Bi                                                                                 3927.04
+                                                                                                          a4              281.60                         41
+                                                              a's                 621.76                  40              352.28                         40              4919. 068
+                              144.a38
+           a1
+           a0                 185.34                          40                 1026. 456                ae              cae   tk
+                                                                                                                              ve06                       ad              561 1.52
+                                                              a:                 1182 .72                    :            471.                           32               5543. 36
+           33                 217- 03                         = 5                jaan oh                  32
+           ee                 ge                                                                                                                          31             7654. 08
+                                                                                 1643.52                   age            S63. 20                                        eS
+           31                  288.77                          34                                          ie             705-56                          “f            11223.04
+               30              370.   63                          30             2053.12
+                                                                                 aga                       2              798, 72                         23
+               ——_             ces th                             =e                                                                                       22           15006. 72
+                                                                  22             2754.56                   a               $42.08                                       {5708.16
+               22              495.62                                                                      =.             1126.40                          21
+               21              577.54                             21             3287.04                   20             1413.12                          206           19640, 32
+                               74ai.38                            20             4106, 24                                 1537.44                            13          224466. 08
+               zo                                                 t >            720,98                    is
+                                                                                                                                                                         26173.44
+               is              268.35
+                                                                                                           1¢             1684.16                            12
+                               991.25                             i<             S504. 12                                                                    a.          31416.32
+               12                                                                6574.00                   11             2252. BO
+                              115%, 07                            41                                                      2826. 24                           10          =~%39260.64
+               ti                                                                B212. 48                  io
+               10             1482.75                             10
+
+
+
+                                                                                                           the rate is “0”.
+                 Note:         There is no change in the envelope when
+3-1-8     Block/F-Number : Address ($A0 ~ $B8)
+                                                                       mined by both the $A* and
+    Data for determining the interval and scale. The F-Number is deter
+$B* registers.
+
+
+   $A0~$A8       ©|D7    De    Ds     Da   D3    Tr
+
+
+                                    F-Number
+
+
+                                            QP   9
+
+
+
+
+    $B0 ~$B8
+
+
+
+
+   Do~D7($A*), Do ~ D1 ($B*) (F-Number) : The F-Number is indicated by the total of ten bits formed
+                 from the 8 bits of the $A* register and lower two bits of the $B* register. The data
+                 of the F-Number gives the scale. This value is determined by the procedure outlined
+                 below.
+
+   D2~Da4 (BLOCK) : Gives information on the octave.
+
+   Ds (Key-ON) : Bit corresponding to ON/OFF of the keyboard. When this bit is 1”, the channel
+              is ON and voiced. Key-OFF when “0”.
+
+
+* F-Number/Block
+     With the OPLII, the required frequency can be obtained by giving the phase increment corre-
+ sponding to this frequency. This increment is determined by the F-Number, Block, and Multiple in-
+ formation.
+     First, the increment of the desired frequency is obtained. This is given by the formula shown below.
+
+                        AP =fmus*2!9/fsam                          fsam = fM/72         a          TD
+
+                              fmus_        =: desired frequency
+                              fsam         : sampling frequency (SOkHz)
+                              {M           : frequency of input clock (3.6MHz)
+
+        The above allows for the phase increment to be obtained. As many of bits would be required to
+ express this value, only the data for a single octave is given, and this increment is shifted for each
+ octave (2x, 4x .....). This aliows for expression of the increment in the following manner.
+
+
+
+
+                                                              17
+                      AP = 284F’*MUL
+
+                          B         : octave information
+                          r    : increment limited to a single octave
+                          MUL : Multiple data
+
+                                                                      in 10 bits. The F-Number and
+           Formulas @ and @ permit the increment (F’) to be expressed
+       Block can be expressed as follows.
+
+                      F =(fmus*2!9/fsam)/2°-*                @MUL=1
+
+                           F : F-Number data
+                           b : Block data
+
+                                                Table 3-7-1 F-Number (1)
+                              Frequen                         $B*       !                         $A¥
+                                sconce          F-Number
+                                                             Di     Dol D7        De     Ds   Ds        Da       D2    Di    Do
+                                {4oct)
+                                                                    1  \ 6          1     1   0         1        0           ]
+                                LThZ        ;      363
+                                                                     1 I 1               0              0
+                                                                        I
+                                                                        i                0               1
+                                                                        I                 1              0
+                                                                        1
+                                                                        \                 a              I
+                                                                        |
+                                                                        '                 1              0
+                                                                        |                 0              U
+                                                                        I
+                                                                        t              1 0
+                                                                         I          SC
+                                                                                    OS
+                                                                                    wf
+                                                                                    oor,
+
+                                                                         !                               0
+                                                                         \                               0
+                                                                         |
+                                                                         \                               0
+                                                                         |
+                                                             Seo
+                                                             &OG
+                                                              et
+                                                              ew
+                                                              =e            ! CoO
+                                                                              mere
+                                                                              OF
+                                                                              =2
+                                                                               ©=—  —_—
+                                                                                    ee
+                                                                                    &&
+                                                                                   [el  nt  1 OS
+                                                                                               mw
+                                                                                               oso
+                                                                                                ocr
+                                                                                                =  ooeoewerseosdes-
+                                                                                                   wre
+                                                                                                   -—_e
+                                                                                        ceconmpeocooaesecemlmr
+
+
+
+
+                                                                                                   $A*
+                               Frequency
+                                                                                               Da        Ds       De    Di    Do
+                                (4~ Soct)
+                                                                                                             —
+
+
+
+
+                                                                              a                                       ep
+                                                                                                                      ewe
+                                                                                                                      SF
+                                                                                                                      ODS
+
+
+
+
+                                                                              fo
+                                                                              So
+                                                                              oOo
+                                                                              ws
+                                                                               +        ee
+                                                                                        eerooerwoor
+                                                                                        9
+
+                                                                                                         - Fe
+                                                                                                           me
+                                                                                                           OO
+                                                                                                            ee
+                                                                                                            ooo
+                                                                                                            =- ss?
+                                                                                                               eoocor
+                                                                                                         oeroooo
+                                                                                                   ec eooeocoomdtroo
+                                                                                                      ¢
+                                                                                                   aecocoreroes
+                                                                                                   ©
+                                                                                                   9
+
+
+
+More
+if
+
+id:
+|}
+
+      3-1-9 Feedback/Comnection : Address ($CO~$C8)
+                                                                   eedback and the type of FM modulation.
+         This register determines the modulation factor for self-f
+
+
+
+
+                                                 CONNECTIO
+
+
+
+
+                                                                                         d. The FM
+        Do (CONNECTION) : Connection controls the manner in which two slots are connecte
+                    modulation mode is selected when the data is “0”. The two slots are connected in parallel
+                                                                                                                i
+                    for sine wave output in the composite mode when the data is “1”.                            Fe
+                                                                                                                yee
+                                                                                                                —
+
+
+
+
+                                                                   OUT
+
+
+
+
+                                                                                                slot.
+        Di~Ds3 (FEEDBACK) : Gives the modulation factor for feedback FM modulation of the first
+
+
+                                            Table 3-8 Modulation Factor
+
+                                                   Ce c
+                                                     Ft ae eee
+
+
+
+
+                                                         19
+                                        Address ($BD)
+     3-1-10 AM VIB-Depth/Rhythm :
+                                                                                          , and ON/OFF
+                                                ato (VIB) depth, selection of rhythm mode
+ilim
+aole
+ ag
+ op      This allows for control of AM and vibr
+                                     ruments.
+      control of various rhythm inst
+
+
+
+
+                                                                                            Ds=“1”. Channels
+                                                       to the rhythm sound mode when
+          Do~Ds     (RHYTHM) : The OPLII is set                                                     ody section)
+                                                                for rhythm sounds. Thus, music (mel
+                      7 ~9 (refer to page 9} are the channels                                           thm in-
+                                 to  6 soun ds. Do~ Ds   allo w  for ON/OFF control of the various rhy
+ !                    is limited                                                                must always be
+                                                                $B7, and $B8 Key-ON registers
+                      struments. This means that the $B6,                                          Data such as
+                                                              rhythm sounds shown in Table 3-9.
+                         “9”, Slots [3~18 correspond to the
+                                                            opriate to each rhythm sound.
+                         rate must-be input as a value appr
+
+                                                            Table 3-9 Rhythm Slot
+
+
+
+
+                                                                          and 7 cent when “O's
+                                           depth is 14 cent when De =“1",
+            De (VIB-DEPTH) : The vibrato
+                                                                          and 14B when D7= “0”.
+                                         for AM is 4.8dB when D7=“1”,
+            D7 (AM-DEPTR) : The depth
+
+
+          3-1-11 Wave Select
+                                                                                                   YM3526 (OPL); there are
+                                      res s  $61  is “9”   the   OPLII is fully compatible with
+             When bit    Ds   of  add                                                                       put will be a sine
+                                      the   two  devi ces. If  a  sine wav e is input in this mode, the out
+          no differences between                                                                will be output as the distorted
+                        inpu t.  Whe  n  bit  Ds  of add res s $61 is “1”, the input sine wave
+          wave like the
+          wave shown in Table 3-10.
+
+                              D7   De   Ds   Da   Ds   D2
+               $E0~SF5
+
+
+                             ea
+                                           Table 3-10 Wave Select
+
+
+
+
+                                           ages
+
+
+
+
+3-2        Phase Generator (PG)
+      The phase generator is a circuit which obtains a phase value corresponding to the required frequency
+through accumulation of the increments for each unit of time. This increment is created from the
+frequency information (F-Number, Block, and Multiple) sent from the registers. This circuit is also
+equipped with a vibrato generator allowing for creation of a vibrato effect through combining the
+output of this generator and frequency information.
+
+
+
+3-3        Envelope Generator (EG)
+      The envelope generator controls the rates for attack, decay, and release, sustain level, total level,
+etc. These parameters give the changes in voice and level which occur over time. The dynamic range
+of the envelope generator is 96dB (resolution of 0.1875). Indication for the envelope generator is
+logarithmic or in terms of degree of attenuation. The basic envelope shape is shown in Fig. 3-2, The
+special characteristics of this shape is that the change in level during the attack is exponential while
+it is linear during the other sections of the envelope. The crossover from attack to decay occurs at
+the OdB point, and the decay changes to sustain when the sustain level is reached. Release begins when
+at the Key-OFF point. The effects of total level, level key scaling, and amplitude modulation are added
+to the envelope generator for changeing the shape of the envelope.                  ,
+
+
+
+
+                                        Fig. 3-2 Envelope Waveform
+
+
+
+
+                                                      21
+                                       or (ACC)
+3-4        Operator (OP) and Accumulat                                                                           upon
+                                 for  FM    calc ulat ion.    The   ope rat or calculates the SIN value based
+    The operator is a circuit                                                                         of the envelope
+                   fro m   the pha  se  gene rato r,   and     this is combined with the output
+the phase output                                                            k to the input of the operator. If
+                                                                                                                music,
+
+
+
+
+   : al
+                                  mod ula tin g   wav e,   it  is sent  bac
+generator. If the result is the                             for feedback and connection cont
+                                                                                                  rols this transfer.
+                    to the  acc umu lat or.   The   data
+the output is sent                                                              various channels. The results
+                                                                                                                of this
+                                       the operator output for the
+    The accumulator accumulates                                                tissa section (including sign
+                                                                                                             )
+                con ver ted to offs et bina ry data consisting of a 10 bit man
+calculation are                                            the LSB as shown in Fig. 3-3.
+                                 data is output from
+and 3 bit exponent section. This
+
+
+
+
+                                                           Ian   Ds       ps     D7          Ds
+                                        Dt     D2     Ds
+                                                                                                        ‘SIGN
+
+
+                                                    Fig. 3-3 Output Timing
+
+
+
+
+   |
+                                                                                                                 MO output data
+                     Internal data of OPLH
+                                        ¢ i            aes            2                      ifs)Ps)   “A=   é      “>   f--)   ~1   a   w   a   w   i   -
+
+
+      Sign 15 14 13:12 1 10 9 8?
+                                                                                      w wa
+
+
+
+
+      ie ki                e ee               ee
+
+
+
+
+       )
+
+                 eee),
+             627 .                                                                           EIIcSeeeee es!
+         icSsc                                                          Output                               Data
+                                             Fig. 3-4 Internal Data and
+                                                                          N LN
+3-5         Status Information and Interrupt Signals
+    The two timers of OPLII are capable of setting flags according to a set period. These flags can
+be read as status signals or interrupt signals. Thus, the load on the CPU can be reduced by using the
+timers as tempo counters or for generating keyboard scanning signals. The interrupt signals have an
+open drain allowing for linking to other chips.
+
+
+      Status signal
+
+
+
+
+  Ds (Timer 2 FLAG) : Flag signal set by Timer 2. Set to “1” when Timer 2 reaches the set time.
+             This data remains until reset.
+
+   De (Timer 1 FLAG) : Same operation as Ds for Timer 1.
+
+   D7 (IRQ) : Set to “1” when either Ds or De is “1”.
+
+
+
+
+                                                  23
+              CPU
+
+
+
+
+              CPU
+
+
+
+
+                                                                                   Preamp
+
+
+
+
+                                                                              a 4.7pF
+
+                                                                                1.8KQ
+
+                                                                     28D655
+
+
+
+
+                                          Fig. 4-2 Audio Interface
+
+
+43      Interface to Microprocessor/Microcomputer
+    Do~D7 of OPLH is a bidirectional bus allowing for an interface to a microprocessor. Address
+data and status information is passed between the two devices over this bus. CS, RD. WR, and AO
+are bus control signals for managing the transferred data. This allows for creation of an FM sound
+generation system using the smallest configuration of the OPLII, memory, and a microprocessor.
+
+
+
+
+                                                   Data bus
+
+
+
+
+                                Control
+                                                  1/0 control
+                                signals
+
+
+
+
+                                      Fig. 4-3 Interface to CPU
+
+                                                     25
+       5,     Creation of Music
+                                                                                                               piano
+                                                              input to the registers of the OPLII for creating
+AANA
+ li
+ 2         This chapter deals with the data which can be
+       or brass instrument music.
+
+
+
+       5-4          Concept of Sound Creation
+                                                                                                             of
+                                                            is to first fully understand the characteristics
+           The basic concept behind FM sound generation                                       is a sharp attac k
+                                                         of piano sounds is such that there
+       the desired instrument. For example, the envelope                                                  There
+                                                       gradually disappears as the key is held down.
+       when the keys are pressed, and then the sound                                                 over
+                                                     during the attack with this number decreasing
+       are also a large number of harmonic overtones                   After such characteristics are un-
+                                                      guration is attained.
+       time until a nearly constant harmonic confi                                                     dered. The
+                                                       through FM sound generation can be consi
+       derstood, the means of attaining this sound                                                        structure
+                                                     the envelope characteristics with the harmonic
+       output amplitude can be determined from                                                       d to the fre-
+                                                    this structure of harmonic overtones is relate
+       determining the modulation exponent. As                                                        this manner,
+                                                     can also be determined to a certain degree. In
+       quency of the operator, the frequency ratios                                           Then, the various
+                                                   roughly determine the FM parameters.
+        the characteristics of the desired sound                                                ned.
+                                                    the sound, until the desired voice is obtai
+        parameters are adjusted while listening to
+
+
+        5-2          Basics of Sound Creation
+                                                                                                           carrier. Thus,
+                      d  gene  rati on  uses   effec ts obta ined  by using a modulator to modulate the
+            FM soun                                                                                     of the basic FM
+                                                          can be determined by skillful manipulation
+        the pitch, tone, and level of the music                                                     lator, frequency of
+                 rs  (carr ier  outp ut   level , modu  lato r output level, feedback level of modu
+        paramete                                                                                      and the parameters
+                                                              relationship between these parameters
+        cartier, and frequency of modulator). The
+        of the OPLII is shown in Table 5-1.
+                                                            = “0”)
+              i) FM connection (CONNECTION                                                                   1 is equipped
+                                                                  Table 5-1 can be expressed. As operator
+                  All of the FM characteristics shown in                                                  ection for high
+                      self -fee dbac k,  comb inat ion  with  oper ator 2 allows for a two stage FM conn
+                  for
+                  harmonic output.
+                                                           ON = ay
+              ii) Parallel connection (CONNECTI                                                     ng a sine wave. Thus,
+                       sum   of  the   two oper ator s is obta ined with operator 2 always generati
+                  The                                                                      effects    such as the coupler
+                                                         y of the two operators allows for
+                     harmonically shifting the frequenc                                    same feedback capabilities
+                                                         , operator 1 is equipped with the
+                     effect of a pipe organ. In addition
+                                                             higher harmonics.
+                     as described above for the output of
+
+
+            5-3        Example of Sound Creation
+                                                 Table 5-1 Basics of Sound Creation
+                                                                                                                X
+                                                                                      MIN —(change in sound)~MA
+                                                        Applicable parameters
+                  [item
+                                                           TOTAL LEVEL                Min, level -————~ Max. level
+                   Output level of carrier                                                                 f
+                                                          Data for A, D, $, and ae
+                                                              Key Scale data          Round sound ~——- Bright sound
+                   Output level of modulator                                                                   harp fone
+                                                                                                               (Noise)
+                                                                               ee     Normal tone~———~>_
+                                                   a.
+                   Feedback level of modulator
+                                                                MULTI                 Low pitch--_——+ High pitch
+                   Frequency of carrier
+                                                          (BLOCK/F-Number)            Near harmonics ~-Far harmonics
+                  | Frequency of modulator
+
+
+                                                                     26
+|
+ee
+
+
+      i)     Electric Piano
+
+     (i)     Selection of connection                                                          ection. This
+                                                    all voices can be obtained from this conn
+             The connection is set to “0”. Almost                                             s.
+              allows for both accenting on theattack of operator 1 and for rich high harmonic
+                                                                                       .
+     (2)      Determining the frequency for operators
+                                                             in order to obtain higher harmonic frequencies
+              The MULTIPLE for both operators are set to “1”
+              which are integer multiples.
+
+     (3)         Output level of operators                                                                          for
+                                                                adjust the tone- When determining the level
+                 The output of the modulator is altered to                                                     higher
+                                                               sound is like a piano with a rich range of
+                 operator 1, the bass is first set so that the                                           for opera tor
+                                                                 the treble is adjusted by level scaling
+                 harmonic frequencies, and then the change in
+                                                                    the outp ut is almost a sine wave.
+                  1. Level scaling for the treble is required until
+
+      (4)         EG setting                                                                                 for an
+                                                               for level and timbre. First, operator is set
+                  The next step is to determine the envelope                                                      h
+                                                                 a relatively prolonged sound. Operator 1 whic
+                  envelope which provides a sharp attack but                                 overt ones duri ng  the
+                                                                a great number of harmonic
+                  forms the modulator is set so that there are                                            operator
+                                                               no changes. Key scaling is also used for
+                  attack followed by a constant timbre with
+                                                                   the treble should be used for a sharp sound.
+                  2 to provide level adjustment. Rate scaling of
+
+      (5)         Readjustment of data
+                                                                      ete. The timbre can be altered to a certain
+                  The procedure for sound creation is nearly compl
+                                                                    Here, the output level of the operator and the
+                  degree by the envelope generator settings, etc.                                                lic
+                                                                  sound. For example, if you feel that the metal
+                  feedback level are readjusted to touch up the
+                                                                   be reduced.
+                  echo is too strong, the level of operator 1 can
+
+       (6)         Adding effects                                                                              ric
+                                                                 LFO to create a sound which is like an elect
+                   Finally, a tremolo effect is added using the                                             or by
+                                                                e modulation (AM) function of the OPLI,
+                   piano. This can be done using the amplitud                                             wave   is
+                                                               at a period of 2 ~6Hz (use of a triangular
+                   programming the total level to be updated
+                   possible).
+
+
+           ii)     Trumpet
+
+       ()          Selection of connection                                                           pet can be
+                                                            also “0”. The bold brass sound of a trum
+                   The connection for brass instruments is
+                                                              operator 1.
+                   created by adjusting the feedback level of
+
+           (2)      Operator output                                                                    e of $10 to
+                                                            or) is set to 4 moderate value in the rang
+                    The total level for operator 1 (modulat                                     reve rber ation.
+                                                              the maximum level of 7 for bright
+                    $28. The feedback level should be set to
+
+           (3)      Frequency of operators
+                                                               a multiple of 1.
+                    Basically, both operators should be set to
+
+            (4)     EG                                                                                 the modulator
+                                                              tors. For brass sounds, the attack of
+                    There should a slow attack for both opera                                         stics attack of
+                    comes completely after the attack  of the carrier. This allows for the characteri
+                    brass instruments to be captured.
+
+            (5)      Key scaling                                                                                     ng
+                                                                      slow attack of the envelope. Slight rate scali
+                     Clarity will be lacking in the treble due to the
+                                                              d when playing fast passages.
+                     is needed to prevent an unnatural soun
+
+                                                                  27
+ (6)   LFO
+                                                       , the pitch will quiver during long tones. A
+       No matter how well a brass instrument is played
+                                                s this.
+       vibrato effect should be added to expres
+
+
+
+5-4     Creation of Rhythm Sounds
+                                                                                                   used
+                                                 8, and 9. These three channels (6 slots) can be
+    Rhythm sounds are created using channels 7,                                                     FM
+                                                (BD), however, uses two slots for generation of
+to create a total of five sounds. The bass drum                                           descr ibed  in
+                                                ed using the same basic procedure as
+sounds. Thus, a bass drum sound can be creat                                                    l, tom
+                                                  remaining four sounds: high hat, top cymba
+(a)~(c). This explanation will deal only with the
+tom, and snare drum.
+                                                          allows for combining a number of frequencies
+     The OPLII is equipped with a noise generator which                                                 el
+                                                 instruments. This noise generator uses 8 and 9 chann
+and a white noise generator for creating rhythm                                                     m   in-
+                                                     the proper phase output for various rhyth
+frequency information (Block/F-Number/Multi),                                                       to the
+                                                 with white noise. The resultant signal is sent
+struments is output by combining this signal                                                  1  (f?7ch  =
+                                              best ratio for the two set frequencies is 3:
+operators. Experience has shown that the                                                    envelope in-
+                                              us instruments has been obtained. Finally,
+3*f8ch). So far, the phase data for the vario                                                      s to a
+                                               the envelope is set for one slot which correspond
+formation is combined with this output. As                                                      set in the
+                                                ss the characteristics of the instrument are
+ single rhythm instrument, values which expre
+                                             melody instruments. (Refer to 3-1-10).
+parameter registers, in the same manner as
+                                                   us rhythm sounds.
+      The above allows for the generation of vario
+
+
+
+
+                                                       28
+6.       Electrical Characteristics
+     1. Absolute Maximum Ratings
+
+
+      Pin voltage
+      Operating ambient temperature
+      Storage temperature
+
+
+     2. Recommended Operating Conditions
+                                           Fripiet aio
+                                                  5.5
+                                                   0
+
+
+
+
+         Address hold time
+         Chip select write width             cS
+         Chip select read width              cs
+
+
+          Write data setup time
+          Write data hold time
+                                             z
+          Read pulse width
+          Read data access time
+          Read data hold time
+
+          Output rise time
+
+
+          Output fal! time
+
+           Reset puise width
+                                                                                                =9.8V)
+    4,   Timing Diagrams           (Timing is based upon settings of Vin =2.0V and ViL
+
+
+
+
+                      Kfe
+
+
+i            Fig. A-I Clock Timing
+
+
+
+
+                                                                                                        either
+                                                              Note:     fcsw, tww and twou are based on
+                                                                        C5 or WR being driven to high level.
+
+
+
+
+                     Fig, A-2.   Write Timing
+
+
+
+
+                                                                                                           or RD
+                                                                Note:     tacc is based on whichever of CS
+                                                                          goes to the low level jast.
+                                                                                                                   CS
+                                                                          tcsr, trw and trpu are based on either
+                                                                          or RD being driven to high level.
+           Do~ D7
+
+
+
+
+                            Fig. A-3   Read Timing
+
+
+
+
+                                                     30
+                                     oM
+
+                                             tor2
+tor           tor
+
+
+
+
+                                             Fig. A-5 0M and SH-MO
+Fig. A-4 6M and oSY
+
+
+
+
+                      Fig. A-6 Reset Pulse
+
+
+
+
+                              31
+g.      Package Dimensions
+     (1) YM3812         Notch or i-pin index mark
+
+
+
+
+      (2) YM3812-F
+                                                                                       2,00+0.15
+
+
+
+                                                             B.40+0.20
+
+
+
+
+                                                                         11.B80+0.40
+
+
+
+
+                                                                    x
+                                                                    <
+                                                                    =
+                                                                    °
+                                                                    oe
+                                                                    a
+
+
+
+
+                                                               0.10+6.10
+
+
+                                                    DIMENSIONS IN MM
+
+
+
+
+                                                    32
+

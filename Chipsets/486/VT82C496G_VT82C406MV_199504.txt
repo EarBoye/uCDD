@@ -1,0 +1,2725 @@
+ VT82C496G
+VT82C406MV
+ GREEN PC 80486
+PCI/VL/ISA SYSTEM
+
+
+ DATA SHEET
+
+
+
+     DATE : April 20, 1995
+
+VIA TECHNOLOGIES, INC.
+           VIA Technologies, Inc.                                                                    Table of Contents
+
+
+
+                                         Table of Contents
+Features............................................................................................................... 1
+    1. Fully IBM PC/AT Compatible......................................................................................... 1
+    2. Flexible CPU and Local Bus Interface ............................................................................ 1
+    3. Advanced Cache Controller............................................................................................. 1
+    4. Fast Page Mode DRAM Controller ................................................................................. 1
+    5. Synchronous ISA Bus Controller..................................................................................... 2
+    6. Integrated Power Management Unit ................................................................................ 2
+    7. Integrated Local Bus IDE Controller ............................................................................... 2
+    8. High Integration and Complete Functionality ................................................................. 2
+    9. 0.8um high speed and low power CMOS process ........................................................... 2
+    10.208-pin PQFP package..................................................................................................... 2
+
+
+Overview ............................................................................................................. 3
+
+
+Functional Description ...................................................................................... 5
+    1. Clock Logic...................................................................................................................... 5
+    2. CPU Interface................................................................................................................... 6
+    3. Co-processor Interface ..................................................................................................... 6
+    4. Local Bus Interface .......................................................................................................... 7
+    5. Advanced Cache Controller............................................................................................. 7
+        5.1. Write-back and write-through Cache Schemes ......................................................................7
+        5.2. Cache Organization......................................................................................................... .......8
+        5.3. Cache Operation ............................................................................................................ ........9
+        5.4. Cacheable Region ........................................................................................................... .....10
+        5.5. Cache Parameters.................................................................................................................11
+    6. Page Mode DRAM Controller ....................................................................................... 12
+    7. Shadow RAM and ROM Decoding ............................................................................... 14
+    8. ISA Bus Controller ........................................................................................................ 15
+    9. Local Bus IDE Controller .............................................................................................. 16
+
+
+
+                                                                      -i-
+          VIA Technologies, Inc.                                                              Table of Contents
+
+   10.Power Management Unit ............................................................................................... 17
+       10.1. Primary/Secondary Activities and the Idle Timers ..............................................................17
+       10.2. General Purpose Timer and Extended Peripheral Timer .....................................................18
+       10.3. System Management Interrupt .............................................................................................18
+       10.4. Automatic Mode Switching .................................................................................................19
+       10.5. Zero Voltage Suspend and Shadow Registers......................................................................21
+   11.IO Address Map ............................................................................................................. 21
+   12.Scan Logic ..................................................................................................................... 23
+   13.Configuration Registers ................................................................................................. 23
+
+VT82C496G Signal Description...................................................................... 24
+
+
+ELECTRICAL CHARACTERISTICS ......................................................... 31
+
+
+208-Pin Plastic Flat Package ........................................................................... 55
+
+
+
+
+                                                                 -ii-
+           VIA Technologies, Inc.                                                      VT82C496G
+5020 Brandin CT.                                                                    8th. Fl., No. 533
+Fremont, CA 94538                                                         Chung-cheng Rd.,Hsin-tien
+USA                                                                          Taipei, Taiwan, R.O.C.
+TEL: 1-510-683-3300 FAX: 1-510-683-3301                   TEL: 886-2-218-5452 FAX: 886-2-218-5453
+
+
+
+
+                        VIA VT82C496G GREEN PC
+                         80486 PCI/VL/ISA System
+
+
+
+  Features
+
+   1. Fully IBM PC/AT Compatible
+   2. Flexible CPU and Local Bus Interface
+       −    Supports 80486SX/DX/DX2/DX4 and compatible CPUs
+       −    CPU speed up to 100 Mhz including 80486DX-50, 80486DX2-66 and 80486DX4-100
+       −    Supports CPUs with write-back internal cache, e.g. P24D, P24T and Cx486DX/DX2
+       −    Snoop filtering for write-back CPUs
+       −    Supports SMI protocols of Intel, AMD, TI and Cyrix CPUs
+       −    CPU clock stretching and throttling
+       −    Zero frequency and zero voltage CPU suspend
+       −    Soft and hard CPU reset
+       −    Direct VESA and other local bus interface with DMA/master access
+       −    Built-in arbitration for two local bus masters
+
+   3. Advanced Cache Controller
+       −    Write back/write through scheme
+       −    Direct map scheme
+       −    Flexible cache size: 0K/32K/64K/128K/256K/512K/1MB
+       −    One bank or two banks of data independent of cache size
+       −    Integrated 8-bit tag compara3tor
+       −    Interleaved SRAM access to achieve 2-1-1-1 burst fill
+       −    Supports burst read and burst write transfers
+       −    System and video BIOS cacheable and write-protect
+       −    Programmable cache timing
+       −    Programmable non-cacheable region
+       −    Optional combined tag and alter bit SRAM for the write-back scheme
+       −    Eight bit tag under the combined tag-alter scheme without sacrifice of cacheable space
+
+   4. Fast Page Mode DRAM Controller
+       −    Mixed 256K/512K/1M/2M/4M/8M/16MxN DRAMs
+       −    8 banks up to 128MB
+       −    Flexible column and row addresses
+       −    30 pin (x9) and single/double density 72 pin (x36) SIMM module support
+       −    Programmable DRAM timing
+
+
+                                                   -1-
+       VIA Technologies, Inc.                                                          VT82C496G
+
+   −    BIOS shadow at 16KB increment
+   −    256/384K memory relocation
+   −    System management memory remapping
+   −    Decoupled DRAM refresh with staggered RAS timing
+   −    CAS-before-RAS and slow refresh
+
+5. Synchronous ISA Bus Controller
+   −    Synchronous ISA bus clock
+   −    Programmable wait state, command delay and IO recovery time
+   −    Bus conversion and data alignment
+   −    Hardware and software de-turbo control
+   −    Fast reset and Gate A20 operation
+   −    Integrated 82C206 peripheral controller
+   −    Edge trigger or level sensitive interrupt controller
+   −    Flash EPROM and combined BIOS support
+
+6. Integrated Power Management Unit
+   −    Normal, conserve, doze, sleep and suspend modes
+   −    System event monitoring with two event classes and two idle timers
+   −    Primary and secondary interrupt differentiation for individual channels
+   −    One extended peripheral timer and one general purpose timer
+   −    Automatic conserve mode operation for short and frequent system idleness
+   −    Modular clock and modular power
+   −    CPU clock stretching, throttling or stop without affecting the ISA bus clock
+   −    Zero frequency operation with automatic resume
+   −    Zero volt operation with leakage control
+   −    Four general purpose IO or power control ports
+   −    APM 1.1 compliant
+
+7. Integrated Local Bus IDE Controller
+   −    32-bit host data transfer
+   −    Mode-3 transfer capabilities (>10MB/s)
+   −    Programmable read/write, master/slave and active/recovery timing in units of CPU clock
+   −    Prefetch and write buffers
+   −    Support either primary (1F0-1F7h) or secondary (170-177h) channel with two devices
+   −    No external logic required
+
+8. High Integration and Complete Functionality
+   −    Glueless interface with the VT82C406MV IXP (Integrated X-bus Peripheral Controller,
+        100PQFP) to eliminate the multi-clock generator, the keyboard controller with PS2 mouse,
+        the DS-1285 style real time clock with extended CMOS RAM and the address buffers.
+   −    9 TTLs for a complete main board implementation
+   −    Optional VT82C505 (160 PQFP) to bridge a VL/ISA system to the PCI bus
+
+9. 0.8um high speed and low power CMOS process
+10. 208-pin PQFP package
+
+
+
+
+                                                 -2-
+      VIA Technologies, Inc.                                                         VT82C496G
+
+
+Overview
+     The VT82C496G is a cost-effective implementation of a high integration, high performance and
+high energy efficient VL/ISA system based on the 80486SX/DX/DX2/DX4 or compatible processor.
+With an optional VT82C505 VL-PCI bridge, the system can be extended to the PCI/VL/ISA platform
+that offers top rated PCI performance and proven PCI-2.0 compliance. In either case, the VT82C496G
+interfaces directly with the VT82C406MV IXP (Integrated X-bus Peripherals) that replaces the multi-
+clock generator, the keyboard controller with PS2 mouse support, the DS-1285 style real time clock
+with 128 byte of CMOS RAM and certain amount of glue logic. Less than ten TTLs are required for a
+complete main board implementation in addition to the chips mentioned above.
+     In addition to the VL bus controller, cache and DRAM controller and ISA bus controller with the
+82C206 peripherals (DMA, interrupt controller and timer), the VT82C496G also includes a flexible
+CPU interface, a notebook class power management unit and a local bus IDE controller to meet the
+demand of the state-of-art computing requirement. The function block diagram of the VT82C496G is
+indicated in Figure 1. The system block diagram of a PCI/VL/ISA system based on the VT82C496G is
+indicated in Figure 2.
+
+
+            CPU Interface
+            VL Bus Controller                                           ISA System
+            Cache Controller                                            Controller
+            DRAM Controller
+
+
+
+
+                Power
+                                                                       IDE
+                Management                                             Accelerator
+                Unit
+
+
+                   Figure 1. VT82C496G Function Block Diagram
+     The VT82C496G supports the state-of-art 80486 families from major CPU vendors including
+Intel, AMD, TI and Cyrix. The write-back internal cache, burst write transfer, CPU clock stop and
+switching protocol and system management mode are supported to the full capability of individual
+CPUs. The VT82C496G supports two VL devices in addition to the embedded local bus IDE controller
+without any glue logic. Both VL devices can be of the master type and the arbitration logic is integrated
+inside the chip. More VL devices can be supported with external glue logic.
+     The integrated power management unit monitors IO events, interrupt, DMA and VL master request
+signals to detect the status of system activity. Each event can be turned off or assigned to one of two
+event classes tracked by two independent idle timers. Two additional general purpose timers are also
+provided for house-keeping or mode switching purposes. One of the timers can also be used to keep
+track the activity of specific peripheral devices. The system management interrupt (SMI) may be
+triggered by multiple sources including time-out of individual timers, occurrence of system activities,
+external input and software programming for flexible applications. The SMI routine checks the status
+and takes appropriate actions including clock speed switching (or stop) and IO and power control. On
+top of the SMI-oriented power management capability, the VT82C496G also supports automatic
+conserve mode operation to conserve power under short and frequent system idleness (e.g. keyboard
+typing).
+
+
+
+
+                                                  -3-
+      VIA Technologies, Inc.                                                        VT82C496G
+
+
+                           CA            VT82C496G
+         80486                           VL/ISA Controller                    ISA Bus
+         CPU              CD
+                                         (208 PQFP)
+
+
+
+        VL                                VT82C505
+        Devices                           VL-PCI Bridge                       PCI Bus
+                                          (160 PQFP)
+
+
+         Cache
+         DRAM                             VT82C406MV
+                                          IXP (100PQFP)
+
+
+
+        Figure 2. VT82C496G Based 80486 PCI/VL/ISA System
+     The embedded local bus IDE controller recognizes IDE IO port accesses as local bus cycles and
+provides prefetch and post-write buffers to allow concurrent CPU/VL and IDE bus operation. The
+controller supports either the primary (1F0-1F7h) or secondary (170-177h) enhanced IDE channels
+with two devices. The command and recovery time of each device can be individually programmed in
+units of CPU clock to achieve the optimal speed of the device up to >10MB/s transfer rate. The IDE
+devices share the same bus with the ISA bus with separate control signals so that no external logic is
+required.
+     The advanced cache controller supports direct-mapped cache up to 1MB in either write-through or
+write-back mode. In the write-back mode, the alter bit can either be eliminated or be combined with the
+tag bits so that only a single x8 standard static RAM is required. If x9 SRAM is used, the alter bit is
+available in addition to the 8-bit tag without sacrificing the cacheable region. Cache read and write
+timing is independently programmable to match with the CPU and SRAM speed. Interleaved access is
+allowed with two banks of cache to achieve 2-1-1-1 burst fill for the CPU internal cache. Burst write as
+well as burst read cycles are supported to optimize performance of local bus masters and CPUs with
+write-back internal cache.
+     The VT82C496G supports eight banks of DRAMs up to 128MB. The eight banks are grouped into
+four pairs and each bank can be independently made of 256K, 512K, 1M, 2M, 4M, 8M and 16MxN
+DRAMs. Zero, one or both banks of DRAMs may be populated in each pair. The only constraint is that
+if both banks within the same pair are populated, they must be of the same type. This constraint fits
+particularly well with the 72-pin x36 double side DRAM SIMM modules, although the 30-pin x9
+SIMM modules and the 72-pin x36 single side SIMM modules are supported equally well. Critical
+DRAM timing parameters are individually programmable to allow optimal matching between the
+DRAM and CPU speed. To further enhance the system performance, decoupled refresh mechanism is
+used to allow system DRAM operation to continue before the slower ISA refresh is complete.
+    The VT82C496G supports shadowing of system, video and other BIOS to speed up the access.
+The video and system BIOS can also be made cacheable and write-protect. Unused portion of the
+DRAM can be relocated to increase the size of the overall system memory.
+    Access to either E or C segment can be programmed to be an on-board EPROM cycle to allow the
+combination of system and video BIOS for an all-in-one system board implementation. The
+VT82C496G can also be programmed to recognize write cycles as EPROM cycles to support field
+upgradability of flash EPROM BIOS.
+    The ISA bus controller runs synchronously with the CPU clock to eliminate the synchronization
+overhead associated with an asynchronous system. The wait state, command delay and IO recovery
+
+
+                                                 -4-
+      VIA Technologies, Inc.                                                        VT82C496G
+
+time are programmable to allow maximum flexibility in using ISA add-on cards. The bus conversion
+and data alignment are performed automatically if the sizes of the master and the slave of a command
+do not match. Push-button suspend and resume function is provided in addition to the traditional
+hardware and software de-turbo mechanism. Fast gate A20 and fast reset logic is also included to allow
+faster response in a protected mode environment.
+     A rich set of configuration registers are provided for fine-tuning the cost and performance of
+individual systems. Standard parameters such as cache and DRAM configurations and ISA bus clock
+are automatically detected and programmed by the BIOS so that neither jumper nor BIOS settings is
+necessary.
+     The VT82C496G is ideal for high performance, high quality, high energy efficient and high
+integration desktop and notebook PCI/VL/ISA computer systems.
+
+
+Functional Description
+1. Clock Logic
+     The VT82C496G supports 80486SX/DX/DX2/DX4 and compatible processors up to 100Mhz
+including DX-50, DX2-66 and DX4-100. The CPU and VL bus interface, cache and DRAM controller
+runs at the same clock frequency as the CPU bus clock which may be fraction of the CPU internal
+frequency. For proper operation, bit 0 and 1 of XD bus need to be sampled high during the reset period
+(pulled up by 4.7K resistors). The other combinations configure the VT82C496G to support other CPU
+types.
+     The VT82C496G includes an internal clock processor to control the clock input to different
+function blocks independently to allow maximum compatibility, performance and power management
+of the system. For instance, the ISA bus clock remains unchanged while the CPU clock is slowed down
+or even stopped. The function block diagram of the clock processor with related logic blocks is
+indicated in Figure 3.
+    The CLKIN input takes the clock output from the VT82C406MV and derives the ISA bus clock
+based on the setting of bit 3-0 of internal register RX11h and the CPU clock based on the setting of bit
+7-5 of internal register RX56h. The relationship of the ISA bus clock and the CPU clock relative to the
+clock input is indicated below.
+    RX11h bit 3-0 (ISA bus clock):             0--- - CLKIN/8
+                                               1000 - CLKIN/3       1001 - CLKIN/2
+                                               1010 - CLKIN/4       1011 - CLKIN/6
+                                               1100 - CLKIN/5       1101 - CLKIN/10
+                                               1110 - CLKIN/12      1111 - OSC/2 (asynchronous)
+
+    RX56h bit 7-5 (CPU clock):                 000 - CLKIN          001 - CLKIN/4
+                                               010 - CLKIN/8        011 - CLKIN/16
+                                               100 - CLKIN/32       101 - CLKIN/64
+                                               110 - CLKIN/2        111 - 0
+   The frequency of CLKIN from the VT82C406MV is determined by bit 3-0 of internal register
+RX56h as follows:
+            0000 - 16Mhz         1000 - 8Mhz           0001 - 40Mhz            1001 - 20Mhz
+            0010 - 50Mhz         1010 - 25Mhz          0011 - 80Mhz            1011 - 40Mhz
+            0100 - 66Mhz         1100 - 33Mhz          0101 - 100Mhz           1101 - 50Mhz
+            0110 - 8Mhz          1110 - 4Mhz           0111 - 60Mhz            1111 - 30Mhz
+
+
+
+
+                                                 -5-
+      VIA Technologies, Inc.                                                          VT82C496G
+
+    CLKIN                                       ISACLK
+                         ISA Clock                            ISA BUS
+                         (RX11h)                              Logic
+
+                                              CPUCLKO optional                  to CPU
+                         CPU Clock                    external
+                         (RX56h)                      buffer
+
+                      VL, Cache                 CPUCLKI
+                      and DRAM
+                      Control Logic
+
+               Figure 3. VT82C496G Clock Processor
+2. CPU Interface
+
+     The VT82C496G responds to all CPU generated bus cycles except when either of the two LDEV#
+inputs is sampled low at the end of the first T2 cycle indicating a local bus access. The sampling time
+can be postponed by one CPU clock if one wait state cache hit timing is set in register RX51h. ADS#,
+M/IO#, W/R#, D/C# and the address lines are examined to determine which type of cycle to generate.
+Upon completion of a command, READY# is returned to the CPU. To allow burst fill of the 80486
+internal cache, BRDY# is returned instead of READY# if a memory read cycle results in a cache hit.
+To support burst write of write-back CPUs and local bus masters, bit 1 of RX50h needs to be turned
+on. To allow DRAM cycles to be burstable, bit 1 of RX32h needs to be turned on.
+     The coherency of the 80486 internal cache with the rest of the system is maintained by the KEN#,
+EADS# and HITM# pins. KEN# is normally active for a memory read cycle. If the CPU address lies
+outside the cacheable region, KEN# becomes inactive after the first burst transfer so that the data is not
+cached inside the CPU.
+    The EADS# pin is asserted during DMA and master write cycles to snoop the internal cache. For
+DMA cycles, the CPU address is driven from the integrated DMA controller of the VT82C496G. For
+ISA master cycles, the CPU address is driven from the ISA bus through the integrated buffer inside the
+VT82C406MV. The CPU address lines CA[27:31] need to be pulled down to ensure a correct address
+during internal cache invalidation.
+    For CPUs with write-back internal cache, EADS# is asserted for read as well as write DMA/master
+cycles. The W/R# is connected to the INV pin of the CPU to allow proper CPU response. The HITM#
+from the CPU indicates an altered internal cache line is hit and needs to be written back to the system
+before activation of the intended memory access is performed. To minimize the snoop overhead, a
+snoop filtering mechanism is implemented so that consecutive accesses to the same cache line may be
+snooped only once (set bit 4 RX5Eh to 1).
+     The VT82C496G supports CPUs with various SMI and clock switching protocols. Please refer to
+the section of Power Management Unit for details.
+3. Co-processor Interface
+
+    The VT82C486A supports 80387DX/SX and compatible numerical co-processors for use in high
+performance floating point math applications in 80386DX/SX systems.
+     If the system contains a co-processor, the interface signals NPERROR# (error), NPBZ# (busy) and
+NPREQ# (pereq) are sent from the co-processor to the VT82C486A to produce proper interface signals
+for the CPU. The VT82C486A determines the presence of co-processor at reset. If no co-processor is
+present in the system, any attempt to access the co-processor causes READY# signal to be returned to
+
+
+
+                                                  -6-
+      VIA Technologies, Inc.                                                          VT82C496G
+
+the CPU. If a co-processor is present, such a cycle is handled by the co-processor and the ready signal
+is fed through the LRDY# pin to be returned to the CPU.
+     The state of NPBZ# is always passed through to BUSY# for the CPU indicating that the co-
+processor is processing a command. NPERROR#, when active, generates IRQ13 for PC/AT
+compatibility. It also latches BUSY# to prevent the CPU from attempting to use the co-processor until
+the error handling interrupt routine is executed. The interrupt routine inactivates the latched BUSY# by
+performing a write to IO port F0h or by issuing an NPRESET. If there is no co-processor present, the
+BUSY# pin generates an active low repetitive pulses to prevent system from hanging-up.
+     NPBUSY# is latched in at the falling edge of the NPERROR# and ORed with the NPREQ# signal
+to generate the PEREQ signal to the CPU. The PEREQ signal reflects only the NPREQ# signal after a
+dummy write to IO port F0h.
+4. Local Bus Interface
+     The VT82C496G supports local bus devices following the VESA local bus specifications. A local
+bus slave responds to a CPU or local bus master by decoding the command and the CPU address. If the
+command and address belong to the responsibility of a local bus device, LDEV# is driven low to
+indicate to the VT82C496G not to take any action until the completion of the cycle. The VT82C496G
+supports two VL local bus devices in addition to the embedded IDE controller without any glue logic.
+     Local bus slaves can respond to a DMA or master command as well as CPU or local bus master
+commands. For a DMA or master cycle, a CPU command is emulated by the VT82C496G through
+translation of the bus command. For instance, a DMA or master memory read command generates a
+memory read command (M/IO# high and W/R# low) to the CPU local bus. ADS# is also activated at
+the start of the command to allow local bus devices to respond. If a local bus device responds, the data
+bus flow is controlled by the VT82C496G so that the device may be properly accessed by the DMA or
+master device.
+    The CPU local bus is arbitrated between the CPU, local bus masters and the system. The system
+request is initiated in response to a DMA, master or refresh request. The system request is arbitrated
+with the two LREQ# inputs from the local bus masters to generate the HOLD signal to the CPU. The
+CPU grants the control of the bus upon completion of the current cycle by activating HLDA.
+Depending on the result of the arbitration, the system or one of the two local bus masters is given the
+control of the bus. The local bus master is acknowledged by pulling the corresponding LGNT# low,
+upon which the local bus master generates the bus command according to the 80486 bus protocol.
+Except for the arbitration for the bus ownership, the entire system does not distinguish the local bus
+master device from the CPU.
+
+5. Advanced Cache Controller
+5.1. Write-back and write-through Cache Schemes
+    The VT82C496G supports direct-mapped cache systems with data size ranging from 32KB to
+1MB and line sizes ranging from 1 to 4 doublewords. Both write-back and write-through modes are
+supported. The tag size is 8 bit to fit the standard x8 SRAMs. No valid bit is required since all data are
+maintained valid after initialization. The alter bit SRAM that is required in a normal write-back cache
+may either be eliminated or be combined with other tag bits in the same SRAM. In all cases, only one
+x8 SRAM is required and the cost of component and board space is minimized.
+     The advantage of a write-back cache is that faster performance can be achieved for a cache write-
+hit cycle. The disadvantage is that when a new cache line needs to be brought into the cache due to a
+read miss, the original cache line needs to be written back to the DRAM if the line is altered during its
+cache residence. The relative performance between the write-through and write-back schemes depends
+on the cache-hit ratio of the application and the relative timing among cache write-hit, DRAM read and
+DRAM write cycles. The faster DRAM write cycles relative to DRAM read and cache write cycles, the
+
+
+
+                                                  -7-
+      VIA Technologies, Inc.                                                              VT82C496G
+
+better the write-through scheme. The VT82C496G supports both schemes so that the performance may
+be fined tuned according to the exact working environment.
+     If the alter bit is eliminated in the write-back scheme, the replaced cache line is always assumed to
+be altered unless the line lies in a write-protect region. Although minimal, there is a performance
+degradation associated with this scheme. To combine the alter bit with the tag bits, the performance
+degradation is removed at the expense of a reduced cacheable region since 7 bits instead of 8 are used
+as cache tag. Once again, the VT82C496G supports both write-back schemes so that the performance
+may be fine tuned according to the working condition.
+     The difference in the three cache schemes (two write-back and one write-through) lies in the
+interpretation of the tag bits. The hardware remains the same and the configuration is completely done
+in software (RX50h and RX5Eh):
+
+                  Cache Scheme                         RX5Eh          RX50h
+                                                        bit 6          bit 4
+                  write-back, combined
+                                                           0             0
+                  tag/alter bit (default)
+                  write-back, no alter bit                 0             1
+                  write-through                            1             -
+
+     To preserve the performance advantage of the alter bit without sacrificing the cacheable region, the
+VT82C496G allows a fourth cache scheme: eight-bit-tag-plus-an-alter-bit scheme, however a x9
+SRAM is required. Furthermore, the pin definition and external connection are slightly different from
+the above three schemes.
+     In this scheme, the original 8 bits are used as tags like the write-through and write-back-with-no-
+alter-bit schemes. The alter bit now comes from the original DC pin of the chip. The DC signal in this
+case is combined with the HITM# pin and needs to be de-multiplexed by external logic. The pin
+definition is determined by the condition of MA9 during the reset period. If MA9 is sampled low, the
+pin is used as the alter bit and the 8-bit-tag-plus-alter-bit scheme is possible. If MA9 is sampled high,
+the pin is used as the DC signal and no external logic is required.
+
+5.2. Cache Organization
+     The VT82C496G can be programmed for one or two banks of cache data SRAMs independent of
+the cache size. The cache organization for various data sizes is listed in Table 1. The number in the
+third and sixth columns of the table (tag data and cacheable region) is based on the assumption of an 8-
+bit tag. If 7-bit tag is used, then the highest address bit in the tag data is lost and the cacheable region is
+reduced in half. For instance, if the cache size is 256KB and the line size is 4 doublewords (the fourth
+row), the tag data becomes A24:18 and the cacheable region reduces to 32MB. Furthermore, the table
+assumes 8Kx8, 32Kx8 and 128Kx8 SRAMs are used. Other configuration is also possible. For
+instance, if 64Kx4 or 64Kx8 SRAMs are used, 256KB cache can be made of one instead of two banks.
+
+
+
+
+                                                     -8-
+      VIA Technologies, Inc.                                                        VT82C496G
+
+
+
+   Data Size      Line          Tag Data           Cache Data       Index (Tag/       Cacheable
+                  Size                                              Cache Addr)        Region
+      32KB          4         A22:15 (8Kx8)           8K x 8            A14:4*            8MB
+      64KB          4         A23:16 (8Kx8)         8K x 8 x 2          A15:4#           16MB
+     128KB          4         A24:17 (8Kx8)          32K x 8            A16:4*           32MB
+     256KB          4        A25:18 (32Kx8)        32K x 8 x 2          A17:4#          64MB
+     512KB          4        A26:19 (32Kx8)         128K x 8            A18:4*          128MB
+      1MB           4        A26:20 (128Kx8)       128K x 8 x2          A19:4#          128MB
+
+* A3SEL1 and A3SEL0 from the VT82C496G are connected to the other address bits of the data
+cache.
+# CCS#0 and CCS# 1 are connected to the chip select of the two banks of data cache, respectively.
+Furthermore, A3SEL0 and A3SEL1 are connected to one of the address lines (A3) of each bank,
+respectively.
+                                     Table 1. Cache Organization
+5.3. Cache Operation
+   The VT82C496G contains an integrated 8-bit tag comparator for detecting cache hits. For either
+CPU, DMA or master cycles, the address of the command is compared with the data from the tag
+SRAM to determine if the cycle is a cache hit or cache miss.
+     The detailed action taken by the VT82C496G for a cache hit cycle is indicated in Table 2. The
+action for a read hit cycle is the same for the four cache schemes. The action for a write-hit cycle is
+different. The alter bit needs to be set to 1 for the combined alter/tag write-back schemes. The data is
+written into DRAM as well as cache for the write-through scheme.
+
+Cycle Type                                             Action Taken
+                            1. Data (all four bytes) are read from the cache.
+CPU Read                    2. Cache data, tag and alter bits are unchanged.
+                            1. Data with the active bytes are written into the cache.
+CPU Write                   2. The tag is unchanged.
+                            3. The alter bit is set to 1 (combined tag/alter scheme only).
+                            4. The data is also written into DRAM (write-through scheme only).
+                            1. Data (all four bytes) are read from the cache.
+DMA/master Read             2. Cache data, tag and alter bits are unchanged.
+                            1. Data with the active bytes are written into the cache.
+DMA/master Write            2. The tag is unchanged.
+                            3. The alter bit is set to 1 (combined tag/alter scheme only).
+                            4. The data is also written into DRAM (write-through scheme only).
+
+                               Table 2. Action Taken for a Cache-hit Cycle
+
+
+
+
+                                                 -9-
+      VIA Technologies, Inc.                                                            VT82C496G
+
+    The detailed action taken by the VT82C496G for a cache-miss cycle is indicated in Table 3.
+
+ Cycle Type                                                Action Taken
+                             1. The old cache data is written back to the DRAM (if the alter bit is
+ CPU Read                       set or no alter bit is used in the write-back scheme).
+                             2. The entire data line is read from the DRAM and written into the
+                                cache.
+                             3. The tag is updated.
+                             4. The alter bit is reset to 0 (combined alter/tag scheme only).
+                             5. The requested data is returned to the CPU.
+                             1. The data is written into the DRAM.
+ CPU Write                   2. Cache data, tag and alter bits are unchanged.
+                             1. The data is read from the DRAM.
+ DMA/master Read             2. Cache data and tag are unchanged.
+                             1. The data is written into the DRAM.
+ DMA/master Write            2. Cache data, tag and alter bits are unchanged.
+                            Table 3. Action Taken for a Cache-miss Cycle
+
+     A cache line is allocated on read misses only, not on write misses. The action taken during a cache
+miss cycle is largely identical for the four cache schemes except in read miss cycles. No write back
+action is required for a write-through cache since the DRAM data is always maintained coherent with
+the cache. For a write-back cache, the old cache line needs to be written back to the DRAM if the alter
+bit is set. If there is no alter bit, the line is assumed to be altered and the write back action is required
+(unless the line lies in a write-protect region).
+     The line size of the (external) cache is typically selected as four doublewords to match that of the
+CPU internal cache. A cache miss requires that the four doublewords corresponding to the same cache
+line be brought into the cache before the next CPU command can proceed. The CPU internal cache can
+either be filled at the same time or be filled after the entire line of the external cache is filled. The
+former mechanism, referred to as data streaming (enabled if bit 0 of RX50h is set) allows a slightly
+better performance but requires the cache controller to know in advance whether the CPU read cycle is
+a cache fill cycle so that the other three read cycles are guaranteed to appear in a burst sequence. The
+CACHE pin from the P24T CPU serves this exact purpose and pin 72 can be made to connect to this
+CACHE pin by setting bit 5 of RX5Eh to 1. This CACHE signal can also be derived using external
+logic for other CPU types.
+     There are three operating modes of the cache controller: enabled, initialization and disabled. In the
+enabled mode, the cache controller functions as a normal cache. If the cache is in the disabled mode,
+the cycle is passed to the DRAM controller. The data cache and tag bits are left unchanged. A non-
+cacheable cycle is treated as in the disabled mode even if the cache is enabled. The initialization mode
+is similar to the disabled mode except for a CPU read cycle, the data is written into the cache and the
+tag is updated with alter bit cleared.
+
+5.4. Cacheable Region
+     Only on-board DRAM can be made cacheable. The cacheable region is determined by the
+following factors:
+          −   the cache size,
+          −   the tag size,
+          −   the on-board DRAM size,
+          −   the setting of the programmable non-cacheable region (RX41h and RX42h), and
+          −   the cacheability of video and system BIOS as determined by the setting of RX40h.
+
+
+
+
+                                                    -10-
+      VIA Technologies, Inc.                                                            VT82C496G
+
+    The normal cacheable region is the minimum of the on-board DRAM size and 256 (128 if there are
+only 7 tag bits) times the cache size. The decoding of the normal cacheable region is built inside the
+chip so that no register setting is required.
+     The upper memory region (A0000h to FFFFFh) is an exception to the normal case. Since this
+region corresponds to memory-mapped IO ports, it is defaulted to be non-cacheable. However, the
+video (C0000h to C7FFFh) and system (E0000h to EFFFFh and F0000h to FFFFFh) BIOS can be
+made cacheable and write-protect by programming RX40h.
+    One other memory region inside the normal cacheable space can be made non-cacheable by
+programming the internal register RX41h and RX42h. The size of the region is from 64KB to 4MB.
+The base address of the region must be an integral multiple of the size of the region.
+    The cacheable region is consistent between the 80486 internal cache and the secondary cache
+through the use of the KEN# and EADS# pins to the CPU.
+
+5.5. Cache Parameters
+     Cache hit timing can be programmed to be either zero or one-wait state in RX51h. The first read
+cycle, other read cycle (second to fourth cycle in a burst transfer), first write cycle and other write cycle
+can be programmed independently. For instance, the fastest burst transfer rate to fill the 80486 internal
+cache is 2-1-1-1; that is zero wait state for both the first read and other read cycles. Table 4 indicates
+the speed requirement of the tag and data SRAM for different CPU clock frequencies.
+
+     CPU Ext. Clock           Data SRAM          Tag SRAM          Read/write Timing
+        25Mhz                     -25               -25             2-1-1-1/2-1-1-1
+        33Mhz                     -20               -20             2-1-1-1/2-1-1-1
+        40Mhz                     -20               -20             3-2-2-2/3-2-2-2
+        50Mhz                     -15               -20             3-2-2-2/3-2-2-2
+
+                       Table 4. Tag and Data SRAM Speed Requirement
+    The following internal registers are associated with the cache controller:
+          RX50h: Cache access mode
+                 −   bit 7-6: cache mode.0x: disabled.
+                                                     10: enabled
+                                                     11: initialization
+                 −   bit 5: direct data SRAM access
+                 −   bit 4: combined alter bit for the write-back cache (don't care for write through)
+                 −   bit 3-2: cache line size:       00/11: 4 bytes
+                                                     01: 8 bytes
+                                                     10: 16 bytes
+                 −   bit 1: burst write:             0: disable         1: enable
+                 −   bit 0: data streaming0: disable           1: enable
+          RX51h: cache timing control
+                 −   bit 7,5: read hit:             00: 2-1-1-1        01: 2-2-2-2
+                                                    10: 3-1-1-1        11: 3-2-2-2
+                 −   bit 6,4: write hit:            00: 2-1-1-1        01: 2-2-2-2
+                                                    10: 3-1-1-1        11: 3-2-2-2
+                 −   bit 3: bank of data SRAM:      0: 1 bank          1: 2 banks
+
+
+
+
+                                                    -11-
+      VIA Technologies, Inc.                                                          VT82C496G
+
+                 −   bit 2-0: cache size          000: disable       001: 32KB
+                                                  010: 64KB          011: 128KB
+                                                  100: 256KB         101: 512KB
+                                                  110: 1MB           111: illegal
+          RX5Eh: misc. cache control
+                 −   bit 7: CPU internal cache      0: write-through 1: write-back
+                 −   bit 6: external cache 0: write-back      1: write-through
+                 −   bit 5: pin 72 usage            0: BLAST#           1: CACHE# (P24T)
+                 −   bit 4-0: other usage
+
+6. Page Mode DRAM Controller
+     The VT82C496G supports eight banks of DRAMs up to 128MB. The eight banks are grouped into
+four pairs and each bank can be independently made of 256K, 512K, 1M, 2M, 4M, 8M and 16MxN
+DRAMs. Zero, one or both banks of DRAMs may be populated in each pair. The only constraint is
+that if both banks within the same pair are populated, they must be of the same type. This constraint fits
+particularly well with the 72-pin x36 double side DRAM SIMM modules, although the 30-pin x9
+SIMM modules and the 72-pin x36 single side SIMM modules are supported equally well. The DRAM
+type, size and single/double bank information is indicated in the following registers:
+          RX43h: pair 0/1 DRAM size and configuration
+                 − bit 7-5: bank-pair 0 DRAM size (x2 if double bank):
+                               000: 512KB                 001: 1MB
+                               010: 2MB                   011: 4MB
+                               100: 8M B                  101: 16MB
+                               110: 32MB                  111: 64MB
+                 − bit 4: number of banks of pair 0
+                               0: 1 bank                  1: 2 banks
+                               (zero bank if bit 7-5 or RX20h is 0)
+                 − bit 3-1: bank-pair 1 DRAM size (x2 if double bank):
+                               000: 512KB                 001: 1MB
+                               010: 2MB                   011: 4MB
+                               100: 8M B                  101: 16MB
+                               110: 32MB                  111: 64MB
+                 − bit 0: number of banks of pair 1
+                               0: 1 bank                  1: 2 banks
+                               (zero bank if bit 3-1 of RX20h is 0)
+          RX44h: pair 2/3 DRAM size and configuration
+                 − bit 7-5: bank-pair 2 DRAM size (x2 if double bank):
+                               000: 512KB                 001: 1MB
+                               010: 2MB                   011: 4MB
+                               100: 8M B                  101: 16MB
+                               110: 32MB                  111: 64MB
+                 − bit 4: number of banks of pair 2
+                               0: 1 bank                  1: 2 banks
+                               (zero bank if bit 7-5 or RX21h is 0)
+                 − bit 3-1: bank-pair 3 DRAM size (x2 if double bank):
+                               000: 512KB                 001: 1MB
+                               010: 2MB                   011: 4MB
+                               100: 8M B                  101: 16MB
+                               110: 32MB                  111: 64MB
+                 − bit 0: number of banks of pair 3
+
+
+
+
+                                                  -12-
+      VIA Technologies, Inc.                                                       VT82C496G
+
+                               0: 1 bank                  1: 2 banks
+                               (zero bank if bit 3-1 of RX21h is 0)
+          RX20h: pair 0/1 row/column address
+                 − bit 7-5: number of column address for pair 0
+                                000: disabled            001: 9 bit
+                                010: 10 bit              011: 11 bit
+                                100: 12 bit              others: illegal
+                 − bit 4: page mode operation
+                                0: disable               1: enable
+                 − bit 3-1: number of column address for pair 1
+                                000: disabled            001: 9 bit
+                                010: 10 bit              011: 11 bit
+                                100: 12 bit              others: illegal
+                 − bit 0: reserved
+
+          RX21h: pair 2/3 row/column address
+                 −  bit 7-5: number of column address for pair 2
+                                000: disabled             001: 9 bit
+                                010: 10 bit               011: 11 bit
+                                100: 12 bit               others: illegal
+                 − bit 4: reserved
+                 − bit 3-1: number of column address for pair 3
+                                000: disabled             001: 9 bit
+                                010: 10 bit               011: 11 bit
+                                100: 12 bit               others: illegal
+                 − bit 0: reserved
+    The DRAM memory address generation is a function of the CPU and the DRAM type. DRAM row
+and column addresses are multiplexed onto the same MA bus. When operating in non-page mode or on
+page misses, a row address followed by a column address is generated during the DRAM access. On
+page-hits, only a column address is generated during the DRAM access.
+     DRAM cycles normally operate in page mode. Each RAS# is held active after a DRAM access has
+finished and is precharged only when subsequent cycle to the same bank does not access the same
+DRAM page, or if an asynchronous event such as a RAS time-out (bit 1 of RX33h set). DMA and
+master cycles do not employ the page mode and the RAS# signals are always precharged.
+    For all CPU accesses, DRAM cycles are generated synchronously with the CPU clock. Critical
+DRAM timing parameters are individually programmable in RX22h to allow optimal matching between
+the DRAM and the CPU speed. The parameters include:
+          −   bit 7-6: RAS# precharge time: 1-4 cycles,
+          −   bit 5-4: RAS# pulse width: 2-5 cycles,
+          −   bit 3-2: Read cycle CAS# pulse width: 1-4 cycles,
+          −   bit 1: Write cycle CAS# pulse width: 1-2 cycles, and
+          −   bit 0: RAS# to column address/column address to CAS#: 1-2 cycles.
+     The VT82C496G supports decoupled DRAM refresh (bit 0 of RX03h set) to allow on-board
+DRAM operation to continue before the slower ISA refresh is complete. Furthermore, CAS-to-RAS
+refresh (bit 3 of RX40h set) and slow refresh (bit 2 of RX5Eh set) are also supported to conserve power
+consumption and to allow more flexibility in selecting DRAMs with different refresh address
+requirement. In all cases, the RAS timing is staggered during refresh to minimize the power supply
+noise.
+
+7. Shadow RAM and ROM Decoding
+
+
+                                                 -13-
+      VIA Technologies, Inc.                                                     VT82C496G
+
+    The VT82C496G supports shadowing of system, video and other BIOS to speed up the access.
+The granularity is 16KB in address range C0000h to DFFFFh and 64KB in address range E0000h to
+FFFFFh. Read and write shadowing can be enable or disabled independently in each region.
+Furthermore, read access to address range C0000h-C7FFFh and E0000h-FFFFFh can be programmed
+to be cacheable and write protected to further enhance the performance of video and system BIOS
+access.
+     If shadow RAM is not enabled, memory range A0000h to FFFFFh can be relocated to the top of
+the local DRAM so that the memory size is increased by 384KB. If only C (C0000h-CFFFFh) and/or F
+segments are used for shadowing, then the memory size is increased by 256KB. No DRAM can be
+relocated if either D or E segment is used as shadow memory.
+      If the SMI capability is enabled, the memory range A0000h to BFFFFh is reserved for SM
+memory remap (RX5Bh bit 4 set) and cannot be relocated again. Therefore, the size of the increased
+memory reduces to 256KB and 128KB, respectively. The SM base memory depends on the CPU type:
+30000h-4FFFFh for the Intel CPU (RX5Bh bit 6 reset) and 60000h-7FFFFh, otherwise (RX5Bh bit 6
+set).
+     Accesses to either E or C segment can be programmed to be on-board ROM cycles. The E segment
+is used when the size of the system BIOS exceeds 64KB. The C segment is used when the video and
+system BIOS are combined into one single EPROM in an all-in-one system board implementation. A
+memory write cycle is typically not considered as a ROM cycle even if the address is decoded as such.
+To support flash EPROM which allows on-line modification of the memory content, the VT82C496G
+can be programmed to recognize such memory write cycles as ROM cycles (bit 6 of RX11h).
+Furthermore, memory address range 15MB to 16MB can be programmed to be ISA cycles (instead of
+normal on-board DRAM cycles) if bit 2 of RX32h is set.
+    The following internal registers are associated with the shadow RAM and ROM decoding:
+         RX30h: C0000h-CFFFFh shadow control
+            − bit 7: CC000h-CFFFFh read shadow
+                          1- enable       0-disable
+            − bit 6: CC000h-CFFFFh write shadow
+            − bit 5-4: C8000h-CBFFFh read/write shadow
+            − bit 3-2: C4000h-C7FFFh read/write shadow
+            − bit 1-0: C0000h-C3FFFh read/write shadow
+
+         RX31h: D0000h-DFFFFh shadow control
+              −   bit 7-6: DC000h-DFFFFh read/write shadow
+              −   bit 5-4: D8000h-DBFFFh read/write shadow
+              −   bit 3-2: D4000h-D7FFFh read/write shadow
+              −   bit 1-0: D0000h-D3FFFh read/write shadow
+         RX32h: E0000h-FFFFFh shadow control
+              −   bit 7-6: E0000h-EFFFFh read/write shadow
+              −   bit 5-4: F0000h-FFFFFh read/write shadow
+              −   bit 3-0: other usage
+         RX33h: ROM decoding and memory relocation
+              −   bit 7: C8000h-CFFFFh decoded as ROM cycle
+                                1 - enable       0 - disable
+              −   bit 6: C0000h-C7FFFh decoded as ROM cycle
+              −   bit 5: E8000h-EFFFFh decoded as ROM cycle
+              −   bit 4: E0000h-E7FFFh decoded as ROM cycle
+              −   bit 3-2: relocation 00 - disable            01 - illegal
+                                         10 - 256K relocation 11 - 384K relocation
+
+
+
+                                                -14-
+      VIA Technologies, Inc.                                                         VT82C496G
+
+                   −   bit 1-0: other usage
+          RX40h: ROM cacheable control
+               −       bit 7: C0000h-C7FFFh cacheable and write-protect
+                                    1 - enable     0 - disable
+               −       bit 6: F0000h-FFFFFh cacheable and write-protect
+               −       bit 5: E0000h-EFFFFh cacheable and write-protect
+               −       bit 4-0: other usage
+
+8. ISA Bus Controller
+    The ISA bus is accessed in the CPU mode, DMA mode, ISA master mode and refresh mode.
+    For a CPU cycle, the cache and DRAM controller handles the entire transaction if the cycle is a
+cache or DRAM cycle. Otherwise, the cycle is an ISA bus cycle and control is passed to the ISA bus
+controller. The ISA bus controller is responsible for generating command signals IOR#, IOW#,
+MEMR#, MEMW# and BALE. The command delay, wait state and IO recovery time for normal ISA
+cycles can be set in register RX03h.
+    In the DMA mode, the integrated DMA controller generates the command and address signals.
+BALE is forced high for all DMA cycles. The AEN signal is asserted to indicate that the current
+address on the bus is for memory only and not to be decoded as an IO address. The DMA logic samples
+IOCHRDY# to extend bus cycles longer than the internally defined cycle length. The DMA controller
+runs either at the same or half the speed of the ISA clock (bit 6 of RX10h).
+     The ISA bus master mode is an extension of the DMA mode. A bus master can get control of the
+bus by requesting a DMA operation. Once the DMA is acknowledged, the MASTER# signal becomes
+active and the VT82C496G relinquishes control of the bus to the master until the signal becomes
+inactive.
+  During the refresh operation, the VT82C496G drives REFRESH# signals, a refresh address and
+MEMR# command onto the bus to start the refresh cycle. The BALE output is driven high during
+DMA and refresh cycles.
+     SA0-7 and SBHE# are handled by the VT82C496G directly while other address lines are handled
+by the address buffers inside the VT82C406MV.
+     The integrated interrupt controller is extended to support level sensitive interrupts in addition to
+the 8259A compatible edge trigger interrupts:
+          RX63h: IRQ15-9 interrupt mode
+                   −   bit 7: IRQ15     1 - level sensitive   0 - edge trigger
+                   −   bit 6: IRQ14
+                   −   bit 5: reserved
+                   −   bit 4: IRQ12
+                   −   bit 3: IRQ11
+                   −   bit 2: IRQ10
+                   −   bit 1: IRQ9
+                   −   bit 0: other usage
+
+
+
+
+                                                      -15-
+      VIA Technologies, Inc.                                                       VT82C496G
+
+         RX62h: IRQ7-3 interrupt mode and global control
+                −   bit 7: IRQ7     1 - level sensitive    0 - edge trigger
+                −   bit 6: IRQ6
+                −   bit 5: IRQ5
+                −   bit 4: IRQ4
+                −   bit 3: IRQ3
+                −   bit 2-1: other usage
+                −   bit 0: global mode control
+                                     0 - 8259A compatible mode (all interrupt edge triggered)
+                                     1 - extended mode to enable RX63h and RX62h selection
+
+9. Local Bus IDE Controller
+     The VT82C496G includes a local bus IDE controller that responds to host accesses to IDE device
+IO ports: address 1F0h-1F7h (or 170h-177h) as command block register space and address 3F6h-3F7h
+as control block register space. Two IDE devices with enhanced IDE specification such as higher
+capacity hard disks and CD-ROM devices are supported. The command active and recovery time of
+each device may be programmed in units of CPU clock independently to match the speed of the device
+and the CPU. Prefetch and post write buffers are also included to allow concurrent CPU/VL and IDE
+operation to further enhance the performance. The transfer rate can go beyond 10MB/s which covers
+the state-of-art mode-3 hard drives.
+    The internal configuration register RX71h-RX7Fh is associated with the embedded local bus IDE
+controller.
+         RX71h: mode register
+                −   bit 7: reserved,
+                −   bit 6: channel and IO port selection:
+                       0 - primary channel (1F0h-1F7h)
+                       1 - secondary channel (170-177h)
+                −   bit 5: write buffer            1: enable        0: disable,
+                −   bit 4: prefetch buffer         1: enable        0: disable,
+                −   bit 3: internal LRDY# for write cycles:
+                                                   1: 1st T20: 2nd T2
+                −   bit 2: internal LRDY# for read cycles:
+                                                   1: 1st T20: 2nd T2
+                −   bit 1: read data to be presented to the CPU data bus:
+                                                   1: 1st T20: 2nd T2
+                −   bit 0: internal IDE controller 1: enable         0: disable
+         RX72h: non-1F0/170h port access timing
+                - bit 7-4: the number of CPU clocks as command active time
+                - bit 3-0: the number of CPU clocks as command recovery time
+         RX73h: drive #0 read timing for 1F0/170h access
+                - bit 7-4: the number of CPU clocks as command active time
+                - bit 3-0: the number of CPU clocks as command recovery time
+         RX74h: drive #0 write timing for 1F0/170h access
+                - bit 7-4: the number of CPU clocks as command active time
+                - bit 3-0: the number of CPU clocks as command recovery time
+
+
+
+
+                                                  -16-
+      VIA Technologies, Inc.                                                           VT82C496G
+
+          RX77h: drive #0 address setup time
+               - bit 1-0: the number of CPU clocks
+          RX78h,79h and 7Ch: drive #1 timing as defined in RX73h, RX74h and RX77h.
+
+10. Power Management Unit
+    The VT82C496G includes a very sophisticated power management unit that features zero-
+frequency/zero-voltage suspend and automatic resume capability, automatic and manual mode
+switching, multiple SMI sources and event timers, primary and secondary event monitoring and
+clock/power/peripheral control. Such sophistication is traditionally available only from very advanced
+notebook chipsets.
+
+10.1. Primary/Secondary Activities and the Idle Timers
+    The VT82C496G includes two idle timers to monitor the primary and secondary system activities.
+In addition to interrupt requests, the primary activities are classified into the following eight categories
+(RX52h, RX53h):
+          −   bit 7: keyboard access (IO port 60h),
+          −   bit 6: serial port access (IO port 3F8h-3FFh, 2F8h-2FFh, 3E8h-3EFh, 2E8h-2EFh),
+          −   bit 5: parallel port access (IO port 378h-37Fh, 278h-27Fh),
+          −   bit 4: video access (IO port 3B0h-3DFh and memory A/B segments),
+          −   bit 3: hard disk and floppy access (IO port 1F0h-1F7h and 3F5h),
+          −   bit 2: IO port 100h-3FFh,
+          −   bit 1: external input (Turbo pin scanned in through VT82C406MV),
+          −   bit 0: DRQ/LREQ: DMA and local master requests.
+    Each category can be enabled as primary activities by setting the corresponding bit of RX52h to 1.
+Each occurrence of a primary activity reloads the primary idle timer with a value determined by bit 3-1
+of RX59h.
+    000 - disable               001 - 1 sec                  010 - 8 sec                 011 - 32 sec
+    100 - 1 min                 101 - 8 min                  110 - 16 min                111 - 32 min
+
+     The cause of the timer reload is recorded in the corresponding bit of RX53h while the timer is
+reloaded. If no primary activity occurs during the time period, the idle timer will time out and the
+VT82C496G can be programmed to trigger an SMI to switch the system to a power down mode.
+    The VT82C496G distinguishes two kinds of interrupt requests as far as power management is
+concerned: the primary and secondary interrupts. Like other primary activities, the occurrence of a
+primary interrupt demands the system to restore to its full processing capability. Secondary interrupts,
+however are typically used for house keeping tasks in the background unnoticeable to the user. The
+VT82C496G allows each channel of interrupt request to be declared as either primary or secondary in
+RX60h and RX61h.
+          −   RX61h 1 - primary interrupt 0 - secondary interrupt
+                     bit 7: IRQ15         bit 6: IRQ14       bit 5: IRQ13      bit 4: IRQ12
+                     bit 3: IRQ11         bit 2: IRQ10       bit 1: IRQ9       bit 0: IRQ8
+          −   RX60h
+                     bit 7: IRQ7          bit 6: IRQ6        bit 5: IRQ5       bit 4: IRQ4
+                     bit 3: IRQ3          bit 2: IRQ1        bit 1: IRQ0
+     Like the primary activities, the primary interrupts can be made to reload the primary idle timer by
+setting bit 0 of RX60h to 1. The secondary interrupts do not reload the primary idle timer. Therefore
+the system will enter the power down mode eventually if no other events than the secondary interrupts
+
+
+
+                                                   -17-
+      VIA Technologies, Inc.                                                          VT82C496G
+
+are happening periodically in the background. If bit 1 of RX5Fh is to set to 1, on the other hand, the
+secondary interrupts can be made to reload the secondary idle timer with one of four possible values
+determined by bit 3-2 of RX5Fh:
+              00 - 2 ms                  01 - 16 ms                  10 - 64 ms
+              11 - EOI + .125ms
+     If the CPU clock is not at full speed (CLKIN) upon the occurrence of a primary interrupt, an SMI
+may be triggered to switch the clock frequency to full speed. For secondary interrupts, no SMI may be
+triggered but the clock is automatically switched to one of three possible values: CLKIN, CLKIN/2 or
+unchanged. For a normal secondary interrupt, CLKIN is used if bit 0 of RX5Fh is 0; otherwise
+CLKIN/2 is used. IRQ0 and IRQ8 may be further classified as sub-secondary interrupts by
+programming bit 1 and bit 2 of RX62h to 0, respectively. For sub-secondary interrupts, the CPU clock
+remains unchanged.
+
+10.2. General Purpose Timer and Extended Peripheral Timer
+     The VT82C496G includes two reloadable timers to support various house keeping tasks. The two
+timers can be loaded by writing an 8-bit value into RX58h and RX57h, respectively. The time base for
+the two timers is determined by bit 7-6 of RX59h and bit 1-0 of RX5Dh, respectively:
+    00- disable                 01 - 32.768Khz              10- 1 sec          11 - 1 min
+     The time out of either timer can be programmed to trigger an SMI for proper system response. In
+addition to the house keeping function, the second reloadable timer also covers the functionality of a
+peripheral timer and will be referred to as the extended peripheral timer. Note that the purpose of the
+idle timers is to determine the system idleness through the monitoring of the primary and secondary
+activities. The purpose of a peripheral timer on the other hand is to monitor the activity of specific
+peripheral device or devices. The first reloadable timer will be referred to as the general purpose timer.
+    There are four categories of peripheral activities that can be monitored by the extended peripheral
+timer. They are enabled in bit 7-4 of RX65h:
+
+
+          −   bit 7: keyboard access,
+          −   bit 6: serial port access,
+          −   bit 5: video access,
+          −   bit 4: hard disk and floppy access.
+      The four categories are subsets of the primary activities as defined in RX52h. If the corresponding
+bit is set, the occurrence of the peripheral event will reload the extended peripheral timer with the value
+determined by RX57h and bit 1-0 of RX5Dh. The time-out of the general purpose timer and the
+extended peripheral timer can be programmed to trigger an SMI.
+
+10.3. System Management Interrupt
+    There are eight possible sources for triggering an SMI (RX54h and RX55h):
+          −   bit 7: primary idle timer time-out,
+          −   bit 6: general purpose timer time-out,
+          −   bit 5: primary activity occurrence,
+          −   bit 4: primary interrupt occurrence,
+          −   bit 3: external pin (Turbo) toggle,
+          −   bit 2: DRQ/LREQ occurrence,
+          −   bit 1: extended peripheral timer or secondary idle timer time-out,
+          −   bit 0: software SMI.
+
+
+
+
+                                                    -18-
+      VIA Technologies, Inc.                                                         VT82C496G
+
+     If the corresponding bit of RX54h is set to 1, the occurrence of a event will trigger an SMI and the
+corresponding bit of RX55h will be set to 1 for investigation by the SMI routine. Note that bit 1 covers
+both the extended peripheral timer and the secondary idle timer. To distinguish between the two cases,
+bit 3-0 of RX65h are used (bit 3-2 correspond to the function of RX54h and bit 1-0 correspond to the
+function of RX55h)
+          −   bit 3: peripheral timer time-out SMI enable,
+          −   bit 2: secondary idle timer time-out SMI enable,
+          −   bit 1: peripheral timer time-out status,
+          −   bit 0: secondary idle timer time-out status.
+    One possible action of the SMI routine is to program the CPU clock into one of eight possible
+frequencies (bit 7-5 of RX56h):
+              000 - CLKIN    001 - CLKIN/4 010 - CLKIN/8            011 - CLKIN/16
+              100 - CLKIN/32 101 - CLKIN/64 110 - CLKIN/2           111 - 0
+     Value 000 indicates the full-on mode and the CPU along with the VL/cache/DRAM state machine
+runs at the same speed as the clock input from the VT82C406MV. Value 111 indicates zero frequency
+suspend operation in which the CPU clock is fully stopped and with proper external controls, the power
+supply to the CPU can be disconnected. Other values represent slow down CPU operations and the
+power saving is between the full-on and the suspend modes. Other than the clock frequency switching,
+the VT82C496G also provides four general purpose output ports which value can be set in bit 7-4 of
+RX5Ah by the SMI routine.
+     The setting of RX56h and RX5Ah depends on the power management model and the cause of the
+SMI. Through this basic mechanism, the VT82C496G is capable of supporting many different power
+management models. For instance, BIOS routines are ready made to support the standard APM
+(Advanced Power Management protocols by Microsoft and Phoenix) for a cooperative power
+management among the application software, operating system, BIOS and the hardware. To illustrate
+the capability and flexibility of the VT82C496G, take a simple model that supports full-on, doze and
+suspend modes.
+     Bit 7 and bit 3 of RX54h are set and bit 5, 4 and 2 are not set during the full-on mode. The
+occurrence of a primary activity reloads the primary idle timer without triggering an SMI so that no
+processing overhead is involved and the system performance is not degraded at all. The first SMI
+triggering happens when the idle timer is timed out or when the external pin is pushed by the user to
+force the system into sleep. The SMI routine slows down the CPU clock and puts the system into the
+doze mode. Bit 7 of RX54h is now turned off and bit 2, 4, 5 are turned on to monitor the occurrence of
+a primary activity which will trigger an SMI to put the system back into the full-on mode.
+    By setting bit 6 of RX54h to 1, the time out of the general purpose timer will trigger an SMI which
+can switch the system from the doze mode to the suspend mode. If a primary activity occurs before the
+time-out of the general purpose timer, the system goes into the full-on mode and bit 6 of RX54h is
+turned off and the time-out of the general purpose timer will be ignored.
+
+10.4. Automatic Mode Switching
+     As is indicated above, most of the clock switching and peripheral control are handled by the SMI
+routine. This arrangement allows maximum flexibility in supporting various power management models
+under different application environments. The VT82C496G supports the SM protocols of major 80486
+CPU types by programming RX5Bh.
+          −   bit 7: power management mode enabling (this bit needs to be turned on to support
+                     any power management function),
+
+
+
+
+                                                  -19-
+      VIA Technologies, Inc.                                                           VT82C496G
+
+         −   bit 6: SMI type:        0 - Intel 2-pin SMI (SMI#/SMIACT#),
+                                             pin 112 is used as SMIACT#,
+                                             SM base = 30000h to 4FFFFh,
+                                     1 -TI/AMD/Cyrix 3-pin SMI (SMI#/SMIADS#/SMIRDY#),
+                                             pin 112 is used as SMIADS#,
+                                             SM base = 60000h to 7FFFFh,
+         −   bit 5:   SMI target: 0 - SMI output to CPU
+                                             1 - SMI redirected to interrupt 15 of internal 8259 interrupt
+                                                     controller ( to support traditional non-SMI CPUs),
+         −   bit 4:   SM memory mapping enable: SM base memory as determined by bit 6 is mapped
+                      to A0000h to BFFFFh.
+         −   bit 3:   enable direct DRAM access to the SMI target memory A0000h-BFFFFh,
+         −   bit 2:   other usage,
+         −   bit 1:   force 3000h-4FFFFh to map to A0000h-BFFFFh (to move SM code, without
+                      causing local bus device conflict with A0000h-BFFFFh),
+         −   bit 0:   clock throttling enabling.
+
+    Bit 0 enables the clock throttling by controlling the STPCLK# period and duty cycle in RX02h.
+         −   bit 4: STPCLK# throttling period:        1- 1.7ms * 16            0- 3.35us * 16,
+         −   bit 3-0: duty cycle for STPCLK# 1/16 - 15/16.
+   The VT82C496G supports clock switching protocols of major 80486 CPU types by programming
+RX5Ch:
+         −   bit 7: wait for a HALT cycle to start clock switching,
+         −   bit 6: wait for an acknowledgment to start clock switching,
+         −   bit 5: clock switching protocol: 1 - TI/Cyrix SUSP#/SUSPA# protocol,
+                                                          pin 117 is used as SUSP# input,
+                                                0 - Intel STPCLK# protocol,
+                                                          pin 117 is used as STPCLK# output.
+
+     Refer to Figure 3 for the modular clock processing logic of the VT82C496G. To switch the CPU
+clock by programming RX56h, the sequence of the clock switching protocol as determined by RX5Ch
+is followed. For CPUs that do not support any clock switching protocols, e.g., the traditional Intel
+80486 CPUs, this operation is not reliable and the CPU clock switching relies on the smooth frequency
+switching characteristics of the multi-clock generator inside the VT82C406MV. The frequency of the
+clock input is determined by bit 3-0 of RX56h. The drawback for such CPUs is that the ISA bus is
+slowed down with the CPU clock unless OSC/2 is selected as the ISA bus clock. Furthermore, the CPU
+frequency can be slowed down but not fully stopped. In any case, the VT82C496G supports all CPU
+types to the individual maximal capabilities.
+    Clock switching is mostly initiated by the SMI routine, however, automatic clock switching is
+necessary in certain situations:
+         −   from zero-frequency: the clock is automatically resumed upon SMI or interrupt request to
+             allow the execution of the service routine,
+         −   DRQ or LREQ occurrence: the clock is automatically switched to full on to allow proper
+             synchronization between the CPU and ISA bus clock, and
+         −   the conserve mode operation.
+     The conserve mode operation is performed automatically by the hardware, transparent to and
+superimposed upon the software-oriented power management model. The conserve mode parameters
+are stored in bit 7-4 of RX5Fh:
+
+
+
+
+                                                   -20-
+      VIA Technologies, Inc.                                                         VT82C496G
+
+          −   bit 7-6: active period:          00 - 1/16 sec      01 - 1/8 sec
+                                                         10 - 1 sec        11 - 1 min,
+          − bit 5: conserve mode control :     0 - disable        1 - enable,
+          − bit 4: conserve mode clock select: 0 - CLKIN/2        1 - CLKIN/4.
+      The VT82C496G includes a conserve mode timer to support the conserve mode operation. Once
+enabled, the conserve mode timer is controlled by the occurrence of the primary activities as defined in
+RX52h, which reloads the conserve mode timer as well as the primary idle timer. The disadvantage of
+the software power management model based on the primary idle timer is that the SMI routine needs to
+be evoked to perform the clock and mode switching. Such overhead is negligible for a long period of
+system idleness but may be noticeable for short and frequent system inactivates, e.g. during keyboard
+typing. To conserve power consumption in such situations, the VT82C496G reduces the CPU clock to
+either half or a quarter of the full-on frequency (bit 4 of RX5Fh) automatically without any SMI and
+software overhead upon time-out of the conserve mode timer. Note that the time-out period for the
+conserve mode timer is a fraction of a second as opposed to seconds, minutes and hours for the primary
+idle timer. The occurrence of a primary activity switches the CPU clock to full speed and reloads the
+conserve mode timer.
+
+10.5. Zero Voltage Suspend and Shadow Registers
+    In addition to zero frequency suspend, the VT82C496G supports zero voltage suspend to further
+conserve power consumption in the range of micro amperes.
+     The zero voltage suspend disconnects the power supply to the CPU (or any other devices) so that
+the CPU consumes absolute zero power. In addition to the requirement that the CPU clock frequency
+be put to absolute zero, all the signals that connect to the CPU bus need to be conditioned such that the
+power leakage may be minimum. Note that portion of the logic in the VT82C496G is still active during
+zero voltage suspend to monitor the system activity to resume the power and clock to the CPU to
+continue its operation. The VT82C496G is put on the leakage control mode to match with the zero
+voltage condition of the external CPU by setting bit 0 of RX59h to 1.
+     The VT82C496G provides a number of write shadow registers for those standard IO ports that are
+write-only. Such registers shadow IO write operations transparent to the software so that the values may
+be remembered while the corresponding device is powered down:
+          −   RX68h : port 70h          -   RX69h : port 2F8h
+          −   RX6Ah : port 3F8h         -   RX6Bh : port 372h
+          −   RX6Ch : port 377h         -   RX6Dh : port 171h
+          −   RX6Eh : port 177h         -   RX6Fh: port 376h
+
+11. IO Address Map
+     Other than the two 82C37A compatible DMA controllers, two 82C59A compatible interrupt
+controllers, one 82C54 compatible counter/timer, the VT82C496G also includes the BIOS EPROM
+and VT82C406MV interface and the port B logic. Table 5 summarizes the IO address map for the ISA
+system. IO accesses are always run as ISA bus cycles, but the data steering depends on whether the IO
+location is on-chip, in the VT82C406MV or in the expansion ISA bus.
+
+
+
+
+                                                  -21-
+VIA Technologies, Inc.                                           VT82C496G
+
+
+
+        Address          Device                        Location
+        00-0Fh           82C37A #1                     on-chip
+        10h-1Fh          not used
+        20h-3Fh          823C59A #1                    on-chip
+        40h-43h          82C54                         on-chip
+        44h-5Fh          not used
+        60h              keyboard controller          VT82C406MV
+        61h              Port B                        on-chip
+        62h-63h          unused
+        64h              keyboard controller          VT82C406MV
+        65h-6Fh          not used
+        70h (bit 7)      NMI enable                    on-chip
+        70h-71h          CMOS, real time clock        VT82C406MV
+        80h-8Fh          DMA page register             on-chip
+        90h-91h          not used
+        92h              Port A                        on-chip
+        93h-9Fh          not used
+        A0h-A3h          82C59A #2                     on-chip
+        A4h-A7h          not used
+        A8h-A9h          configuration register        on-chip
+        AAh-BFh          not used
+        C0h-DFh          82C37A #2                     on-chip
+        E0h-EFh          not used
+        F0h              co-proc. busy clear           on-chip
+        F1h              co-proc. reset                on-chip
+        F2h-FFh          not used
+        100h-1EFh        General IO location           ISA bus
+        1F8h-3F5h        General IO location           ISA bus
+        3F6h-3F7h        IDE control block register    on-chip
+       3F8h-FFFFh        General IO location           ISA bus
+
+                      Table 5. IO Address Map
+
+
+
+
+                                    -22-
+      VIA Technologies, Inc.                                                          VT82C496G
+
+12. Scan Logic
+     The scan-in and scan-out logic uses the SCANIN and SCANOUT pins to communicate between
+the VT82C496G and the VT82C406MV. The signals to be scanned in to the VT82C496G from the
+VT82C406MV through the SCANIN pin are indicated in Table 6:
+
+
+          scan order      signal name     scan order    signal name    scan order   signal name
+              0              DRQ0              8            IRQ4           16          IRQ14
+              1              DRQ1              9            IRQ5           17          IRQ15
+              2              DRQ2             10            IRQ6           18           IRQ1
+              3              DRQ3             11            IRQ7           19          IRQ12
+              4              DRQ5             12           IRQ#8           20        A20 Gate
+              5              DRQ6             13            IRQ9           21         KBRC#
+              6              DRQ7             14           IRQ10           22          Turbo
+              7              IRQ3             15           IRQ11           23         reserved
+
+                                    Table 6. Scan-in Signal Sequence
+
+    On the other hand, the signals to be scanned out from the VT82C496G to the VT82C406MV
+through the SCANOUT pin are listed in Table 7:
+
+
+                       scan order      signal name     scan order     signal name
+                           0           ClkSel0             5          MouseLock
+                           1           ClkSel1             6          RP13
+                           2           ClkSel2             7          RP14
+                           3           ClkSel3             8          RP15
+                           4           reserved            9          RP16
+
+                                    Table 7. Scan-out Signal Sequence
+
+   Clksel0-3 reflect bit 3-0 of RX56h for the CLKIN frequency. RP13-16 are the jumper setting of
+MA0-3 at power on reset. These four bits are transmitted to the keyboard controller inside the
+VT82C406MV. These four bits can also be read from bit 3-0 of RX64h.
+     There are twenty-four scan-in signals and ten scan-out signals. Both the VT82C496G and the
+VT82C406MV use both edges of the OSC clock as the scan clock. After system reset, the two chips are
+initialized to the same scan order and the communication between the two chips runs forever.
+
+
+13. Configuration Registers
+      Every internal register in the VT82C496G is assigned an 8-bit index. Two IO ports are used to
+access the entire register set: the index port at address A8 and the data port at A9. To access a register,
+first write the index into the index port and then read or write the data through the data port. For detail
+description of the configuration register, refer to application note "Configuration Registers for the
+VT82C496G".
+
+
+
+
+                                                     -23-
+         VIA Technologies, Inc.                                                   VT82C496G
+
+
+                         VT82C496G Signal Description
+
+Signal Name   Pin Number     Type                          Signal Description
+
+                                    CLOCK CONTROL
+CLKIN             162         I     Clock input from the VT82C406MV.
+CPUCLKO           118         O     Clock output that drives the CPU and local bus devices.
+CPUCLKI           145         I     CPU clock input with minimum skew with the CPU and local
+                                    bus devices.
+CLKSEL0-3/     22, 23, 49,    B     Multi-function pin:
+RAS#0-3            50               1. At power on reset: CLKIN frequency selection.
+                                    2. After power on reset: DRAM RAS# control.
+SYSCLK            208         O     ISA bus clock.
+OSC               187         I     14.318Mhz clock input from the VT82C406MV.
+
+                                    RESET CONTROL
+PWRGOOD           146         I     System power good signal generated from the power supply.
+RESET#            144         O     Active low reset signal for the ISA system.
+CPURESET          137         O     Reset for the CPU.
+INIT              143         O     soft reset for CPUs with internal write-back cache.
+
+                                     CPU INTERFACE
+ADS#              109         B     Address Strobe. The falling edge indicates the start of a CPU
+                                    local bus cycle.
+MIO#              110         B     Memory/IO status. High indicates a memory cycle and low
+                                    indicates an IO cycle.
+WR#               111         B     Write/read status. High indicates a write cycle and low indicates
+                                    a read cycle.
+DC#/              120         B     Multi-function pin:
+Alter                               1. MA9 sampled high at reset: D/C# status indicatr.
+                                    2. MA9 sampled low: Alter bit for 8-bit-tag-with-alter-bit
+                                    write-back cache.
+BE#0              108         B     byte enable 0.
+BE#1              107         B     byte enable 1.
+BE#2              106         B     byte enable 2.
+BE#3              105         B     byte enable 3.
+NPBZ#              78         B     80486DX/SX: CPU address A26. Act as input during CPU
+/CA26                               cycles and output during DMA and master cycles.
+                                    80386DX/SX: Input from pin BUSY# of the 80387DX/SX.
+                                    /Multi-function pin.
+CA2-25         31-28,26-      B     CPU local bus address. Act as input during CPU and master
+              23,154, 173-          cycles and as output during DMA cycles.
+                166,160-
+                155,153
+A20M#              76         O     A20 mask output to the CPU.
+CD0-31         71-62, 58-     B     CPU data bus.
+              53, 136-121
+READY#            113         O     Ready output to the CPU.
+
+
+
+
+                                               -24-
+        VIA Technologies, Inc.                                             VT82C496G
+
+EADS#           138      O   External ADS output to the CPU to force an internal snoop
+/NPRESET                     cycle.
+                             /80486DX/SX: External ADS output to the CPU to force an
+                             internal invalidation cycle.
+                             80386DX/SX: Reset signal for the 80387DX/SX.
+KEN#            73       O   Cache enable output to the CPU to indicate whether the current
+/PEREQ#                      cycle is cacheable.
+                             /80486DX/SX: Cache enable output to the CPU to indicate
+                             whether the current cycle is cacheable.
+                             80386DX/SX: Output to pin PEREQ of the CPU.
+HITM#           115      I   Input from CPUs with internal write-back cache to indicate the
+                             snoop cycle hits a dirty internal cache line.
+BRDY#           59       O   Burst ready output to the CPU.
+/NA#                         /Multi-function pin
+BLAST#/         72       I   Multi-function pin:
+CACHE#                       1. Bit 5 of RX5Eh is 0 : burst last input from the CPU.
+/NPREQ                       2. Bit 5 of RX5Eh is 1 : burst cycle indicator.
+                             / 80486DX/SX: Burst last input from PEREQ of the
+                             80387DX/SX.
+HOLD            139      O   Hold request to the CPU.
+HLDA            140      I   Hold acknowledge from the CPU.
+STPCLK#/        117      B   Multi-function pin:
+SUSPA#                       1. Intel CPU: STPCLK# output to the SL enhanced CPU to
+                             request change of the CPU clock.
+                             2. TI/Cyrix CPU: suspend acknowledgment input from the CPU.
+                             This pin is defined as SUSPA# at power on reset, and can be
+                             changed to STPCLK# by programming RX5Ch after reset.
+SMI#            141      B   SMI output to the CPU.
+FERR#            75      I   Input from pin FERR# of the CPU
+/NPERR#                      /Multi-function pin
+IGNNE#          74       O   Output to pin IGNNE# of the CPU
+/BUSY#                       /Multi-function pin.
+SMIACT#/        112      I   Multi-function pin:
+SMIADS#                      1. Intel CPUs: SMI active input from the CPU.
+                             2. Other CPUs: SMI ADS# input from the CPU.
+                             The definition of this pin depends on the setting of RX5Bh.
+INTR            191      O   Interrupt request to the CPU.
+NMI             77       O   Non-maskable interrupt request to the CPU.
+FLUSH#/         116      B   Multi-function pin:
+HIGHA                        1. MA10 sampled high at reset: output to the CPU FLUSH# pin.
+                             2. MA10 sampled low at reset: input indicator for address above
+                             128MB to disable the on-board cache and DRAM access.
+
+                         LOCAL BUS INTERFACE
+LRDY#           161      I   Local bus ready input.
+LDEV#0-1      157, 158   I   Input from one of two local bus devices indicating the device is
+                             accessed in the current cycle.
+LREQ#0          160      I   Input from the local bus master to request the CPU bus
+                             ownership.
+LGNT#0          159      O   Output to the local bus master to grant the CPU bus ownership.
+
+
+
+
+                                        -25-
+         VIA Technologies, Inc.                                               VT82C496G
+
+LREQ#1/           179        B   Multi-function pin:
+BLSEL#/                          1. MA8-7 sampled as 00 at reset: second local bus request.
+SMEMR#                           2. MA8-7 sampled as 01 at reset: low DRAM bank select.
+                                 3. MA8 sampled as 1 at reset: SMEMR# of the ISA bus.
+LGNT#1/           180        B   Multi-function pin:
+BHSEL#/                          1. MA8-7 sampled as 00 at reset: second local bus grant.
+TurboBus#                        2. MA8-7 sampled as 01 at reset: high DRAM bank select.
+                                 3. MA8 sampled as 1 at reset: turbo bus active.
+
+                                 CACHE CONTROL
+CBOE#0-1          6, 7       O   Cache SRAM output enable for each bank.
+CCS#0-1           8, 9       O   Cache SRAM chip select for each bank.
+CWE#0-3       4, 5, 20, 21   O   Cache SRAM write enable for each byte.
+A3SEL0-1          2, 3       O   Multi-function pin:
+                                 1. Two bank of SRAMs: address A3 for each bank to allow bank
+                                 interleaving.
+                                 2. One bank of SRAM: address A2 and A3 for the SRAM.
+TA0-7         11-14, 16-19   B   Tag data.
+TAGWE#             51        O   Tag SRAM write enable.
+
+                                 DRAM CONTROL
+RAS#0-3/       22, 23, 49,   O   Multi-function pin:
+MA11/              50            1. After power on reset: row address strobe for each bank (pair)
+CLKSEL0-3                        of on-board DRAMs. For double bank pairs, BHSEL# and
+                                 BLSEL# signals are used to distinguish between the two banks.
+                                 RAS#3 is also used as MA11 if bank 3 is not populated.
+                                 2. At power on reset: frequency select for the clock generator.
+CAS#0-3          45-48       O   Column address strobe for each byte of on-board DRAMs.
+WE#               52         O   DRAM write enable.
+MA0/              24         B   Multi-function pin:
+ROMCS#/                          1. DRAM cycle: DRAM address 0.
+P13                              2. Other cycle: qualified by MAMUX# to generate the ROM chip
+                                 select.
+                                 3. Power-on Reset: input port P13 for the keyboard controller
+                                 inside the VT82C406MV.
+MA1/               25        B   Multi-function pin:
+KBCS#/                           1. DRAM cycle: DRAM address 1.
+P14                              2. Other cycle: qualified by MAMUX# to generate the keyboard
+                                 controller chip select.
+                                 3. Power-on Reset: input port P14 for the keyboard controller.
+MA2/               26        B   Multi-function pin:
+RTCCS#/                          1. DRAM cycle: DRAM address 2.
+P15                              2. Other cycle: qualified by MAMUX# to generate the RTC data
+                                 select for the VT82C406MV.
+                                 3. Power-on Reset: input port P15 for the keyboard controller.
+MA3/               27        B   Multi-function pin:
+RTCRW#/                          1. DRAM cycle: DRAM address 3.
+P16                              2. Other cycle: qualified by MAMUX# to generate the real time
+                                 clock data read/write control.
+                                 3. Power-on Reset: input port P16 for the keyboard controller.
+
+
+
+
+                                            -26-
+         VIA Technologies, Inc.                                               VT82C496G
+
+MA4-7/          30-33     O   Multi-function pin:
+PC0-3                         1. DRAM cycle: DRAM address 4-7.
+                              2. Other cycle: power/peripheral control output to be latched by
+                              external latches (controlled by PCWE#).
+MA8/             39       O   Multi-function pin:
+PCWE#                         1. DRAM cycle: DRAM address 8.
+                              2. Other cycle: qualified by MAMUX# for controlling the write
+                              enable of the PC0-3 latches.
+MA9-10          40, 41    O   DRAM address 9-10.
+MPD0/             34      B   Multi-function pin:
+RTCCS#                        1. MA6 sampled high at reset: DRAM parity bit for byte 0.
+                              2. MA6 sampled low at reset: RTCCS# for the VT82C406MV.
+MPD1/            35       B   Multi-function pin:
+KBCS#                         1. MA6 sampled high at reset: DRAM parity bit for byte 1.
+                              2. MA6 sampled low at reset: KBCS# for the keyboard
+                              controller.
+MPD2/            36       B   Multi-function pin:
+IDEIOR#                       1. MA6 sampled high at reset: DRAM parity bit for byte 2.
+                              2. MA6 sampled low at reset: IOR# for the IDE drives.
+MPD3/            37       B   Multi-function pin:
+IDEIOW#                       1. MA6 sampled high at reset: DRAM parity bit for byte 3.
+                              2. MA6 sampled low at reset: IOW# for the IDE drives.
+
+                         ON-BOARD PERIPHERALS
+XD0-7          173-166    B   8-bit data bus for communication between the VT82C496G and
+                              on-board peripherals. The XD bus is buffered externally to drive
+                              the lower byte of the ISA SD bus.
+XDIR             192      O   Directional control for the external XD to SD buffer.
+ROMCS#/           24      B   Multi-function pin:
+MA0/                          1. Non-DRAM cycle: qualified by MAMUX# to generate the ROM
+P13                           chip select.
+                              2. DRAM cycle: DRAM address 0.
+                              3. Power-on reset: input port P13 for the keyboard controller.
+RTCRW#/          27       B   Multi-function pin:
+MA3/                          1. Non-DRAM cycle: qualified by MAMUX# to generate the real time
+P16                           clock data read/write control.
+                              2. DRAM cycle: DRAM address 3.
+                              3. Power-on Reset: input port P16 for the keyboard controller.
+PC0-3/          30-33     O   Multi-function pin:
+MA4-7                         1. No-DRAM cycle: power/peripheral control output to be latched by
+                              external latches (controlled by PCWE#).
+                              2. DRAM cycle: DRAM address 4-7.
+PCWE#/           39       O   Multi-function pin:
+MA8                           1. Non-DRAM cycle: qualified by MAMUX# for controlling the write
+                              enable of the PC0-3 latches.
+                              DRAM cycle: DRAM address 8.
+MAMUX#           148      O   Memory address/IO de-multiplex control. High indicates a DRAM
+                              cycle which deactivates all the chip selects for the on-board
+                              peripherals. For ISA memory cycle, this pin acts as LMEG# to derive
+                              the SMEMR# and SMEMW# from the MEMR# and MEMW#. This
+                              pin is low for ISA IO cycles to enable the chip select.
+SPKR             193      O   Speaker output.
+
+
+                         VT82C406MV INTERFACE
+
+
+                                         -27-
+         VIA Technologies, Inc.                                            VT82C496G
+
+SCANIN           194      I    Scan input from the VT82C406MV.
+SCANOUT          195      O    Scan output to the VT82C406MV.
+RTCAS            163      O    Address strobe for the real time clock.
+RTCCS#/           26      B    Multi-function pin:
+MA2/                           1. Non-DRAM cycle: qualified by MAMUX# to generate the
+P15                            RTC data select for the VT82C406MV.
+                               2. DRAM cycle: DRAM address 2.
+                               3. Power-on Reset: input port P15 for the keyboard controller.
+RTCCS#/          34       B    Multi-function pin:
+MPD0                           1. MA6 sampled low at reset: RTCCS# for the VT82C406MV.
+                               No qualification of MAMUX# is required.
+                               2. MA6 sampled high at reset: DRAM parity bit for byte 0.
+KBCS#/           25       B    Multi-function pin:
+MA1/                           1. Non-DRAM cycle: qualified by MAMUX# to generate the
+P14                            keyboard controller chip select.
+                               2. DRAM cycle: DRAM address 1.
+                               3. Power-on Reset: input port P14 for the keyboard controller.
+KBCS#/           35       B    Multi-function pin:
+MPD1                           1. MA6 sample low at reset: KBCS# for the keyboard controller
+                               No qualification of MAMUX# is required.
+                               2. MA6 sampled high at reset: DRAM parity bit for byte 1.
+DACEN            174      O    DACK# control to the VT82C406MV.
+
+                              ISA BUS CONTROL
+SA0-7          205-202,   B    System address for the ISA bus. Act as output during CPU,
+               199-196         refresh and DMA cycles and as input during master cycles.
+SBHE#            206      B    System byte high enable. Act as output during CPU, refresh and
+                               DMA cycles and as input during master cycles.
+SD8-15         156-149    B    High byte system data for the ISA bus.
+IOR#             175      B    ISA bus IO read command. Act as output during CPU and DMA
+                               cycles and as input during master cycles.
+IOW#             176      B    ISA bus IO write command. Act as output during CPU and
+                               DMA cycles and as input during master cycles.
+MEMR#            181      B    ISA bus memory read command. Act as output during CPU and
+                               DMA cycles and as input during master cycles.
+MEMW#            182      B    ISA bus memory write command. Act as output during CPU and
+                               DMA cycles and as input during master cycles.
+BALE             207      O    Buffered address latch enable for the ISA bus.
+IO16#            177      I    IO cycle 16-bit select input from the ISA bus.
+MS16#            178      I    Memory cycle 16-bit select input from the ISA bus.
+MASTER#          189      I    Master cycle indicator from the ISA bus.
+IOCHRDY#         184      I    IO channel ready input from the ISA bus.
+REFRESH#         183      B    System DRAM refresh control. This pin is an open-drain output
+                               and allows other bus master to initiate refresh requests.
+AEN              188      O    Address enable output to the ISA bus.
+TC               190      O    DMA terminal count output to the ISA bus.
+
+
+
+
+                                         -28-
+         VIA Technologies, Inc.                                                VT82C496G
+
+
+
+                                   IDE CONTROL
+DCS#1/             202         B   Multi-function pin:
+SA3                                1. IDE cycle: IDE select DCS#1
+                                   2. other ISA cycle: SA3
+DCS#3/             199         B   Multi-function pin:
+SA4                                1. IDE cycle: IDE select DCS#3
+                                   2. other ISA cycle: SA4
+TurboBus#/         180         B   Multi-function pin:
+LGNT#1/                            1. MA8 sampled as 1 at reset: turbo bus active.
+BHSEL#                             2. MA8-7 sampled as 00 at reset: second local bus grant.
+                                   3. MA8-7 sampled as 01 at reset: high DRAM bank select.
+TurboBus#/         190         O   Multi-function pin:
+TC                                 1. non-DMA cycle: turbo bus active.
+                                   2. DMA cycle: DMA terminal count indicator.
+IDEIOR#/           36          B   Multi-function pin:
+MPD2\                              1. MA6 sampled low at reset: IOR# for the IDE drives.
+                                   2. MA6 sampled high at reset: DRAM parity bit for byte 2.
+IDEIOW#/           37          B   Multi-function pin:
+MPD3\                              1. MA6 sampled low at reset: IOW# for the IDE drives.
+                                   2. MA6 sampled high at reset: DRAM parity bit for byte 3.
+
+                               POWER AND GROUND
+VDD            10, 28, 42,     I   Power supply of 4.5 to 5.5V.
+               43, 61, 97,
+                114, 147,
+                165, 185,
+                   201
+VSS           1, 15, 29, 38,   I   Ground
+               44, 60, 96,
+                119, 142,
+                164, 186,
+                   200
+
+
+
+
+                                             -29-
+     VIA Technologies, Inc.                                               VT82C496G
+
+Pin No.   Pin Name   Pin No.   Pin Name    Pin No.   Pin Name   Pin No.    Pin Name
+  1       VSS          53      CD15          105     BE#3         157      LDEV#0
+  2       A3SEL0       54      CD14          106     BE#2         158      LDEV#1
+  3       A3SEL1       55      CD13          107     BE#1         159      LGNT#0
+  4       CWE#0        56      CD12          108     BE#0         160      LREQ#0
+  5       CWE#1        57      CD11          109     ADS#         161      LRDY#
+  6       CBOE#0       58      CD10          110     MIO#         162      CLKIN
+  7       CBOE#1       59      BRDY#         111     WR#          163      RTCAS
+  8       CCS#0        60      VSS           112     SMIACT#      164      VSS
+  9       CCS#1        61      VDD           113     READY#       165      VDD
+  10      VDD          62      CD9           114     VDD          166      XD7
+  11      TA0          63      CD8           115     HITM#        167      XD6
+  12      TA1          64      CD7           116     FLUSH#       168      XD5
+  13      TA2          65      CD6           117     STPCLK#      169      XD4
+  14      TA3          66      CD5           118     CPUCLKO      170      XD3
+  15      VSS          67      CD4           119     VSS          171      XD2
+  16      TA4          68      CD3           120     DC#          172      XD1
+  17      TA5          69      CD2           121     CD31         173      XD0
+  18      TA6          70      CD1           122     CD30         174      DACEN
+  19      TA7          71      CD0           123     CD29         175      IOR#
+  20      CWE#2        72      BLAST#        124     CD28         176      IOW#
+  21      CWE#3        73      KEN#          125     CD27         177      IO16#
+  22      RAS#0        74      IGNNE#        126     CD26         178      MS16#
+  23      RAS#1        75      FERR#         127     CD25         179      BLSEL#
+  24      MA0          76      A20M#         128     CD24         180      BHSEL#
+  25      MA1          77      NMI           129     CD23         181      MEMR#
+  26      MA2          78      CA26          130     CD22         182      MEMW#
+  27      MA3          79      CA25          131     CD21         183      REFRESH#
+  28      VDD          80      CA24          132     CD20         184      IOCHRDY#
+  29      VSS          81      CA23          133     CD19         185      VDD
+  30      MA4          82      CA22          134     CD18         186      VSS
+  31      MA5          83      CA21          135     CD17         187      OSC
+  32      MA6          84      CA20          136     CD16         188      AEN
+  33      MA7          85      CA19          137     CPURST       189      MASTER#
+  34      MPD0         86      CA18          138     EADS#        190      TC
+  35      MPD1         87      CA17          139     HOLD         191      INTR
+  36      MPD2         88      CA16          140     HLDA         192      XDIR
+  37      MPD3         89      CA15          141     SMI#         193      SPKR
+  38      VSS          90      CA14          142     VSS          194      SCANIN
+  39      MA8          91      CA13          143     INIT         195      SCANOUT
+  40      MA9          92      CA12          144     RESET#       196      SA7
+  41      MA10         93      CA11          145     CPUCLKI      197      SA6
+  42      VDD          94      CA10          146     PWRGOOD      198      SA5
+  43      VDD          95      CA9           147     VDD          199      SA4
+  44      VSS          96      VSS           148     MAMUX#       200      VSS
+  45      CAS#0        97      VDD           149     SD15         201      VDD
+  46      CAS#1        98      CA8           150     SD14         202      SA3
+  47      CAS#2        99      CA7           151     SD13         203      SA2
+  48      CAS#3        100     CA6           152     SD12         204      SA1
+  49      RAS#2        101     CA5           153     SD11         205      SA0
+  50      RAS#3        102     CA4           154     SD10         206      SBHE#
+  51      TAGWE#       103     CA3           155     SD9          207      BALE
+  52      WE#          104     CA2           156     SD8          208      SYSCLK
+
+
+
+
+                                          -30-
+      VIA Technologies, Inc.                                                       VT82C496G
+
+
+
+
+                     ELECTRICAL CHARACTERISTICS
+                            Absolute Maximum Ratings
+
+ Parameter                         Min                     Max                  Unit
+ Ambient operating                   0                         70                oC
+ temperature
+ Storate temperature                 -55                       125               oC
+
+ Input voltage                     -0.5                        5.5               V
+ Output voltage                    -0.5                        5.5               V
+
+
+ Note :
+     Stress above these listed cause permanent damage to device. Functional operation of
+ this evice should be restricted to the conditions described under operating conditions.
+
+
+
+                                     DC Characteristics
+TA-0-70oC, VDD=5V=/-5%, GND=0V
+
+ Symbol           Parameter                Min           Max         Unit       Condition
+    VIL      Input low voltage             -.50           0.8         V
+   VIH       Imput high voltage            2.0      VDD+0.5           V
+   VOL       Output low voltage             -            0.45         V     IOL=4.0mA
+   VOH       Output high voltage           2.4             -          V     IOH=-1.0mA
+    IIL      Input leakage current          -            +/-10       uA     0<VIN<VDD
+    IOZ      Tristate leakage current       -            +/-20       uA     0.45<VOUT<VDD
+    ICC      Power supply current           -             80         mA
+
+
+
+
+                                                  -31-
+    VIA Technologies, Inc.                                       VT82C496G
+
+
+
+                  CPU Cycle AC Characteristics
+
+Symbol                    Description                     min (ns)   max (ns)
+ T100    ADS# setup time to CCLK2 rising edge                7
+ T101    BRDY# active delay from TA<7;0> valid                         13
+ T102    A3SEL<1:0>valid delay from CA<3:2> valid                      12
+ T103    CBOE<1:0> active delay from CA<3:2> valid                     15
+ T104    CBOE<1:0> active delay from CCLK2 rising edge                 11
+ T105    A3SEL<1:0> valid delay from CCLK2 rising edge                 14
+ T106    KEN# active delay from CCLK2 rising edge                      13
+ T107    READY# active delay from CCLK2 rising edge                    12
+ T108    READY# hold time from CCLK2 rising edge                       13
+ T109    BRDY# hold time from CCLK2 rising edge                        13
+ T110    BLAST# setup time from CCLK2 rising edge            7
+ T111    BRDY# active delay from CCLK2 rising edge                     11
+ T112    CBOE# active delay from ADS#                                  15
+ T113    CCS# active delay from ADS#                                   11
+ T114    A3SEL<1:0> valid delay from CA<3:2>                           12
+ T115    CWE#<3:0> active delay from CCLK2 falling edge                11
+ T116    CWE#<3:0> hole time from CCLK2 rising edge                    10
+ T117    READY# active delay from TA<7:0> valid                        14
+ T118    CWE# active delay from CCLK2 rising edge                      11
+ T119    CCS# active delay from CA<3:2 > valid                         12
+ T120    CBOE# inactive delay from CCLK2 rising edge                   12
+ T121    CCS# valid delay from CCLK2 rising edge                       11
+ T122    TAGWE# active delay from CCLK2 rising edge                    13
+ T123    ALTWE# active delay from CCLK2 rising edge                    13
+ T124    TAGWE# hold time from CCLK2 rising edge                       12
+ T125    ALTWE# hold time from CCLK2 rising edge                       12
+ T126    TA<7:0> output delay from CCLK2 rising edge                   15
+ T127    KEN# inactive delay from CCLK2 rising edge                    15
+ T128    RAS# active delay from CCLK2 rising edge                      16
+ T129    MA valid delay from CCLK2 rising edge                         18
+ T130    CAS# active delay from CCLK2 rising edge                      14
+ T131    CAS# hold time from CCLK2 rising edge                         15
+ T132    RAS# inactive delay from CCLK2 rising edge                    17
+ T133    WE# active delay from CCLK2 rising edge                       16
+ T134    WE# inactive delay from CCLK2 rising edge                     15
+
+
+
+
+                                     -32-
+    VIA Technologies, Inc.                                    VT82C496G
+
+
+
+              ISA Master Cycle AC Characteristics
+
+Symbol                    Description                   min(ns)   max(ns)
+ T200    RAS# active delay from CCLK2 falling edge                  18
+ T201    RAS# inactive delay from MEMW# rising edge                 16
+ T202    column MA valid delay from CCLK2 rising edge               20
+ T203    CAS# active delay from CCLK2 falling edge                  17
+ T204    ADS# active delay from CCLK2 rising edge                   15
+ T205    ADS# hold time from CCLK2 rising edge                      25
+ T206    EADS# active delay from CCLK2 rising edge                  23
+ T207    EADS# hold time from CCLK2 rising edge                     17
+ T208    CAS# inactive delay from MEMR# rising edge                 17
+ T209    CBOE# active delay from CCLK2 rising edge                  14
+ T210    CBOE# inactive delay from CCLK2 rising edge                15
+ T211    CCS# active delay from CCLK2 rising edge                   15
+ T212    A3SEL active delay from CCLK2 rising edge                  16
+ T213    CWE# active delay from CCLK2 rising edge                   16
+ T214    CWE# inactive delay from CCLK2 rising edge                 20
+
+
+
+
+                                     -33-
+    VIA Technologies, Inc.                                      VT82C496G
+
+
+
+               Local Bus Cycle AC Characteristics
+
+Symbol                   Description                     min(ns)   max(ns)
+ T400    LOCAL# setup time to CCLK2 rising edge             7
+ T401    NPRDY# setup timeto CCLK2 rising edge              7
+ T402    CHRDY inactive delay from LOCAL# falling edge               15
+ T403    CHRDY float delay from NPRDY# falling edge                  20
+ T404    LDSTB active delay from NPRDY# falling edge                 13
+ T405    LDSTB inactive delay from NPRDY# rising edge                14
+ T406    MDEN# delay from LOCAL# falling edge                        20
+
+
+
+
+                                    -34-
+         VIA Technologies, Inc.                                                          VT82C496G
+
+
+
+             Cache Read Hit Cycle (Burst 2-1-1-1, 2Bank)
+
+
+
+CCLK2
+                       T100
+
+ADS#
+
+                                CA               CA+4        CA+8          CA+C
+CA
+
+TA
+                T103                         T104
+
+                                     10          01           10            01           11
+CBOE#
+                T113
+
+                                     00
+CCS#
+                                          T105
+                T102
+
+                                     00                 01         11
+A3SEL
+                                                                    T107
+                                                                                  T108
+
+
+READY#
+                              T101
+                                                                                  T109
+
+
+BRDY#
+                                                                                 T110
+
+
+BLAST#
+                              T106
+
+
+                                           0 or 1
+KEN#
+
+
+
+
+                                                      -35-
+         VIA Technologies, Inc.                                      VT82C496G
+
+
+
+             Cache Read Hit Cycle (Burst 2-1-1-1, 1Bank)
+
+
+
+CCLK2
+
+ADS#
+
+                         CA                CA+4        CA+8   CA+C
+CA
+
+TA
+                T112
+
+                 11                 00                               11
+CBOE#
+                T113
+
+                          00
+CCS#
+                T114
+
+                          00                      01     11
+A3SEL
+
+
+READY#
+
+BRDY#
+
+BLAST#
+
+                                  0 or 1
+KEN#
+
+
+
+
+                                             -36-
+         VIA Technologies, Inc.                                                   VT82C496G
+
+
+
+                 Cache Read Hit Cycle (Burst 3-1-1-1)
+
+
+
+CCLK2
+
+ADS#
+
+                           CA                           CA+4     CA+8        CA+C
+CA
+
+TA
+
+                               10                      01        10          01       11
+CBOE#
+
+                          00
+CCS#
+
+                          00                                01          11
+A3SEL
+
+READY#
+                                    T111
+
+
+
+BRDY#
+
+
+BLAST#
+
+                                       0 or 1
+KEN#
+
+
+
+
+                                                -37-
+        VIA Technologies, Inc.                       VT82C496G
+
+
+
+                       Cache Write Hit Cycle (0WS)
+
+
+
+CCLK2
+
+ADS#
+
+
+CA
+
+
+TA
+                               T115   T116
+
+
+                       11             00     11
+CWE#
+               T119
+
+
+CCS#
+                T114
+
+
+A3SEL
+                        T117          T118
+
+
+
+READY#
+
+
+
+
+                                             -38-
+        VIA Technologies, Inc.                           VT82C496G
+
+
+
+                       Cache Write Hit Cycle (1WS)
+
+
+
+CCLK2
+
+ADS#
+
+
+CA
+
+
+TA
+                               T118          T116
+
+
+                       11               00          11
+CWE#
+               T119
+
+
+CCS#
+                T114
+
+
+A3SEL
+                        T117     T118
+
+
+
+READY#
+
+
+
+
+                                             -39-
+         VIA Technologies, Inc.                                        VT82C496G
+
+
+
+             Cache Write Hit Cycle (Burst 2-1-1-1, 2Bank)
+
+
+
+CCLK2
+
+ADS#
+
+                          CA                 CA+4        CA+8   CA+C
+CA
+
+
+TA
+                        T118
+
+
+CWE#
+
+                               00
+CCS#
+
+                               00                   01     11
+A3SEL
+
+
+READY#
+
+BRDY#
+
+
+BLAST#
+
+                                    0 or 1
+KEN#
+
+
+
+
+                                               -40-
+         VIA Technologies, Inc.                                          VT82C496G
+
+
+
+                  Cache Read Miss Fill Cycle (2Bank)
+
+
+
+CCLK2
+
+ADS#
+
+                                CA                    CA+4   CA+8         CA+C
+CA
+
+TA
+                 T103    T120
+
+
+                        00              11
+CBOE#
+                                             T121
+
+
+                    10          10                    01     10           01
+CCS#
+
+                                 00                                 11
+A3SEL
+
+READY#
+                                     T111    T109
+
+
+
+BRDY#
+
+BLAST#
+                                 T118          T116
+
+
+CWE#
+
+
+
+
+                                                      -41-
+         VIA Technologies, Inc.                                               VT82C496G
+
+
+
+               Cache Read Miss Dirty Fill Cycle (2Bank)
+
+
+
+CCLK2
+
+ADS#
+
+                                  CA                            CA+4   CA+8         CA+C
+CA
+                                T126
+
+
+
+TA
+
+              10    01 10 01           11
+CBOE#
+
+                    00                         10                01    10            01
+CCS#
+
+               00   01   11                                                    11
+                                                    00
+A3SEL
+
+CWE#
+                         T122
+                                        T124
+
+
+TAGWE#
+
+ALT
+                         T123           T125
+
+
+ALTWE#
+
+
+READY#
+
+
+BRDY#
+
+
+BLAST#
+
+
+
+
+                                                         -42-
+        VIA Technologies, Inc.                                  VT82C496G
+
+
+
+                      Cache Read Miss Non-Cacheable
+
+
+                 T1            T2
+
+
+CCLK2
+
+ADS#
+
+CA
+
+                               00               11
+CBOE#
+
+                               00
+CCS#
+
+                               00
+A3SEL
+
+RAS#
+
+                                    row addr         col addr
+MA
+
+
+CAS#
+
+READY#
+                        T127
+
+
+
+KEN#
+
+
+
+
+                                               -43-
+        VIA Technologies, Inc.                                           VT82C496G
+
+
+
+                        Cache Write Miss Cycle
+
+
+CCLK2
+
+ADS#
+
+CA
+
+
+TA
+
+
+CWE#
+
+CCS#
+
+A3SEL
+
+READY#
+                                      T128
+
+RAS#
+                                               T129
+
+                               row addr                col addr
+MA
+                                                      T130        T131
+
+
+CAS#
+                        T133
+
+WE#
+
+
+
+
+                                             -44-
+        VIA Technologies, Inc.                            VT82C496G
+
+
+
+              DRAM Read Cycle (On Page, RX22=64h)
+
+
+
+CCLK2
+
+ADS#
+
+
+RAS#
+                        T129
+
+                                 col addr
+MA
+                                    T130           T131
+
+
+CAS#
+
+READY#
+                         T134
+
+WE#
+
+
+
+
+                                            -45-
+        VIA Technologies, Inc.                                 VT82C496G
+
+
+
+             DRAM Read Cycle (Start Page, RX22=64h)
+
+
+
+CCLK2
+
+ADS#
+
+
+RAS#
+                        T129                 T129
+
+                               row addr             col addr
+MA
+                                                       T130     T131
+
+
+CAS#
+
+READY#
+
+WE#
+
+
+
+
+                                          -46-
+         VIA Technologies, Inc.                                       VT82C496G
+
+
+
+               DRAM Read Cycle (Off Page, RX22=64h)
+
+
+
+CCLK2
+
+ADS#
+                                    T132              T128
+
+
+
+RAS#
+                                                             T129
+
+                         col addr          row addr                 col addr
+MA
+                                                                    T130       T131
+
+
+CAS#
+
+READY#
+
+WE#
+
+
+
+
+                                           -47-
+        VIA Technologies, Inc.                        VT82C496G
+
+
+
+                    ISA Master DRAM Write Cycle
+
+
+
+CCLK2
+
+MSTR16#
+
+MEMW#
+                                 T200                   T201
+
+
+RAS#
+                                 T202
+
+
+MA
+                                               T203     T208
+
+
+CAS#
+                                 T204          T205
+
+
+ADS#
+
+
+READY#
+
+
+WR#
+
+MIO
+
+
+WE
+
+
+
+
+                                        -48-
+        VIA Technologies, Inc.                        VT82C496G
+
+
+
+                    ISA Master DRAM Read Cycle
+
+
+
+CCLK2
+
+MSTR16#
+
+
+MEMR#
+                                 T200                   T201
+
+
+RAS#
+                                 T202
+
+
+MA
+                                               T203     T208
+
+
+CAS#
+                                 T204          T205
+
+
+ADS#
+                                 T206          T207
+
+
+EADS#
+
+
+READY#
+
+
+WR#
+
+MIO
+
+WE
+
+
+
+
+                                        -49-
+        VIA Technologies, Inc.                     VT82C496G
+
+
+
+                    ISA Master Cache Write Cycle
+
+
+
+CCLK2
+
+MSTR16#
+
+
+MEMW#
+                             T213                  T214
+
+
+CWE#
+
+
+CCS#
+
+A3SEL
+
+
+ADS#
+
+
+READY#
+
+
+WR#
+
+MIO
+
+
+WE
+
+
+
+
+                                    -50-
+        VIA Technologies, Inc.                     VT82C496G
+
+
+
+                     ISA Master Cache Read Cycle
+
+
+
+CCLK2
+
+MSTR16#
+
+
+MEMW#
+                                 T209              T210
+
+
+CBOE#
+                  T211
+
+
+CCS#
+                  T212
+
+
+A3SEL
+
+
+ADS#
+
+
+READY#
+
+
+WR#
+
+MIO
+
+
+WE
+
+
+
+
+                                        -51-
+         VIA Technologies, Inc.                                  VT82C496G
+
+
+
+                          Local Bus Read Cycle
+
+
+                  T1     T2
+
+
+CCLK2
+
+ADS#
+
+CA
+
+                 11      00       11
+CBOE#
+                          T400
+
+
+
+LOCAL#
+                                              T401
+
+
+
+NPRDY#
+                                                     T107 T108
+
+
+READY#
+
+
+
+
+                                       -52-
+         VIA Technologies, Inc.                                  VT82C496G
+
+
+
+                      ISA Master Local Read Cycle
+
+
+BCLK2
+
+
+BCLK
+
+CA
+
+MSTR16#
+
+
+MEMR#
+
+CMD#
+
+CCLK2
+
+ADS#
+
+READY#
+                                                T401
+
+
+NPRDY#
+
+LOCAL#
+                                  T402             T403
+
+
+CHRDY
+                                         T404             T405
+
+
+LDSTB
+                                           T406
+
+
+MDEN#
+
+
+
+
+                                            -53-
+         VIA Technologies, Inc.                     VT82C496G
+
+
+
+                     ISA Master Local Write Cycle
+
+
+BCLK2
+
+
+BCLK
+
+CA
+
+MSTR16#
+
+
+MEMW#
+
+CMD#
+
+CCLK2
+
+ADS#
+
+READY#
+
+NPRDY#
+
+LOCAL#
+
+CHRDY
+
+
+CDEN
+                                  T406
+
+
+
+MDEN#
+
+
+
+
+                                         -54-
+       VIA Technologies, Inc.                                                            VT82C496G
+
+                                 208-Pin Plastic Flat Package
+                                                 30.6+/-0.2
+
+                                                 27.2+/-0.4
+
+              156                                                             105
+
+
+
+
+0.85TYP
+     157                                                                                104
+
+
+
+
+                                                                                        27.2+/-0.4
+
+
+
+
+                                                                                              30.6+/-0.2
+
+
+
+
+     208                                                                                53
+
+
+
+                1                                                             52
+    0.85TYP                                            0.2+/-0.1
+                                                                   0.08   M
+                       0.5
+
+
+
+
+                                                                                    3.35+/-0.4
+
+                                                                                               4.60MAX
+
+
+
+                                    0.1                                               0.55 +0.3
+                                                                                           -0.2
+                                              29.6+/-0.4
+
+
+
+
+                         +0.1
+                    0.15 -0.05
+                                          o
+                                     0~10
+
+                                    0.5+/-0.2
+
+
+
+
+                                                   -55-
+

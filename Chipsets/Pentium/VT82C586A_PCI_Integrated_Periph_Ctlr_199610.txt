@@ -1,0 +1,2399 @@
+              97&$
+                     3,3&
+      3&,,QWHJUDWHG3HULSKHUDO&RQWUROOHU
+
+     3&&RPSOLDQW3&,WR,6$%ULGJH
+       ZLWK3OXJDQG3OD\86%&RQWUROOHU
+0DVWHU0RGH3&,,'(&RQWUROOHUZLWK8OWUD'0$
+   .H\ERDUG&RQWUROOHUDQG5HDO7LPH&ORFN
+
+
+                 3UHOLPLQDU\5HYLVLRQ
+                     2FWREHU
+
+             9,$7(&+12/2*,(6,1&
+&RS\ULJKW1RWLFH
+&RS\ULJKW     9,$ 7HFKQRORJLHV ,QFRUSRUDWHG 3ULQWHG LQ WKH 8QLWHG 6WDWHV $// 5,*+76 5(6(59('
+1R SDUW RI WKLV GRFXPHQW PD\ EH UHSURGXFHG WUDQVPLWWHG WUDQVFULEHG VWRUHG LQ D UHWULHYDO V\VWHP RU WUDQVODWHG LQWR
+DQ\ ODQJXDJH LQ DQ\ IRUP RU E\ DQ\ PHDQV HOHFWURQLF PHFKDQLFDO PDJQHWLF RSWLFDO FKHPLFDO PDQXDO RU RWKHUZLVH
+ZLWKRXW WKH SULRU ZULWWHQ SHUPLVVLRQ RI 9,$ 7HFKQRORJLHV ,QFRUSRUDWHG
+
+
+7KH 97& DQG 97&$ PD\ RQO\ EH XVHG WR LGHQWLI\ SURGXFWV RI 9,$ 7HFKQRORJLHV
+
+
+3670 LV D UHJLVWHUHG WUDGHPDUN RI ,QWHUQDWLRQDO %XVLQHVV 0DFKLQHV &RUS
+3HQWLXP3UR70  *7/70 DQG $3,&70 DUH UHJLVWHUHG WUDGHPDUNV RI ,QWHO &RUS
+:LQGRZV 70 DQG 3OXJ DQG 3OD\70 DUH UHJLVWHUHG WUDGHPDUNV RI 0LFURVRIW &RUS
+3&,70 LV D UHJLVWHUHG WUDGHPDUN RI WKH 3&, 6SHFLDO ,QWHUHVW *URXS
+9(6$ LV D WUDGHPDUN RI WKH 9LGHR (OHFWURQLFV 6WDQGDUGV $VVRFLDWLRQ
+$OO WUDGHPDUNV DUH WKH SURSHUWLHV RI WKHLU UHVSHFWLYH RZQHUV
+
+
+
+'LVFODLPHU1RWLFH
+1R OLFHQVH LV JUDQWHG LPSOLHG RU RWKHUZLVH XQGHU DQ\ SDWHQW RU SDWHQW ULJKWV RI 9,$ 7HFKQRORJLHV   9,$ 7HFKQRORJLHV
+PDNHV QR ZDUUDQWLHV LPSOLHG RU RWKHUZLVH LQ UHJDUG WR WKLV GRFXPHQW DQG WR WKH SURGXFWV GHVFULEHG LQ WKLV GRFXPHQW
+7KH LQIRUPDWLRQ SURYLGHG E\ WKLV GRFXPHQW LV EHOLHYHG WR EH DFFXUDWH DQG UHOLDEOH WR WKH SXEOLFDWLRQ GDWH RI WKLV
+GRFXPHQW      +RZHYHU 9,$ 7HFKQRORJLHV DVVXPHV QR UHVSRQVLELOLW\ IRU DQ\ HUURUV LQ WKLV GRFXPHQW   )XUWKHUPRUH 9,$
+7HFKQRORJLHV DVVXPHV QR UHVSRQVLELOLW\ IRU WKH XVH RU PLVXVH RI WKH LQIRUPDWLRQ LQ WKLV GRFXPHQW DQG IRU DQ\ SDWHQW
+LQIULQJHPHQWV WKDW PD\ DULVH IURP WKH XVH RI WKLV GRFXPHQW     7KH LQIRUPDWLRQ DQG SURGXFW VSHFLILFDWLRQV ZLWKLQ WKLV
+GRFXPHQW DUH VXEMHFW WR FKDQJH DW DQ\ WLPH ZLWKRXW QRWLFH DQG ZLWKRXW REOLJDWLRQ WR QRWLI\ DQ\ SHUVRQ RI VXFK FKDQJH
+
+
+
+
+2IILFHV
+        86$ 2IILFH                                              7DLSHL 2IILFH
+         %UDQGLQ &RXUW                                       WK )ORRU 1R 
+        )UHPRQW &$                                         &KXQJ&KHQJ 5RDG +VLQ7LHQ
+        86$                                                      7DLSHL 7DLZDQ   52&
+        7HO                                          7HO      
+        )D[                                          )D[      
+
+
+
+2QOLQH6HUYLFHV
+        +RPH 3DJH        KWWSZZZYLDFRPWZ
+        )73 6HUYHU       IWSYLDFRPWZ
+        %%6              
+         9,$7HFKQRORJLHV,QF                                VT82C586A
+
+                                             REVISION HISTORY
+    Document Release       Date     Revision                          Initials
+   Preliminary Release   10/13/96   Initial release
+
+
+
+
+Preliminary Revision 0.1 October 13, 1996             -i-       Revision History
+              9,$7HFKQRORJLHV,QF                                                                                                                                                     VT82C586A
+
+                                                                         TABLE OF CONTENTS
+
+REVISION HISTORY........................................................................................................................................................................I
+TABLE OF CONTENTS.................................................................................................................................................................. II
+LIST OF FIGURES..........................................................................................................................................................................III
+LIST OF TABLES ...........................................................................................................................................................................IV
+OVERVIEW ....................................................................................................................................................................................... 3
+PINOUTS ............................................................................................................................................................................................ 4
+REGISTERS ..................................................................................................................................................................................... 10
+     REGISTER OVERVIEW ................................................................................................................................................................. 10
+     CONFIGURATION SPACE I/O ....................................................................................................................................................... 15
+     REGISTER DESCRIPTIONS............................................................................................................................................................ 16
+       VIA-Specific I/O Ports.......................................................................................................................................................... 16
+       Legacy I/O Ports ................................................................................................................................................................... 16
+                Keyboard Controller Registers.............................................................................................................................................................. 17
+                DMA Controller I/O Registers .............................................................................................................................................................. 19
+                Interrupt Controller Registers ............................................................................................................................................................... 20
+                Timer / Counter Registers ..................................................................................................................................................................... 21
+                CMOS / RTC Registers......................................................................................................................................................................... 21
+          PCI to ISA Bridge Registers (Function 0) .......................................................................................................................... 22
+                PCI Configuration Space Header .......................................................................................................................................................... 22
+                ISA Bus Control.................................................................................................................................................................................... 22
+                Plug and Play Control ........................................................................................................................................................................... 25
+                Power Management............................................................................................................................................................................... 26
+                Strap Options ........................................................................................................................................................................................ 28
+          Enhanced IDE Controller Registers (Function 1).............................................................................................................. 29
+                PCI Configuration Space Header .......................................................................................................................................................... 29
+                IDE-Controller-Specific Confiiguration Registers ................................................................................................................................ 31
+                IDE I/O Registers.................................................................................................................................................................................. 33
+          Universal Serial Bus Controller Registers (Function 2) .................................................................................................... 34
+                PCI Configuration Space Header .......................................................................................................................................................... 34
+                USB-Specific Configuration Registers.................................................................................................................................................. 35
+                USB I/O Registers................................................................................................................................................................................. 35
+ELECTRICAL SPECIFICATIONS............................................................................................................................................... 36
+     ABSOLUTE MAXIMUM RATINGS ................................................................................................................................................. 36
+     DC CHARACTERISTICS................................................................................................................................................................ 36
+PACKAGE MECHANICAL SPECIFICATIONS ........................................................................................................................ 37
+
+
+
+
+Preliminary Revision 0.1 October 13, 1996                                                                 -ii-                                                                             Table of Contents
+             9,$7HFKQRORJLHV,QF                                                                                                                      VT82C586A
+
+                                                                   LIST OF FIGURES
+FIGURE 1. PIN DIAGRAM............................................................................................................................................................. 4
+FIGURE 2. STRAP OPTION CIRCUIT....................................................................................................................................... 28
+FIGURE 3. MECHANICAL SPECIFICATIONS - 208-PIN PLASTIC FLAT PACKAGE.................................................... 37
+
+
+
+
+Preliminary Revision 0.1 October 13, 1996                                               -iii-                                                                  List of Figures
+             9,$7HFKQRORJLHV,QF                                                                                                                         VT82C586A
+
+                                                                      LIST OF TABLES
+TABLE 1. PIN DESCRIPTIONS..................................................................................................................................................... 5
+TABLE 2. SYSTEM I/O MAP ....................................................................................................... ................................................ 10
+TABLE 3. REGISTERS.................................................................................................................................................................. 10
+TABLE 4. KEYBOARD CONTROLLER COMMAND CODES .............................................................................................. 18
+
+
+
+
+Preliminary Revision 0.1 October 13, 1996                                                 -iv-                                                                     List of Tables
+         9,$7HFKQRORJLHV,QF                                                                           VT82C586A
+
+
+                                             VT82C586A PIPC
+                         PCI INTEGRATED PERIPHERAL CONTROLLER
+
+                      PC97 COMPLIANT PCI-TO-ISA BRIDGE
+                    WITH PLUG AND PLAY, USB CONTROLLER,
+               MASTER MODE IDE CONTROLLER WITH ULTRADMA-33,
+                 KEYBOARD CONTROLLER AND REAL TIME CLOCK
+
+    •   PC97 Compliant PCI to ISA Bridge
+        − Integrated ISA Bus Controller with integrated DMA, timer, and interrupt controller
+        − Integrated keyboard controller with PS2 mouse support
+        − Integrated DS12885 style real time clock with extended 128 byte CMOS RAM
+        − Integrated USB controller with root hub and two function ports
+        − Integrated master mode enhanced IDE controller with enhanced PCI bus commands
+        − PCI-2.1 compliant with delay transaction
+        − Four double-word line buffer between PCI and ISA bus
+        − Supports type F DMA transfers
+        − Fast reset and Gate A20 operation
+        − Edge trigger or level sensitive interrupt
+        − Flash EPROM, 2MB EPROM and combined BIOS support
+        − Programmable ISA bus clock
+    •   Inter-operable with Intel and other Host-to-PCI Bridges
+         − Combine with VT82C595 for a complete Pentium / PCI / ISA system (Apollo VP2)
+         − Combine with VT82C685/687 for a complete Pentium-Pro /PCI / ISA system (Apollo P6)
+         − Inter-operable with other Intel or non-Intel Host-to-PCI bridges for a complete PC97 compliant PCI/ISA system
+    •   Enhanced Master Mode PCI IDE Controller with Extension to UltraDMA-33
+        − Dual channel master mode PCI supporting four Enhanced IDE devices
+        − Transfer rate up to 22MB/sec to cover PIO mode 4 and multi-word DMA mode 2 drives and beyond
+        − Extension to UltraDMA-33 / ATA-33 interface for up to 33MB/sec transfer rate
+        − Sixteen levels (doublewords) of prefetch and write buffers
+        − Interlaced commands between two channels
+        − Bus master programming interface for SFF-8038i rev.1.0 and Windows-95 compliant
+        − Full scatter and gather capability
+        − Support ATAPI compliant devices
+        − Support PCI native and ATA compatibility modes
+        − Complete software driver support
+    •   Universal Serial Bus Controller
+        − USB v.1.0 and Intel Universal HCI v.1.1 compatible
+        − Eighteen level (doublewords) data FIFO with full scatter and gather capability
+        − Root hub and two function ports with integrated physical layer transceivers
+        − Legacy keyboard and PS/2 mouse support
+
+
+
+
+Preliminary Revision 0.1 October 13, 1996                    -1-                                                    Features
+         9,$7HFKQRORJLHV,QF                                                                      VT82C586A
+
+    •   Sophisticated Power Management
+         −   Normal, doze, sleep, suspend and conserve modes
+         −   System event monitoring with two event classes
+         −   One idle timer, one peripheral timer and one general purpose timer
+         −   More than ten general purpose input and output ports
+         −   Seven external event input ports with programmable SMI condition
+         −   Complete leakage control when external component is in power off state
+         −   Primary and secondary interrupt differentiation for individual channels
+         −   Clock stretching, clock throttling and clock stop control
+         −   Multiple internal and external SMI sources for flexible power management models
+         −   APM 1.2 compliant
+         −   Pin-compatible upgrade to VT82C586B for OnNow / ACPI (Advanced Configuration and Power Interface) power-
+             management support, 256-byte extended CMOS, Distributed DMA, and I2C capabilities
+
+    •   Plug and Play Controller
+         − PCI interrupts steerable to any interrupt channel
+         − Dual interrupt and DMA channel controllers for on-board plug and play devices
+         − Microsoft Windows 95TM and plug and play BIOS compliant
+    •   Built-in Nand-tree pin scan test capability
+
+    •   0.5um mixed voltage, high speed and low power CMOS process
+
+    •   Single chip 208 pin PQFP
+
+
+
+
+Preliminary Revision 0.1 October 13, 1996                   -2-                                                Features
+         9,$7HFKQRORJLHV,QF                                                                                VT82C586A
+
+                                                      OVERVIEW
+The VT82C586A PIPC (PCI Integrated Peripheral Controller) is a high integration, high performance and high compatibility
+device that supports Intel and non-Intel based processor to PCI bus bridge to make a complete Microsoft PC97 compliant PCI/ISA
+system. In addition to complete ISA extension bus functionality, the VT82C586A includes standard intelligent peripheral
+controllers:
+  a) Master mode enhanced IDE controller with dual channel DMA engine and interlaced dual channel commands. Dedicated
+     FIFO coupled with scatter and gather master mode operation allows high performance transfers between PCI and IDE
+     devices. In addition to standard PIO and DMA mode operation, the VT82C586A also supports the emerging UltraDMA-33
+     standard to allow reliable data transfer rates up to 33MB/sec throughput. The IDE controller is SFF-8038i v1.0 and
+     Microsoft Windows-95 compliant.
+  b) Universal Serial Bus controller that is USB v1.0 and Universal HCI v1.1 compliant. The VT82C586A includes the root hub
+     with two function ports with integrated physical layer transceivers. The USB controller allows hot plug and play and
+     isochronous peripherals to be inserted into the system with universal driver support. The controller also implements legacy
+     keyboard and mouse support so that legacy software can run transparently in a non-USB-aware operating system
+     environment.
+  c) Keyboard controller with PS2 mouse support.
+  d) Real Time Clock with 128 byte extended CMOS. In addition to the standard ISA RTC functionality, the integrated RTC also
+     includes the date alarm and other enhancements for compatibility with the emerging ACPI standard.
+  e) Notebook-class power management functionality including event monitoring, CPU clock throttling (Intel processor protocol),
+     power and leakage control, hardware- and software-based event handling, general purpose IO, chip select and external SMI.
+     The power management function supports legacy APM v1.2.
+  f) Plug and Play controller that allows complete steerability of all PCI interrupts to any interrupt channel. Two additional
+     interrupt and DMA channels are provided to allow plug and play and reconfigurability of on-board peripherals for Windows
+     95 compliance.
+The VT82C586A also enhances the functionality of the standard ISA peripherals. The integrated interrupt controller supports both
+edge and level triggered interrupts channel by channel. The integrated DMA controller supports type F DMA in addition to
+standard ISA DMA modes. Compliant with the PCI-2.1 specification, the VT82C586A supports delayed transactions so that
+slower ISA peripherals do not block the traffic of the PCI bus. Special circuitry is built in to allow concurrent operation without
+causing dead lock even in a PCI-to-PCI bridge environment The chip also includes four levels (doublewords) of line buffers from
+the PCI bus to the ISA bus to further enhance overall system performance.
+
+
+
+
+Preliminary Revision 0.1 October 13, 1996                       -3-                                                      Overview
+         9,$7HFKQRORJLHV,QF                                                                                               VT82C586A
+
+                                                           PINOUTS
+
+                                                    Figure 1. Pin Diagram
+
+
+
+
+                                (EXTSMI7)
+                                (EXTSMI6)
+
+
+
+
+                                (RTCCS#)
+                                (KBRC#)
+                                (KA20G)
+                        ROMCS# (KBCS#)
+
+
+
+
+                                (IRQ12)
+
+                                (IRQ1)
+                                (Strap)
+
+
+
+
+                                (Strap)
+                                (Strap)
+                                (Strap)
+                                (Strap)
+                                (Strap)
+                                (Strap)
+                                (Strap)
+                                (Strap)
+
+
+
+
+                        KEYLOCK
+                        MASTER#
+                        EXTSMI#
+                        STPCLK#
+
+
+
+
+                        MEMW#
+                        IOCS16#
+                        CPURST
+
+                        IGNNE#
+                        PWRGD
+
+
+
+
+                        MEMR#
+
+
+
+
+                        TURBO
+                        DACK7
+                        DACK6
+
+
+
+
+                        RTCX2
+                        PGNT#
+                        PREQ#
+
+
+
+
+                        FERR#
+
+
+
+
+                        MSCK
+                        MSDT
+
+                        KBCK
+                        IRQ14
+                        IRQ15
+                        IRQ11
+                        IRQ10
+
+
+
+
+                        KBDT
+                        VDD3
+
+
+
+
+                        VDD5
+                        DRQ7
+                        DRQ6
+                        A20M
+
+
+
+
+                        SPKR
+
+
+
+
+                        XDIR
+                        INTR
+                        SMI#
+                        GND
+
+
+
+
+                        GND
+
+
+
+
+                        GND
+                        INIT
+
+
+
+
+                        XD7
+                        XD6
+                        XD5
+                        XD4
+                        XD3
+                        XD2
+                        XD1
+                        XD0
+                        AD3
+                        AD2
+                        AD1
+                        AD0
+
+
+
+
+                        NMI
+                           156
+                        IO 1 5 5
+                        IO 1 5 4
+                        IO 1 5 3
+                        IO 1 5 2
+                        O 151
+                         I 150
+                        O 149
+                        O 148
+                        O 147
+                        O 146
+                        O 145
+                           144
+                        O 143
+                        O 142
+                        O 141
+                           140
+                        O 139
+                         I 138
+                         I 137
+                         I 136
+                        O 135
+                        IO 1 3 4
+                        O 133
+                         I 132
+                        O 131
+                         I 130
+                         I 129
+                         I 128
+                         I 127
+                         I 126
+                         I 125
+                        IO 1 2 4
+                        IO 1 2 3
+                        IO 1 2 2
+                        IO 1 2 1
+                           120
+                        IO 1 1 9
+                        IO 1 1 8
+                        IO 1 1 7
+                        IO 1 1 6
+                           115
+                        IO 1 1 4
+                        IO 1 1 3
+                        O 112
+                        IO 1 1 1
+                        IO 1 1 0
+                        IO 1 0 9
+                        IO 1 0 8
+                         I 107
+                         I 106
+                        O 105
+    VDD-PCI      157                                                                                         (IRQ8#) I 1 0 4    RTCX1
+         AD4     1 5 8 IO                                                                                             I 103     VEXT
+         AD5     1 5 9 IO                                                                                             I 102     VBAT
+         AD6     1 6 0 IO                                                                                               101     AGND
+         AD7     1 6 1 IO                                                                                               100     AVDD
+       CBE0#     1 6 2 IO                                                                                             I 99      USBCLK
+         AD8     1 6 3 IO                                                                                            IO 9 8     USBDATA1-
+         AD9     1 6 4 IO                                                                                            IO 9 7     USBDATA1+
+        AD10     1 6 5 IO                                                                                            IO 9 6     USBDATA0-
+         GND     166                                                                                                 IO 9 5     USBDATA0+
+        AD11     1 6 7 IO                                                                                   (RTCAS) O 94        PCWE0
+        AD12     1 6 8 IO                                                                                            O 93       PCWE1
+        AD13     1 6 9 IO                                                                                            O 92       MDACK0
+        AD14     1 7 0 IO                                                                                             I 91      MDRQ0
+    VDD-PCI      171                                                                                                  I 90      APICCS#
+        AD15     1 7 2 IO                                                                                             I 89      DRDYB#
+       CBE1#     1 7 3 IO                                                                                             I 88      MIRQ1
+         PAR     1 7 4 IO                                                                                             I 87      MIRQ0
+       SERR#
+       STOP#
+         GND
+    DEVSEL#
+      TRDY#
+                 175 I
+                 1 7 6 IO
+                 177
+                 1 7 8 IO
+                 1 7 9 IO
+                               VT82C586A                                                                             IO 8 6
+                                                                                                                     IO 8 5
+                                                                                                                         84
+                                                                                                                     IO 8 3
+                                                                                                                     IO 8 2
+                                                                                                                                SD15
+                                                                                                                                SD14
+                                                                                                                                GND
+                                                                                                                                SD13
+                                                                                                                                SD12
+       IRDY#     1 8 0 IO                                                                                            IO 8 1     SD11
+     FRAME#
+       CBE2#
+        AD16
+    VDD-PCI
+        AD17
+                 1 8 1 IO
+                 1 8 2 IO
+                 1 8 3 IO
+                 184
+                 1 8 5 IO
+                             PCI-to-ISA Bridge                                                                       IO 8 0
+                                                                                                                         79
+                                                                                                                     IO 7 8
+                                                                                                                     IO 7 7
+                                                                                                                      I 76
+                                                                                                                                SD10
+                                                                                                                                VDD5
+                                                                                                                                SD9
+                                                                                                                                SD8
+                                                                                                                                MEMCS16#
+        AD18     1 8 6 IO                                                                                             I 75      IRQ3
+        AD19
+         GND
+                 1 8 7 IO
+                 188
+                                                         PQFP-208                                                     I 74
+                                                                                                                      I 73
+                                                                                                                                IRQ4
+                                                                                                                                IRQ5
+        AD20     1 8 9 IO                                                                                             I 72      IRQ6
+        AD21     1 9 0 IO                                                                                             I 71      IRQ7
+        AD22     1 9 1 IO                                                                                            IO 7 0     LA17/DA0
+        AD23     1 9 2 IO                                                                                            IO 6 9     LA18/DA1
+       IDSEL     193 I                                                                                                   68     GND
+       CBE3#     1 9 4 IO                                                                                            IO 6 7     LA19/DA2
+        AD24     1 9 5 IO                                                                                            IO 6 6     LA20/DCS1A#
+        AD25     1 9 6 IO                                                                                            IO 6 5     LA21/DCS3A#
+         GND     197                                                                                                 IO 6 4     LA22/DCS1B#
+    VDD-PCI      198                  Note: Pin names in parentheses (...) indicate alternate function               IO 6 3     LA23/DCS3B#
+        AD26     1 9 9 IO                                                                                            IO 6 2     SBHE#
+        AD27     2 0 0 IO                                                                                             I 61      IRQ9
+        AD28     2 0 1 IO                                                                                  (DACEN) O 60         DACK0
+        AD29     2 0 2 IO                                                                                             I 59      DRQ0
+        AD30     2 0 3 IO                                                                                (EXTSMI5) O 58         DACK5
+        AD31     2 0 4 IO                                                                                             I 57      DRQ5
+      PIRQD#     205 I                                                                                               O 56       SOE#
+      PIRQC#     206 I                                                                                               O 55       DIOWB#
+      PIRQB#     207 I                                                                                               O 54       DIORB#
+         GND     208                                                                                                     53     VDD5
+                        1 1 IO
+                        1 2 IO
+
+
+
+
+                        1 9 IO
+                        2 0 IO
+                        2 1 IO
+                        2 2 IO
+                        2 3 IO
+                        2 4 IO
+                        2 5 IO
+                        2 7 IO
+                        2 8 IO
+                        2 9 IO
+
+
+
+
+                        3 6 IO
+                        3 7 IO
+                        3 8 IO
+                        4 0 IO
+                        4 1 IO
+                        4 2 IO
+                        4 3 IO
+                        4 4 IO
+                        3 O
+                        4 O
+
+
+
+                        9 O
+                        10 O
+
+
+                        14 O
+                        15 O
+
+                        18 O
+
+
+
+
+                        31 O
+                        32 O
+                        33 O
+                        35 O
+
+
+
+
+                        47 O
+                        48 O
+                        50 O
+                        51 O
+                        1 I
+                        2 I
+
+                        5 I
+                        6 I
+                        7 I
+                        8 I
+
+
+
+
+                        16 I
+
+
+
+
+                        30 I
+
+
+
+
+                        45 I
+                        46 I
+
+                        49 I
+                        13
+
+
+                        17
+
+
+
+
+                        26
+
+
+
+
+                        34
+
+
+
+                        39
+
+
+
+
+                        52
+                                          VDD5
+                                          VDD5
+
+
+
+
+                                       DD9/SA9
+                                       DD8/SA8
+
+
+
+
+                                       DD7/SA7
+                                       DD6/SA6
+                                       DD5/SA5
+                                       DD4/SA4
+                                       DD3/SA3
+                                       DD2/SA2
+                                       DD1/SA1
+                                       DD0/SA0
+                                        DDRQA
+                                          DRQ3
+                                          DRQ2
+                                     IOCHRDY
+
+
+
+
+                                          DRQ1
+
+
+
+
+                                       DRDYA#
+                                            AEN
+
+
+
+
+                                        DDRQB
+                                           SA16
+                                    DD15/SA15
+                                    DD14/SA14
+                                    DD13/SA13
+                                    DD12/SA12
+                                    DD11/SA11
+                                    DD10/SA10
+                                        PIRQA#
+
+                                       RSTDRV
+                                            OSC
+
+
+
+
+                                    DDACKA#
+                            (Strap) D D A C K B #
+                                    REFRESH#
+
+
+
+
+                                        DIORA#
+                                           GND
+
+
+
+
+                                           GND
+
+
+
+
+                                           GND
+                                      IOCHCK#
+
+
+
+
+                                           GND
+                                           IOR#
+
+
+
+
+                                       DIOWA#
+                                        DACK3
+                                        DACK2
+                                          IOW#
+
+
+
+
+                                        DACK1
+
+
+
+
+                                             TC
+                                      SMEMR#
+                                       PCIRST#
+
+
+
+
+                                          BALE
+                                        PCICLK
+
+
+
+
+                                          BCLK
+                                     SMEMW#
+
+
+
+
+                        (EXTSMI2)
+
+
+
+
+                        (EXTSMI4)
+                        (EXTSMI3)
+
+
+
+
+Preliminary Revision 0.1 October 13, 1996                             -4-                                                               Pinouts
+           9,$7HFKQRORJLHV,QF                                                                            VT82C586A
+
+                                                 Table 1. Pin Descriptions
+
+ Signal Name         Pin No.       I/O                                      Signal Description
+
+                                                     Reset and Clock
+PWRGD                  138          I       Power Good. Connected to the POWERGOOD signal on the Power Supply.
+PCIRST#                 3           O       PCI Reset. An active low reset signal for the PCI bus. The VT82C586A will
+                                            generate PCIRST# during power-up or from the control register.
+RSTDRV                  4           O       Reset Drive. RSTDRV is the reset signal to the ISA bus.
+BCLK                    14          O       Bus Clock. ISA bus clock.
+OSC                     6           I       Oscillator. OSC is the 14.31818 MHz clock signal. It is used by the internal 8254.
+                                                      CPU Interface
+CPURST                 142          O       CPU Reset. The VT82C586A asserts CPURST to reset the CPU during power-up.
+INTR                   145          O       CPU Interrupt. INTR is driven by the VT82C586A to signal the CPU that an
+                                            interrupt request is pending and needs service.
+NMI                    146          O       Non-Maskable Interrupt. NMI is used to force a non-maskable interrupt to the
+                                            CPU. The VT82C586A generates an NMI when either SERR# or IOCHK# is
+                                            asserted.
+INIT                   143          O       Initialization. The VT82C586A asserts INIT if it detects a shut-down special cycle
+                                            on the PCI bus or if a soft reset is initiated by the register
+STPCLK#                148          O       Stop Clock. STPCLK# is asserted by the VT82C586A to the CPU in response to
+                                            different Power-Management events.
+SMI#                   149          O       System Management Interrupt. SMI# is asserted by the VT82C586A to the CPU
+                                            in response to different Power-Management events.
+FERR#                  141          O       Numerical Coprocessor Error. This signal is tied to the coprocessor error signal on
+                                            the CPU.
+IGENN#                 139          O       Ignore Error. This pin is connected to the “ignore error” pin on the CPU.
+                                                    PCI Bus Interface
+PCLK                    2           I       PCI Clock. PCLK provides timing for all transactions on the PCI Bus.
+FRAME#                 181          B       Frame. Assertion indicates the address phase of a PCI transfer. Negation indicates
+                                            that one more data transfer is desired by the cycle initiator.
+AD[31:0]          204-199, 196-     B       Address/Data Bus. The standard PCI address and data lines. The address is driven
+                  195, 192-189,             with FRAME# assertion and data is driven or received in following cycles.
+                  187-185, 183,
+                  172, 170-167,
+                  165-163, 161-
+                  158, 155-152
+C/BE[3:0]#        194, 182, 173,    B       Command/Byte Enable. The command is driven with FRAME# assertion. Byte
+                       162                  enables corresponding to supplied or requested data are driven on following clocks.
+IRDY#                  180          B       Initiator Ready. Asserted when the initiator is ready for data transfer.
+TRDY#                  179          B       Target Ready. Asserted when the target is ready for data transfer.
+STOP#                  176          B       Stop. Asserted by the target to request the master to stop the current transaction.
+DEVSEL#                178          B       Device Select. VT82C586A asserts this signal to claim PCI transactions through
+                                            positive or subtractive decoding.
+PAR                    174          B       Parity. A single parity bit is provided over AD[31:0] and C/BE[3:0]#.
+SERR#                  175          I       System Error. SERR# can be pulsed active by any PCI device that detects a system
+                                            error condition. Upon sampling SERR# active, the VT82C586A can be programmed
+                                            to generate an NMI to the CPU.
+IDSEL                  193           I      Initialization Device Select. IDSEL is used as a chip select during configuration
+                                            read and write cycles.
+PIRQA-D#            1, 207-205      I       PCI Interrupt Request.
+PREQ#                   151         O       PCI Request. This signal goes to the VT82C595. It is the VT82C586A’s request
+                                            for the PCI bus.
+
+Preliminary Revision 0.1 October 13, 1996                      -5-                                                       Pinouts
+           9,$7HFKQRORJLHV,QF                                                                            VT82C586A
+
+PGNT#                  150           I      PCI Grant. This signal is driven by the VT82C595 to grant PCI access to the
+                                            VT82C586A.
+                                                     ISA Bus Control
+SA[15:0] /         20-25, 27-28,    B       System Address Bus/IDE Data Bus
+DD[15:0]           36-38, 40-44
+SA16                    19          B       System Address Bus
+LA23/DCS3B#,       63-67, 69-70     B       Multifunction Pins
+LA22/DCS1B#,                                ISA Bus Cycles:
+LA21/DCS3A#,                                Unlatched Address: The LA[23:17] address lines are bi-directional. These address
+LA20/DCS1A#,                                lines allow accesses to physical memory on the ISA bus up to 16MBytes.
+LA[19:17] /                                 PCI IDE Cycles:
+DA[2:0]                                     Chip Select: DCS1A# is for the ATA command register block and corresponds to
+                                            CS1FX# on the primary IDE connector. DCS3A# is for the ATA command register
+                                            block and corresponds to CS3FX# on the primary IDE connector. DCS1B# is for the
+                                            ATA command register block and corresponds to CS17X# on the primary IDE
+                                            connector. DCS3B# is for the ATA command register block and corresponds to
+                                            CS37X# on the primary IDE connector.
+                                            Disk Address: DA[2:0] are used to indicate which byte in either the ATA command
+                                            block or control block is being accessed.
+SD[15:8]           86-85, 83-80,    B       System Data. SD[15:8] provide the high order byte data path for devices residing on
+                      78-77                 the ISA bus.
+SBHE#                   62          B       System Byte High Enable. SBHE# indicates, when asserted, that a byte is being
+                                            transferred on the upper byte (SD[15:8]) of the data bus. SBHE# is negated during
+                                            refresh cycles.
+IOR#                    12          B       I/O Read. IOR# is the command to an ISA I/O slave device that the slave may drive
+                                            data on to the ISA data bus.
+IOW#                    11          B       I/O Write. IOW# is the command to an ISA I/O slave device that the slave may
+                                            latch data from the ISA data bus.
+MEMR#                  123          B       Memory Read. MEMR# is the command to a memory slave that it may drive data
+                                            onto the ISA data bus.
+MEMW#                  124          B       Memory Write. MEMW# is the command to a memory slave that it may latch data
+                                            from the ISA data bus.
+SMEMR#                  10          O       Standard Memory Read. SMEMR# is the command to a memory slave, under
+                                            1MB, which indicates that it may drive data onto the ISA data bus
+SMEMW#                  9           O       Standard Memory Write. SMEMW# is the command to a memory slave, under
+                                            1MB, which indicates that it may latch data from the ISA data bus.
+BALE                    35          O       Bus Address Latch Enable. BALE is an active high signal asserted by the
+                                            VT82C586A to indicate that the address (SA[19:0], LA[23:17] and the SBHE#
+                                            signal) is valid
+IOCS16#                125           I      16-Bit I/O Chip Select. This signal is driven by I/O devices on the ISA Bus to
+                                            indicate that they support 16-bit I/O bus cycles.
+MEMCS16#                76           I      Memory Chip Select 16. ISA slaves that are 16-bit memory devices drive this line
+                                            low to indicate they support 16-bit memory bus cycles.
+MASTER# /              137           I      Multi-function Pin
+IRQ12                                         1. Rx46h[2]=1 and Rx44h[0]=0: IRQ12
+                                              2. Otherwise: MASTER#. ISA master cycle indicator
+IOCHCK#                  5           I      I/O Channel Check. When this signal is asserted, it indicates that a parity or an
+                                            uncorrectable error has occurred for a device or memory on the ISA Bus.
+IOCHRDY                  8           I      I/O Channel Ready. Devices on the ISA Bus negate IOCHRDY to indicate that
+                                            additional time (wait states) is required to complete the cycle.
+REFRESH#                29          B       Refresh. As an output REFRESH# indicates when a refresh cycle is in progress. As
+                                            an input REFRESH# is driven by 16-bit ISA Bus masters to indicate refresh cycle.
+AEN                     15          O       Address Enable. AEN is asserted during DMA cycles to prevent I/O slaves from
+                                            misinterpreting DMA cycles as valid I/O cycles.
+
+
+Preliminary Revision 0.1 October 13, 1996                      -6-                                                        Pinouts
+         9,$7HFKQRORJLHV,QF                                                                               VT82C586A
+
+TC                      32          O       Terminal Count. The VT82C586A asserts TC to DMA slaves as a terminal count
+                                            indicator.
+IRQ15, 14, [11:   128-129, 127-      I      Interrupt Request. The IRQ signals provide both system board components and
+9], [7:3]         126, 61, 71-75            ISA Bus I/O devices with a mechanism for asynchronously interrupting the CPU.
+DRQ[7:5], [3:0]    132, 130, 57,     I      DMA Request. The DREQ lines are used to request DMA services from the
+                   30, 7, 16, 59            VT82C586A’s DMA controller.
+DACK[7:5],         133, 131, 58,    O       Multifunction Pins
+[3:0]/            31, 33, 18, 60              Pin 135 (ROMCS#/KBCS#) strapped 1 at power up:
+EXTSMI7-2,                                      Normal Operation: Acknowledge. The DACK output lines indicate a request for
+DACEN                                           DMA service has been granted.
+                                                Power-up: Strap Inputs. Strapped inputs stored in configuration register 96h.
+                                              Pin 135 (ROMCS#/KBCS#) strapped 0 at power up:
+                                                Pin 60: DACEN. To enable external 137 for decoding DACKs from XD0-2.
+                                                Other pins: External SMI or General Purpose Inputs.
+SPKR                   134          B       Multifunction Pin
+                                              Normal Operation: Speaker Drive. The SPKR signal is the output of counter 2.
+                                              Power-up Strapping: 0/1 = Fixed/flexible IDE I/O base
+                                                Enhanced IDE Interface
+DIORA#                  50          O       Disk I/O Read A. Primary IDE channel drive read strobe.
+DIOWA#                  51          O       Disk I/O Write A. Primary IDE channel drive write strobe.
+DIORB#                  54          O       Disk I/O Read B. Secondary IDE channel drive read strobe.
+DIOWB#                  55          O       Disk I/O Write B. Secondary IDE channel drive write strobe.
+DRDYA#                  49          I       I/O Channel Ready A. IDE drive ready indicator.
+DRDYB#                  89          I       I/O Channel Ready B. IDE drive ready indicator from the second channel (required
+                                            for UltraDMA/33 IDE interface).
+SOE#                    56          O       System Address Transceiver Output Enable. This signal controls the output
+                                            enables of the 245 transceivers that interface the DD[15:0] signals to SA[15:0]. The
+                                            transceiver direction controls are driven by MASTER# with DD[15-0] connected to
+                                            the “A” side of the transceivers and SA[15-0] connected to the “B” side.
+DDRQA                   45          I       Disk DMA Request A. Primary IDE channel DMA request.
+DDRQB                   46          I       Disk DMA Request B. Secondary IDE channel DMA request.
+DDACKA#                 47          O       Disk DMA Acknowledge A. Primary IDE channel DMA acknowledge.
+DDACKB#                 48          O       Disk DMA Acknowledge B. Secondary IDE channel DMA acknowledge. This pin
+                                            is used as a power-up strap option: 0/1 = Fixed/relocatable IDE I/O address
+                                             Universal Serial Bus Interface
+USBDATA0+               95          B       USB Port 0 Data +
+USBDATA0-               96          B       USB Port 0 Data -
+USBDATA1+               97          B       USB Port 1 Data +
+USBDATA1-               98          B       USB Port 1 Data -
+USBCLK                  99          I       USB Clock. Clock input for Universal serial bus interface
+                                                   Keyboard Interface
+KBCK /                 108          B       Multifunction Pin. Function depends on enable/disable of internal KBC.
+KA20G                                        Internal KBC enabled: Keyboard Clock. Clock to keyboard interface.
+                                             Internal KBC disabled: Gate A20: Gate A20 output from external KBC
+KBDT /                 109          B       Multifunction Pin. Function depends on enable/disable of internal KBC.
+KBRC#                                        Internal KBC enabled: Keyboard Data. Data to keyboard interface.
+                                             Internal KBC disabled: Keyboard Reset: Reset input from external KBC.
+MSCK / IRQ1            110          B       Multifunction Pin. Function depends on enable/disable of internal KBC.
+                                             PS/2 mouse enabled: Mouse Clock. Clock to PS/2 mouse interface.
+                                             PS/2 mouse disable and internal KBC disabled: Interrupt Request 1.
+                                              IRQ 1 input from external KBC.
+
+
+
+Preliminary Revision 0.1 October 13, 1996                       -7-                                                       Pinouts
+          9,$7HFKQRORJLHV,QF                                                                            VT82C586A
+
+MSDT / IRQ12           111          B       Multifunction Pin. Function depends on enable/disable of internal KBC.
+                                             PS/2 mouse enabled: Mouse Data. Data to PS/2 mouse interface.
+                                             PS/2 mouse disabled: Interrupt Request 12. IRQ 12 input from external KBC
+A20M                   147          O       A20 Mask. Direct connect A20 mask on CPU.
+KEYLOCK                106          I       Keyboard Lock. Keyboard lock signal for internal keyboard controller.
+TURBO                  107          I       Turbo. Turbo mode indicator input.
+                                               Internal Real Time Clock
+RTCX1 /                104           I      Multifunction Pin
+IRQ8#                                        Internal RTC enabled: RTC Crystal Input: 32.768Khz crystal or oscillator input.
+                                             Internal RTC disabled: Interrupt Request 8: IRQ8 input from external KBC
+RTCX2/                 105          O       Multifunction Pin
+RTCCS#                                       Internal RTC enabled: RTC Crystal Output: 32.768Khz crystal output
+                                             Internal RTC disabled: External RTC Chip Select
+VBAT                   102           I      RTC Battery. Battery input for internal RTC
+VEXT                   103           I      External Power
+                                                On Board Plug and Play
+MDRQ0                   91           I      Plug and Play DMA Request. DMA request input from non-PNP device to support
+                                            the PnP function.
+MDACK0                  92          O       Plug and Play DMA Acknowledge. DMA acknowledge output from non-PNP
+                                            device to support the PnP function.
+MIRQ[1:0]             88, 87         I      Plug and Play Interrupt Request. Interrupt request inputs from non-PNP device to
+                                            support the PnP function.
+                                                       XD Interface
+XD[7:0]           122-121, 119-     B       X-bus Data Bus. These pins are used as strap options during power-up:
+                  116, 114-113                XD0: 0/1 - Disable/enable internal KBC
+                                              XD1: 0/1 - Disable/enable internal PS/2 Mouse
+                                              XD2: 0/1 - Disable/enable internal RTC
+                                              XD3: 0/1 - PISA/SIO
+                                              XD4~XD7: RP13~RP16 for internal KBC
+XDIR                   112          O       X-Bus Data Direction. XDIR is tied directly to the direction control of a 74F245
+                                            transceiver that buffers the X-Bus data and ISA-Bus data (the output enable of the
+                                            transceiver should be grounded). SD0-7 connect to the “A” side of the transceiver
+                                            and XD0-7 connect to the “B” side. XDIR high indicates that SD0-7 drives XD0-7.
+RTCAS/                  94          O       Multifunction Pin
+PCWE0                                       Internal RTC disabled: Real Time Clock Address Strobe: RTCAS is connected
+                                            directly to the address strobe input of the external RTC.
+                                            Internal RTC enabled: General Purpose Write Enable 0: LATCH enable signal to
+                                            an external 373 for general purpose outputs (SD15-8).
+ROMCS# /               135          O       Multifunction Pin. ROM Chip Select / Keyboard Controller Chip Select.
+KBCS#                                         Normal Operation:
+                                                ISA memory cycle: ROMCS#. Chip Select to the BIOS ROM.
+                                                ISA I/O cycle: KBCS#. Chip Select to the external keyboard controller.
+                                              Power-up:
+                                                0: DACKn by external 137, DACK0 as DACEN, DACK1-3,5-7 as EXTSMI2-7
+                                                1: DACKn as DACKn
+PCWE1                   93          O       General Purpose Write Enable 1. LATCH enable signal to an external 373 for
+                                            general purpose outputs (SD15-8).
+                                                 Miscellaneous Control
+EXTSMI#                136           I      External SMI. External input to trigger SMI output to the CPU.
+APICCS#                90            I      External IOAPIC Chip Select.
+
+
+
+
+Preliminary Revision 0.1 October 13, 1996                      -8-                                                      Pinouts
+         9,$7HFKQRORJLHV,QF                                                   VT82C586A
+
+                                                   Power and Ground
+VDD5              17, 34, 53, 79,    I      Power Supply. 4.5 to 5.5V.
+                       115
+VDD3                   144           I      Power Supply. For the CPU Voltage.
+VDD_PCI           157, 171, 184,     I      PCI Voltage. 3.3 or 5V
+                       198
+AVDD                   100           I      USB Differential Output Power Source
+AGND                   101           I      USB Differential Output Ground
+GND               13, 26, 39, 52,    I      Ground
+                   68, 84, 120,
+                  140, 156, 166,
+                  177, 188, 197,
+                       208
+
+
+
+
+Preliminary Revision 0.1 October 13, 1996                     -9-                       Pinouts
+          9,$7HFKQRORJLHV,QF                                                                               VT82C586A
+
+                                                                                           Table 3. Registers
+                    REGISTERS
+                                                                        Legacy I/O Registers
+Register Overview
+                                                                         Port Master DMA Controller Registers        Default Acc
+                                                                          00 Channel 0 Base & Current Address                RW
+The following tables summarize the configuration and I/O
+registers of the VT82C586A. These tables also document the                01 Channel 0 Base & Current Count                  RW
+power-on default value (“Default”) and access type (“Acc”) for            02 Channel 1 Base & Current Address                RW
+each register.      Access type definitions used are RW                   03 Channel 1 Base & Current Count                  RW
+(Read/Write), RO (Read/Only), “—” for reserved / used                     04 Channel 2 Base & Current Address                RW
+(essentially the same as RO), and RWC (or just WC) (Read /                05 Channel 2 Base & Current Count                  RW
+Write 1’s to Clear individual bits). Registers indicated as RW            06 Channel 3 Base & Current Address                RW
+may have some read/only bits that always read back a fixed                07 Channel 3 Base & Current Count                  RW
+value (usually 0 if unused); registers designated as RWC or               08 Status / Command                                RW
+WC may have some read-only or read write bits (see individual             09 Write Request                                   WO
+register descriptions for details).                                       0A Write Single Mask                               WO
+Detailed register descriptions are provided in the following              0B Write Mode                                      WO
+section of this document. All offset and default values are               0C Clear Byte Pointer FF                           WO
+shown in hexadecimal unless otherwise indicated                           0D Master Clear                                    WO
+                                                                          0E Clear Mask                                      WO
+                Table 2. System I/O Map                                   0F Read / Write Mask                               RW
+
+Port        Function                     Actual Port Decoding             Port Master Interrupt Controller Regs      Default Acc
+00-1F       Master DMA Controller        0000 0000 000x nnnn
+                                                                           20 Master Interrupt Control                 —      *
+20-3F       Master Interrupt Controller 0000 0000 001x xxxn                21 Master Interrupt Mask                    —      *
+40-5F       Timer / Counter              0000 0000 010x xxnn               20 Master Interrupt Control Shadow          —     RW
+                                                                           21 Master Interrupt Mask Shadow             —     RW
+60-6F      Keyboard Controller        0000 0000 0110 xnxn               * RW if shadow registers are disabled
+(60h)      KBC Data                   0000 0000 0110 x0x0
+(61h)      Misc Functions & Spkr Ctrl 0000 0000 0110 xxx1                Port   Timer/Counter Registers              Default Acc
+(64h)      KBC Command / Status       0000 0000 0110 x1x0
+                                                                          40    Timer / Counter 0 Count                      RW
+70-77       RTC/CMOS/NMI-Disable 0000 0000 0111 0nnn                      41    Timer / Counter 1 Count                      RW
+78-7F       -available for system use- 0000 0000 0111 1xxx                42    Timer / Counter 2 Count                      RW
+80          -reserved- (debug port)      0000 0000 1000 0000              43    Timer / Counter Control                      WO
+81-8F       DMA Page Registers           0000 0000 1000 nnnn
+90-91      -available for system use-    0000 0000 1001 000x             Port Keyboard Controller Registers          Default Acc
+92         System Control                0000 0000 1001 0010              60 Keyboard Controller Data                        RW
+93-9F      -available for system use-    0000 0000 1001 nnnn              61 Misc Functions & Speaker Control                RW
+                                                                          64 Keyboard Ctrlr Command / Status                 RW
+A0-BF       Slave Interrupt Controller   0000 0000 101x xxxn
+A8-A9       VIA GPIO Ports               0000 0000 1010 100n
+                                                                         Port CMOS / RTC / NMI Registers              Default Acc
+C0-DF       Slave DMA Controller         0000 0000 110n nnnx              70 CMOS Memory Address & NMI Disa                     WO
+E0-FF       -available for system use-   0000 0000 111x xxxx              71 CMOS Memory Data (128 bytes)                       RW
+                                                                        NMI Disable is port 70h (CMOS Memory Address) bit-7
+100-CF7    -available for system use-
+                                                                        RTC control occurs via specific CMOS data locations (0-0Dh)
+CF8-CFB PCI Configuration Address 0000 1100 1111 10xx
+CFC-CFF PCI Configuration Data    0000 1100 1111 11xx
+D00-FFFF -available for system use-
+
+
+
+
+Preliminary Revision 0.1 October 13, 1996                        -10-                                           Register Overview
+         9,$7HFKQRORJLHV,QF                                                                            VT82C586A
+
+ Port   DMA Page Registers                    Default Acc             Port   Slave DMA Controller Registers      Default Acc
+  87    DMA Page - DMA Channel 0                      RW               C0    Channel 0 Base & Current Address            RW
+  83    DMA Page - DMA Channel 1                      RW               C2    Channel 0 Base & Current Count              RW
+  81    DMA Page - DMA Channel 2                      RW               C4    Channel 1 Base & Current Address            RW
+  82    DMA Page - DMA Channel 3                      RW               C6    Channel 1 Base & Current Count              RW
+  8F    DMA Page - DMA Channel 4                      RW               C8    Channel 2 Base & Current Address            RW
+  8B    DMA Page - DMA Channel 5                      RW              CA     Channel 2 Base & Current Count              RW
+  89    DMA Page - DMA Channel 6                      RW              CC     Channel 3 Base & Current Address            RW
+  8A    DMA Page - DMA Channel 7                      RW               CE    Channel 3 Base & Current Count              RW
+                                                                       D0    Status / Command                            RW
+ Port   System Control Registers              Default Acc              D2    Write Request                               WO
+  92    System Control                                RW               D4    Write Single Mask                           WO
+                                                                       D6    Write Mode                                  WO
+  Port Slave Interrupt Controller Regs           Default Acc           D8    Clear Byte Pointer FF                       WO
+   A0 Slave Interrupt Control                      —      *           DA     Master Clear                                WO
+   A1 Slave Interrupt Mask                         —      *           DC     Clear Mask                                  WO
+   A0 Slave Interrupt Control Shadow               —     RW           DE     Read / Write Mask                           RW
+   A1 Slave Interrupt Mask Shadow                  —     RW
+* RW accessible if shadow registers are disabled
+
+ Port   General Purpose Output Registers      Default Acc
+  A8    VIA General Purpose Output Index        —     RW
+  A9    VIA General Purpose Output Data
+         Offset C8 - GP Output Port 0            —      RW
+         Offset C9 - GP Output Port 1            —      RW
+
+
+
+
+Preliminary Revision 0.1 October 13, 1996                      -11-                                         Register Overview
+         9,$7HFKQRORJLHV,QF                                                                             VT82C586A
+PCI Function 0 Registers - PCI-to-ISA Bridge
+                                                                   Offset Power Management                         Default   Acc
+Configuration Space PCI-to-ISA Bridge Header Registers               80 Primary Activity Detect Enable               00      RW
+                                                                     81 -reserved-                                   00      —
+Offset PCI Configuration Space Header       Default   Acc            82 Primary Activity Detect Status               00      WC
+ 1-0 Vendor ID                               1106     RO             83 -reserved-                                   00      —
+ 3-2 Device ID                               0586     RO           85-84 SMI Event Enable                           0000     RW
+ 5-4 Command                                 000F     RW           87-86 SMI Status                                 0000     WC
+ 7-6 Status                                  0200     WC             88 Timer Control 1                              00      RW
+  8 Revision ID                               nn      RO             89 Timer Control 2                              00      RW
+  9 Programming Interface                     00      RO             8A Timer Control 3                              00      RW
+  A Sub Class Code                            01      RO             8B GP Timer Reload Enable                       00      RW
+  B Base Class Code                           06      RO             8C Conserve Mode / Secondary Event              00      RW
+  C -reserved- (cache line size)              00       —             8D Miscellaneous Control                        00      RW
+  D -reserved- (latency timer)                00       —             8E STPCLK# Duty Cycle                           00      RW
+  E Header Type                               80      RO             90 ISA Interrupt 7-0 as Primary Event           00      RW
+  F Built In Self Test (BIST)                 00      RO             91 ISA Interrupt 15-8 as Primary Event          00      RW
+10-27 -reserved- (base address registers)     00       —             92 ISA Interrupt 7-0 as Secondary Event         00      RW
+28-2F -reserved- (unassigned)                 00       —             93 ISA Interrupt 15-8 as Secondary              00      RW
+30-33 -reserved- (expansion ROM base          00      —              94 External SMI Pin Status                      00      RO
+34-3B -reserved- (unassigned)                 00       —             95 Power-Up Strap Option 1                       †      RO
+ 3C -reserved- (interrupt line)               00       —             96 Power-Up Strap Option 2                       †      RO
+ 3D -reserved- (interrupt pin)                00       —           97-FF -reserved-                                  00      —
+ 3E -reserved- (min gnt)                      00       —           † Power-up default value depends on external strapping
+ 3F -reserved- (max lat)                      00       —
+
+Configuration Space PCI-to-ISA Bridge-Specific Registers
+Offset ISA Bus Control                      Default   Acc
+ 40 ISA Bus Control                           00      RW
+ 41 Refresh and Port 92                       00      RW
+ 42 ISA Clock Control                         00      RW
+ 43 ROM Decode Control                        00      RW
+ 44 Keyboard Controller Control               00      RW
+ 45 Type F DMA Control                        00      RW
+ 46 Miscellaneous Control 1                   00      RW
+ 47 Miscellaneous Control 2                   00      RW
+ 48 Miscellaneous Control 3                   01      RW
+ 49 -reserved-                                00      —
+ 4A IDE Interrupt Routing                     04      RW
+ 4B -reserved-                                00      —
+ 4C DMA / Master Mem Access Control 1         00      RW
+ 4D DMA / Master Mem Access Control 2         00      RW
+4F-4E DMA / Master Mem Access Control 3      0300     RW
+
+Offset Plug and Play Control                Default   Acc
+ 50 PNP DRQ Routing                           24      RW
+51-53 -reserved-                              00      —
+ 54 PCI IRQ Edge / Level Selection            00      RW
+ 55 PNP IRQ Routing 1                         00      RW
+ 56 PNP IRQ Routing 2                         00      RW
+ 57 PNP IRQ Routing 3                         00      RW
+
+
+
+
+Preliminary Revision 0.1 October 13, 1996                   -12-                                             Register Overview
+         9,$7HFKQRORJLHV,QF                                                                            VT82C586A
+PCI Function 1 Registers - IDE Controller                         Configuration Space IDE-Specific Registers
+                                                                  Offset Configuration Space IDE Registers Default Acc
+Configuration Space IDE Header Registers                           40 Chip Enable                             08    RW
+Offset PCI Configuration Space Header        Default Acc           41 IDE Configuration                       02    RW
+                                                                   42 -reserved- (do not program)             09    RW
+ 1-0 Vendor ID                                1106   RO
+                                                                   43 FIFO Configuration                      3A    RW
+ 3-2 Device ID                                0571   RO
+                                                                   44 Miscellaneous Control 1                 68    RW
+ 5-4 Command                                  0080   RO
+                                                                   45 Miscellaneous Control 2                 00    RW
+ 7-6 Status                                   0280   RW
+                                                                   46 Miscellaneous Control 3                 C0    RW
+  8 Revision ID                                nn    RO                                                    A8A8A8A8 RW
+                                                                  4B-48 Drive Timing Control
+  9 Programming Interface                      85    RW
+                                                                   4C Address Setup Time                      FF    RW
+  A Sub Class Code                             01    RO
+                                                                   4D -reserved- (do not program)             00    RW
+  B Base Class Code                            01    RO
+                                                                   4E Sec Non-1F0 Port Access Timing          FF    RW
+  C -reserved- (cache line size)               00     —
+  D Latency Timer                              00    RW            4F Pri Non-1F0 Port Access Timing          FF    RW
+  E Header Type                                00    RO           53-50 UltraDMA33 Extd Timing Control     03030303 RW
+  F Built In Self Test (BIST)                  00    RO           54-5F -reserved-                            00    —
+13-10 Base Address - Pri Data / Command     000001F0 RO           61-60 Primary Sector Size                  0200   RW
+17-14 Base Address - Pri Control / Status   000003F4 RO           62-67 -reserved-                            00     —
+1B-18 Base Address - Sec Data / Command     00000170 RO           69-68 Secondary Sector Size                0200   RW
+1F-1C Base Address - Sec Control / Status   00000374 RO           70-FF -reserved-                            00    —
+23-20 Base Address - Bus Master Control     0000CC01 RW
+24-2F -reserved- (unassigned)                  00     —           I/O Registers - IDE Controller
+30-33 -reserved- (expan ROM base addr)         00     —           These registers are compliant with the SFF 8038 v1.0 standard.
+34-3B -reserved- (unassigned)                  00     —
+                                                                  Refer to that specification for additional information.
+ 3C Interrupt Line                             0E    RW
+ 3D Interrupt Pin                              00    RO           Offset IDE I/O Registers                       Default   Acc
+ 3E Minimum Grant                              00    RO             0 Primary Channel Command                      00      RW
+ 3F Maximum Latency                            00    RO             1 -reserved-                                   00      —
+                                                                    2 Primary Channel Status                       00      WC
+                                                                    3 -reserved-                                   00      —
+                                                                   4-7 Primary Channel PRD Table Addr              00      RW
+                                                                    8 Secondary Channel Command                    00      RW
+                                                                    9 -reserved-                                   00      —
+                                                                    A Secondary Channel Status                     00      WC
+                                                                    B -reserved-                                   00      —
+                                                                   C-F Secondary Channel PRD Table Addr            00      RW
+
+
+
+
+Preliminary Revision 0.1 October 13, 1996                  -13-                                             Register Overview
+         9,$7HFKQRORJLHV,QF                                                                       VT82C586A
+PCI Function 2 Registers - USB Controller                             I/O Registers - USB Controller
+                                                                      Offset USB I/O Registers             Default Acc
+Configuration Space USB Header Registers                               1-0 USB Command                      0000   RW
+Offset PCI Configuration Space Header           Default Acc            3-2 USB Status                       0000   WC
+                                                                       5-4 USB Interrupt Enable             0000   RW
+ 1-0 Vendor ID                                   1106   RO
+                                                                       7-6 Frame Number                     0000   RW
+ 3-2 Device ID                                   3038   RO
+                                                                       B-8 Frame List Base Address        00000000 RW
+ 5-4 Command                                     0000   RW
+                                                                        C Start Of Frame Modify              40    RW
+ 7-6 Status                                      0200   WC
+                                                                      11-10 Port 1 Status / Control         0080   WC
+  8 Revision ID                                   nn    RO
+                                                                      13-12 Port 2 Status / Control         0080   WC
+  9 Programming Interface                         00    RO
+  A Sub Class Code                                03    RO
+  B Base Class Code                               0C    RO
+  C Cache Line Size                               00    RO
+  D Latency Timer                                 16    RW
+  E Header Type                                   00    RO
+  F BIST                                          00    RO
+10-1F -reserved-                                  00    —
+23-20 Base Address                             00000301 RW
+24-3B -reserved-                                  00    —
+ 3C Interrupt Line                                00    RW
+ 3D Interrupt Pin                                 04    RW
+3E-3F -reserved-                                  00     —
+
+Configuration Space USB-Specific Registers
+Offset USB Control                             Default   Acc
+  40 Miscellaneous Control 1                     00      RW
+  41 Miscellaneous Control 2                     00      RW
+42-43 -reserved-                                 00      RO
+44-45 -reserved- (test only, do not program)             RW
+46-47 -reserved- (test)                                  RO
+48-5F -reserved-                                 00      —
+  60 Serial Bus Release Number                   10      RO
+61-BF -reserved-                                 00      —
+C1-C0 Legacy Support                            2000     RW
+C2-FF -reserved-                                 00       —
+
+
+
+
+Preliminary Revision 0.1 October 13, 1996                      -14-                                    Register Overview
+           9,$7HFKQRORJLHV,QF                                                         VT82C586A
+
+Configuration Space I/O
+
+Mechanism #1
+These ports respond only to double-word accesses. Byte or
+word accesses will be passed on unchanged.
+
+Port CFB-CF8 - Configuration Address ......................... RW
+   31 Configuration Space Enable
+         0 Disabled .................................................default
+         1 Convert configuration data port writes to
+             configuration cycles on the PCI bus
+ 30-24 Reserved     ........................................ always reads 0
+ 23-16 PCI Bus Number
+       Used to choose a specific PCI bus in the system
+ 15-11 Device Number
+       Used to choose a specific device in the system
+  10-8 Function Number
+       Used to choose a specific function if the selected
+       device supports multiple functions
+   7-2 Register Number
+       Used to select a specific DWORD in the device’s
+       configuration space
+   1-0 Fixed        ........................................ always reads 0
+
+Port CFF-CFC - Configuration Data .............................. RW
+
+
+Refer to PCI Bus Specification Version 2.1 for further details
+on operation of the above configuration registers.
+
+
+
+
+Preliminary Revision 0.1 October 13, 1996                                      -15-   Configuration Space I/O
+         9,$7HFKQRORJLHV,QF                                                                                               VT82C586A
+
+Register Descriptions                                                 Legacy I/O Ports
+                                                                      This group of registers includes the DMA Controllers,
+                                                                      Interrupt Controllers, and Timer/Counters as well as a number
+VIA-Specific I/O Ports                                                of miscellaneous ports originally implemented using discrete
+A8/A9 is a VIA-legacy I/O index/data pair. Chipset registers          logic on original PC/AT motherboards. All of the registers
+in earlier VIA chipsets were accessed using this mechanism.           listed are integrated on-chip. These registers are implemented
+These registers are the only remaining functions accessed in          in a precise manner for backwards compatibility with previous
+this way (norte: in future ACPI-capable versions of the               generations of PC hardware. These registers are listed for
+82C586A chip, access to these functions will be defined by            information purposes only. Detailed descriptions of the
+ACPI so the A8/A9 mechanism will no longer be used).                  actions and programming of these registers are included in
+These functions are accessed by writing the indicated offset          numerous industry publications (duplication of that
+(C8h or C9h) to I/O port A8h then writing the desired data to         information here is beyond the scope of this document). All of
+I/O port A9h.                                                         these registers reside in I/O space.
+
+                                                                      Port 61 - Misc Functions & Speaker Control ................. RW
+Port A8/A9 Offset C8h - General Purpose Output Port 0
+                                                                         7     Reserved       ........................................ always reads 0
+These bits are controlled by PCW0 for latching data in an
+                                                                         6     IOCHCK# Active .................................................RO
+external 373 latch. A 1-0-1 pulse is generated on PCW0 when
+                                                                               This bit is set when the ISA bus IOCHCK# signal is
+this port is written and the contents of this register appear on
+                                                                               asserted. Once set, this bit may be cleared by setting
+the indicated bits of the ISA SD bus.
+                                                                               bit-3 of this register. Bit-3 should be cleared to
+  7-0    SD15-8                                                                enable recording of the next IOCHCK#. IOCHCK#
+                                                                               generates NMI to the CPU if NMI is enabled.
+Port A8/A9 Offset C9h - General Purpose Output Port 1                    5     Timer/Counter 2 Output......................................RO
+These bits are controlled by PCW1 for latching data in an                      This bit reflects the output of Timer/Counter 2
+external 373 latch. A 1-0-1 pulse is generated on PCW1 when                    without any synchronization.
+this port is written and the contents of this register appear on         4     Refresh Detected...................................................RO
+the indicated bits of the ISA SD bus.                                          This bit toggles on every rising edge of the ISA bus
+  7-0    SD15-8                                                                REFRESH# signal.
+                                                                         3     IOCHCK# Disable...............................................RW
+                                                                                  0 Enable IOCHCK# assertions ................. default
+                                                                                  1 Force IOCHCK# inactive and clear any
+                                                                                      “IOCHCK# Active” condition in bit-6
+                                                                         2     Reserved       ........................................RW, default=0
+                                                                         1     Speaker Enable ....................................................RW
+                                                                                  0 Disable................................................... default
+                                                                                  1 Enable Timer/Ctr 2 output to drive SPKR pin
+                                                                         0     Timer/Counter 2 Enable .....................................RW
+                                                                                  0 Disable................................................... default
+                                                                                  1 Enable Timer/Counter 2
+
+                                                                      Port 92h - System Control ................................................ RW
+                                                                        7-6 Hard Disk Activity LED Status
+                                                                                 0 Off      .................................................... default
+                                                                                1-3 On
+                                                                        5-4 Reserved        ........................................ always reads 0
+                                                                         3    Power-On Password Bytes Inaccessable ..default=0
+                                                                         2    Reserved      ........................................ always reads 0
+                                                                         1    A20 Address Line Enable
+                                                                                 0 A20 disabled / forced 0 (real mode) ...... default
+                                                                                 1 A20 address line enabled
+                                                                         0    High Speed Reset
+                                                                                 0 Normal
+                                                                                 1 Briefly pulse system reset to switch from
+                                                                                     protected mode to real mode
+
+
+
+
+Preliminary Revision 0.1 October 13, 1996                          -16-                                                    Register Descriptions
+         9,$7HFKQRORJLHV,QF                                                                                             VT82C586A
+Keyboard Controller Registers                                         Port 64 - Keyboard / Mouse Status .................................. RO
+The keyboard controller handles the keyboard and mouse                   0     Keyboard Output Buffer Full
+interfaces. Two ports are used: port 60 and port 64. Reads                       0 Keyboard Output Buffer Empty............. default
+from port 64 return a status byte. Writes to port 64h are                        1 Keyboard Output Buffer Full
+command codes (see command code list following the register              1     Input Buffer Full
+descriptions). Input and output data is transferred via port 60.                 0 Input Buffer Empty................................ default
+                                                                                 1 Input Buffer Full
+A “Control” register is also available. It is accessable by              2     System Flag
+writing commands 20h / 60h to the command port (port 64h);                       0 Power-On Default .................................. default
+The control byte is written by first sending 60h to the                          1 Self Test Successful
+command port, then sending the control byte value.      The              3     Command / Data
+control register may be read by sending a command of 20h to                      0 Last write was data write ....................... default
+port 64h, waiting for “Output Buffer Full” status = 1, then                      1 Last write was command write
+reading the control byte value from port 60h.                            4     Keylock Status
+Traditional (non-integrated) keyboard controllers have an                        0 Locked
+“Input Port” and an “Output Port” with specific pins dedicated                   1 Free
+to certain functions and other pins available for general                5     Mouse Output Buffer Full
+purpose I/O. Specific commands are provided to set these pins                    0 Mouse output buffer empty.................... default
+high and low. All outputs are “open-collector” so to allow                       1 Mouse output buffer holds mouse data
+input on one of these pins, the output value for that pin would          6     General Receive / Transmit Timeout
+be set high (non-driving) and the desired input value read on                    0 No error ................................................. default
+the input port. These ports are defined as follows:                              1 Error
+                                                                         7     Parity Error
+  Bit Input Port                         Lo Code Hi Code                         0 No parity error (odd parity received)..... default
+   0    P10 - Keyboard Data In             B0        B8                          1 Even parity occurred on last byte received
+   1    P11 - Mouse Data In                B1        B9                              from keyboard / mouse
+   2    P12 - Turbo Pin (PS/2 mode only)   B2        BA
+   3    P13 - user-defined                 B3        BB               KBC Control Register .......... (R/W via Commands 20h/60h)
+   4    P14 - user-defined                 B6        BE                 7   Reserved      ........................................ always reads 0
+   5    P15 - user-defined                 B7        BF                 6   PC Compatibility
+   6    P16 - user-defined                  –         –                       0 Disable scan conversion
+   7    P17 - undefined                     –         –                       1 Convert scan codes to PC format; convert 2-
+  Bit Output Port                        Lo Code Hi Code                           byte break sequences to 1-byte PC-compatible
+   0    P20 - SYSRST (1=execute reset)      –         –                            break codes ............................................ default
+   1    P21 - GATEA20 (1=A20 enabled)       –         –                 5   Mouse Disable
+   2    P22 - Mouse Data Out               B4        BC                       0 Enable Mouse Interface ......................... default
+   3    P23 - Mouse Clock Out              B5        BD                       1 Disable Mouse Interface
+   4    P24 - Keyboard OBF Interrupt (IRQ1) –         –                 4   Keyboard Disable
+   5    P25 - Mouse OBF Interrupt (IRQ 12) –          –                       0 Enable Keyboard Interface .................... default
+   6    P26 - Keyboard Clock Out            –         –                       1 Disable Keyboard Interface
+   7    P27 - Keyboard Data Out             –         –                 3   Keyboard Lock Disable
+  Bit Test Port                          Lo Code Hi Code                      0 Enable Keyboard Inhibit Function......... default
+   0    T0 - Keyboard Clock In              –         –                       1 Disable Keyboard Inhibit Function
+   1    T1 - Mouse Clock In                 –         –                 2   System Flag ................................................default=0
+Note: Command code C0h transfers input port data to the                     This bit may be read back as status register bit-2
+output buffer. Command code D0h copies output port values               1   Mouse Interrupt Enable
+to the output buffer. Command code E0h transfers test input                   0 Disable mouse interrupts ....................... default
+port data to the output buffer.                                               1 Generate interrupt on IRQ12 when mouse data
+                                                                                   comes in output bufer
+Port 60 - Keyboard Controller Input Buffer ................. WO         0   Keyboard Interrupt Enable
+Only write to port 60h if port 64h bit-1 = 0 (1=full).                        0 Disable Keyboard Interrupts.................. default
+                                                                              1 Generate interrupt on IRQ1 when output buffer
+Port 60 - Keyboard Controller Output Buffer ................RO                     has been written.
+Only read from port 60h if port 64h bit-0 = 1 (0=empty).
+
+
+
+
+Preliminary Revision 0.1 October 13, 1996                          -17-                                                  Register Descriptions
+         9,$7HFKQRORJLHV,QF                                                                                    VT82C586A
+Port 64 - Keyboard / Mouse Command .......................... WO
+This port is used to send commands to the keyboard / mouse
+controller.    The command codes recognized by the
+VT82C586A are listed n the table below.
+Note: The VT82C586A Keyboard Controller is compatible
+with the VIA VT82C42 Industry-Standard Keyboard
+Controller except that due to its integrated nature, many of the
+input and output port pins are not available externally for use
+as general purpose I/O pins (even though P13-P16 are set on
+power-up as strapping options). In other words, many of the
+commands below are provided and “work”, but otherwise
+perform no useful function (e.g., commands that set P12-P17
+high or low). Also note that setting P10-11, P22-23, P26-27,
+and T0-1 high or low directly serves no useful purpose, since
+these bits are used to implement the keyboard and mouse ports
+and are directly controlled by keyboard controller logic.
+Table 4. Keyboard Controller Command Codes
+Code      Keyboard Command Code Description                           Code      Keyboard Command Code Description
+20h       Read Control Byte (next byte is Control Byte)               C0h       Read input port (read P10-17 input data to
+60h       Write Control Byte (next byte is Control Byte)                        the output buffer)
+9xh       Write low nibble (bits 0-3) to P10-P13                      C1h       Poll input port low (read input data on P11-13
+A1h       Output Keyboard Controller Version #                                  repeatably & put in bits 5-7 of status
+A4h       Test if Password is installed                               C2h       Poll input port high (same except P15-17)
+          (always returns F1h to indicate not installed)              C8h       Unblock P22-23 (use before D1 to change
+A7h       Disable Mouse Interface                                               active mode)
+A8h       Enable Mouse Interface                                      C9h       Reblock P22-23 (protection mechanism for D1)
+A9h       Mouse Interface Test (puts test results in port 60h)
+          (value: 0=OK, 1=clk stuck low, 2=clk stuck high,            CAh       Read mode (output KBC mode info to port 60
+          3=data stuck lo, 4=data stuck hi, FF=general error)                   output buffer (bit-0=0 if ISA, 1 if PS/2)
+AAh       KBC self test (returns 55h if OK, FCh if not)               D0h       Read Output Port (copy P10-17 output port values
+ABh       Keyboard Interface Test (see A9h Mouse Test)                          to port 60)
+ADh       Disable Keyboard Interface                                  D1h       Write Output Port (data byte following is written to
+AEh       Enable Keyboard Interface                                             keyboard output port as if it came from keyboard)
+AFh       Return Version #                                            D2h       Write Keyboard Output Buffer & clear status bit-5
+B0h       Set P10 low                                                           (write following byte to keyboard)
+B1h       Set P11 low                                                 D3h       Write Mouse Output Buffer & set status bit-5 (write
+B2h       Set P12 low                                                           following byte to mouse; put value in mouse input
+B3h       Set P13 low                                                           buffer so it appears to have come from the mouse)
+B4h       Set P22 low                                                 D4h       Write Mouse (write following byte to mouse)
+B5h       Set P23 low                                                 E0h       Read test inputs (T0-1 read to bits 0-1 of resp byte)
+B6h       Set P14 low                                                 Exh       Set P23-P21 per command bits 3-1
+B7h       Set P15 low                                                 Fxh       Pulse P23-P20 low for 6usec per command bits 3-0
+B8h       Set P10 high
+B9h       Set P11 high                                                All other codes not listed are undefined.
+BAh       Set P12 high
+BBh       Set P13 high
+BCh       Set P22 high
+BDh       Set P23 high
+BEh       Set P14 high
+BFh       Set P15 high
+
+
+
+
+Preliminary Revision 0.1 October 13, 1996                          -18-                                           Register Descriptions
+          9,$7HFKQRORJLHV,QF                                                                                 VT82C586A
+DMA Controller I/O Registers                                        Ports C0-DF - Slave DMA Controller
+                                                                    Channels 0-3 of the Slave DMA Controller control System
+Ports 00-0F - Master DMA Controller                                 DMA Channels 4-7. There are 16 Slave DMA Controller
+Channels 0-3 of the Master DMA Controller control System            registers:
+DMA Channels 0-3. There are 16 Master DMA Controller
+registers:                                                          I/O Address Bits 15-0    Register Name
+I/O Address Bits 15-0    Register Name                              0000 0000 1100 000x      Ch 0 Base / Current Address       RW
+0000 0000 000x 0000      Ch 0 Base / Current Address     RW         0000 0000 1100 001x      Ch 0 Base / Current Count         RW
+0000 0000 000x 0001      Ch 0 Base / Current Count       RW         0000 0000 1100 010x      Ch 1 Base / Current Address       RW
+0000 0000 000x 0010      Ch 1 Base / Current Address     RW         0000 0000 1100 011x      Ch 1 Base / Current Count         RW
+0000 0000 000x 0011      Ch 1 Base / Current Count       RW         0000 0000 1100 100x      Ch 2 Base / Current Address       RW
+0000 0000 000x 0100      Ch 2 Base / Current Address     RW         0000 0000 1100 101x      Ch 2 Base / Current Count         RW
+0000 0000 000x 0101      Ch 2 Base / Current Count       RW         0000 0000 1100 110x      Ch 3 Base / Current Address       RW
+0000 0000 000x 0110      Ch 3 Base / Current Address     RW         0000 0000 1100 111x      Ch 3 Base / Current Count         RW
+0000 0000 000x 0111      Ch 3 Base / Current Count       RW         0000 0000 1101 000x      Status / Command                  RW
+0000 0000 000x 1000      Status / Command                RW         0000 0000 1101 001x      Write Request                     WO
+0000 0000 000x 1001      Write Request                   WO         0000 0000 1101 010x      Write Single Mask                 WO
+0000 0000 000x 1010      Write Single Mask               WO         0000 0000 1101 011x      Write Mode                        WO
+0000 0000 000x 1011      Write Mode                      WO         0000 0000 1101 100x      Clear Byte Pointer F/F            WO
+0000 0000 000x 1100      Clear Byte Pointer F/F          WO         0000 0000 1101 101x      Master Clear                      WO
+0000 0000 000x 1101      Master Clear                    WO         0000 0000 1101 110x      Clear Mask                        WO
+0000 0000 000x 1110      Clear Mask                      WO         0000 0000 1101 111x      Read/Write All Mask Bits          WO
+0000 0000 000x 1111      R/W All Mask Bits               RW
+                                                                    Note that not all bits of the address are decoded.
+Note that not all bits of the address are decoded.                  The Slave DMA Controller is compatible with the Intel 8237
+                                                                    DMA Controller chip. Detailed description of 8237 DMA
+The Master DMA Controller is compatible with the Intel 8237
+                                                                    controller operation can be obtained from the Intel Peripheral
+DMA Controller chip. Detailed descriptions of 8237 DMA
+                                                                    Components Data Book and numerous other industry
+Controller operation can be obtained from the Intel Peripheral
+                                                                    publications.
+Components Data Book and numerous other industry
+publications.
+
+                                                                    Ports 80-8F - DMA Page Registers
+                                                                    There are eight DMA Page Registers, one for each DMA
+                                                                    channel. These registers provide bits 16-23 of the 24-bit
+                                                                    address for each DMA channel (bits 0-15 are stored in
+                                                                    registers in the Master and Slave DMA Controllers). They are
+                                                                    located at the following I/O Port addresses:
+                                                                    I/O Address Bits 15-0    Register Name
+                                                                    0000 0000 1000 0111      Channel 0 DMA Page (M-0).........RW
+                                                                    0000 0000 1000 0011      Channel 1 DMA Page (M-1).........RW
+                                                                    0000 0000 1000 0001      Channel 2 DMA Page (M-2).........RW
+                                                                    0000 0000 1000 0010      Channel 3 DMA Page (M-3).........RW
+                                                                    0000 0000 1000 1111      Channel 4 DMA Page (S-0) ..........RW
+                                                                    0000 0000 1000 1011      Channel 5 DMA Page (S-1) ..........RW
+                                                                    0000 0000 1000 1001      Channel 6 DMA Page (S-2) ..........RW
+                                                                    0000 0000 1000 1010      Channel 7 DMA Page (S-3) .........RW
+
+
+
+
+Preliminary Revision 0.1 October 13, 1996                        -19-                                          Register Descriptions
+          9,$7HFKQRORJLHV,QF                                                                                        VT82C586A
+Interrupt Controller Registers                                     Interrupt Controller Shadow Registers
+                                                                   The following shadow registers are enabled by setting bit 4 of
+Ports 20-21 - Master Interrupt Controller                          Rx47 to 1 (offset 47h in the PCI-ISA Bridge function 0
+The Master Interrupt Controller controls system interrupt          register group). If the shadow registers are enabled, they are
+channels 0-7. Two registers control the Master Interrupt           read back at the indicated I/O port instead of the standard
+Controller. They are:                                              interrupt controller registers (writes to the interrupt controller
+I/O Address Bits 15-0    Register Name                             register ports are directed to the standard interrupt controller
+0000 0000 001x xxx0      Master Interrupt Control       RW         registers).
+0000 0000 001x xxx1      Master Interrupt Mask          RW
+                                                                   Port 20 - Master Interrupt Control Shadow ................... RO
+Note that not all bits of the address are decoded.                   7-5 Reserved       ........................................ always reads 0
+The Master Interrupt Controller is compatible with the Intel          4     OCW3 bit 5
+8259 Interrupt Controller chip. Detailed descriptions of 8259         3     OCW2 bit 7
+Interrupt Controller operation can be obtained from the Intel         2     ICW4 bit 4
+Peripheral Components Data Book and numerous other                    1     ICW4 bit 1
+industry publications.                                                0     ICW1 bit 3
+                                                                   Port 21 - Master Interrupt Mask Shadow ....................... RO
+Ports A0-A1 - Slave Interrupt Controller                             7-5 Reserved       ........................................ always reads 0
+                                                                     4-0 T7-T3 of Interrupt Vector Address
+The Slave Interrupt Controller controls system interrupt
+channels 8-15. The slave system interrupt controller also          Port A0 - Slave Interrupt Control Shadow ..................... RO
+occupies two register locations:                                     7-5 Reserved        ........................................ always reads 0
+I/O Address Bits 15-0    Register Name                                4    OCW3 bit 5
+0000 0000 101x xxx0      Slave Interrupt Control        RW            3    OCW2 bit 7
+0000 0000 101x xxx1      Slave Interrupt Mask           RW            2    ICW4 bit 4
+                                                                      1    ICW4 bit 1
+Note that not all address bits are decoded.                           0    ICW1 bit 3
+The Slave Interrupt Controller is compatible with the Intel        Port A1 - Slave Interrupt Mask Shadow ........................ RO
+8259 Interrupt Controller chip. Detailed descriptions of 8259
+                                                                     7-5 Reserved        ........................................ always reads 0
+Interrupt Controller operation can be obtained from the Intel
+                                                                     4-0 T7-T3 of Interrupt Vector Address
+Peripheral Components Data Book and numerous other
+industry publications.
+
+
+
+
+Preliminary Revision 0.1 October 13, 1996                       -20-                                                 Register Descriptions
+          9,$7HFKQRORJLHV,QF                                                                                        VT82C586A
+Timer / Counter Registers                                        CMOS / RTC Registers
+
+Ports 40-43 - Timer / Counter Registers                          Port 70 - CMOS Address ................................................. WO
+There are 4 Timer / Counter registers:                              7     NMI Disable ........................................................ WO
+I/O Address Bits 15-0    Register Name                                      0 Enable NMI Generation. NMI is asserted on
+0000 0000 010x xx00      Timer / Counter 0 Count      RW                       encountering IOCHCK# on the ISA bus or
+0000 0000 010x xx01      Timer / Counter 1 Count      RW                       SERR# on the PCI bus.
+0000 0000 010x xx10      Timer / Counter 2 Count      RW                    1 Disable NMI Generation........................ default
+0000 0000 010x xx11      Timer / Counter Cmd Mode     WO           6-0 CMOS Address (128 bytes) ................................ WO
+                                                                 Port 71 - CMOS Data ....................................................... RW
+Note that not all bits of the address are decoded.
+                                                                   7-0 CMOS Data (128 bytes)
+The Timer / Counters are compatible with the Intel 8254
+Timer / Counter chip. Detailed descriptions of 8254 Timer /      Note:      The system Real Time Clock (RTC) is part of the
+Counter operation can be obtained from the Intel Peripheral                 “CMOS” block. The RTC control registers are
+Components Data Book and numerous other industry                            located at specific offsets in the CMOS data area.
+publications.                                                               Detailed descriptions of CMOS / RTC operation and
+                                                                            programming can be obtained from the VIA
+                                                                            VT82887 Data Book or numerous other industry
+                                                                            publications.
+
+
+
+
+Preliminary Revision 0.1 October 13, 1996                     -21-                                                   Register Descriptions
+            9,$7HFKQRORJLHV,QF                                                                                                               VT82C586A
+PCI to ISA Bridge Registers (Function 0)                                                 ISA Bus Control
+All registers are located in the function 0 PCI configuration
+space of the VT82C586A. These registers are accessed                                     Offset 40 - ISA Bus Control ............................................. RW
+through PCI configuration mechanism #1 via I/O address                                      7    ISA Command Delay
+CF8/CFC.                                                                                             0 Normal................................................... default
+                                                                                                     1 Extra
+                                                                                            6    Extended ISA Bus Ready
+PCI Configuration Space Header
+                                                                                                     0 Disable................................................... default
+                                                                                                     1 Enable
+Offset 1-0 - Vendor ID = 1106h .........................................RO                  5    ISA Slave Wait States
+                                                                                                     0 4 Wait States.......................................... default
+Offset 3-2 - Device ID = 0586h ..........................................RO                          1 5 Wait States
+Offset 5-4 - Command ....................................................... RW             4    Chipset I/O Wait States
+                                                                                                     0 2 Wait States.......................................... default
+ 15-4 Reserved        ........................................ always reads 0                        1 4 Wait States
+   3     Special Cycle Enable ......................... always reads 1                      3    I/O Recovery Time
+   2     Bus Master ........................................ always reads 1                          0 Disable................................................... default
+   1     Memory Space.................................... always reads 1                             1 Enable
+   0     I/O Space ........................................ always reads 1                  2    Extend-ALE
+Offset 7-6 - Status ........................................................... RWC                  0 Disable................................................... default
+                                                                                                     1 Enable
+   15 Detected Parity Error .................... write one to clear
+                                                                                            1    ROM Wait States
+   14 Signalled System Error...................... always reads 0
+                                                                                                     0 1 Wait State ........................................... default
+   13 Signalled Master Abort ..................... always reads 0
+                                                                                                     1 0 Wait States
+   12 Received Target Abort .................. write one to clear
+                                                                                            0    ROM Write
+   11 Signalled Target Abort ...................... always reads 0                                   0 Disable................................................... default
+ 10-9 DEVSEL# Timing .................... fixed at 01 (medium)                                       1 Enable
+    8    Data Parity Detected.......................... always reads 0
+    7    Fast Back-to-Back.............................. always reads 0                  Offset 41 - Refresh and Port 92 ....................................... RW
+  6-0 Reserved           ........................................ always reads 0            7    Bus Refresh Arbitration
+                                                                                                     0 Enable .................................................... default
+Offset 8 - Revision ID = nn ................................................RO
+                                                                                                     1 Disable
+Offset 9 - Program Interface = 00h ...................................RO                    6    Reserved      ........................................ always reads 0
+                                                                                            5    Port 92 Fast Reset
+Offset A - Sub Class Code = 01h .......................................RO                            0 Disable................................................... default
+                                                                                                     1 Enable
+Offset B - Class Code = 06h ...............................................RO               4    Reserved      ........................................ always reads 0
+                                                                                            3    Double DMA Clock
+Offset E - Header Type = 80h............................................RO                           0 Disable................................................... default
+  7-0 Header Type Code .........80h (Multifunction Device)                                           1 Enable
+                                                                                            2    Reserved      ........................................ always reads 0
+Offset F - BIST = 00h .........................................................RO           1    Refresh Request Test Mode
+                                                                                                     0 Disable................................................... default
+                                                                                                     1 Enable
+                                                                                            0    Reserved      ........................................ always reads 0
+
+
+
+
+Preliminary Revision 0.1 October 13, 1996                                             -22-                                                    Register Descriptions
+            9,$7HFKQRORJLHV,QF                                                                                                            VT82C586A
+Offset 42 - ISA Clock Control. ......................................... RW           Offset 46 - Miscellaneous Control 1 ................................ RW
+   7    Latch IO16#                                                                     7-3 Reserved        ........................................ always reads 0
+            0 Enable.....................................................default         2    Pin 137 Function Control
+            1 Disable                                                                          Rx46h Rx44h
+   6    MCS16# Output                                                                           bit 2 bit-0        Pin 137
+            0 Disable ...................................................default                  1      0          IRQ12
+            1 Enable                                                                              0      x       MASTER#                         ............... default
+  5-4 Reserved       ........................................ always reads 0                      x      1       MASTER#
+   3    ISA CLOCK Select Enable                                                          1    PCI Burst Read Interruptability
+            0 ISA Clock = PCICLK/4 .........................default                               0 Allow burst reads to be interrupted........ default
+            1 ISA Clock selected per bits 2-0                                                     1 Don’t allow PCI burst reads to be interrupted
+  2-0 ISA Bus Clock Select (if bit-3 = 1)                                                0    Post Memory Write Enable
+          000 PCICLK/3 ..............................................default                      0 Disable................................................... default
+          001 PCICLK/2                                                                            1 Enable
+          010 PCICLK/4
+          011 PCICLK/6                                                                Offset 47 - Miscellaneous Control 2 ................................ RW
+          100 PCICLK/5                                                                   7    CPU Reset Source
+          101 PCICLK/10                                                                           0 Use CPURST as CPU Reset .................. default
+          110 PCICLK/12                                                                           1 Use INIT as CPU Reset
+          111 OSC/2                                                                      6    PCI Delay Transaction Enable
+                                                                                                  0 Disable................................................... default
+Note: Procedure for ISA CLOCK switching:                                                          1 Enable
+   1) Set bit 3 to 0                                                                     5    EISA 4D0/4D1 Port Enable
+   2) Change value of bit 2-0                                                                     0 Disable................................................... default
+   3) Set bit 3 to 1                                                                              1 Enable
+                                                                                         4    Interrupt Controller Shadow Register Enable
+Offset 43 - ROM Decode Control .................................... RW
+                                                                                                  0 Disable................................................... default
+Setting these bits enables the indicated address range to be                                      1 Enable
+included in the ROMCS# decode:                                                           3    Reserved      ........................................ always reads 0
+    7      FFFE0000h-FFFEFFFFh .......................... default=0                      2    Write Delay Transaction Time-Out Timer Enable
+    6      FFF80000h-FFFDFFFFh ......................... default=0                                0 Disable................................................... default
+    5      000E8000h-000EFFFFh ............................ default=0                             1 Enable
+    4      000E0000h-000E7FFFh ............................ default=0                    1    Read Delay Transaction Time-Out Timer Enable
+    3      000D8000h-000DFFFFh ........................... default=0                              0 Disable................................................... default
+    2      000D0000h-000D7FFFh ............................ default=0                             1 Enable
+    1      000C8000h-000CFFFFh ........................... default=0                     0    Software PCI Reset ...... write 1 to generate PCI reset
+    0      000C0000h-000C7FFFh............................. default=0
+                                                                                      Offset 48 - Miscellaneous Control 3 ................................ RW
+Offset 44 - Keyboard Controller Control ........................ RW                     7-3 Reserved         ........................................ always reads 0
+  7-1 Reserved      ........................................ always reads 0              2    Integrated USB Controller Disable
+   0    PS2 Mouse Enable                                                                          0 Enable .................................................... default
+            0 Disabled .................................................default                   1 Disable
+            1 Enabled                                                                    1    Integrated IDE Controller Disable
+                                                                                                  0 Enable .................................................... default
+Offset 45 - Type F DMA Control ..................................... RW                           1 Disable
+   7    ISA Master / DMA to PCI Line Buffer .... default=0                               0    512K PCI Memory Decode
+   6    DMA type F Timing on Channel 7 ........... default=0                                      0 Use the contents of bits 15-12 of Rx4Eh as the
+   5    DMA type F Timing on Channel 6 ........... default=0                                         top of PCI memory
+   4    DMA type F Timing on Channel 5 ........... default=0                                      1 Use the contents of bits 15-12 of Rx4Eh plus
+   3    DMA type F Timing on Channel 3 ........... default=0                                         512K as the top of PCI memory ............ default
+   2    DMA type F Timing on Channel 2 ........... default=0
+   1    DMA type F Timing on Channel 1 ........... default=0
+   0    DMA type F Timing on Channel 0 ........... default=0
+
+
+
+
+Preliminary Revision 0.1 October 13, 1996                                          -23-                                                    Register Descriptions
+            9,$7HFKQRORJLHV,QF                                                                                                        VT82C586A
+Offset 4A - IDE Interrupt Routing .................................. RW              4C - ISA DMA/Master Memory Access Control 1 ........ RW
+   7    Wait for PGNT Before Grant to ISA                                              7-0 PCI Memory Hole Bottom Address
+        Master/DMA                                                                           These bits correspond to HA[23:16] ............ default=0
+           0 Disable ...................................................default
+           1 Enable                                                                  4D - ISA DMA/Master Memory Access Control 2 ........ RW
+   6    Put I/O Devices Below 100h to SD Bus                                           7-0 PCI Memory Hole Top Address (HA[23:16])
+           0 Disable ...................................................default              These bits correspond to HA[23:16] ............ default=0
+           1 Enable                                                                  Note:     Access to the memory defined in the PCI memory
+  5-4 Reserved       ........................................ always reads 0                   hole will not be forwarded to PCI. This function is
+  3-2 IDE Second Channel IRQ Routing                                                           disabled if the top address less than or equal to the
+          00 IRQ14                                                                             bottom address.
+          01 IRQ15.....................................................default
+          10 IRQ10                                                                   4F-4E - ISA DMA/Master Memory Access Control 3 ... RW
+          11 IRQ11                                                                    15-12 Top of PCI Memory for ISA DMA/Master accesses
+  1-0 IDE Primary Channel IRQ Routing                                                         0000 1M .................................................... default
+          00 IRQ14.....................................................default                0001 2M
+          01 IRQ15                                                                             ... ...
+          10 IRQ10                                                                            1111 16M
+          11 IRQ11                                                                   Note: All ISA DMA / Masters that access addresses higher
+                                                                                             than the top of PCI memory will not be directed to the
+                                                                                             PCI bus.
+                                                                                        11 Forward E0000-EFFFF Accesses to PCI........def=0
+                                                                                        10 Forward A0000-BFFFF Accesses to PCI .......def=0
+                                                                                         9   Forward 80000-9FFFF Accesses to PCI ........def=1
+                                                                                         8   Forward 00000-7FFFF Accesses to PCI ........def=1
+                                                                                         7   Forward DC000-DFFFF Accesses to PCI ......def=0
+                                                                                         6   Forward D8000-DBFFF Accesses to PCI ......def=0
+                                                                                         5   Forward D4000-D7FFF Accesses to PCI .......def=0
+                                                                                         4   Forward D0000-D3FFF Accesses to PCI .......def=0
+                                                                                         3   Forward CC000-CFFFF Accesses to PCI .....def=0
+                                                                                         2   Forward C8000-CBFFF Accesses to PCI ......def=0
+                                                                                         1   Forward C4000-C7FFF Accesses to PCI .......def=0
+                                                                                         0   Forward C0000-C3FFF Accesses to PCI .......def=0
+
+
+
+
+Preliminary Revision 0.1 October 13, 1996                                         -24-                                                 Register Descriptions
+            9,$7HFKQRORJLHV,QF                                                                                                         VT82C586A
+Plug and Play Control                                                                Offset 55 - PNP IRQ Routing 1 ....................................... RW
+                                                                                       7-4 PIRQD# routing
+Offset 50 - PNP DRQ Routing .......................................... RW                     0000 Disabled................................................. default
+  7-3 Reserved      .............................. always reads 00100b                        0001 IRQ1
+  2-0 MDRQ0 Routing                                                                           0010 Reserved
+          000 DRQ0                                                                            0011 IRQ3
+          001 DRQ1                                                                            0100 IRQ4
+          010 DRQ2                                                                            0101 IRQ5
+          011 DRQ3                                                                            0110 IRQ6
+          100 Disabled .................................................default               0111 IRQ7
+          101 DRQ5                                                                            1000 Reserved
+          110 DRQ6                                                                            1001 IRQ9
+          111 DRQ7                                                                            1010 IRQ10
+                                                                                              1011 IRQ11
+Offset 54 - PCI IRQ Edge / Level Select .......................... RW                         1100 IRQ12
+  7-4 Reserved       ........................................ always reads 0                  1101 Reserved
+        The following bits all default to “level” triggered (0)                               1110 IRQ14
+   3    PIRQA# Invert (edge) / Non-invert (level).......(1/0)                                 1111 IRQ15
+   2    PIRQB# Invert (edge) / Non-invert (level).......(1/0)                          3-0 MIRQ0 Routing (same as PIRQD# routing) ....def=0
+   1    PIRQC# Invert (edge) / Non-invert (level).......(1/0)
+   0    PIRQD# Invert (edge) / Non-invert (level).......(1/0)                        Offset 56 - PNP IRQ Routing 2 ....................................... RW
+                                                                                       7-4 PIRQA# Routing (same as PIRQD# routing) ...def=0
+                                                                                       3-0 PIRQB# Routing (same as PIRQD# routing) ...def=0
+
+                                                                                     Offset 57 - PNP IRQ Routing 3 ....................................... RW
+                                                                                       7-4 PIRQC# Routing (same as PIRQD# routing) ...def=0
+                                                                                       3-0 MIRQ1 Routing (same as PIRQD# routing) ....def=0
+
+
+
+
+Preliminary Revision 0.1 October 13, 1996                                         -25-                                                   Register Descriptions
+            9,$7HFKQRORJLHV,QF                                                                                                        VT82C586A
+Power Management                                                                      Offset 85-84 - SMI Event Enable..................................... RW
+Refer to VIA application note AP-053 (“APM-Compliant                                     15 Enable SMI on Internal USB Ctrlr Activity .def=0
+Power Management Model of the VT82C586A”) for                                          14-12 Reserved      ........................................ always reads 0
+additional information on power mangement programming.                                   11 Enable SMI on EXTSMI7 Pin Toggle .....default=0
+                                                                                         10 Enable SMI on EXTSMI6 Pin Toggle .....default=0
+Offset 80 - Primary Activity Detect Enable .................... RW                        9   Enable SMI on EXTSMI5 Pin Toggle .....default=0
+                                                                                          8   Enable SMI on EXTSMI4 Pin Toggle .....default=0
+   7    Keyboard Controller Access Detect Enable
+                                                                                          7   Enable SMI on EXTSMI3 pin toggle .......default=0
+            0 Disable ...................................................default
+            1 Enable activity detect status bit to be set by                              6   Enable SMI on EXTSMI2 pin toggle .......default=0
+               access to I/O port 60h                                                     5   Enable SMI on Sec Event Timer Timeout .....def=0
+   6    Serial Port Access Detect Enable                                                  4   Enable SMI on GP1 Timer Timeout ........default=0
+            0 Disable ...................................................default          3   Enable SMI on GP0 Timer Timeout ........default=0
+            1 Enable activity detect status bit to be set by                              2   Enable SMI on Pri INTR Activity ........... default=0
+               access to COM1, 2, 3, or 4                                                 1   Enable SMI on EXTSMI Pin Toggle .......default=0
+   5    Parallel Port Access Detect Enable                                                0   Trigger Software SMI..................(write 1 to trigger)
+            0 Disable ...................................................default      Offset 87-86 - SMI Status .............................................. RWC
+            1 Enable activity detect status bit to be set by
+                                                                                         15 Internal USB Controller Generated SMI
+               access to I/O ports 278-27F or 378-37F
+                                                                                       14-12 Reserved      ........................................ always reads 0
+   4    Video Access Detect Enable
+                                                                                         11 EXTSMI7 Pin Toggle SMI ........................ default=0
+            0 Disable ...................................................default
+                                                                                         10 EXTSMI6 Pin Toggle SMI ....................... default=0
+            1 Enable activity detect status bit to be set by
+                                                                                          9   EXTSMI5 Pin Toggle SMI ....................... default=0
+               access to I/O ports 3B0-3DF or A-B memory
+                                                                                          8   EXTSMI4 Pin Toggle SMI ....................... default=0
+               segments
+                                                                                          7   EXTSMI3 Pin Toggle SMI ........................ default=0
+   3    DRV (HDD/Floppy) Access Detect Enable
+            0 Disable ...................................................default          6   EXTSMI2 Pin Toggle SMI ........................ default=0
+            1 Enable activity detect status bit to be set by                              5   Secondary Event Timer Time-out SMI ....default=0
+               access to I/O ports 1F0-1F7, 170-177, or 3F5.                              4   GP1 Timer Time out SMI ..........................default=0
+   2    Turbo Pin Toggle Detect Enable                                                    3   GP0 Timer Time out SMI ..........................default=0
+            0 Disable ...................................................default          2   Primary INTR Activity SMI......................default=0
+            1 Enable activity detect status bit to be set by                              1   External SMI Pin Toggle SMI...................default=0
+               toggle of Turbo input pin                                                  0   Software SMI..............................................default=0
+   1    Primary INTR Activity Detect Enable
+            0 Disable ...................................................default
+            1 Enable activity detect status bit to be set by
+               primary INTR activity
+   0    DMA/Master Activity Detect Enable
+            0 Disable ...................................................default
+            1 Enable activity detect status bit to be set by
+               DMA / Master activity
+
+Offset 82 - Primary Activity Detect Status ................... RWC
+These bits correspond to the activity detect enable bits above.
+    7      Keyboard Controller Access Status.......... default=0
+    6      Serial Port Access Status .......................... default=0
+    5      Parallel Port Access Status ....................... default=0
+    4      Video IO/Memory Access Status ............. default=0
+    3      DRV (HDD/Floppy) Access Status .......... default=0
+    2      Turbo Pin Toggle Status ........................... default=0
+    1      Primary INTR Activity Status ................. default=0
+    0      DMA/Master Activity Status ................... default=0
+
+
+
+
+Preliminary Revision 0.1 October 13, 1996                                          -26-                                                 Register Descriptions
+            9,$7HFKQRORJLHV,QF                                                                                                            VT82C586A
+Offset 88 - Timer Control 1 .............................................. RW          Offset 8C - Conserve Mode / Secondary Event .............. RW
+   7    GP1 Timer Enable .................................... default=0                  7-6 Conserve Mode Clock Select
+   6    GP1 Timer Auto Reload After Count to 0 .... def=0                                        00 1/16 second............................................ default
+  5-4 GP1 Timer Select / Enable                                                                  01 1/8 second
+           00 Disable ...................................................default                 10 1 second
+           01 Time base = 10 msec                                                                11 1 minute
+           10 Time base = 1 second                                                        5    Conserve Mode Indicator ........................ RO, def=0
+           11 Time base = 1 minute                                                        4    Conserve Mode Enable .............................default=0
+                                                                                         3-2 Secondary Event Activity Timer
+    3      GP0 Timer Enable .................................... default=0                       00 4 msec.................................................... default
+    2      GP0 Timer Auto Reload After Count to 0 .... def=0                                     01 128 msec
+   1-0     GP0 Timer Select / Enable                                                             10 1 second
+            00 Disable ...................................................default                11 By EOI + 0.5 ms
+            01 Time base = 10 msec                                                        1    Secondary Event Indicator ...................... RO, def=0
+            10 Time base = 1 second                                                       0    Secondary Activity Enable ....................... default=0
+            11 Time base = 1 minute
+                                                                                       Offset 8D - Miscellaneous Control .................................. RW
+Offset 89 - Timer Control 2 .............................................. RW             7    Reserved (do not program) ....................... default=0
+  7-0 GP0 Timer Load Value ............................. default=0                        6    Wait for STPCLK Acknowledge ..............default=0
+                                                                                          5    Wait for HALT Before STPCLK# Asserted .def=0
+Offset 8A - Timer Control 3 ............................................. RW              4    STPCLK# Throttling Time Base
+  7-0 GP1 Timer Load Value ............................. default=0                                0 32 us .................................................... default
+                                                                                                  1 1 ms
+Offset 8B - GP Timer Reload Enable .............................. RW
+                                                                                          3    STPCLK# Throttling Enable ...................default=0
+  7-5 Reserved       ........................................ always reads 0              2    Suspend Mode Enable
+        The following bits all default to 0 on power up:                                          0 Normal Operating Mode........................ default
+   4    GP0 Timer Enable Reload on Primary Activity                                               1 Put CPU into Suspend Mode
+   3    GP1 Timer Enable Reload on HDD/Floppy Access                                      1    Reserved (do not program) ....................... default=0
+   2    GP1 Timer Enable Reload on Video Access                                           0    Global SMI Enable ....................................default=0
+   1    GP1 Timer Enable Reload on Serial Port Access
+   0    GP1 Timer Enable Reload on KBC Access                                          Offset 8E - STPCLK# Duty Cycle ................................... RW
+                                                                                         7-4 Reserved       ........................................ always reads 0
+                                                                                         3-0 STPCLK# Duty Cycle
+                                                                                                0000 Disable................................................... default
+                                                                                                0001 1/16
+                                                                                                0010 2/16
+                                                                                                0011 3/16
+                                                                                                  ... ...
+                                                                                                1111 15/16
+
+
+
+
+Preliminary Revision 0.1 October 13, 1996                                           -27-                                                   Register Descriptions
+           9,$7HFKQRORJLHV,QF                                                                                            VT82C586A
+The following 4 registers all default to 00 at power-up (all                 Strap Options
+events disabled):
+                                                                             Offset 95 - Power-Up Strap Option 1............................... RO
+Offset 90 - ISA IRQ 7-0 as Primary Event ...................... RW           The following bits are latched from pins XD7-0 at power-up:
+  7-0 IRQ7-0 (1 bits enable corresponding interrupt line)
+                                                                                 7    Keyboard RP16 ............................ latched from XD7
+Offset 91 - ISA IRQ 15-8 as Primary Event .................... RW                6    Keyboard RP15 ........................... latched from XD6
+  7-0 IRQ15-8 (1 bits enable corresponding interrupt line)                       5    Keyboard RP14 ........................... latched from XD5
+                                                                                 4    Keyboard RP13 ........................... latched from XD4
+Offset 92 - ISA IRQ 7-0 as Secondary Event .................. RW                 3    PISA / SIO ................................. latched from XD3
+  7-0 IRQ7-0 (1 bits enable corresponding interrupt line)                               0 PISA (for docking stations)
+                                                                                        1 SIO (for desktop systems)........ (typical setting)
+Offset 93 - ISA IRQ15-8 as Secondary Event ................. RW                  2    Internal RTC Enable.................... latched from XD2
+  7-0 IRQ15-8 (1 bits enable corresponding interrupt line)                              0 Disable
+                                                                                        1 Enable
+                                                                                 1    Internal PS2 Mouse Enable ......... latched from XD1
+                                                                                        0 Disable
+                                                                                        1 Enable
+Offset 94 - External SMI Pin Status .................................RO          0    Internal KBC Enable ................... latched from XD0
+   7    EXTSMI7 Pin Status                                                              0 Disable
+   6    EXTSMI6 Pin Status                                                              1 Enable
+   5    EXTSMI5 Pin Status                                                   Offset 96 - Power-Up Strap Option 2............................... RO
+   4    EXTSMI4 Pin Status
+                                                                             These bits are latched from the indicated pins at power-up:
+   3    EXTSMI3 Pin Status
+   2    EXTSMI2 Pin Status                                                       7    User-Defined ............ latched from DACK7 (pin 133)
+   1    EXTSMI Pin Status                                                        6    User-Defined ............ latched from DACK6 (pin 131)
+   0    TURBO Pin Status                                                         5    User-Defined .............. latched from DACK5 (pin 58)
+                                                                                 4    User-Defined .............. latched from DACK3 (pin 31)
+                                                                                 3    User-Defined .............. latched from DACK2 (pin 33)
+                                                                                 2    User-Defined .............. latched from DACK1 (pin 18)
+                                                                                 1    EXTSMI2-7 SMI ...latched from ROMCS# (pin 135)
+                                                                                         0 Enable external SMI on EXTSMI2-7
+                                                                                         1 Disable external SMI on EXTSMI2-7
+                                                                                      EXTSMI2-7 are on the same pins as DAC1-3,5-7
+                                                                                      (pins 18, 33, 31, 58, 131, and 133) (see pin
+                                                                                      definitions for more information)
+                                                                                 0    IDE Addressing........... latched from SPKR (pin 134)
+                                                                                         0 Fixed
+                                                                                         1 Flexible
+                                                                                      See also IDE offset 9 bits 0-3 for more information
+                                                                             Note:    External strap option values may be set by connecting
+                                                                                      the indicated external pin to a 4.7K ohm pullup (for
+                                                                                      1) or drive it low during reset with a 7407 TTL open
+                                                                                      collector buffer (for 0) as shown in the suggested
+                                                                                      circuit below:
+
+                                                                                                   9&&                 9&&
+
+                                                                                                                         .
+
+                                                                                       5(6(7                                       ;'
+
+
+
+                                                                                           Figure 2. Strap Option Circuit
+
+
+
+Preliminary Revision 0.1 October 13, 1996                                 -28-                                            Register Descriptions
+            9,$7HFKQRORJLHV,QF                                                                                                               VT82C586A
+Enhanced IDE Controller Registers (Function 1)                                           Offset 9 - Programming Interface ................................... RW
+This Enhanced IDE controller interface is fully compatible                                  7     Master IDE Capability........... fixed at 1 (Supported)
+with the SFF 8038i v.1.0 specification. There are two sets of                              6-4 Reserved         ........................................ always reads 0
+software accessible registers -- PCI configuration registers and                            3     Programmable Indicator - Secondary ...... fixed at 1
+Bus Master IDE I/O registers. The PCI configuration registers                                        0 Fixed (mode is determined by bit-2)
+are located in the function 1 PCI configuration space of the                                         1 Supports both modes (may be set to either
+VT82C586A. The Bus Master IDE I/O registers are defined                                                  mode by writing bit-2)
+in the SFF8038i v1.0 specification.                                                         2     Channel Operating Mode - Secondary
+                                                                                                     0 Compatibility Mode ............default if SPKR=0
+                                                                                                     1 Native PCI Mode ................default if SPKR=1
+PCI Configuration Space Header                                                                    The default value for this bit is determined at power-
+                                                                                                  up as strapped by the SPKR pin
+Offset 1-0 - Vendor ID (1106h=VIA) ................................RO                       1     Programmable Indicator - Primary.......... fixed at 1
+                                                                                                     0 Fixed (mode is determined by bit-2)
+Offset 3-2 - Device ID (0571h=IDE Controller) ...............RO                                      1 Supports both modes (may be set to either
+                                                                                                         mode by writing bit-0)
+Offset 5-4 - Command ....................................................... RW
+                                                                                            0     Channel Operating Mode - Primary
+ 15-10 Reserved        ........................................ always reads 0                       0 Compatibility Mode.............default if SPKR=0
+   9     Fast Back to Back Cycles ..........fixed at 0 (disabled)                                    1 Native PCI Mode ................default if SPKR=1
+   8     SERR# Enable............................fixed at 0 (disabled)                            The default value for this bit is determined at power-
+   7     Address Stepping .......................fixed at 1 (enabled)                             up as strapped by the SPKR pin (pin 134)
+   6     Parity Error Response...............fixed at 0 (disabled)
+   5     VGA Palette Snoop ....................fixed at 0 (disabled)                     Compatibility Mode (fixed IRQs and I/O addresses):
+   4     Memory Write & Invalidate .....fixed at 0 (disabled)                                         Command Block       Control Block
+   3     Special Cycles .............................fixed at 0 (disabled)                Channel        Registers           Registers      IRQ
+   2     Bus Master ............................... default=0 (disabled)                    Pri          1F0-1F7               3F6           14
+         S/G operation can be issued only when the “Bus                                     Sec          170-177               376           15
+         Master” bit is enabled.
+   1     Memory Space............................fixed at 0 (disabled)                   Native PCI Mode (registers are programmable in I/O space)
+   0     I/O Space ............................... default=0 (disabled)                              Command Block          Control Block
+         When the “I/O Space” bit is disabled, the device will                            Channel       Registers             Registers
+         not respond to any I/O addresses for both compatible                                Pri     BA @offset 10h        BA @offset 14h
+         and native mode.                                                                   Sec      BA @offset 18h BA @offset 1Ch
+                                                                                         Command register blocks are 8 bytes of I/O space
+Offset 7-6 - Status ........................................................... RWC
+                                                                                         Control registers are 4 bytes of I/O space (only byte 2 is used)
+   15 Detected Parity Error................................ default=0
+   14 Signalled System Error.............................. default=0                     Offset A - Sub Class Code (01h) ....................................... RO
+   13 Received Master Abort.............................. default=0
+   12 Received Target Abort .............................. default=0                     Offset B - Base Class Code (01h) ...................................... RO
+   11 Signalled Target Abort ..............................Fixed at 0
+ 10-9 DEVSEL# Timing ..................default = 01 (medium)                             Offset D - Latency Timer (Default=0) ............................. RW
+    8    Data Parity Detected.................................. default=0
+    7    Fast Back to Back ......................................Fixed at 1              Offset E - Header Type (00h)............................................ RO
+  6-0 Reserved           ........................................ always reads 0
+                                                                                         Offset F - BIST (00h) ......................................................... RO
+Offset 8 - Revision ID .........................................................RO
+  0-7 Revision Code for IDE Controller Logic Block
+
+
+
+
+Preliminary Revision 0.1 October 13, 1996                                             -29-                                                    Register Descriptions
+           9,$7HFKQRORJLHV,QF                                                                                                            VT82C586A
+Offset 13-10 - Pri Data / Command Base Address.......... RW                            Offset 3C - Interrupt Line (0Eh) ..................................... RW
+Specifies an 8 byte I/O address space.
+                                                                                       Offset 3D - Interrupt Pin (00h) ......................................... RO
+ 31-16 Reserved    ..........................................always read 0               7-0 Interrupt Routing Mode
+  15-3 Port Address....................................... default=01F0h                        00h Legacy mode interrupt routing............... default
+   2-0 Fixed at 001b ..................................................... fixed                01h Native mode interrupt routing
+Offset 17-14 - Pri Control / Status Base Address............ RW                        Offset 3E - Min Gnt (00h) ................................................. RO
+Specifies a 4 byte I/O address space of which only the third
+byte is active (i.e., 3F6h for the default base address of 3F4h).                      Offset 3F - Max Latency (00h).......................................... RO
+ 31-16 Reserved     ..........................................always read 0
+  15-2 Port Address....................................... default=03F4h
+   1-0 Fixed at 01b ....................................................... fixed
+Offset 1B-18 - Sec Data / Command Base Address ........ RW
+Specifies an 8 byte I/O address space.
+ 31-16 Reserved    ..........................................always read 0
+  15-3 Port Address ...................................... default=0170h
+   2-0 Fixed at 001b ..................................................... fixed
+Offset 1F-1C - Sec Control / Status Base Address .......... RW
+Specifies a 4 byte I/O address space of which only the third
+byte is active (i.e., 376h for the default base address of 374h).
+ 31-16 Reserved     ..........................................always read 0
+  15-2 Port Address ...................................... default=0374h
+   1-0 Fixed at 01b ....................................................... fixed
+Offset 23-20 - Bus Master Control Regs Base Address .. RW
+Specifies a 16 byte I/O address space compliant with the SFF-
+8038i rev 1.0 specification.
+ 31-16 Reserved    ..........................................always read 0
+  15-4 Port Address ....................................... default=CC0h
+   3-0 Fixed at 0001b .................................................. fixed
+
+
+
+
+Preliminary Revision 0.1 October 13, 1996                                           -30-                                                  Register Descriptions
+            9,$7HFKQRORJLHV,QF                                                                                                           VT82C586A
+IDE-Controller-Specific Confiiguration Registers                                      Offset 44 - Miscellaneous Control 1 ................................ RW
+                                                                                         7    Reserved      ........................................ always reads 0
+Offset 40 - Chip Enable..................................................... RW          6    Master Read Cycle IRDY# Wait States
+  7-2 Reserved       ............................ always reads 000001b                            0 0 wait states
+   1    Primary Channel Enable........ default = 0 (disabled)                                     1 1 wait state ............................................. default
+   0    Secondary Channel Enable .... default = 0 (disabled)                             5    Master Write Cycle IRDY# Wait States
+                                                                                                  0 0 wait states
+Offset 41 - IDE Configuration .......................................... RW                       1 1 wait state ............................................. default
+   7    Primary IDE Read Prefetch Buffer                                                 4    FIFO Output Data 1/2 Clock Advance
+            0 Disable ...................................................default                  0 Disabled................................................. default
+            1 Enable                                                                              1 Enabled
+   6    Primary IDE Post Write Buffer                                                    3    Bus Master IDE Status Register Read Retry
+            0 Disable ...................................................default              Retry bus master IDE status register read when
+            1 Enable                                                                          master write operation for DMA read is not complete
+   5    Secondary IDE Read Prefetch Buffer                                                        0 Disabled
+            0 Disable ...................................................default                  1 Enabled .................................................. default
+            1 Enable                                                                    2-0 Reserved        ........................................ always reads 0
+   4    Secondary IDE Post Write Buffer
+            0 Disable ...................................................default      Offset 45 - Miscellaneous Control 2 ................................ RW
+            1 Enable                                                                     7    Reserved      ........................................ always reads 0
+   3    Reserved (read write) .......do not change, default=0                            6    Interrupt Steering Swap
+   2    Reserved (read write) .......do not change, default=1                                     0 Don’t swap channel interrupts ............... default
+   1    Reserved (read write) .......do not change, default=1                                     1 Swap interrupts between the two channels
+   0    Reserved (read write) .......do not change, default=0                           5-0 Reserved        ........................................ always reads 0
+
+Offset 42 - Reserved (Do Not Program) .......................... RW                   Offset 46 - Miscellaneous Control 3 ................................ RW
+                                                                                         7    Primary Channel Read DMA FIFO Flush
+Offset 43 - FIFO Configuration ....................................... RW                     1 = Enable FIFO flush for read DMA when interrupt
+   7    Reserved     ........................................ always reads 0                  asserts primary channel. ............... default=1 (enabled)
+  6-5 FIFO Configuration Between the Two Channels                                        6    Secondary Channel Read DMA FIFO Flush
+               Primary Secondary                                                              1 = Enable FIFO flush for Read DMA when interrupt
+           00     16              0                                                           asserts secondary channel............ Default=1 (enabled)
+           01     8               8...................................(default)          5    Primary Channel End-of-Sector FIFO Flush
+           10      8              8                                                           1 = Enable FIFO flush at the end of each sector for
+           11      0             16                                                           the primary channel. ................... Default=0 (disabled)
+   4    Reserved     ........................................ always reads 1             4    Secondary Channel End-of-Sector FIFO Flush
+  3-2 Threshold for Primary Channel                                                           1 = Enable FIFO flush at the end of each sector for
+           00 1                                                                               the secondary channel................. Default=0 (disabled)
+           01 3/4                                                                       3-2 Reserved        ........................................ always reads 0
+           10 1/2 .................................................. (default)          1-0 Max DRDY Pulse Width
+           11 1/4                                                                             Maximum DRDY# pulse width after the cycle count.
+  1-0 Threshold for Secondary Channel                                                         Command will deassert in spite of DRDY# status to
+           00 1                                                                               avoid system ready hang.
+           01 3/4                                                                                00 No limitation.......................................... default
+           10 1/2 .................................................. (default)                   01 64 PCI clocks
+           11 1/4                                                                                10 128 PCI clocks
+                                                                                                 11 192 PCI clocks
+
+
+
+
+Preliminary Revision 0.1 October 13, 1996                                          -31-                                                   Register Descriptions
+            9,$7HFKQRORJLHV,QF                                                                                                              VT82C586A
+Offset 4B-48 - Drive Timing Control ............................... RW                  Offset 53-50 - UltraDMA33 Extended Timing Control . RW
+The following fields define the Active Pulse Width and                                     31 Pri Drive 0 UltraDMA33-Mode Enable Method
+Recovery Time for the IDE DIOR# and DIOW# signals:                                                 0 Enable by using “Set Feature” command..... def
+ 31-28 Primary Drive 0 Active Pulse Width...... def=1010b                                          1 Enable by setting bit-6 of this register
+ 27-24 Primary Drive 0 Recovery Time............. def=1000b                                30 Pri Drive 0 UltraDMA33-Mode Enable
+ 23-20 Primary Drive 1 Active Pulse Width...... def=1010b                                          0 Disable................................................... default
+ 19-16 Primary Drive 1 Recovery Time............. def=1000b                                        1 Enable UltraDMA33-Mode Operation
+ 15-12 Secondary Drive 0 Active Pulse Width .. def=1010b                                   29 Pri Drive 0 Transfer Mode ........................ read only
+  11-8 Secondary Drive 0 Recovery Time ......... def=1000b                                         0 Based on UltraDMA33 DMA mode ...... default
+                                                                                                   1 Based on UltraDMA33 PIO Mode
+   7-4 Secondary Drive 1 Active Pulse Width .. def=1010b
+                                                                                         28-26 Reserved      ........................................ always reads 0
+   3-0 Secondary Drive 1 Recovery Time ......... def=1000b
+The actual value for each field is the encoded value in the field                        25-24 Pri Drive 0 Cycle Time
+                                                                                                   0 2T
+plus one and indicates the number of PCI clocks.
+                                                                                                   1 3T
+                                                                                                   2 4T
+Offset 4C - Address Setup Time ....................................... RW
+                                                                                                   3 5T      .................................................... default
+  7-6 Primary Drive 0 Address Setup Time
+  5-4 Primary Drive 1 Address Setup Time                                                     23 Pri Drive 1 UltraDMA33-Mode Enable Method
+  3-2 Secondary Drive 0 Address Setup Time                                                   22 Pri Drive 1 UltraDMA33-Mode Enable
+  1-0 Secondary Drive 1 Address Setup Time                                                   21 Pri Drive 1 Transfer Mode ........................ read only
+        For each field above:                                                               20-18 Reserved     ........................................ always reads 0
+          00 1T                                                                             17-16 Pri Drive 1 Cycle Time
+          01 2T
+          10 3T                                                                              15 Sec Drive 0 UltraDMA33-Mode Enable Method
+          11 4T       .....................................................default           14 Sec Drive 0 UltraDMA33-Mode Enable
+                                                                                             13 Sec Drive 0 Transfer Mode........................ read only
+Offset 4E - Secondary Non-1F0 Port Access Timing...... RW                                   12-10 Reserved    ........................................ always reads 0
+  7-4 DIOR#/DIOW# Active Pulse Width....... def=1111b                                        9-8 Sec Drive 0 Cycle Time
+  3-0 DIOR#/DIOW# Recovery Time.............. def=1111b                                       7     Sec Drive 1 UltraDMA33-Mode Enable Method
+        The actual value for each field is the encoded value in                               6     Sec Drive 1 UltraDMA33-Mode Enable
+        the field plus one and indicates the number of PCI                                    5     Sec Drive 1 Transfer Mode........................ read only
+        clocks.                                                                              4-2    Reserved     ........................................ always reads 0
+Offset 4F - Primary Non-1F0 Port Access Timing` ........ RW                                  1-0    Sec Drive 1 Cycle Time
+  7-4 DIOR#/DIOW# Active Pulse Width....... def=1111b                                   Each byte defines UltraDMA33 operation for the indicated
+  3-0 DIOR#/DIOW# Recovery Time.............. def=1111b                                 drive. The bit definitions are the same within each byte.
+        The actual value for each field is the encoded value in
+        the field plus one and indicates the number of PCI                              Offset 61-60 - Primary Sector Size .................................. RW
+        clocks.                                                                          15-12 Reserved      ........................................ always reads 0
+                                                                                          11-0 Number of Bytes Per Sector ................ default=200h
+                                                                                        Offset 69-68 - Secondary Sector Size .............................. RW
+                                                                                         15-12 Reserved      ........................................ always reads 0
+                                                                                          11-0 Number of Bytes Per Sector ................ default=200h
+
+
+
+
+Preliminary Revision 0.1 October 13, 1996                                            -32-                                                    Register Descriptions
+         9,$7HFKQRORJLHV,QF                                           VT82C586A
+IDE I/O Registers
+These registers are compliant with the SFF 8038I v1.0
+standard. Refer to the SFF 8038I v1.0 specification for further
+details.
+
+Offset 0 - Primary Channel Command
+
+Offset 2 - Primary Channel Status
+
+Offset 4-7 - Primary Channel PRD Table Address
+
+
+
+Offset 8 - Secondary Channel Command
+
+Offset A - Secondary Channel Status
+
+Offset C-F - Secondary Channel PRD Table Address
+
+
+
+
+Preliminary Revision 0.1 October 13, 1996                         -33-   Register Descriptions
+            9,$7HFKQRORJLHV,QF                                                                                                             VT82C586A
+Universal Serial Bus Controller Registers (Function 2)                                   Offset 8 - Revision ID (nnh) .............................................. RO
+This USB host controller interface is fully compatible with                                7-0 Silicon Revision Code (0 indicates first silicon)
+UHCI specification v1.1. There are two sets of software
+                                                                                         Offset 9 - Programming Interface (00h) .......................... RO
+accessible registers: PCI configuration registers and USB I/O
+registers. The PCI configuration registers are located in the                            Offset A - Sub Class Code (03h) ....................................... RO
+function 2 PCI configuration space of the VT82C586A. The
+USB I/O registers are defined in the UHCI v1.1 specification.                            Offset B - Base Class Code (0Ch) ..................................... RO
+
+                                                                                         Offset 0D - Latency Timer ............................................... RW
+PCI Configuration Space Header
+                                                                                           7-0 Timer Valuedefault = 16h
+Offset 1-0 - Vendor ID .......................................................RO         Offset 0E - Header Type (00h).......................................... RO
+  0-7 Vendor ID ................. (1106h = VIA Technologies)
+                                                                                         Offset 23-20 - USB I/O Register Base Address............... RW
+Offset 3-2 - Device ID .........................................................RO        31-16 Reserved      ........................................ always reads 0
+  0-7 Device ID (3038h = VT82C586A USB Controller)                                         15-5 USB I/O Register Base Address. Port Address for
+                                                                                                 the base of the USB I/O Register block,
+Offset 5-4 - Command ....................................................... RW
+                                                                                                 corresponding to AD[15:5]
+ 15-8 Reserved       ........................................ always reads 0                4-0 00001b
+   7     Address Stepping ...................... default=0 (disabled)
+   6     Reserved (parity error response) ..................fixed at 0                   Offset 3C - Interrupt Line (00h) ...................................... RW
+   5     Reserved (VGA palette snoop) ....................fixed at 0
+   4     Memory Write and Invalidate . default=0 (disabled)                              Offset 3D - Interrupt Pin (04h) ........................................ RW
+   3     Reserved (special cycle monitoring) ............fixed at 0
+   2     Bus Master ............................... default=0 (disabled)
+   1     Memory Space........................... default=0 (disabled)
+   0     I/O Space ............................... default=0 (disabled)
+
+Offset 7-6 - Status ........................................................... RWC
+   15 Reserved (detected parity error).......... always reads 0
+   14 Signalled System Error.............................. default=0
+   13 Received Master Abort.............................. default=0
+   12 Received Target Abort .............................. default=0
+   11 Signalled Target Abort .............................. default=0
+ 10-9 DEVSEL# Timing
+           00 Fast
+           01 Medium ......................................default (fixed)
+           10 Slow
+           11 Reserved
+  8-0 Reserved           ........................................ always reads 0
+
+
+
+
+Preliminary Revision 0.1 October 13, 1996                                             -34-                                                  Register Descriptions
+            9,$7HFKQRORJLHV,QF                                                                                                VT82C586A
+USB-Specific Configuration Registers                                                    USB I/O Registers
+                                                                                        These registers are compliant with the UHCI v1.1 standard.
+Offset 40 - Miscellaneous Control 1 ................................. RW                Refer to the UHCI v1.1 specification for further details.
+   7    PCI Memory Command Option
+            0 Support Memory-Read-Line, Memory-Read-                                    Offset 1-0 - USB Command
+               Multiple, and Memory-Write-and-Invalidate ....
+                      .....................................................default      Offset 3-2 - USB Status
+            1 Only support Memory Read, Memory Write
+               Commands                                                                 Offset 5-4 - USB Interrupt Enable
+   6    Babble Option
+            0 Automatically disable babbled port when EOF                               Offset 7-6 - Frame Number
+               babble occurs..........................................default
+            1 Don’t disable babbled port                                                Offset B-8 - Frame List Base Address
+   5    PCI Parity Check Option
+            0 Disable PERR# generation.....................default                      Offset 0C - Start Of Frame Modify
+            1 Enable parity check and PERR# generation
+                                                                                        Offset 11-10 - Port 1 Status / Control
+   4    Reserved      ........................................ always reads 0
+   3    USB Data Length Option                                                          Offset 13-12 - Port 2 Status / Control
+            0 Support TD length up to 1280................default
+            1 Support TD length up to 1023
+   2    USB Power Management
+            0 Disable USB power management...........default
+            1 Enable USB power management
+   1    DMA Option
+            0 16 DW burst access................................default
+            1 8 DW burst access
+   0    PCI Wait States
+            0 Zero wait ................................................default
+            1 One wait
+
+Offset 41 - Miscellaneous Control 2 ................................. RW
+  7-3 Reserved        ........................................ always reads 0
+   2    Trap Option
+            0 Set trap 60/64 status bits without checking
+               enable bits ..............................................default
+            1 Set trap 60/64 status bits only when trap 60/64
+               enable bits are set.
+   1    A20gate Pass Through Option
+            0 Pass through A20GATE command sequence
+               defined in UHCI .....................................default
+            1 Don’t pass through Write I/O port 64 (ff)
+   0    Reserved      ........................................ always reads 0
+
+Offset 60 - Serial Bus Release Number .............................RO
+  7-0 Release Number.............................. always reads 10h
+Offset C1-C0 - Legacy Support .........................................RO
+ 15-0 UHCI v1.1 Compliant ................ always reads 2000h
+
+
+
+
+Preliminary Revision 0.1 October 13, 1996                                            -35-                                        Register Descriptions
+         9,$7HFKQRORJLHV,QF                                                                                  VT82C586A
+
+                                      ELECTRICAL SPECIFICATIONS
+Absolute Maximum Ratings
+
+                      Parameter                                    Min               Max            Unit
+                      Ambient operating temperature                    0               70            oC
+
+                      Storage temperature                          -55                125            oC
+
+                      Input voltage                                -0.5                5.5          Volts
+                      Output voltage (VDD = 5V)                    -0.5                5.5          Volts
+                      Output voltage (VDD = 3.1 - 3.6V)            -0.5             VDD + 0.5       Volts
+
+
+
+             Note: Stress above the conditions listed may cause permanent damage to the
+             device. Functional operation of this device should be restricted to the
+             conditions described under operating conditions.
+
+
+DC Characteristics
+
+TA-0-70oC, VDD=5V+/-5%, GND=0V
+
+
+                 Symbol      Parameter                    Min               Max        Unit     Condition
+                    VIL      Input low voltage            -0.50              0.8            V
+                    VIH      Input high voltage           2.0              VDD+0.5       V
+                   VOL       Output low voltage             -               0.45         V      IOL=4.0mA
+                   VOH       Output high voltage          2.4                 -          V      IOH=-1.0mA
+                    IIL      Input leakage current          -               +/-10        uA     0<VIN<VDD
+                    IOZ      Tristate leakage current       -               +/-20        uA     0.45<VOUT<VDD
+                    ICC      Power supply current           -                80         mA
+
+
+
+
+Preliminary Revision 0.1 October 13, 1996                       -36-                                         Electrical Specifications
+         9,$7HFKQRORJLHV,QF                                                                                                             VT82C586A
+
+                        PACKAGE MECHANICAL SPECIFICATIONS
+                                                                               
+
+                                                                                  
+                                                                                                            
+
+
+
+                       7<3
+                                                                                                                       
+
+
+
+
+                                                                                                                          
+
+
+
+                                                                                                                                
+
+
+
+
+                                                                                                                       
+
+
+
+                                                                                                              
+                           7<3                                                      
+                                                                                                       0
+                                                        
+
+
+
+
+                                                                                                               
+                                                                                                                                       0$;
+
+
+
+                                                                                                                     
+                                                                                                                            
+                                                                        
+
+
+
+
+                                            
+                                                
+                                                                    R
+                                                               a
+
+                                                              
+
+                        Figure 3. Mechanical Specifications - 208-Pin Plastic Flat Package
+
+
+
+Preliminary Revision 0.1 October 13, 1996                                  -37-                                      Package Mechanical Specifications
+

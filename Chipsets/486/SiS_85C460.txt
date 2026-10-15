@@ -1,0 +1,2737 @@
+    SiS 85C460 (ISA 386/486 Single Chip)
+
+FEATURES
+•    Fully IBM PC/AT Compatible               •    Support 16-40MHz 386DX CPU and
+     80386DX and 80486DX2/DXlSX Single             16-50MHz 486 CPU Operation
+     Chip Controller
+                                              •    AT Bus State Machine and AT Rus
+                                                   Controller
+•    Direct Mapped Cache Controller
+      - Write-Back or Write-Through           •    Synchronous/Asynchronous AT Bus Clock
+        Schemes
+      - Bank InterleavelNon-Interleave        •    Programmable AT Bus Speed
+        Cache Access                               - 1/2, 1/3 , 1/4 , 1/5 , 1/6, 1/8, 1/10 of
+      - 0/1 Wait State Cache Write Hit               Input Clock or 7.159MHz
+      - Flexible Cache Size: 32/64/128/
+        256KB and above                       •    Programmable Wait State Generation
+      - Flexible Burst Read Timing Option            1 or 2 Wait States for 16-Bit Transfer
+        for 80486 DX;SX Operation:                 - 4 or 5 Wait States for 8-Bit Transfer
+        2-1-1-1, 3-1-1-1, 2-2-2-2 and 3-2-2-2
+•    Fast Page Burst Mode DRAM                •    Programmable 110 Recovery Time
+     Controller
+                                              •    32-Bit Data Buffer Between CPU and AT
+     - 4 Banks up to 64MB of DRAM                  System
+     - 256K/512K/1M/2M/4MxN DRAM
+       Suppon                                 •    Data Conversion and Swapping Logic for
+     - Programmable DRAM Speed                     32-/16-/8-Bit Transfer During CPU and
+                                                   DMA Cycles
+•    Two Programmable Non-Cacheable
+     Regions (64KB-4MB)                       •    Data Latch for AT Read Cycle
+
+•    CAS-before-RAS Transparent DRAM          •    Parity Generation and Detection Logic
+     Refresh
+                                              •    Port B Register and NMI Logic
+•    BIOS/Video ROM Cacheable
+                                              •    Integrated Peripheral Controllers
+•    Shadow RAM in Increments of 32KB              - Two 8259A Interrupt Controllers
+     - Option to Disable Cache in Shadow           - Two 8237 DMA Controllers
+       RAM Area                                    - An 8254 Counter/Timer
+                                                   - A 74LS612 Mapper
+•    256K Memory Relocation
+
+•    8042 Emulation of Fast A20GATE and       •    387/487SX and Weitek           3167/4167
+     CPU Reset                                     Coprocessors Interface
+
+•    Hardware/Software De-Turbo Switch        •    208-Pin PQFP
+
+                                              •    0.8um Low Power CMOS Technology
+
+
+
+
+                                             3-1
+The SiS85C460 is a high perfonnance, 100% PC!AT compati ble single chip controller, designed
+for cache/non-cache 386DX or 486 PC systems running up to 40MHz or 50MHz respectively.
+The high integration of powerful cache controller, DRAM controller, CPU interface, bus con-
+troller, data buffers and peripheral controllers provide an easy and very economical solution for
+compact board manufacturing.
+
+The SiS85C460 contains a built-in cache controller which provides direct mapped write-through!
+write-back schemes. The programmable AT-bus clock supports compatible AT-bus timing for
+different PC system. Besides, the local bus interface and the integration of DMA Controller,
+Interrupt Controller and Timer!Counter are designed to give a high perfonnance, compact, and
+cost-effective product for a 386DX or 486DX!SX PC/AT system.
+
+
+
+
+                                               3-2
+                                                                                                                                      ~
+                                                                                                                             ~
+                                                                                                                         ,
+                                                                                                                         I
+                 A?-'i1                                                                                                      .....    L:
+                 n0-'i1 "
+                                   60465                                                                                 I   ::r
+                                                                                                                                      Z
+          I"                      603650X                                                                                    (')
+                                                                                                                             >
+                                                                                                                                      (j
+                                                                                                                             (')      ~
+                                                                                                                                      ~
+                 A~-'i1       ,                                                                                              :::r.:
+                                   60367                                                                                     ~        0
+                 r!i?l-""1\1 "
+                                  WEITEK                                                                                     ~        Z
+                                                                                                                                      >
+                              /
+                                                                                                                             "'0
+
+                 A?-""1\1 ,
+                                                                                                                             _.
+                                                                                                                             "£
+                                                                                                                             r'l
+                                                                                                                                      t-
+                              /
+                                  LOCAL BUS                                                                                  toi
+                                                                                                                             .....    ~
+                 ni?J-'i1 ,
+                                   DEVICES                                                                                   O·
+                                                                                                                             :::      t-
+                                                                                                                                      0
+                 A4-17                                                                                                                (j
+                                                                                                                   IRQ
+                 ni?l-""1\1       CACHE                                                    15is                    ORQ                ~
+                                                                                                                                      0
+
+               V A?-'i1 "
+                                          I
+                                          w
+                                              TAG
+                                                                                                                                      ~
+
+                                                                                                                                      >
+                                                                                                                                      C1
+                                                      / MPXT                              XnOl- 7       "
+                                                                                                        /
+                                                                                                             6042                     ~
+W
+I
+                                         5i 5
+                                                       MPXC;                                                L -_ _ _ _
+                                                                                                                                      >
+W
+                                                       Xni?J-7                       ,                                                3:
+                                  6SC450                                             /
+
+
+
+
+                n1 h-""1\1
+                                                       S08-1_ 5
+
+                                                       C;Ai?J-1
+                                                                             "
+                                                                             /
+                                                                                          Xni?l-7
+                                                                                                              RTC
+                              /                                     "
+                                                                    /
+
+
+
+
+                                        RAS,CAS,MA                                        Xni?l-7       "
+                                   ,1/
+                                                                                                             BI05
+                                   DRA~
+                                                                        k                C;AOl   1C:;
+                 ni?J-""1\1 "
+                              /
+
+
+
+
+                                                V      XD0- 7                        "
+                 ni?l-1C:;                                                           /
+
+                                   "/    2455          SD0- 1 C:;            "
+                                                                             /
+
+
+
+
+                                                I'     <::;q?_' 0   ,
+                 A?-?"'
+                                                I~
+                                                                    /
+
+                                   "     2455
+                                   /I                'LH17-23
+                                                                                 ;<D0-7
+
+    L   00 -31
+
+    - - - -
+             A2-31                                                5H0-1~
+                                                                            500-15
+                                                                                                                                                     :;       ~
+                    A?-")l                                                                                                                           ;::;'    L:;
+                /
+                -::-                  80485                                                                                                          ::r
+                                                                                                                                                     0        Z
+        /
+            ,       n0-11"'::
+                                     603850X                                                                                                         ....
+                                                                                                                                                     c::     (j
+                                                                                                                                                     C1      ~
+                                                                                                                                                     >
+                                                                                                                                                     C1
+                                                                                                                                                              "....
+                                                                                                                                                              0
+                    A?-31--"                                                                                                                         =:       Z
+                    n0-31...::
+                                     80367                                                                                                           ~
+                                                                                                                                                              >
+        /
+
+
+        "                            WEITEK                                                                                                          ~
+                                                                                                                                                     "0       t-
+                                                                                                                                                     'E.
+                                                                                                                                                     ;::;'    ~
+                                                                                                                                                     ....
+                                                                                                                                                     ~        t-
+                                                        BU~
+                / A2--3.1"
+                                     LOCAL                                                                                                           0'
+                                                                                                                                                     ::l
+                                                                                                                                                              0
+        /           00-31--,         DEVICES                                                                                                                 (j
+        "                                                                                                                                                     ~
+                                                                                                                                                              0
+                                                                                                                                                              "....
+                                                                                                                                          I
+                , A':J-:i1....:::J
+                                                                                                  IRQ              /    Xn0-~....:::.I
+                                                                                                                                              8042           >
+                                                               f'                                                                     /
+
+                                                                                                                                                             C1
+                                                                                                                                                             ~
+                                                                /
+                                                                                                  ORQ
+W
+ I
+                                       SiS                     "
+                                                                     X00·7                                                                                    >
+*""                                  8SC450                          SrJ8-15                                       ,/ XOO-7---"                              ~
+                    01 f-,-3L
+                                                               i"
+                                                                     SA0-...1
+                                                                                                    ...::.
+                                                                                                                                              RTC            ~
+                                                                                 . . : :.I                                                                   (')
+        "                                                      "'.                                                                                           0
+
+                                      1        RAS,CAS,MA                                                          L
+                                                                                                                   i"
+                                                                                                                        X.D.a-~....:::.I
+                                                                                                                                      /
+                                                                                                                                                             ::::t
+                                                                                                                                                             ....,.
+                                                                                                                                                             ......
+                                                                                                                                                             ::::t
+                    n0-31--"
+                                                                                             ~
+                                                                                             i"
+                                                                                                                        SA0-lS.."/            BIOS           e(t)
+        /
+                                 /
+                                        DRAM                                                                                                                 0-
+                                                                                                                                                             "---'
+
+
+
+                                                                     xn0-7                                   --'
+        /
+        ,
+                    rJ0-1C:::;       ...::.             "
+                                                 245s                SrJ0·1.5                       --'
+                                                        r'
+
+                                                                     SA?-1.9
+                / A?-?-z,            ....'-.
+                                                 245s ,"     --"/ LA17-23
+                "                                                                        X00-7
+                                               ---
+      D0-31                                                                         500-15
+          A2-31                                                                 5A0 19
+FUNCTIONAL DESCRIPTION
+
+Cache Controller
+
+Direct Mapped Cache
+
+Cache is a good means to de-couple fast processor from slow main memory and get the best
+performance of the processor. Direct mapped cache is the most straightforward, flexible, easy-
+to-implement, and cost-effective cache structure. A 2/4-way set associative cache has better per-
+formance than the direct mapped cache, but the delta is negligible when the cache size is large
+enough (e.g. 64KB). The SiS85C460 provides a fast 8-bit tag comparator and all the control
+logic for a cache of the 80486 processor. To implement a cache, user just needs to add SRAMs
+for the tag and data memories. The maximum cache size in the configuration register is 256K13
+but larger (512KB, 1MB, etc.) size is still applicable.
+
+Write-Back vs. Write-Through
+
+When the contents of the cache data are modified (i.e. written) by the processor, the same
+changes should be made in the main memory as well. Failing to do so will raise an inconsis-
+tency problem when the stale data in the main memory are accessed. There are two general ap-
+proaches to update the main memory. The first is the write-through method and the second is
+the write-back (also called "copy-back") method.
+
+In a write-through cache system, data are written to the main memory immediately while or after
+they are written into the cache. So the main memory always contains valid data. All the memory
+writes will only be as fast as the DRAM write and do not take the speed advantage of the cache.
+
+In a write-back cache system, there is an "alter" bit per data LINE (data line means the date!
+block referenced to a specific tag). When a write hit happens on the cache, the corresponding
+alter bit will be set. The written data are transferred to the main memory when they are to bL.:
+over-written by a cache line fill. In this case, the cache controller checks the corresponding aller
+bit. If the alter bit is set, the cache data will then be written to the main memory before the cache
+line fill starts.
+
+A write-back cache can offer higher performance than a write-through cache if writes to the
+main memory are much slower than writes to the cache. The write-back cache is also favored
+when a memory location is written several times in the cache before written into the main
+memory. The performance advantage of the write-back cache over write-through cache is soft-
+ware dependent.
+
+The SiS85C460 can be configured to provide a write-back or write-through cache scheme.
+Besides tag and data RAM, a write-back cache needs an SRAM for the alter bits. So a write-
+back cache may have better performance, but costs more, than a write-through cache does. It
+is up to the indivisual user to judge if the extra cost of the write-back cache is justified.
+
+
+
+
+                                                 3-5
+80486 Burst Cache Line Fill
+
+The internal cache of the 80486 has a 16-byte line size. When a read miss happens in the internal
+cache, the 80486 initiates off-chip memory read cycles to update current cache line. The 80486
+will read 16 continuous bytes (4 doublewords). To increase the bus throughput, the 80486
+provides a burst mode transfer, four doublewords can be read sequentially in 5 processor clocks
+(2-1-1-1) at the fastest.
+
+The external cache provided by the SiS85C460 also has a 16-byte line size. It supports the 80486
+burst read cycles to get the fastest cache line fill. When both the 80486 internal and external
+caches encounter a read miss, they are updated with the data read from DRAM simultaneously.
+
+Cache Update Policy
+
+For CPU cycles, the content of the cache memory is renewed when either the cache read miss
+or write hit occurs. Tag and data RAMs are both updated in the cache read miss cycles. In the
+cache write hit cycles, the SiS85C460 updates only the data RAM. In the cache write miss
+cycles, the CPU writes data into the main memory (DRAM), while the cache memory remains
+unchanged. The alter bits in the write-back cache are reset in the cache update (read miss) cycles
+and set in the write hit cycles.
+
+When the cache is disabled, all the CPU reads to the cacheable memory are treated as cache read
+miss, so both tag and data RAMs are updated. This feature is used to initialize the cache memory
+before enabling it.
+
+In DMA/master cycles, the cache data RAM is written when a write hit occurs, to assure the
+cache coherency. Cache memory is not accessed in DMA/master write miss or read cycles for
+the write-through cache. For the write-back cache, DMA/master read hit cycles are conducted
+to the cache, not to the DRAM.
+
+Cache Size Options
+
+      Cache Size       Tag RAM         Data RAM        Alter RAM        Cacheable Size
+          32KB             2Kx8          8Kx8 x4            2Kx1                8MB
+          64KB             4Kx8          8Kx8 x8            4Kx1               16MB
+        128KB              8Kx8         32Kx8 x4            8Kx1              32MB
+        256KB            16Kx8          32Kx8 x8          16Kx1               64MB
+
+        512KB            32Kx8         128Kx8 x4          32Kx1               64MB
+
+The cacheable DRAM size is determined by the cache size because the tag address field is
+always 8-bit wide. The on-board DRAM beyond the cacheable size is not cacheable. It is still
+cacheable for the 80486 internal cache, however.
+
+
+
+
+                                                3-6
+Cache Speed Options for 3~6 Mode
+
+The SiS85C360 provides two cache read speed options: 2T or 3T, and two options of cache
+write cycle : 2T or 3T. The 2T cache write is applicable only when the cache read is also
+set to 2T.
+
+The following is a table of cache configurations and suggested speed ratings of the SRAM
+for implementing the cache data RAM for various speeds of the 80386 CPU.
+
+   Read Cycle-Write Cycle         25MHz CPU        33MHz CPU       40MHz CPU
+
+              2T-2T                   -35              -20              -12
+
+              2T-3T                   -40              -25              -20
+
+              3T-3T                   -65              -45              -35
+
+The following is a table of cache configurations and suggested speed ratings of the SRAM
+for implementing the cache tag and alter RAM for various speeds of the 80386 CPU.
+
+   Read Cycle-Write Cycle         25MHz CPU        33MHz CPU        40MHz CPU
+
+              2T-2T                    -25              -20             -12
+
+              2T-3T                    -35                              -15
+
+              3T-3T                    -45              -35             -25
+
+
+
+
+                                             3-7
+Cache Speed Uptions tor 4gb Mode
+
+The external cache can be configurated to non-interleave or two-bank interleave. Two-bank
+interleaved cache can use slower cache data RAM but needs more data RAM chips.
+
+The SiS85C460 provides four cache read speed options: 2-1-1-1, 3-1-1-1, 2-2-2-2 and 3-2-2-
+2, and two options of cache write cycle: 2T or 3T. The cache read speed x-y-y-y is selected
+via the bit 7 of configuration register 50 (x) and the bit 0 of configuration register 51 (y). The
+2T cache write is applicable only when the first cache read of a burst is also set to 2T (2-1-
+1-] or 2-2-2-2).
+
+The following is a table of cache configurations and suggested speed ratings of the SRAM for
+implementing the cache data RAM for various speeds of the 80486 CPU.
+
+ Cache Configuration            25MHz CPU       33MHz CPU        40MHz CPU        50MHz CPU
+
+ 2-1-2 Interleave (*1)            -35 (*2)            -20              -12
+ 2-1-2 Non-interleave             -25                 -15
+
+ 2-1-3 Interleave                 -40                 -25              -20
+ 2-1-3 Non-interleave             -25                 -15
+
+ 3-1-3 Interleave                 -45                 -25              -20              -12
+ 3-1-3 Non-interleave             -25                 -15
+
+ 2-2-2 Non-interleave             -35                 -20              -12
+ 2-2-3 Non-interleave             -40                 -25              -20
+
+ 3-2-3 Non-interleave             -65                 -45              -35              -25
+ 3-2-3 Interleave                 -80                 -55              -45              -30
+
+           Note:    *1. x-y-z means x-y-y-y burst read and zT write cycle.
+                    *2. -m means the access speed of SRAM in ns.
+
+The following is a table of cache configurations and suggested speed ratings of the SRAM for
+implementing the cache tag and alter RAM for various speeds of the 80486 CPU.
+
+ Cache Configuration           25MHz CPU        33MHz CPU        40MHz CPU        50MHz CPU
+
+            2-X-2                   -25               -20              -12
+            2-X-3                   -35               -25              -15
+            3-X-3                   -45               -35              -25              -20
+
+           Note: X presents either 1T or 2T cycles.
+
+
+
+
+                                                3-8
+Non-Cacheable Regions
+
+In some applications, users desire a block of memory not to be cached. The SiS85C460 provides
+two programmable non-cacheable regions to serve this function.
+
+Only the on-board DRAM directly controlled by the SiS85C460 is cacheable. The memory re-
+siding on the AT add-ons is non-cacheable. When a memory space is mapped by both the 0]]-
+board DRAM and AT add-on memory, CPU access will be conducted to the on-board DRAM.
+If users desire the AT add-on memory to be accessed instead of the on-board DRAM at the over-
+lapped memory space, the two non-cacheable regions can be used to disable the on-board DRAM
+in the programmed space.
+
+The size and starting address of two non-cacheable regions are programmable in configuration
+register 54, 55, 56 and 57. The validity of the starting address bits depends on the size of related
+non-cacheable region.
+
+               Size        A23    A22     A21    A20     A19     A18    A17     A16
+               64K          V       V      V       V      V       V       V       V
+              128K          V       V      V       V      V       V       V       X
+              256K          V       V      V       V       V      V       X       X
+              512K          V      V       V       V      V       X       X      X
+                 1M         V       V      V       V      X       X       X      X
+                 2M         V       V      V       X      X       X       X      X
+                 4M         V      V       X       X      X       X       X      X
+               V = Valid
+               X = Don't Care
+
+Cache Initialization
+
+The external cache supported by the SiS85C460 does NOT provide the validation flag (bit) for
+the data lines. All the cache data are assumed valid once the cache is enabled. So the whole
+cache must be filled by valid data before the cache enable bit is turned on. The cache initiali-
+zation can be done via sequential reads to a block of on-board DRAM which is equal to or larger
+than the cache in size.
+
+
+
+
+                                                 3-9
+UK AM Controller
+
+DRAM Speed Options
+
+The SiS85C460 provides 4 read and 2 write speed options in the configuration register. A table
+of page hit cycle time of all the possible speed configurations is listed as follows:
+
+                                       Read          486 Burst Read         Write
+
+                      Fastest           3                  3-2-2-2            2
+                      Faster            4                  4-3-3-3            2/3
+                      Slower            5                  5-4-4-4            2/3
+                      Slowest           6                  6-5-5-5            4
+
+                      Note: The unit of the above table is in T cycles.
+
+There will be plenty of timing margin if the user adopt, Fastest for 25MHz 80386/80486, Faster
+for 33MHz, Slower for 40MHz, and Slowest only for 50MHz 80486.
+
+DRAM Access Timing
+
+                 Fastest      Faster     Slower           Slowest
+
+     Tred          1.5T         2T            2T            3T       RAS-to-CAS delay
+     Teas          1.5T         2T            3T            3T       Read CAS pulse width
+     Trp             3T         3T            4T            4T       RAS preeharge
+     Tep           O.5T         1T            1T            2T       CAS preeharge
+
+DRAM Size Configuration
+
+The SiS85C460 supports 32 different DRAM configurations in 4 ban~.:;. Besides the traditional
+256K/IM/4M xN DRAMs, the new 512K xN and future 2M xN DRAMs are also supported.
+
+
+Refresh
+
+In the original PC/AT design, the CPU is held off (i.e. can not do anything) during the DRAM
+refresh cycles. It happens once per 15us and takes at least 0.5us each time. In SiS85C460, refresh
+can be selected to hold CPU or not by setting the bit 5 of the configuration register 58.
+
+Recently the speed of DRAM is becoming faster so the time needed per refresh cycle is getting
+shorter. The refresh cycle time for the lOOns DRAM is 200ns minimum, for example. In a
+system with cache, most of the CPU accesses are referred to the cache so that the DRAM usage
+(percent of time the DRAM is accessed by the CPU) is significantly reduced.
+
+
+
+
+                                                   3-10
+In the SiS85C460, the main memory refresh is independent to the AT-bus refresh so the cyck
+time is shorter (need not follow the standard AT-bus timing). When the main memory is re-
+freshed, the CPU is NOT held off so it may execute the program stored in the cache at the same
+time. If the CPU accesses the main memory while it is being refreshed, this access will be pend-
+ing (i.e. the CPU must wait) until the refresh is finished.
+
+The following table lists the refresh-related RAS timings of the on-board DRAM:
+
+                                 Fastest      Faster       Slower      Slowest
+
+           RAS pre-charge          3T           3T           4T            5T
+           RAS active              3T           4T           4T            5T
+
+If hidden refresh is selected on AT bus, the AT bus refresh cycles are issued once per 15us when
+there is no access from the CPU, the DMA controller, or the bus master on the AT bus.· The,
+CPU will not feel the existing of the AT bus refresh unless it issues an AT cycle or cache miss
+cycle coincidentaly. The controller arbitrates among the CPU AT cycle, DMAlmaster request,
+and bus refresh so that they can be executed one after another when more than one of them
+intend to use the AT bus at the same time.
+
+The SiS85C460 has a slow refresh feature to cut the refresh frequency down to 1/4. It should
+be selected only when the system is equipped with slow-refresh DRAM.
+
+The refresh scheme of local DRAM is the CAS-before-RAS refresh. The CASs go active at least
+one T before RASs in local refresh. To reduce the power noise caused by refresh, the RASs of
+odd banks go active one T after that of even banks. It is called "staggered refresh".
+
+
+Shadow RAM
+
+Memory space OAOOOO-OFFFFFh is reserved for the video RAM, I/O and system BIOS ROM.
+Access to this area should not be conducted to the main memory in standard PCI AT. Since the
+speed of the DRAM is significantly faster than that of the ROM, if contents of the BIOS ROM
+are copied to the unused DRAM (OAOOOO- OFFFFFh), the DRAM can work as fast BIOS ROM
+and raise the overall system performance. This is called the "Shadow RAM".
+
+The SiS85C460 provides shadow to OCOOOO-OEFFFFh in 32KB granularity and shadow to
+OFOOOO-OFFFFFh. The shadow RAM is default non-cacheable. The shadow RAM in COOOO-
+C7FFFh, and FOOOO-FFFFFh can be programmed to be cacheable.
+
+256KB Relocation
+
+The SiS85C460 provides the 256KB DRAM relocation from OAOOOO-OBFFFFh and ODOOOO-
+OEFFFFh to the top of configurated DRAM size.
+
+This function works for the DRAM sizes of 1MB, 2MB, 4MB, 6MB and 8MB when the shad-
+owing of segments D and E is disabled.
+
+
+
+                                               3-11
+ROM Support
+
+The SiS85C460 provides a chip select signal for the system BIOS ROM. The memory space as-
+signed to the ROM is the highest 64/128KB of the real (lMB) and the protected (4GB) address
+modes of the 80486/80386DX CPUs.
+
+The system BIOS ROM can be shadowed by the DRAM to improve perfonnance. When the
+shadow RAM is turned on, the access to system BIOS with address below 100000h will be
+channeled to the DRAM.
+
+
+Fast A20GATE And CPU Reset
+
+In the original PC/AT design, the A20GATE and CPU Reset (Re) are controlled by the 8042
+keyboard controller to switch the CPU between the real and protected addres's modes. The
+operation of 8042 is quite slow so if the address mode switching happens frequently, the pro-
+gram execution speed will be affected.
+
+The SiS85C460 provides a 8042 emulation to generate the A20GATE and CPU reset in hard-
+ware. This feature is software transparent.
+
+
+Local Bus Support
+
+The SiS85C460 uses LBD* (stands for Local Bus Device) and LRDY* (stands for Local Bus
+Device Ready) pins to implement "Local Bus Device Architecture" such as Weitek 3167/4167.
+The interface protocol is very straightforward.
+
+When a local bus device decodes the bus definition/address from CPU and finds the cycle
+belonging to it at the start of a CPU bus cycle, it should assert LBD* to infonn the SiS85C460
+that it's a local bus device cycle. The SiS85C460 will operate a local bus cycle, until either
+LRDY* is asserted from the local bus device to SiS85C460 to generate CPURDY*, or the local
+bus device asserts CPURDY* (wire-OR with the CPURDY* of SiS85C460) itself to terminate
+current cycle. In the fonner case, the SiS85C460 will synchronize LRDY* with CCLKIN then
+asserts CPURDY*. In the later case, the SiS85C460 detects the asserted CPURDY* to finish the
+current cycle.
+
+When there is more than one local bus devices, their LBD* and LRDY* signals should be
+ANDed together before connecting to the SiS85C460.
+
+The SiS85C460 samples the LBD* input at the end of T2 when DRAM speed is set to "FAST-
+EST" or "FASTER", and at the end of T3 when DRAM speed is "SLOWER" or "SLOWEST".
+The LBD* pin should be asserted before the sampling point, when the current cycle is a local .
+bus cycle.
+
+The implementation to support full YES A yL-Bus specification will be provided in the future
+version of silicon.
+
+
+                                             3-12
+Turbo Switch
+
+Some old applications may get into trouble if the system speed is too fast. The SiS85C460 offer
+a de-turbo function that can be controlled through a hardware switch or software programming.
+When the de-turbo function is turned on, system performs 1/3 or 2/3 speed selected by the bit
+4 of configuration register 58.
+
+
+Clock Generation
+
+The SiS85C460 provides a flexible software controlled selection of the clock used for the AT
+bus state machine. Bus clock is determined by the configuration register and can be selected
+as 1/2, 1/3, 1/4, 1/5, 1/6, 1/8, 1/10 of the input clock or 7.159 MHz.
+
+The clock switches speed automatically, with clean transition, whenever the configuration IS
+changed.
+
+
+AT Bus State Machine
+
+In order to obtain the maximum performance of the system board, it is desired to run the system
+board at the maximum CPU frequency. This frequency may be too fast for the slow AT bus.
+In order to overcome this problem, the SiS85C460 operates the state machine at a slower
+frequency than the CPU frequency.
+
+The SiS85C460 starts a bus cycle when an BS16* is active and an BALE signal has been
+inserted in the AT-TS state. It then enters the command cycle AT-TC and provides the timing
+signals for AT bus cycle and terminates by asserting READY* signal. To determine the bus size,
+MEMCS16* signal is sampled at the falling edge of BALE during memory cycle. IOCS16* is
+sampled at every rising edge of SYSCLK after the command is active in an I/O cycle.
+
+The command cycle is terminated only when IORDY* is active and all programmed wait states
+have been executed. The period of command cycle is selected by the configuration register. For
+16-bit transfer, the default is 1 wait state, but can be selected as 2 wait states. For 8-bit transfer,
+the default is 5 wait states, but can be selected as 4 wait states. No command delay is inserted
+for 16-bit memory cycle, otherwise 1/2 SYSCLK command delay is always inserted.
+
+IORDY* is sampled at the start of every AT-TC state. The command cycle will not be termi-
+nated until IORDY* is sampled HIGH and all programmed wait states have been executed. If
+ZWS* is detected LOW at the middle of the AT-TC state, the current AT cycle will be termi-
+nated immediately.
+
+During read cycle, the data read from device may be lost after the command is finished. The
+SiS85C460 will latch the data immediately after the read command is inactive and will hold the
+data until the AT cycle is ended. The "Read Latch" function is active for all AT bus read cycle,
+except during DMA, Master, or local RAM read cycle.
+
+
+
+                                                  3-13
+The shortest command recovery time is two SYSCLK in this chip, this could be too short for
+some I/O devices. In this case, a configuration register option is provided. If selected, the I/O
+command recovery time will be at least 2 SYSCLK for 16-bit transfer and 4 SYSCLK for 8-
+bit transfer.
+
+
+Data Conversion Logic
+
+If MEMCS16* and IOCSI6* signals are sampled HIGH, the current cycle will be an 8-bit
+transfer cycle. The AT state machine performs data conversion if the CPU executes a 16-bit read
+or write during an 8-bit transfer. The SiS85C460 separates a 16-bit read or write operation into
+two 8-bit transfers and activates SAO signal in the second cycle. Meanwhile, the SiS85C460 will
+execute all the data swapping process between the 32-bit, 16-bit and 8-bit data bus.
+
+Besides data conversion cycle, the data will also be swapped if it is necessary during AT cycle.
+In DMA and Master cycles, the data swapping is also needed. The system checks the command,
+address, and related control signals and then arranges required swapping.
+
+Since the BEO*-BE3* can not be used to select the devices on AT bus directly, BEO*-BE3* will
+be inputed in AT cycle to generate the SAl, SAO, and BHE* signals needed. In DMA cycle,
+BEO*-BE3* is generated from the SAl and SAO to access the local memory. The SiS85C460
+checks these four byte enable signals in AT cycle and determines whether it is a 16-bit read or
+write and whether data conversion cycle should be performed.
+
+
+Port B Register and NMI Logic
+
+The SiS85C460 provides access to Port B as defined for IBM PC/AT, as shown below:
+
+      Bit     Contents
+       0      GATE2 - Timer 2 Gate
+       1      SPKEN - Speaker Data
+       2      PCKEN - Parity Check Enable
+       3      10CHCKEN - 1/0 Channel Check Enable
+       4      REFRESH - Refresh Detect
+       5      OUT2 - Timer 2 Out
+       6      10CHCK - I/O Channel Check
+       7      PCK - Parity Check
+
+
+The NMI logic in the SiS85C460 will enable and latch the I/O and parity enors to generate a
+non-maskable interrupt to the CPU, if NMI has been enabled.. NMI is enabled when data bit 7
+of port 70h is set to 0, and NMI is disabled if it is equal to 1.
+
+
+
+                                               3-14
+Bus Buffer Control Logic
+
+During AT-bus read cycle, the data from device will be latched immediately after the read
+command is inactive and will be hold till the end of AT cycle.
+
+The SiS85C460 provides l6-bit to 8-bit or 8-bit to l6-bit data bus conversion in AT cycle, and
+32-, 16- and 8-bit data bus conversion in DMA cycle.
+
+Parity Generation and Detection
+
+During DRAM write cycles, the SiS85C460 generates even parity for each of the four bytes.
+The parity bits PDO-PD3 are written to the parity memory in the system DRAM. During the
+system DRAM read cycles, the SiS85C460 checks for even parity for each byte read. If odd
+parity is detected, the SiS85C460 flags a parity error. The SiS85C460 detects the error and
+generates the NMI when enabled. The parity error can be cleared by programming parity check
+disable, which is defined by bit-2 of the port B register.
+
+Peripheral Controllers
+
+The SiS85C460 contains Peripheral Controllers which include two 8237 DMA Controllers,
+a 74LS6l2 Mapper, two 8259 Interrupt Controllers, and an 8254 Counterffimer.
+
+DMA Controllers
+
+Two DMA controllers are connected in such a way as to provide the user with four DMA
+channels (DMA1) for 8-bit transfers and three DMA channels (DMA2) for 16-bit transfers
+(the first 16-bit DMA channel is used for cascading). Included as part of the DMA subsystem
+is the Page Register (DMA PAGE) device which is used to supplement the DMA and drive
+the upper address lines when required.
+
+Interrupt Controllers
+
+Sixteen interrupt channels are provided in the SiS85C460. These channels are allocated to
+two cascaded controllers (INTCl, INTC2) with 8 inputs each. Of these 16 channels, two are
+connected internally to various devices, allowing 14 user definable interrupt channels. The
+two internally connected channels are as follows:
+Channel 0 - Counterffimer Counter 0 Interrupt
+Channel 2 - Cascade to Slave Interrupt Controller (INTC2)
+
+
+
+
+                                             3-15
+Counterrnmer
+
+A Counterffimer (CfC) subsystem contains three independent counters. The clock input for
+each counter is connected to a clock of 1. 19MHz, which is derived by dividing the 14.318MHz
+crystal input by 12. Counter 0 is connected to Interrupt 0 of INTC 1. It is intended to be
+used as a multi-level interrupt to the system for such tasks as time keeping and task-switching.
+Counter 1 may be programmed to generate pulses or square waves for used by external devices.
+The third channel (Counter 2) is a full function Counterffimer which has a gate input for
+controlling the internal counter. This channel can be used as an interval counter, a timer,
+or as a gated rate/pulse generator.
+
+
+Clock and Wait State Control
+
+The Clock and Wait State Control subsystem performs four functions, control- of the DMA
+command width, control of the CPU read or write cycle length, and selection of the DMA clock
+rate. All of these functions are user selectable by writing to the Configuration Register located
+at address 023h.
+
+Writing and reading this register is accomplished by first writing a OIh to locaton 022h to select
+the Configuration Register, and then performing either a read or write to location 023h.
+
+
+
+
+                                               3-16
+Peripheral Controllers Address Map
+
+DMA Controller Address Map
+
+ DMA1   DMA2   XIOR#   XIOW#   FliP   Register Function
+                               Flop
+ OOOh   OCOh     0       1      0     Read channel 0 current address low byte
+                 0       1      1     Read channel 0 current address high byte
+                 1
+                 I       0      0     Write channel 0 base and current address low byte
+                 1       0      1     Write channel 0 base and current address high byte
+ 001h   OC2h     0       1      0     Read channel 0 current word count low byte
+                 0       1      1     Read channel 0 current word count high byte
+                 1       0      0     Write channel 0 base and current word count low byte
+                 1       0      1     Write channel 0 base and current word count high byte
+ 002h   OC4h     0      1       0     Read channel 1 current address low byte
+                 0      1       1     Read channel 1 current address high byte
+                 1      0       0     Write channel 1 base and current address low byte       I
+                 1      0       1     Write channel 1 base and current address high byte
+ 003h   OC6h     0      1       0     Read channel 1 current word count low byte
+                 0      1       1     Read channel 1 current word count high byte
+                 1      0       0     Write channel 1 base and current word count low byte
+                 1      0       1     Write channel 1 base and current word count high byte
+ 004h   OC8h     0      1       0     Read channel 2 current address low byte
+                 0      1       1     Read channel 2 current address high byte
+                 1      0       0     Write channel 2 base and current address low byte
+                 1      0       1     Write channel 2 base and current address high byte
+ OOSh   OCAh     0       1      0     Read channel 2 current word count low byte
+                 0       1      1     Read channel 2 current word count high byte
+                 1      0       0     Write channel 2 base and current word count low byte
+                 1      0       1     Write channel 2 base and current word count high byte   I
+
+ 006h   OCCh     0      1       0     Read channel 3 current address low byte
+                 0      1       1     Read channel 3 current address high byte                I
+                 1      0       0     Write channel 3 base and current address low byte
+                 1      0       1     Write channel 3 base and current address high byte
+ 007h   OCEh     0      1       0     Read channel 3 current word count low byte
+                 0      1       1     Read channel 3 current word count high byte             I
+                 1      0       0     Wrrte channel 3 base and current word count low ~e      I
+                 1      0       1     Write channel 3 base and current word count high byte
+
+
+
+
+An internal flip-flop is used to supplement the addressing of the Count and Address
+registers. This bit selects between high and low bytes of these registers and toggles
+each time a read or write occurs to any of these registers.
+
+
+
+
+                                           3-17
+DMA Controller Address Map (continued)
+
+    DMA1      DMA2      XIOR#    XIOW#       Flip     Register Function
+                                             Flop
+    OOSh      ODOh        0        1     I    X       Read status register
+                          1        0     I    X       Write command register
+    009h      OD2h        0        1          X     I Read DMA request register
+                          1        0          X       Write DMA request register
+    OOAh      OD4h        0        1          X       Read mode register
+                          1        0          Z       Write single bit DMA request mask register
+    OOBh      OD6h        0        1          X       Read mode register
+                          1        0          X       Write mode register
+    OOCh      OD8h        0        1          X       Set byte pointer flip-flop
+                          1        0          X       Clear byte pointer flip-flop
+    OODh      ODAh        0        1          X       Read temporary register
+                                                      Master clear
+    OOEh      ODCh        0        1          X       Clear mode register counter
+                          1        0          X       Clear all DMA request mask register bits
+    OOFh      ODEh        0        1          X       Read all DMA request mask register bits
+                          1        0          X       Write all DMA request mask register bits
+
+
+
+
+DMA Address Extension Register Map
+
+    Address          Register Function
+  080h           Unused
+  081h           8-bit DMA Channel 2 (DACK2)
+  082h           8-bit DMA Channel 3 (DACK3)
+  083h           8-bit DMA Channel 1 (DACK1)
+I 084h           Unused
+  08Sh           Unused
+  086h           Unused
+  087h           a-bit DMA Channel 0 (DACKO)
+  088h           Unused
+  089h           16-bit DMA Channel 2 (DACK6)
+  08Ah           16-bit DMA Channel 3 (DACK7)
+  08Bh           16-bit DMA Channel 1 (DACK5)
+  08Ch           Unused
+  08Dh           Unused
+  08Eh           Unused
+l 08Fh           Refresh cycle
+
+
+
+
+                                                      3-18
+Interrupt Controller Address Map
+
+ Register   Type        I/O
+                        Port        b7     b6      b5        b4    b3    b2     b1      bO
+ ICW1       WRO         20h (AOh)   X      X           X     SI    LTM   X      SM      X
+ ICW2       WRO         21h (A1h)   V7     V6          V5    V4    V3    X      X       X
+ ICW3       WRO         21h         S7     S6          S5    S4    S3    S2     S1      SO
+ ICW3       WRO         A1h         0      0           0     0     0     102    101     100
+ ICW4       WRO         21h (A1h)   X      X           X     EMI   X     X      AEOI    X
+ OCW1       ROIWR       21h (A1h)   M7     M6          M5    M4    M3    M2     M1      MO
+ OCW2       WRO         20h (AOh)   R      SL          EOI   SI    213   L2     L1      LO
+ OCW3       WRO         20h (AOh)   0      ESSM        SMM   SI    2!3   PM     RR      RIS
+ IR         ROO         20h (AOh)   IR7    IR6         IRS   IR4   IR3   IR2    IR1     IRO
+ IS         ROO         20h (AOh)   IS7    IS6         ISS   IS4   IS3   IS2    IS1     ISO
+
+ Note:
+ WRO          Write only register
+ ROO          Read only register
+ RO/WR        Read/Write register
+ X            Don't care
+
+
+
+Counterrrimer Address Map
+
+ Address     Function
+ 040h       Counter 0 read/write
+ 041h       Coutner 1 read/write
+ 042h       Counter 2 read/write
+ 043h       Control register write only
+
+
+
+Configuration Registers
+
+There are eleven configuration registers inside the SiS85C460. An indexing scheme is used
+to access all the registers. Port 22h is the index register and port 23h is the data register.
+The configuration registers are accessed by first writing the index to port 22h and immediately
+followed by a read or a write to port 23h. The index is reset after data access. Every data
+access to port 23h must be preceded by an index write to port 22h, even if the same register
+is being accessed. All the reserved bits should be set to zero for future compatibility purpose.
+The contents of the registers are listed as follows.
+
+
+
+
+                                                3-19
+Configuration Registers
+
+Register 50 (index50) Default = 00
+    bit 7, 6     DRAM Speed (See DRAM Speed Options on page 10)
+                 00: Slowest
+                 01: Slower
+                 10: Faster
+                 11: Fastest
+                 Bit 7 also defines the cache read cycle time: 0/1 : 3T/2T
+
+    bit   5      DRAM Write CAS Pulse Width
+                 0: 2T
+                 1: iT
+    bit 4-0      DRAM Size Configuration
+                             8ank-O    8ank-1      8ank-2     8ank-3     Total
+                 00000          1M                                        1MB
+                 00001          1M         1M                             2MB
+                 00010          1M         1M         2M                  4MB
+                 00011          1M         1M         4M                  6MB
+                 00100          1M         1M         2M          4M      8MB
+                 00101          1M         1M         4M          4M     10MB
+                 00110          1M         1M        16M                 18MB
+                 00111          2M                                        2MB
+                 01000          2M         2M                             4MB
+                 01001          2M         4M                             6MB
+                 01010          2M         2M          4M                 8MB
+                 01011          2M         2M          4M         4M     12MB
+                 01100          2M        16M                            18MB
+                 01101          2M         2M        16M                 20MB
+                 01110          2M         2M         4M        16M      24MB
+                 01111          2M         2M        16M        16M      36MB
+                 10000          4M                                        4MB
+                 10001          4M         4M                             8MB
+                 10010          4M         4M          4M                12MB
+                 10011          4M         4M          4M         4M     16MB
+                 10100          4M        16M                            20MB
+                 10101          4M         4M        16M                 24MB
+                 10110          4M        16M        16M                 36MB
+                 10111          4M         4M        16M        16M      40MB
+                 11000          8M                                        8MB
+                 11001          8M         8M                            16MB
+                 11010          8M         8M          8M                24MB
+                 11011          8M         8M          8M         8M     32MB
+                 11100         16M                                       16MB
+                 11101         16M        16M                            32MB
+                 11110         16M        16M        16M                 48MB
+                 11111         16M        16M        16M        16M      64MB
+
+                 Note:    1MB = 256K x 36bits
+                          2MB = 512K x 36bits
+                          4MB = 1M x 36bits
+                          8MB = 2M x 36bits
+                         16MB = 4M x 36bits
+
+                                        3-20
+Register 51 (index 51) Default = 00
+    bit   7      Cache Enable
+                 0: Disable
+                 1: Enable
+    bit   6      Write Back Enable
+                 0: Disable (Write Through)
+                 1: Enable (Write Back)
+    bit 5,4      Cache Size
+                 00: 32KB
+                 01: 64KB
+                 10: 128KB
+                 11: 256KB and above
+    bit   3      Cache Interleave Enable
+                 0: Disable
+                 1: Enable
+    bit   2      Cache On/Off
+                 0: Off
+                 1: On
+    bit   1      Cache Write Cycle
+                 0: 3T
+                 1: 2T
+    bit   0      Cache Burst Read Cycle (486 only)
+                 0: 1T
+                 1: 2T
+                 (Reserved and should be written with 1 in the 386 system)
+
+Register 52 (index 52) Default = 00
+    bit   7      Shadow RAM Read Enable
+                 0: Disable
+                 1: Enable
+    bit   6      Shadow RAM Write Protection Enable
+                 0: Disable
+                 1: Enable
+    bit   5      E8000h - EFFFFh Shadow RAM Enable
+    bit   4      EOOOOh - E7FFFh Shadow RAM Enable
+    bit   3      D8000h - DFFFFh Shadow RAM Enable
+    bit   2      DOOOOh - D7FFFh Shadow RAM Enable
+    bit   1      C8000h - CFFFFh Shadow RAM Enable
+    bit   0      COOOOh - C7FFFh Shadow RAM Enable
+
+
+
+
+                                        3-21
+Register 53 (index 53) Default = 00
+    bit   7      System BIOS ROM Size
+                 0: 64K
+                 1: 128K
+    bit   6      Combine System BIOS with COOOOh-C7FFFh region for ROM
+                 area
+                 0: Disable
+                 1: Enable
+    bit   5      FOOOOh - FFFFFh Shadow RAM Cacheable
+                 0: Non-Cacheable
+                 1: Cacheable
+
+    bit   4      COOOOh - C7FFFh Shadow RAM Cacheable
+                 0: Non-Cacheable
+                 1: Cacheable
+    bit 3,2      DMA Cycle Up to 64MB Program A25 and A24
+                 bit 3: A25
+                 bit 2: A24
+    bit   1      Data Parity Check Enable
+                 0: Disable
+                 1: Enable
+    bit   0      De-turbo Switch Enable
+                 0: De-turbo Switch Enable
+                 1: Always turbo, ignore the Status of Turbo Switch
+
+Register 54 (index 54) Default = 00
+
+    bit   7      Allocation of Non-cacheable Area #1
+                 0: Local DRAM
+                 1: AT Bus, local DRAM disabled
+    bit 6-4      Size of Non-Cacheable Area #1 (within 16MB)
+                 000: OKB (disabled)
+                 001: 64KB
+                 010: 128KB
+                 011: 256KB
+                 100: 512KB
+                 101: 1MB
+                 110: 2MB
+                 111: 4MB
+    bit   3      Allocation of Non-Cacheable Area #2
+                 0: Local DRAM
+                 1: AT Bus, local DRAM disabled
+
+
+
+
+                                       3-22
+    bit 2-0      Size of Non-Cacheable Area #2 (within 64MB)
+                 000: OKB (disabled)
+                 001: 64KB
+                 010: 128KB
+                 011: 256KB
+                 100: 512KB
+                 101: 1MB
+                 110: 2MB
+                 111: 4MB
+
+Register 55 (index 55) Default = 00
+    bit 7-0      A23-A 16 of Non-Cacheable Area #1 (within 16MB)
+
+Register 56 (index 56) Default = 00
+    bit 7-0      A23-A 16 of Non-Cacheable Area #2 (with 64MB)
+
+Register 57 (index 57) Default = 00
+    bit 7,6      A25 and A24 of Non-Cacheable Area #2
+    bit   5      Gate A20 Emulation Enable
+                 0: Disable
+                 1: Enable
+    bit   4      Fast Reset Emulation Enable
+                 0: Disable
+                 1: Enable
+    bit   3      Fast Reset Latency Control
+                 0: 2us
+                 1: 6us
+    bit   2      Slow Refresh Enable (1 :4)
+                 0: Normal Refresh
+                 1: Slow Refresh
+    bit   1      De-turbo ON/OFF
+                 0: Turbo
+                 1: De-Turbo
+    bit   0      Cache Sizing Enable
+                 0: Normal operation
+                 1 : Always Cache hit
+
+Register 58 (index 58) Default = 00
+    bit   7      Slow CPU (below 25MHz) Enable
+                 0: Disable
+                 1: Enable
+    bit   6      DRAM Write Cycle
+                 0: 1 wait state
+                 1: 0 wait state
+
+                                        3-23
+    bit    5     Resvered and should be written with 1
+
+    bit    4     De-turbo Hold Time
+                 0: Hold 4us
+                 1: Hold 8us (Every 12us)
+
+    bit    3     Reserved and should be written with 0
+
+    bit    2     Combine System BIOS with C8000h-CFFFFh region for ROM
+                 area
+                 0: Disable
+                 1: Enable
+
+    bit 1, 0     Reserved and should be written with 0
+
+Register 60 (index 60) Default = 00
+    bit 7-5      Bus Clock Frequency Selection
+                 000: BUSClK = 7.159 MHZ
+                 001: BUSClK = 1/10 ClKIN
+                 010: BUSClK = 1/8 ClKIN
+                 011: BUSClK = 1/6 ClKIN
+                 100: BUSClK = 1/5 ClKIN
+                 101: BUSClK = 1/4 ClKIN
+                 110: BUSClK = 1/3 ClKIN
+                 111: BUSClK = 1/2 ClKIN
+    bit 4-0      Reserved and should be written with 0
+
+Register 61 (index 61) Default = 01
+    bit 7, 6     16-Bit 1/0 Cycle Command Recovery Time Selection
+                 00: 8 BUSClK
+                 01: 5 BUSClK
+                 10: 3 BUSClK
+                 11: 2 BUSClK
+
+    bit 5, 4     8-Bit 1/0 Cycle Command Recovery Time Selection
+                 00: 16 BUSClK
+                 01: 11 BUSClK
+                 10: 7 BUSClK
+                 11: 4 BUSClK
+    bit   3      Reserved and should be written with 1
+    bit   2      16-bit Memory, 1/0 Wait State Selection
+                 0: 2 wait states
+                 1: 1 wait states
+
+    bit   1      8-bit Memory, 1/0 Wait State Selection
+                 0: 5 wait states
+                 1: 4 wait states
+
+    bit   0      Reserved and should be written with 1
+
+
+                                      3-24
+PIN ASSIGNMENT
+
+           155             105
+     157
+
+
+
+
+                   SIS
+               BSC450~
+
+               @
+     208                         s~
+
+
+           1               52
+
+
+
+
+                    3-25
+PIN ASSIGNMENT
+    CLKIN         53    S011           105     IGNNE*[PRE0386]   157   CAS1*
+ 2 14MHZ          54    GNO            106     BLAST*[PRE0387]   158   CASO*
+ 3 IOR*           55    S012           107     BROY*[NC]         159   MA10
+ 4 lOW'           56    S013           108     BE3*              160   MA9
+ 5 GNO            57    S014           109     BE2*              161   MA8
+ 6 HOEN*          58    S015           110     BE1*              162   MA7
+ 7 LOEN*          59    GNO            111     BEO*              163   MA6
+ 8 BOIR           60    GNO            112     NMI               164   GNO
+ 9 SOIR           61    VCC            113     INTR              165   VCC
+ 10 VCC           62    P01            114     VCC               166   MA5
+ 11 ASRTC         63    A31            115     A20M*[CPUA20]     167   MA4
+ 12 OSRTC*        64    A26            116     PCO[BZ387*]       168   MA3
+ 13 OWRTC*        65    A25            117     SPK               169   MA2
+ 14 CLKOUT        66    A24            118     PWRGO             170   MA1
+ 15 GNO           67    A23            119     GNO               171   MAO
+ 16 ZWS*          68    A22            120     LOCK*             172   BALE
+ 17 XOO           69    A21            121     LBO'              173   AEN
+ 18 X01           70    A20            122     LROY*             174   GNO
+ 19 X02           71    A19            123     TA7/1R015         175   IOROY*
+ 20 X03           72    A18            124     TA6/1R014         176   EAOS*[BZ386*]
+ 21 X04           73    A17            125     TA5/1R012         177   MPXS2IIR011
+ 22 X05           74    A16            126     TA4/1R07          178   MPXS1/1R010
+ 23 X06           75    GNO            127     TA3/1R03          179   MPXSO/IR09
+ 24 X07           76    A15            128     TA2/0R07          180   MPXI2IIR08
+ 25 POO           77    A14            129     TA1/0R06          181   MPXll/1R06
+ 26 P02           78    A13            130     TAO/OR05          182   MPXIO/IR05
+ 27 016           79    A12            131     TAWE*/WIRO        183   MEMCS16*
+ 28 017           80    A11            132     ALT/OTURBO        184   IOCS16*
+ 29 018           81    A10            133     ALTWE·/RC*        185   MASTER*
+ 30 019           82    A9             134     MWE'              186   GNO
+ 31 020           83    AS             135     GNO               187   OACK7*
+ 32 021           84    A7             136     KWEX*             188   OACK6*
+ 33 022           85    A6             137     KWEY'             189   OACK5*
+ 34 023           86    A5             138     RAS3*             190   OACK3*
+ 35 GNO           87    A4             139     RAS2*             191   OACK2*
+ 36 HOLD          88    KEN*[ERR386*] 140      RAS1*             192   OACK1*
+ 37 BS16*         89    GNO            141     RASO*             193   OACKO*
+ 38 GNO           90    KBROMCS*       142     GNO               194   GNO
+ 39 024           91    A3             143     KREX*             195   TC
+ 40 025           92    A2             144     KREY*             196   BHE*
+ 41 026           93    RSTCPU         145     MRE*/IOCHK*       197   REF*
+ 42 027           94    CCLKIN         146     GNO               198   SYSCLK
+ 43 VCC           95    AOS*           147     VCC               199   RSTORV
+ 44 028           96    GNO            148     KCE3*/OR03        200   GNO
+ 45 029           97    VCC            149     KCE2*/OR02        201   VCC
+ 46 030           98    CPUROY*        150     KCE1*/OR01        202   MEMR*
+ 47 031           99    GNO            151     KCEO*/OROO        203   MEMW·
+ 48 P03           100   W/R*           152     KA3X!KA3/1 R04    204   SMEMR*
+ 49 GNO           101   O/C·           153     KA3Y IKA2IIR01    205   SMEMW·
+ 50 S08           102   M/IO*          154     GNO               206   GNO
+ 51 S09           103   HLOA           155     CAS3*             207   SA1
+ 52 S010          104   FERR*[ERR387*] 156     CAS2*             208   SAO
+
+Note: (xxx] for 386 mode
+      /xxx for non-cache mode
+
+
+                                        3-26
+Pin Definition
+
+I Pin No.   Symbol    Type   Name and Function
+  95        ADS*       !     The address status input from CPU is an active
+                             low signal that indicates a valid bus cycle defi-
+                             nition and address are available on the cycle
+                             definition lines and address bus.
+
+ 102         M/IO*           Memory liD Definition is an input -for indicating
+                             an 1/0 cycle when low, and a memory cycle
+                             when high.
+
+ 100        W/R*             Write/Read Definition is an input for indicating a
+                             read cycle when low, and a write cycle when
+                             high.
+
+ 101         D/C*            Data/control Definition is an input for indicating
+                             a control cycle when low, and a data cycle when
+                             high.
+
+ 98         CPURDY*    o     CPU Ready output indicates that the current bus
+                             cycle is complete and the CPU will terminate
+                             the current cycle.
+
+ 36         HOLD       o     The bus hold request is used to request the
+                             control of the CPU bus. HLDA will be asserted
+                             by the CPU after completing the current bus
+                             cycle.
+
+ 103        HLDA             Hold acknowledge comes from the CPU in re-
+                             sponse to a HOLD request. It is active high and
+                             remains driven during bus hold. HLDA indicates
+                             that the CPU has given the bus to another bus
+                             master.
+
+ 112        NMI        o     Non-maskab/e interrupt is an active high signal
+                             to the CPU and is generated to invoke a non-
+                             maskable interrupt.
+
+ 113        INTR       o     Interrupt goes high whenever a valid interrupt
+                             request is asserted. It interrupts the CPU, and
+                             is usually connected to the CPU's interrupt pin.
+
+37          8S16*      o     Bus Size 16 is an active low output. When ac-
+                             tived, SiS85C460 initiates a memory, 1/0, or in-
+                             terrupt acknowledge cycle (as qualified by the
+                             signals M/IO#, D/C#, and W/R#).
+
+                               3-27
+Pin Detiniton (continued) for 4~6 Mode
+
+Pin No.    Symbol            Type    Name and Function
+ 115       A20M*              0      A20 Mask is the fast A20GATE output to the
+                                     CPU. It remains high during power up of the
+                                     CPU reset period, and will force A20 to go low
+                                     when active.
+
+ 88        KEN*               0     The 80486 CPU cache enable pin is used when
+                                    the current cycle is cacheable to the internal
+                                    cache of the 80486 CPU. It is an active low
+                                    signal asserted by the SiS85C460 during cach-
+                                    eable cycle.
+
+ 176       EADS*              0     External address strobe indicates that a valid
+                                    external address has been driven onto the 80486
+                                    CPU address pins. This address will be used
+                                    for the CPU to perform an intenal cache invali-
+                                    dation cycle.
+
+ 104       FERR*              I     Floating point error from the 80486 CPU. It is
+                                    driven active when a floating point error occurs.
+
+ 105       IGNNE*             0     Ignore numeric error informs the 80486 CPU to
+                                    ignore a numeric error.
+
+ 106       BLAST*             I     The burst last signal indicates that the next time
+                                    BRDY* is returned the burst bus cycle is com-
+                                    plete.
+
+ 107       BRDY*              I     Burst ready indicates that data presented is valid
+                                    and is used for the 80486 CPU to sample the
+                                    data during burst cycles.
+
+ 116       PCD                I     Page cache disable pin reflects the state of the
+                                    page attribute bits of the 80486 CPU.
+
+
+
+
+                                         3-28
+Pin Definition (continued) for 386 Mode
+
+Pin No.   Symbol      Type Name and Function
+115       CPUA20        I   CPU Address A20 input.
+
+88        ERR386*       0   Error of 386 CPU is an actived low output caused by
+                            ERR387. It is only active during CPU reset, and is inactive
+                            once reset is discontinued. Connect to 80386 ERROR
+                            input.
+
+176       BZ386*        0   Busy of 386 CPU is an active low output caused by
+                            BZ387 input, and should be connected to 80386 BUSY
+                            input.
+
+104       ERR387*       I   Error of 387 is an active low input for indicating an
+                            error in the 387 cycle, and determining the presence
+                            of the 387 during CPU reset.
+
+105       PRE0386      0    Request of 386 CPU is an active high output caused
+                            by PRE0387, and should be connected to 80386 PEREO
+                            input.
+
+106       PRE0387       I   Request of 387 is an active high input from 80387 re-
+                            quest output.
+
+116       BZ387*        I   Busy of 387 is an active low input from 80387 busy
+                            output.
+
+107       NC
+
+
+
+
+                                          3-29
+Pin Definition (continued)
+
+Pin No.     Symbol           Type   Name and Function
+120         LOCK*             I     The bus lock pin indicates that the current bus
+                                    cycle is locked. The CPU will not allow other
+                                    system bus masters access to the system bus
+                                    while it is asserted.
+
+121         LBD*              I     Local bus device cycle input for indicating a local
+                                    bus device cycle. It can be connected to the
+                                    MCS* output of Weitek 3167/4167.
+
+122         LRDY*             I     Local bus device ready is an active low input,
+                                    indicating that current local bus cycle is finished.
+                                    It can be connected to the RDYOUT output of
+                                    Weitek 3167/4167.
+
+111-108     BEO-3*            I     Byte enable determine the bytes to be accessed
+                                    during CPU or DMA cycles. During CPU cycles,
+                                    they are decoded to generate SA 1, SAO, and
+                                    BHE*. During DMA or Master cycles, the re-
+                                    verse action occurs.
+
+92,91,      A2,A3,            1/0   CPU address lines. They will drive output dur-
+87-76,      A4-A15,                 ing CPU hold.
+74-6        A16-A26
+64          A31
+
+ 208        SAO               1/0   A T bus address 0 outputs address 0 for AT bus
+                                    during AT and DMA cycle, and input address 0
+                                    for Master cycle. It outputs LOW, during 16-bit
+                                    DMA cycle.
+
+207         SA1               I/O   AT bus address 1 outputs address 1 in AT and
+                                    DMA cycle, and inputs address 1 in Master cycle.
+
+196         BHE*              1/0   Byte high enable signal indicates that the high
+                                    byte has valid data on the 16-bit data bus. This
+                                    signal is always an output except in Master mode.
+
+202         MEMR*             1/0   AT-bus memory read command signal is an out-
+                                    put pin during AT/DMA/refresh/cycle and is an
+                                    input in MASTER cycles. It is used to retrieve
+                                    the data from memory.
+
+
+
+
+                                       3-30
+Pin Definition (continued)
+
+ Pin No.    Symbol           Type   Name and Function
+ 203         MEMW*            1/0   A T-bus memory write command signal is an out-
+                                    put pin during AT/DMA cycle and is an input in
+                                    MASTER cycles. This active low signal writes
+                                    data into the selected memory.
+
+ 204         SMEMR*          0      A T-bus memory read, it instructs the memory
+                                    devices to drive data onto the data bus. It is
+                                    active only when the memory to be accessed is
+                                    within the lowest 1MB.
+
+ 205         SMEMW*          0      AT-bus memory write, it instructs the memory
+                                    devices to store the data present on the -data
+                                    bus. It is active only when the memory to be
+                                    accessed is within the lowest 1MB.
+
+3            IOR*            1/0    AT-bus 110 read command signal is an output
+                                    pin during AT or DMA cycle and is an input in
+                                    other cycles. When low, it strobes an I/O device
+                                    for placing data on the data bus.
+
+ 4           IOW*            1/0    AT-bus 110 write command signal is an output
+                                    pin during AT or DMA cycle and is an input in
+                                    other cycles. When low, it strobes data on the
+                                    data bus into a selected 1/0 device.
+
+ 172         BALE            0      Bus address latch enable is used on the system
+                                    board to latch valid address and memory de-
+                                    codes from the CPU.
+
+ 183         MEMCS16*        I       16-bit memory chip select indicates a 16-bit mem-
+                                    ory transfer when low, and 8-bit memory trans-
+                                    fer when high.
+
+ 184         IOCS16*         I      16-bit 110 chip select indicates that the current
+                                    AT bus cycle is a 16-bit 1/0 transfer when low,
+                                    and an 8-bit 1/0 transfer when high.
+
+ 16         ZWS*             I      Zero wait state is an active low signal. The sys-
+                                    tem ignores the state of IORDY* and immedi-
+                                    ately terminates AT bus current cycle without
+                                    additional wait state when it is low.
+
+
+
+
+                                       3-31
+Pin Definition (continued)
+
+Pin No.     Symbol               Type   Name and Function
+175         10RDY                 I     I/O channel ready is normally high and can be
+                                        pulled low by the devices on the AT slot bus to
+                                        lengthen memory or I/O cycles by adding wait
+                                        states.
+
+185         MASTER*               I     Master" is an active low signal from AT bus.
+                                        When active, it indicates that another bus master
+                                        has already taken over the control of the whole
+                                        system, the address and control outputs are all
+                                        in a high-impedence state.
+                             I
+                             I
+173         AEN              I 0        Address Enable is used to degate the CPU and
+                                        other device from the I/O channel to allow DMA
+                                        transfers to take place.
+
+1           ClKIN                 I     Oscillator clock input.
+
+14          ClKOUT                0     Clock ouptut for CPU clock.
+
+94          CClKIN                I     Clock input provides single chip controller an
+                                        internal clock.
+
+198         SYSClK                0     Bus clock is the system clock for the AT bus.
+                                        The frequency of the AT bus clock is software
+                                        programmable, see configuration register 60 for
+                                        detail.
+
+2           14MHZ                 I     14MHz is an input of 14.318 MHz, generated by
+                                        an external oscillator. It is used to be the base
+                                        clock for the timer, and DMA controller.
+
+118         PWRGD                 I     Power good is a power on reset input and
+                                        SiS85C460 accepts valid inputs when this pin is
+                                        high.
+
+93          RSTCPU               0      Reset CPU is an active high output to reset the
+                                        CPU.
+
+199         RSTDRV                0     Reset driver is an active high output for a sys-
+                                        tem reset.
+
+6           HDEN*                0      High Byte data enable signal enables the high
+                                        byte buffer of the SD bus.
+
+
+
+                                          3-32
+Pin Definition (continued)
+
+    Pin No.   Symbol             Type I Name and Funciton
+    7         LDEN*          ,    0    Low Byte data enable signal enables the buffer
+                                       of the XD bus.
+
+    8         BDiR                0    Data Buffer Direction controls the direction flow
+                                       of the buffer between the high byte SD and
+                                       D15-D8 and the direction flow of the buffer be-
+                                       tween the XD and D7~DO. HIGH sets the data
+                                       path from D15~D8 (D7~DO) to SD (XD) bus,
+                                       LOW sets the data path from SD (XO) bus to
+                                       D15~D8 (D7~DO).
+
+
+    9         SDIR                0    SO low byte Data Direction controls the direc-
+                                       tion flow of the low byte buffer between SD and
+                                       XD. HIGH sets the data path from XD to SD,
+                                       LOW sets the data path from SD to XD.
+
+1   179       MPXSO/IR09         o     Multiplexer I/O selection pins. In non-cache
+    178       MPXS1/1R010              scheme, they work as "Interrupt Request" (in-
+    177       MPXS2/1R011              put) pins.
+
+    182       MPXIO/IR05          I    Multiplexer I/O input pins. In non-cached scheme,
+    181       MPXI1/1R06               they work as "Interrupt Request" pins.
+    180       MPXI2/1R08
+
+    193~190   DACKO~3            o     DMA acknowledge notifies the individual periph-
+    189~187   DACK5~7                  erals when one has been granted a DMA cycle.
+                                       The active polarity of these lines is program-
+                                       mable. Reset initializes them to active low. Be-
+                                       cause these signals are used internally for
+                                       cascading the DMA channels and for DMA page
+                                       register selection, these signals must be pro-
+                                       grammed to active low.
+
+    195       TC                 o      Terminal count gives information concerning the
+                                       completion of DMA services.
+                                       A pulse is generated by the DMA controller when
+                                       terminal count (TC) for any channel is reached, except
+                                       for channel 0 in memory-to-memory mode.
+                                       During memory-to-memory transfers Te will be output
+                                       when the Te for channel 1 occurs.
+                                       When a Te pulse occurs, the DMA controller will
+                                       terminate the service, and if auto-initialize is en-
+                                       abled, the base registers will be written to the current
+                                       registers of that channel. The mask bit and Te bit
+                                       in the Status word will be set for the currently active
+                                       channel unless the channel is programmed for auto-
+                                       initialize. In that case, the mask bit remains clear.
+
+
+
+
+                                          3-33
+Pin Definition (continued)
+
+    Pin No.   Symbol               Type   Name and Function
+    117       SPK                   0     Speaker is the output for the speaker.
+
+    11        ASRTC                 0     Address strobe of real time clock device to latch
+                                          the address from XD bus when CPU accesses
+                                          the RTC.
+
+    12        DSRTC*                0     Data read strobe of real time clock device to
+                                          drive data onto the XD bus when CPU accesses
+                                          the RTC.
+
+    13        DWRTC*                0     Data write of real time clock device to store the
+                                          data presented on the XD bus when CPU
+                                          accesses the RTC. This pin must be connected
+                                          to the RIW of RTC.
+
+    90        KBROMCS*              0     Keyboard controller 8042 or system ROM chip
+                                          selection.
+I
+    197       REF*                  I/O   Refresh to initiate a refresh cycle. This signal is
+                                          an input in master mode, and an output in other
+                                          cycle.
+
+    138~141   RAS3~0*               0     DRAM row address strobe.
+
+    155~158   CAS3~0*               0     DRAM column address strobe.
+
+    159~163   MA10~6                0     DRAM row/column address lines.
+    166~171   MA5~0
+                               I
+\134          MWE*                  0     Memory write enable is an active low output
+                                          signal for DRAM write enable.
+
+    145       MRE* /IOCHK*          0     Memory read enable is an active low output signal
+                                          for DRAM read enable.
+                                          In non-cache scheme, it is used as "I/O channel
+                                          check".
+
+123,124       TA7,6/IRQ15,14        I/O   Tag RAM data bus lines.
+125           TA5/IRQ12                   Interrupt requests is executed by raising an IRQ
+126           TA4/IRQ7                    input low to high and holding it high until it is
+127           TA3/IRQ3                    acknowledged (edge-triggered mode) or just a
+                                          high level on an IRQ input (level-triggered mode).
+                                          In non-cache scheme, they are defined as "Inter-I
+
+L                                         rupt Request".
+
+
+                                            3--34
+Pin Definition (continued)
+
+    Pin No.   Symbol          Type   Name and Function
+    128-130   TA2-0/0R07-5     I/O   Tag RAM data bus iines.
+                                     In non-cache scheme, they are defined as "OMA
+                                     Request".
+
+    131       TAWE*/wIRO       o     Tag RAM write enable is an active low signal.
+                                     In non-cache scheme, it is defined as "Weitek
+                                     3167/4167 interrupt request".
+
+    136       KWEX*            o     Cache write enable for even bank.
+
+    137       KWEY*            o     Cache write enable for odd bank.
+
+    143       KREX*            a     Cache read enable for even bank.
+
+    144       KREY*            a     Cache read enable for odd bank.
+
+    148-151   KCE3-0*1         a     Cache enable pins are active low signal, indi-
+              DR03-DROO              cating that the corresponding byte is accessed.
+                                     In non-cache scheme, they are defined as "OMA
+                                     Request".
+
+    132       ALT/DTURBO       1/0   Alter bit of cache indicating that data line has
+                                     been written into. In non-cache scheme, it is
+                                     used as an DE-TURBO pin.
+
+    133       AL TWE* IRC·     a     Alter bit write enable is the write strobe to the
+                                     alter RAM. This signal is active low when cache
+                                     read miss or cache write hit occurs, and is used
+                                     to update the ALT bit. In non-cache scheme, \
+                                     Reset input from Keyboard controller will cause I
+                                     the CPU to be reset when this signal is low.
+
+    153       KA3Y/KA2/1R01    0     KA3Y-Cache address 3 for odd bank when Cache
+                                     interleave mode is used.
+                                     KA2-Cache address 2 when Cache non-
+                                     interleave mode is used.
+                                     IR01-lnterrupt requests IR01 when non-Cache
+                                     mode is used.
+
+    152       KA3x/KA3/1R04    0     KA3X-Cache address 3 for even bank when
+                                     Cache interleave mode is used.
+                                     KA3-Cache· address 3 when Cache non-
+                                     interleave mode is used.                    I
+                                     IR04-lnterrupt requests IR04 when non-Cache I
+I                                    mode is used.                                      I
+i
+
+
+
+                                       3-35
+Pin Definition (continued)
+
+ Pin No.     Symbol          Type       Name and Function
+ 25,62,      POO-3            I/O       DRAM parity bits generate parity bits in memory
+ 26,48                                  write cycle and accept parity bits in memory
+                                        read cycle.
+
+ 17-24      XOO-7             I/O       Peripheral data bus Anes.
+
+50-53       808-11            I/O       Data bus for the I/O devices.
+55-58       8012-15
+
+27-34       016-23            I/O       Data bus for the microprocessor, Memory, and
+39-42       024-27                      I/O devices.
+44-47       028-31
+
+ 10,43,     vee                         +5V DC Power
+ 61,97,
+ 114.147,
+/165,201
+
+5,15,35,    GNO                         Ground
+38,49,54,
+59,60,75,
+89,96,99,
+119,135,
+142,146,
+154,164,
+174,186,
+194,200,
+206
+                                    I
+                                    J
+
+
+
+
+                                          3-36
+ELECTRICAL CHARACTERISTICS
+Absolute Maximum Ratings
+
+  Parameter                                  Min      Max       Unit
+  Ambient operating temperature                0          70    DC
+  Storage temperature                        -40          125   DC
+  Input voltage                              -0.3         5.5    V
+  Output voltage                             -0.5         5.5    V
+
+Note:
+Stress above these listed may cause permanent damage to device. Functional operation of this
+device should be restricted to the conditions described under operating conditions.
+
+
+
+DC Characteristics
+
+TA = 0 - 70 DC, VOO = 5 V ± 5 % , GND = 0 V
+
+Symbol Parameter                       Min          Max          Unit    Condition
+VIL        Input low voltage           -0.5         0.8              V
+VIH        Input high voltage           2.0         VDD+0.5          V
+VOL        Output low voltage            -          0.45             V   IOL = 4.0 mA
+VOH        Output high voltage          2.4            -             V   IOH = - 1.0 mA
+ IlL       Input leakage current         -          ±10           uA     o < VIN < VDO
+ loz       Tristate leakage current      -          ±20           uA     0.45 < V OUT < V DD
+
+
+
+
+                                              3-37
+AC Characteristics
+
+TA = 0 - 70 °C, Voo = 5V ± 5%, Vss = 0 V, Cl = 85/50* pF
+
+ Symbol    Parameter                                Min    Typ   Max Unit
+ T1        KCE* active delay*                        3      7    12 ns
+ T2        KCE* inactive delay*                      3      7    12 ns
+ T3        Tag address input setup time              8               ns
+ T4        BRDY* active delay*                       3      8    14 ns
+ T5        BRDY* inactive delay*                     3      6     10 ns
+ T6        BLAST* setup time                         4
+ T7        KEN* valid delay*                         3      8    14    ns
+ T8        Cache Interleave KRE* active delay        3      7    11    ns
+ T9        Cache Interleave KRE* inactive delay      3      6    10    ns
+ T10       KA3X valid delay                          3      9    14    ns
+ T11       KA3Y/KA2 valid delay                      3      9    15    ns
+ T12       Cache Non-interleave KRE* active delay    3      9    15    ns
+ T13       Cache Non-interleave KRE* inactive delay 3       8    14    ns
+ T14       ADS* setup time                           2                 ns
+ T15       KWE* active delay                         3      7    12    ns
+ T16       KWE* inactive delay                       3      7    11    ns
+ T17       RDY* active delay                         4     12    19    ns
+ T18       RDY* inactive delay                       4     11    18    ns
+ T19       Tag address output valid delay            5     14    24    ns,
+ T20       Tag address output floating delay         5     13    22    ns
+ T21       TAWE* active delay                        4     12    20    ns
+ T22       TAWE* inactive delay                      4     12    20    ns
+ T23       ALTWE* active delay*                      4     11    17    ns
+ T24       ALTWE* inactive delay*                    3     10    16-   ns
+ T25       MRE* active delay                         6     16    25    ns
+ T26       MRE* inactive delay                       4     14    24    ns
+ T27       RAS* active delay                         4     10    18    ns
+ T28       CAS* active delay                         4     10    18    ns
+ T29       CAS· inactive delay                       3      9    16    ns
+ T30       Column address valid delay                4     12    20    ns
+ T31       MWE* active delay                         4     12    20    ns
+ T32       MWE* inactive delay                       3      9    14    ns
+ T33       LBDY* setup time                          4                 ns
+ T34       LBCS· setup time                          4                 ns
+ T35       LBCS* hold Time                           5                 ns
+
+
+
+                                      3-38
+AC Characteristics (continued)
+
+ Symbol Parameter                                     Min TYD Max Unit
+ T36    ROY* from local bus setup time                 4          ns
+ T37    ROY* from local bus hold time                  5          ns
+ T38    RAS* inactive delay                            4    9  16 ns
+ T39    Row Address valid delay                        4   12 20 ns
+ T40    Fast cache write ROY* active delay             4   11  19 ns
+ T41    ALE active delay from SYSCLK falling           5   11 22 ns
+ T42    ALE  inactive delay from SYSCLK                9   21 39 ns
+ T43    MEMCS16* set up time to SYSCLK                 0
+ T44    MEMCS16* hold time to SYSCLK                   7          ns
+ T45    IOCS16* set up time to SYSCLK                  4          ns
+ T46    IOCS16* hold time to SYSCLK                    3          ns
+ T47    Command active delay from SYSCLK               8   16  29 ns
+ T48    Command inactive delay from SYSCLK             7   15  27 ns
+ T49    ZWS* set up time to SYSCLK                     4          ns
+ T50    ZWS* hold time from SYSCLK                     5          ns
+ T51    HOEN* active delay from BS16*                  2    4  7  ns
+ T52    HOEN* inactive delay from BS16*                8   15  ~O ns
+ T53    SOIR, BOIR active delay from 8S16*             5   12  22 ns
+ T54    SOIR, BOIR inactive delay from 8S16*           3    7  13 ns
+ TS5    Data conversion SAO delay from SYSCLK          6   14  26 ns
+ T56    Data conversion SAO delay from SYSCLK         10   23  43 ns
+ T57    Address bus valid delay from REF*              5   12  22 ns
+ T58    Address bus float delay from REF*              7   23  44 ns
+ T59    Address set up time to IOR*, IOW* active      16          ns
+ T60    Address  hold time from IOR*, IOW* inactive    0          ns
+ T61    SOIR,80IR delay from command active            8   18  33 ns
+ T62    SOIR,80IR delay from command inactive         20   45  84 ns
+ T63    SOEN* ,HOEN* delay from command active         8   19  36 ns
+ T64    SOEN* ,HOEN* delay from command inactive      20   19  36 ns
+ T65    Data active delay form BS16*                   3    7  12 ns
+ T66    Data valid delay from SYSCLK                  19 21    39 ns
+ T67    Data float delay from 8S16*                    3    7  12 ns
+ T68    015-0 data set up time to command inactive    15          ns
+ T69    015-0 data hdld time to command inactive       8          ns
+ no     07-0 data valid delay from SYSCLK             10   18  30 ns
+ T71    015-8 data valid delay from SYSCLK             7   16  26 ns
+ T72    023-16 data valid dealy from SYSC[K            8   20  39 ns
+ T73    031-24 data valid delay from SYSCLK           16   38  48 ns
+ T74    015-0 data valid delay from 031-16 valid       9   15  27 ns
+ T75    07-0 data valid delay from 031-24 valid       15 35 .65 ns
+ T76    07-0 data valid delay from 023-16 valid        6   14  26 ns
+ T77    07-0 data valid delay from 015-8 valid         9   13  39 ns
+ T78    Data active delay from command active         16   29  54 ns
+ T79    Data float dealy from command inactive        10   15  28 ns
+
+
+                                     3-39
+AC Characteristics (continued)
+
+ Symbol    Parameter                         Min Typ Max Unit
+ T80       DMA clock delay form bus clock              8 ns
+ T81       Low byte address valid delay              50 ns
+ T82       Low byte address invalid delay            45 ns
+ T83       Page address valid delay                  60 ns
+ T84       Page address invalid delay                47 ns
+ T85       DACKn* active delay                       41 ns
+ T86       DACKn* inactive delay                     34 ns
+ T87       IOR* or MEMR* active delay                30 ns
+ T88       IOR* or MEMR* inactive delay              36 ns
+ T89       IOR* or MEMR* hold time            0          ns
+ T90       lOW· or MEMW· active delay                32 ns
+ T91       lOW· or MEMW* inactive delay              31 ns
+ T92       TC active delay                           30 ns
+ T93       TC inactive delay                         42 ns
+ T94       RSTDRV active delay                4   9  16 ns
+ T95       RSTDRV inactive delay              6  15  26 ns
+ T96       RSTCPU active delay*               2   6  11 ns
+ T97       RSTCPU inactive delay*             3   7  12 ns
+ T98       RSTCPU duration                   25          CCLKIN
+
+
+
+
+                                      3-40
+                    CACHE READ HIT                                    (CACHE-INTERLEAVE) BURST CYCLE
+
+                                                              \           If                 II          II
+         CPUCLK'.   -1                                                                   /           I
+
+                                                                  I
+           AD5*                     r
+                                    \
+                                        T14                   /
+
+
+      KCE[0:3J*                     - Tl                                                                 I-   T2
+                                                       - T'i -
+                                                       /
+      TA[16:23J
+                                                   "" '-,
+                                                   /
+
+
+wI       BRDY*                                         - T4                                              I-   T5
+~
+I-'                                                                                                                    -
+                                                                                                  T6 -
+        BLA5T*
+                         -
+                                        {
+                             T',"
+
+
+
+          KEN*                          I
+                                                                                                                   L
+                                                       \1,-
+                                            T8 -                       T9 -
+         KREX*
+
+         KREY*
+
+          KA3X                                                        T10 -
+                                                                               I
+
+
+       KA3Y/KA2
+                                                                                   Tll . .;
+                                                                                                              \
+                  CACHE READ HIT                       (CACHE NON-INTERLEAVE) BURST CYCLE
+
+
+         CPUCLK
+                        \
+                            1\
+                                                               1-\              II
+
+
+                        \
+                                                               I
+           ADS*             1\
+                                                                                                                I
+                            r- Tl                                                                        T2
+      KCE[0:3J*
+
+      TA[16:23J             I              "- V
+w
+ I
+
+*'"
+t\J
+                                           /
+                                             '"
+                                             r-   T4
+                                                       --
+
+
+          8RDY*
+                                                                                                                      -
+         8LAST*                                                                              T6 -
+
+                            r- T12~                                                                 f-   T 13
+          KREX*                       1\
+
+
+                            - T12                                                                   f-   T13 7
+                                                                                                                    v---
+          KREY*
+                                                                    ,
+
+                                                                                     ~
+           KA3X                                                         T10 -                            \
+       KA3Y/KA2                                        -
+                                                            T11-
+                                                                   r~                \   /     ~
+                           CHCHE WRITE HIT CYCLE                         0W5 & lW5
+
+                                        \               /I---~                  V                II
+                                                                            /                /
+        CPUCLK
+
+
+                 1\                    /                    -'L
+W
+I
+                 I-   Tl                                                                         ~
+                                                                                                       T2
+t;   KCE[0:3J*
+                                     T3 -                            -   T3 -
+
+     TA[16:23J
+                            ""
+                            / "'-
+                                 /
+                                                                     )K
+                                                        I
+                                                        I
+                                            -Tl S       ~ T161                  - T1S            - T16
+                                                    I   !
+                                                        I
+
+                                                        I
+                                                                                I
+                                               I                 I
+
+
+                                 -    T40
+                                              ~le,~f                                T17 ~\       r    T1e,
+                      CACHE READ MISS ( UPDATE CACHE )
+                                  CACHE NON-INTERLEAVE
+
+
+            CPUCLK
+
+
+              AD5*
+
+w
+  I
+,(::>.
+         KCE[0:3J*
+,(::>.               T3         T19                          T20
+         TA[16:23J
+
+            KWEX*         T1S
+
+
+            TAWE*               T21              T22
+
+
+            ALTWE*              T23              T24
+
+
+              RDY*                         T17         T18
+
+              MRE*        T2S                    T26
+                              DRAM       READ /WRITE                        PAGE START
+
+                                     I    \                    '/            I                  V                 II
+       CPUCLK    ~               /            1\           I                                I                 I
+
+                         f-   T14-
+                     \                        II
+                                          I
+
+
+
+                                                               f-   T27~\
+         RA5n*
+
+W
+ I
+~                                                                                                   T28           -T29
+CJ1
+
+                                                                             - T30 -
+      MA[0:10J                                             ROW                    )/                 COLUMN
+                                                                                       '"
+                                                                                                -T17 J            -T15
+
+
+                                                      \
+                                              f-   T31-\                                                          -T32-../
+                                                                                                                         I
+                                             LOCAL BUS CYCLE
+
+
+CPUCLK
+
+
+
+
+                                                                                                                                     Ti7
+                                                                   .......................... j   f· ..··.. ·.. ···· ........·.. ·                            TiB
+ RDY*
+
+
+LRDY*                                                                                                       ~T_3_34-_ _ _~____~/
+
+                                            ~ T34               T3=~ ~---------------~/
+
+                                                   LOCAL BUS DRIVE READY
+
+CPUCLK   ~~
+
+ AD5*
+ RDY*
+                \
+                       --.-!-+
+                            /
+
+
+         -FR-O-M-C-H--I=P=~~~-------·                          \ ...               ........... j f· ...................................................................         ..................!
+                                                        I
+                                                        I      ;--~I f-                                                                                                   \ ............................ .
+ Rb?*    FROM   LOCAL BU5       . . . . . . . . . . . . ..\.                                                     T36                  T37
+
+
+ L8D*                                       t~                     T3S          ~                 1 - - - :       _~/
+                                                                                 ~
+                                                                                 _.
+                                                                                 :3
+                      REFRESH C',(CLE        FOR    ~-   H=,TE R DRHM            =
+                                                                                ct<:l
+                                                                                 _.
+                                                                                 0
+                                                                                 ~
+
+       CPUCLK                                                                    .,
+                                                                                ct<:l
+                                                                                 ~
+
+         OUT1     ~      \                                                       :3
+
+        RA5~*
+                                T38                                         /    ..
+                                                                                 .,~
+                                                                                  OQ
+                                                                                  ~
+
+
+
+        RA5~*                                                                    ::
+                                                                                  0
+                                                                                  Q.
+                                                                                  t'tI
+                                              T28                       /
+         CA5*
+w                                     T39
+I
+~
+-J
+     MA [0: 10J                MN                   R(JW
+
+
+
+                                            RESET CYCLE
+                                          CACHE READ HIT CYCLE
+
+
+               CPUCLK                           /
+                                                    II
+                                                                   J   \   II
+
+
+
+                        \            T14    ----
+                                                             /
+W
+  I
+,j::...
+00
+           KCE[0:3J*        Tl                                             I-    T2
+                                     f-    T3   -
+           TA[16:23J             ."K
+                                 /
+
+
+                                                    f-   T8 ~ 1\           f-   T9
+          KREX*/KREY*
+
+                                                    f-   T17-              f-   T18)
+                RDY*
+                                                                                                  _.
+                                                                                                  -3
+                                                                                                  :3_.
+                         CACHE READ MISS               UPDATE CACHE                               =
+                                                                                                  (JQ
+
+                                                                                                  _.
+                                                                                                  ~
+                                                                                                   ~
+                                                                                                  ..,
+                                                                                                  (JQ
+
+                                                                                                  ~
+
+          CPUCLK   J\                                                                             :3
+                                                                                                  ='..,
+                                                                                                  t.M
+           AD5*                                                                                   00
+                                                                                                  ""
+      KCE[0:3J*                                                                                    ~
+                                                                                                   0
+                                                                                                   Q.
+                        T3 -                                                    T20                tt>
+
+      TA[15:23J     N
+wI
+~
+<C   KWEX*/KWEY*
+
+
+          TAWE*
+
+          ALTWE*
+
+     KREX*/KREY*
+
+           RDY*                                                         T17     '----+-'1 T 18
+
+
+           MRE*     T25        I'--------------------------------------~I T25
+                                                                _.
+                                                                --3
+                                                                a_.
+                                                                ::s
+                                                                (JQ
+
+                                                                _.
+                                                                ~
+                                                                 ~
+                                                                ..,
+                                                                (JQ
+
+                      CACHE WRITE HIT CYCLE   0WS & lWS         ~
+                                                                a
+                                                                 ~
+                                                                 ..,
+        CPUCLK                                                   w
+                                                                 oe
+                                                                 a-.
+                                                                 3:
+                                                                 0
+                                                                 Q.
+                                                                 t'I)
+
+
+
+~
+I
+01   KCE[0:3J*   T1                                        T2
+o
+                         T3                    T3
+     TA[15:23J
+
+
+
+                               T1S                  T1S   T15
+
+
+
+                              T40    T1e            T17   T1e
+                                                                  _.
+                                                                 --3
+                                                                 3_.
+                                                                 =
+                                                                CJC'I
+
+                                                                  0_.
+                                 DRAM   READ /WRITE              ~
+                                                                 ..,
+                                                                CJC'I
+                                                                 ~
+                                                                 3
+                                                                 ~
+                                                                 ..,
+           CPUCLK
+                                                                 ~
+                                                                 OCI
+                                                                 Q\
+             AD5*
+                                                                 ~
+                                                                 0
+                                                                 Q.
+                                                                 ~
+
+            RA5n*           T27
+w
+ I
+c.n
+......
+                                                 T28      T29
+              CA5*
+                                         T30
+         MA[0: 10J         ROW                   COLUMN
+
+
+
+             RDY*                                T17      T~
+             MWE*    T31                                  T32
+                                                                                                                                                                                                                                                                                                             _.
+                                                                                                                                                                                                                                                                                                             ~
+                                                                                                                        LOCAL BUS CYCLE                                                                                                                                                                      a
+                                                                                                                                                                                                                                                                                                             :r
+                                                                                                                                                                                                                                                                                                             (JQ
+
+
+        CPUCLK                                                                                                                                                                                                                                                                                               o
+                                                                                                                                                                                                                                                                                                             ~  .
+                                                                                                                                                                                                                                                                                                             ..,
+         AD5*                           '\                                      /                                                                                                                                                                                                                            ~
+                                                                                                                                                                                                                                                                                                             a
+                                                                                                                                                                                                                           T17
+          RDY*
+                                                                                                                                                       ·······························1 I·······························                                         T1e
+
+
+        LRDY*                                                                                                                                                                                             T33
+
+
+        LBC5*                                                                                                                T34                       T35
+w
+  I
+01
+I:\:)
+
+
+                                                                                                                                  LOCAL BUS DRIVE READY
+
+        CPUCLK
+
+
+
+
+                                                                                                                                                       ····························11························............................................................................................!
+         RDY*         FROM CHIP
+
+                 ...................................................................................................................................   /                                                   T36                  T37
+                      FROM LOCAL BU5
+
+         LBC5*                                                                                                               T34                           T35
+                                                                                                                                                                                         r-----!
+                       RESET CYCLE
+
+
+CPUCLK
+
+               T94        T95
+R5TDRV _+--'
+
+
+R5TCPU           T96                  T97
+
+                                T98
+                                                                                                                                   _.
+                                                                                                                                   ~
+                                                                                                                                   a5r
+                                 BUS COMMAND TIMING                                                                                (JQ
+
+
+
+
+SYSCLK   \              /                       '/              \                       /
+
+
+
+
+             \
+                                 I-
+                                 ~ T41
+                                            /
+                                                - T42 -
+                                                      \
+                                                                                                          /
+                                                                                                              V
+
+
+
+  BALE
+                                      r- T43 - r- T44 -
+                                  \                            i/
+
+
+                                                     r- T45 - '- T 45 -
+                                                ,\                                  V
+                                                     1\
+
+                                                '- T47 -                                r- T48 -
+                                                           \                                       V
+                                                               1\                             J
+
+                                                                        r-   T 49   -r-
+                                                                                            T50 } - - -
+                                                                    \
+                                                                        1\
+
+                 '-
+                      T51   ~                                                                                 r-   T52   -
+                                                                                                                             r--
+                            I~
+
+
+
+
+ SOIR
+ BOIR
+         _J--    !-   T53                                                                                     - T54
+                                   DATA CONVERSION CYCLE
+
+     5Y5CLK
+
+
+              T471_______T_48_----./                                 T4_8~ r - - - - - - - - - - - - -
+                                       r+-_ _ _ _ _T_4_7----, '-_ _ _ _
+
+
+
+
+     8516*
+
+W
+1
+01
+01
+       5A0
+
+
+
+
+                                              REFRESH CYCLE
+
+      REF*    l-T-s7-~~~~~~~~~~~~~~f
+                                    ~ T58 ~_
+      XA0-9                                                                                    )
+                                                     V
+                        }-                       /
+
+
+               r-   T59 -                        -       I--   T60
+
+~    XA0-15
+0)
+
+
+
+                            I--   T61 -                          T62   -
+
+                                            II                         \
+      BDIR                              I                                  1\
+      5DIR
+
+
+     5DEN*
+     HDEN*    ~--l
+                            I--   T63
+                                                 __~}---       T64
+                       AT READ CYCLE     (15-bit)
+
+                                                                     II
+5Y5CLK                                                           /
+
+
+
+
+         \                                                                          /
+ 8516*       1\
+
+                  T47-   t-               T48-       -
+                                                     /
+                         1\                      /
+
+             t- T65-                                          T66-                  -   T67-
+
+015-31
+                                                                          '"/
+                                                                          / "-
+                                                                                               >--   --
+
+                                  ,...   T68     -- T69 -
+
+                                                                               /
+ D0-15                                                   ""
+                                                         /
+                                                                               '"
+                             AT READ CYCLE     (a~bit)
+
+      5Y5CLK   ~                                     f\-;
+               \                                                                 /
+      8516*
+
+                           -T47-              T48-
+                               \
+                                   1\
+W
+ I
+CJ1                                     -    T68     - T69 - - T70 -             - T67   -
+00
+
+       00-7
+                                                          '"
+                                                          /
+                                                                            /
+
+                                                                            ""
+                   -T65-                                       - T71    -
+
+      08-15                                                            ) /~
+                                                               - T72 -
+
+      016-23                                                           ) /~
+                                                               - T73 -
+
+      024-31
+                                                                       '"
+                                                                       / ~
+                                                                            /
+                           AT WRITE CYCLE         (15-bit)
+
+                \                                                V
+        8515*       :\                                       /
+
+
+
+
+W
+ I
+C.TI
+c.o
+       D15-31
+               '"'"                /
+                                       /
+
+
+
+        D0-15--l-·-l~--~-
+                    f-   T55           f-   T74                  f-   T57
+                       AT WRITE CYCLE                        (6-bit)
+
+               \                                                       /
+       8516*
+
+
+
+       CMO*
+                                                                       I- T67-
+
+W     024-31                          "'-
+                                      /     K
+ I
+0')
+o
+                                            f-   T75   -
+
+      016-23                          /   '" /
+                                            " T76
+                                            -          -
+
+      08-15
+                                      "/"'-
+                                      /
+
+                   I-T65-                   -    T77   -
+
+
+       00-7
+                            "-----.                    '"/
+                                                       / ~
+         NON-CPU WRITE CYCLE                      (15-bit)
+
+         \                                                      /
+             1\
+
+                                                                -    T79   -
+
+D0-15
+                     '"k:
+                     /
+             -T78-       f-    T74       -
+
+D16-31                               ) v~
+
+         NON-CPU WRITE CYCLE                      (8-bit)
+
+
+         \                                                      V
+             \                                              /
+
+                                                                I-   T79   -
+
+D0-7
+                     >'" /
+
+                         -
+             -T78-             T77
+
+D8-15
+                         -     T76
+                                     '" "
+                                     /
+                                         -<
+                                              /
+
+
+
+                                     "-J /
+D16-23                               / ""-
+                         '--
+                               T75       -
+
+D24-31                               ) vr"
+                                                                                             ~_.
+                                                                                             3_.
+                                                                                             :s
+         NON-CPU READ CYCLE                                    (15-bit)                      (JQ
+
+                                                                                             o
+                                                                                             Er
+         \
+
+                                                                          {        T79   -
+                                                                                             (JQ
+
+                                                                                              ~
+                                                                                              3
+016-31
+
+             lT78
+                              .-
+                                   '"'/"
+                                   /
+                                        -   T74       -
+                     /
+                         .-
+00-15                                             "" /
+                                                  /
+                                                          '"
+         NON-CPU READ CYCLE                                    (8-bit)
+                                                                              II
+  CMO*       L-.                                                          I
+
+
+
+
+024-31
+                                   '"'"
+                                   /
+                                        V
+
+                                        r             -
+                                            T75
+
+016-23
+
+                                   f    /~
+                                            T76       -
+
+08-15
+                                   '"
+                                   / "- "
+             -T78-                          T77       -                            T79
+
+                                                                                         1
+                                        r                                     r
+
+00-7                                              ) ./
+                                                          '"
+          5Y5CLK J
+               T8°:I_ 51               51
+          DMACLK
+       (i nternal
+                                                                                                          No t e l
+        DRQn        ---.I                                                                            \!
+
+        HOLD                ---.I                                                                                                        \'-4----+---
+
+
+        HLDA        -----------~/                                        jT81:                                                                     !T82'}--
+
+
+Col)
+        A[8:0J                                           - -r1- - .,/~/r'- 1-,-1-r- 1-- -,-Z. .,/~*'- ~ ===~======:=============:==:====l
+                                                         T83_
+                                                                               -t--->-]
+
+
+                                                                                  j
+                                                                                                                                         ~-L~,- -,l.;.-:I'--L..-L.I
+                                                                                                                                       T84              -j
+                                                                                                                                                                 I
+                                                                                                                                                                \-
+ I
+
+
+                                                           1IIIa~T-8-5~:--~:------~----------~---!~'------~~~
+(j)
+Col)
+        A[23: 16J
+
+
+        DACKn*                          ---------------------------J'--~~i______                      +-____________             ~:---~~T-8-6-----
+                                       ---------------------------T-9-0~j,---+l====---+·,=~~~-o-t--e--2-                                             ~______
+                                                                                                                                            8
+        lOR*                                                               T87:                                                        I. u
+                                                                                                                                    : _t_TT:9
+       (MEMR*)
+
+        lOW*                                  ---------------------------~--~t~-_-_-_-~~:==~N~\-t--e-3-----i~{- T91
+       (MEMW*)
+
+        TC
+                                                                                             T92 -:       t~----------------;;~t          -   T93
+
+
+                               Note 1           DREQ should be held active unti I DACK is asserted
+                               f"Jo t e
+                                    2           The first high to low transition is -for normal read
+                                                The secol-,d trailS i t i or, is -for del a,o! HEt'1RD# .
+                               [',10   te 3     The first high to low transition is for extended write
+                                                The ';e(:::,Jr,d t,,'jnsition is for norma'i 'vlrite.
+MECHANICAL DIMENSION (FOR SiS85C460)
+
+
+   QFP208-P     (208-Pin Plastic Flat Package)         Unit: mm
+
+
+                             JO.6tO.2
+
+                             28.0tO.2
+
+
+
+
+                                                 104
+
+
+
+
+              ~----------------------~53
+
+
+
+
+                               3-64
+

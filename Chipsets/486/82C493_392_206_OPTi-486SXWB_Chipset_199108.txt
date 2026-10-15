@@ -1,0 +1,3604 @@
+OC1 2 1 1991
+
+
+
+
+      11111
+
+                           OPTi-486SXWB PC/AT Chipset
+                             (82C493/82C392/82C206)
+
+
+
+                                               Preliminary
+
+
+
+
+                                82C493/82C392 DATA BOOK
+
+
+
+                                                  Version 1.1
+                                                August 16, 1991
+
+
+
+
+                                                                  /
+               OPTi, Inc., 2525 Walsh Avenue, Santa Clara, CA 95051   (408) 980-8178 FAX: 408-980-8860
+11111
+
+
+
+                                       Disclaimer
+
+
+
+ This specification is subject to change without notice. OPTi, Incorporated assumes
+                   no responsibility for any errors contained within.
+
+                      Copyright by OPTi, Inc. All rights reserved
+
+
+
+
+                                       OPTi, Inc.
+
+                    2525 Walsh Ave. Santa Clara, California 95051
+
+                                   Tel. (408) 980-8178
+                                   Fax (408) 980-8860
+
+
+
+
+                                            2
+    OPTi, Inc., 2525 Walsh Avenue, Santa Clara, CA 95051   (408) 980-8178 FAX: 408-980-8860
+11111
+ TABLE OF CONTENTS
+
+ 1. OVERVIEW
+       1.1 Introduction
+       1.2 Features
+       1.3 System Block Diagram
+
+ 2. 82C493 SYSTEM CONTROLLER (SYSC)
+        2.1 Reset Logic
+        2.2 System Clock Generation
+        2.3 Cache Subsystem
+        2.4 CPU Burst Mode Control
+        2.5 Local DRAM Control Subsystem
+        2.6 Shadow RAM
+        2.7 AT Bus State Machine
+        2.8 3us Arbitration Logic
+        2.9 Refresh Logic
+        2.10 System BIOS ROM and 1/0 Ports
+        2.11 Turbo and Non-turbo mode operation
+        2.12 Flexible Multiplexed DRAM Address
+
+ 3. 82C493 PIN DESCRIPTION
+        3.1 Clock and Reset
+        3.2 CPU Interface
+        3.3 NP Interface
+        3.4 Cache Control Interface
+        3.5 Local DRAM Interface
+        3.6 DBC Interface
+        3. 7 Bus Arbitration
+        3.8 AT-Bus Interface
+
+ 4. 82C493 REGISTER DESCRIPTION
+
+ 5. 82C392 DATA BUFFER CONTROLLER (DBC)
+        5.1 Data Bus Conversion
+        5.2 Parity Generation/Detection Logic
+        5.3 Clock Generation and Reset Control
+        5.4 Numeric Processor Interface
+
+ 6. 82C392 PIN DESCRIPTION
+        6.1 Clock and Reset Logic
+        6.2 Bus Interface
+        6.3 Bus Arbitration
+        6.4 SYSC Interface
+        6.5 Numeric Processor Interface
+        6.6 Miscellaneous Pins
+
+ 7. 82C392 REGISTER DESCRIPTION
+
+
+
+
+                                              3
+     OPTi, Inc., 2525 Walsh Avenue, Santa Clara, CA 95051   (408) 980-8178 FAX: 408-980-8860
+11111
+ LIST OF FIGURES
+      1. System Block Diagram
+      2. SYSC Pin-out
+      3. DBC Pin-out
+      4. Mechanical Dimensions
+
+
+
+
+                                           4
+   OPTi, Inc., 2525 Walsh Avenue, Santa Clara, CA 95051   (408) 980-8178 FAX: 408-980-8860
+1 486SXWB OVERVIEW (82C493/82C392/82C206 CHIPSET)
+
+1.1 Introduction
+
+The OPTi 486SXWB is a three-chip solution offering optimal performance for high-end,
+486DX and 486SX/487SX based AT systems. The OPTi 486SXWB chipset is designed for
+systems running from 20, 25 and up to 33 Mhz. It includes 82C493 System Controller
+(SYSC), the 82C392 Data Buffer Controller (DBC}, and the 82C206 Integrated Peripheral
+Controller (IPC). Refer to the data book supplied by your third-party source for information
+on the 82C206.
+
+
+1.2 Features
+
+OPTi 486SXWB features include:
+
+   o   1X and 2X clock source, supporting systems running up to 33 Mhz
+   o   two 160-pin CMOS Plastic Flat Package (PFP), and one 84-pin PLCC
+   o   Copy-Back Direct-Mapped Cache with size of 64 KB, 128 KB, 256 KB and 512 KB
+   o   up to 10% performance enhancement from write-through cache scheme
+   o   supports 2, 1, 1, 1 or 3,2,2,2 cache and DRAM burst cycles respectively
+   o   on-chip comparator determines cache hit or miss
+   o   up to 64-MB of local high-speed, page-mode, DRAM memory space
+   o   burst-line-fill during Cache-Read-Miss
+   o   control of two non-cacheable regions
+   o   shadow RAM support
+   o   optional caching of shadowed Video BIOS
+   o   hidden refresh
+   o   slow refresh available for a laptop application.
+   o   8042 emulation for fast CPU-reset and gateA20 generation
+   o   turbo/slow speed selection
+   o   AT bus clock selectable from CLK21N/5, CLKIN/3, CLKIN/4 or CLKIN/6
+   o   0 or 1 wait state selectable for 16-bit AT bus cycle
+   o   CAS# before RAS# refresh reduces power consumption
+   o   optional 0 or 1 wait state for Cache-Write-Hit
+   o   WEITEK 4167 coprocessor support
+
+
+
+
+                                             5
+    OPTi. Inc., 2525 Walsh Avenue, Santa Clara, CA 95051   (408) 980-8178 FAX: 408-980-8860
+11111
+       1.3 SYSTEM BLOCK DIAGRAM
+
+       Figure 1 is a block diagram of a 486SXWB-based system
+            C0(31:0)                 CA(31:2)                                       pc.0{7:0)
+                                                                                                                        SA(19:~}
+                                                                                                                        LA(23:1
+
+
+              ~
+                                                  r-                Cache
+                                                                    SAAM
+                                                                                                          SC(15:0)
+Floating-point t - - -                             ~                ODO
+Coproceuor
+              lcA!3!..;;!1..   LJLr-
+                                 r- ~
+                               r--
+                                                  I.--
+                                                                        J
+                                                                                             Keyboard
+                                        .____                           ]           '--
+                                                                                             Controller
+                                                  ,----,            Cache           ,----,
+                                                                    SAAM
+                                                                                             EPROM
+                                                   ~
+                                                  ......__          EVEN
+
+486DX/486SX                    D                              XA(l5:0)
+                                                                                                          ,..-----,
+
+
+                               D
+CPU
+                                                                                                   '----1     r--
+                                                                                                            H r--
+                                             82C392                                                       ......_
+                                             Data Buffer
+                                             Controller
+
+
+                                                   1             MC(31:0)
+                                                                                                   !--
+                                                                                                       H
+                                                                                                          r--1
+                                                                                                                  r--
+                                                                                                   !--           r--
+                                                                              j                           ......_
+
+                                            Tag
+                                            RAM              J              DRAMs
+
+
+                                     .___
+                                             m
+                                             82C493
+                                             System
+                                                             MA(10:o)
+                                                                  ~
+
+                                     ,---
+                                             Controller
+
+                                                                 XC{7:0)
+
+
+
+
+                                     ..__       82C206
+                                     ,---
+
+
+
+
+                                                  ~
+
+
+                                 Figure 1. 486SXWB-Based System Block Diagram
+
+
+
+
+                                                     6
+            OPTi, Inc., 2525 Walsh Avenue, Santa Clara, CA 95051                  (408) 980-8178 FAX: 408-980-8860
+11111
+ 2 82C493 SYSTEM CONTROLLER (SVSC)
+
+ 2.0 Features
+
+ The SYSC is a 160-pin PFP (Plastic Flat Package) device. The SYSC integrates a write-
+ back-cache controller, local DRAM controller, AT bus state machine, and CPU state
+ machine. 82C493 features include:
+
+     o CPU reset control
+     o CPU internal cache control
+     o CPU burst mode control
+     o CPU interface control.
+     o integrated write-back cache controller with tag comparator.
+     o page-mode DRAM controller
+     o burst iine fill control logic
+     o two noncacheable address comparators
+     o decoupling refresh for local DRAM and AT-bus memory
+     o 2 OMA upper address latches
+
+ 2.1 Reset Logic
+
+ The SYSC handles two reset inputs, RST1# and RST2#, to generate the CPU reset signal,
+ CPURST. RST1# is a "cold reset" which is generated by the DBC when either PWRGD#
+ (Powergood) goes low (from the power supply and indicating a low power condition) or the
+ system reset button is pressed. RST2# is a "warm reset," asserted by a keyboard reset
+ (CNTL + ALT + DEL simultaneously). Keyboard reset can be handled by either the
+ keyboard controller (8042 or 8742 ) or the DBC. However, the reset from the DBC is
+ recommended because it routes the reset faster to the SYSC. The reset from the DBC is
+ used in the application system design to optimize the performance.
+
+ A software reset is also available by programming bit O (from Ob to 1b) of Index Register 20h,
+ then executing a "HALT" instruction.
+
+
+ 2.2 System Clock Generation
+
+ The SYSC has two high frequency clock inputs, CLKI and CLK21. In single frequency
+ operation, CLK21 and CLKI are connected to the same clock source. But in double frequency
+ operation, CLK21 is fed by directly from the crystal oscillator and CLKI is derived from the
+ output of divided by 2 flip-flop. So CLK2CLK21 frequency is twice of that of CLKI. CLK21 is
+ used for the cache controller to generate the zero wait cache write cycle. Typically, double
+ frequency is recommended for 20125 Mhz operation, single or double frequency can be used
+ 33 Mhz system. If single frequency clock is used, the cache write wait state must be set to
+ "1 ". CLKI, which is driven by the output from a crystal oscillator or from the CLK21 through a
+ divided by 2 circuitry, clocks the CPU as well as the SYSC's internal state machine.
+
+
+
+
+                                               7
+     OPTi, Inc., 2525 Walsh Avenue, Santa Clara, CA 95051    (408) 980-8178 FAX: 408-980-8860
+11111
+ The SYSC generates the AT bus clock, ATCLK depending on the bit 1 and 0 of index 25h
+ register. When the system is first powered on, bit 1 is cleared to "O'' and bit 0 is reflects the
+ pin status of BLCKS. ATCLK can be changed to any of four different speeds by
+ programming the bit 1,0 of index register 25h. The speed can be one of the following;
+ CLKl/4 (0, 1 for bit 1 and 0), CLKl/6 ( 0, O for bit 1 and 0), CLKl/3 (1, O for bit 1 and 0) and
+ CLK21/5(1, 1 for bit 1 and 0). An onboard, 2- position jumper establishes the initial level of
+ BCLKS.
+
+ 2.3 Cache Subsystem
+
+ The cache update scheme of SYSC is the copy-back( write-back) which is a superior scheme
+ than traditional write-through scheme. There is no performance penalty in the cache write
+ cycle, since the cache controller doesn't need to wait for the much slower DRAM controller to
+ finish its cycle before proceeding to next cycle. So it dramatically improve the system
+ performance.
+
+ The SYSC only support non-pipeline mode with a fixed 16-byte line size to simplify design
+ without increasing cost or degrading system performance. A tag comparator is built inside
+ the SYSC to improve system performance and reduce system board component count. and
+ real-estate. The comparator asserts internal HIT# signal when the current address location
+ matches the addresses stored inside the Tag RAM.. It HIT# is negated or NCA# (Non-
+ Cacheable Address) is asserted, the current cycle is a cache-miss; otherwise the cycle is a
+ cache-hit. Descriptions of possible cache cycles follow.
+
+         Cache-Read-Miss with the cache location's DIRTY bit negated. The cache controller
+         does not need to update system memory with the cache's current data, because that
+         data is unmodified. The cache controller asserts T AGWE#, causing the tag RAMs to
+         update with the new address, and asserts CAWE(3:0)#, causing cache memory to
+         update with data from DRAM.
+
+         Cache-Read-Miss with DIRTY bit asserted. The cache controller must update
+         memory with data from the cache location that is going to be overwritten. The
+         controller writes the 16-byte line from cache memory to the DRAM, then reads the
+         new line from DRAM into cache memory. The controller asserts T AGWE# and
+         CAWE(3:0).
+
+         Cache-Write-Hit. The cache controller does not need to update memory. The
+         controller updates the tag RAMs and cache memory and sets the DIRTY bit. (DIRTY
+         may already be set, but that does not affect this cycle.)
+
+         Cache-Write-Miss. The cache controller bypasses the cache entirely and writes the
+         data directly into DRAM. DIRTY is unchanged.
+
+         The following table shows the cache sizes supported by the 82C493, with the
+         corresponding tag RAM address bits, tag RAM size, cache RAM address bits, cache
+         RAM size, and cacheable main memory size
+
+
+
+
+                                                8
+      OPTi. Inc .. 2525 Wabh Avenue. Santa Clara. CA 95051     (408) 980-8178   FAX: 408-980-8860
+11111
+             Cache Size (Kb)    Tag Field Address/   Cache RAM Address      Cachable Main
+                                  T~RAM size            /Cache RAMs          Memory(Mb)
+                   64              A23 -A16             A15 - A4                 16
+                                     4KX9                8 8KX8
+                  128              A24 -A17             A16 - A4                 32
+                                     8KX9               16 8KX8
+                  256              A25 - A18            A17 - A4                 64
+                                    16KX9               8 32KX8
+                  512              A25 - A19            A18 - A4                 64
+                                    32KX8               16 32KX8
+
+            ~eecl(Oscillator)      CacheSRAM             TagSRAM               DRAM*
+            20Mhzl40 Mhz)         25ns(note 1)              25ns           80ns(note 31
+            25Mh~50 Mhzl          25ns_(note 1l             25ns           aons(note 3)
+           33MHz(66 Mhz or        25ns(note 2)              15ns           80ns(note 3)
+               33 Mhz)
+            50 Mhzl50 Mhzj_           20ns                  12.5ns         80nS(note 3)
+ Note:
+ 1: 20125 Mhz system design can be implemented with or without data buffers for the cache
+ memory. The design without data buffers requires faster output access time for cache
+ SAAM. The SAAM speed listed above is based on the design without data buffers. In 25
+ Mhz based-system, 25 ns SRAMs with output access time smaller than 13 ns must be
+ used.
+ 2. The SRAM speed is for the design with data buffers and 8KX8 SRAMs arc used. If 32KX8
+ SRAM is used, the .access time must be decreased to 20 ns.
+ 3. DRAM and cache RAM are at their minimum wait states. Cache write at "O" wait state
+ only when double frequency is used.
+
+ 2.4 CPU Burst Mode Control
+
+ SYSC supports secondary cache size from 64KB up to 512 KB to compliment the internal
+ 8KB cache of 486/487SX and 486DX. It greatly enhances the hit ratio of the cache system
+ and dramatically improves the system performance. During the cache operation, that data is
+ burst into the CPU when a cacheable location is read, whether it is a cache read-hit or read-
+ miss. If read-miss occurs, the DRAM data is first burst into cache memory. In the cache
+ read-hit cycle, BADY# (Burst Ready) is asserted at the middle of the first T2 state when a 2-
+ 1-1-1 burst cycle is chosen, otherwise, it is asserted at the middle of the second T2
+ state.During the read-mis ; BADY# is asserted after cache memory is updated. Once
+ asserted, BADY# stays low until BLST# (Burst Last) is detected. BADY# is never active
+ during OMA and MASTER cycles.
+
+ In order to support the cache burst cycle and still use the normal speed SAAM, a bank
+ interleave cache access method is used. The addresses are applied to cache memory one
+ clock cycle earlier, cache output enable signals then enable the cache RAMs to data bus.
+ Since the output enable time is about half of the address access time, SYSC can achieve a
+ cache burst mode and don't need to use more expensive and faster SRAMs in cache sub-
+ system design. SYSC supports one or two pair of cache banks, each pair includes a even
+ and odd bank. The even bank and odd bank share the same addresses lines. Signals
+
+
+
+
+                                               9
+     OPTi, Inc., 2525 Walsh Avenue, Santa Clara, CA 95051     (408) 980-8178 FAX: 408-980-8860
+11111
+ pairs,BEA3 and BOA3, BEOE# and BOOE#, are used to distinguish the even and bank
+ ccess respectively. If two pair banks are supported, CA 16 and CA 18 are used to select the
+ corresponding bank.
+
+
+ 2.5 Local DRAM Control Subsystem
+
+ The SYSC supports up to 4 banks of page-mode local memory. DRAM devices are either
+ 256-Kb,1-Mb or 4-Mb large. Total memory is between 1 Mb and 64 Mb. The following table
+ illustrates the configurations supported.
+
+               Banko           Bank 1          Bank 2           Bank3          Total
+               256K              x                 x              x             1M
+               256K            256K                x              x            2M
+                1M               x                 x              x            4M
+               256K             1M                 x              x             SM
+               256K            256K                1M             x            6M
+                1M              1M                 x              x            SM
+               256K             1M                 1M             x            9M
+               256K            256K                1M            1M            10M
+                1M              1M                 1M             x            12M
+               256K             1M                 1M            1M            13M
+                1M              1M                 1M            1M            16M
+                4M               x                 x              x            16M
+                1M              4M                 x              x            20M
+                4M              1M                 x              x            20M
+                1M              1M                 4M             x            24M
+                1M              4M                 1M             x            24M
+                4M              1M                 1M             x            24M
+                1M              1M                 1M            4M            28M
+                1M              4M                 1M            1M            28M
+                4M              1M                 1M            1M            28M
+                4M              4M                 x              x            32M
+                1M              4M                 4M             x            36M
+                4M              1M                 4M             x            36M
+                4M              4M                 1M             x            36M
+                4M              1M                 4M            4M            40M
+                1M              4M                 4M            1M            40M
+                4M              1M                 4M            1M            40M
+                4M              4M                 1M            1M            40M
+                4M              4M                 4M             x            48M
+                1M              4M                 4M            4M            52M
+                4M              1M                 4M            4M            52M
+                4M              4M                 4M            1M            52M
+                4M              4M                 4M            4M            64M
+
+
+
+
+                                              10
+      OPTi, Inc., 2525 Walsh Avenue, Santa Clara, CA 95051   (408) 980-8178 FAX: 408-980-8860
+11111
+ 2.6 Shadow RAM
+
+ Because DRAM accesses are much faster than EPROM accesses, the SYSC provides
+ shadow RAM capability to enhance system performance.. BIOS is copied, then write-
+ protected, into a dedicated area in DRAM. Accesses to BIOS address space are redirected
+ to the corresponding DRAM location. Shadow RAM addresses range from COOOOh to
+ FFFFFh. COOOOh to EFFFFh are enabled in 16-Kb memory chucks. FOOOOh-FFFFFh, the
+ location of system BIOS shadowing, are enabled in 64-Kb chucks. When shadowing is
+ disabled (bit 7 of Index Register 22h is reset), BIOS is read from EPROM and (if applicable)
+ written to DRAM. Normally, ROMs with address from EOOOOh - FFFFFh reside on XO bus
+ and ROMCS# is generated. However, ROM with address range from COOOOh to DFFFFh are
+ directed to AT bus.
+
+
+ 2.7 AT Bus State Machine
+
+ The AT state machine monitors status signals, M16#, 1016#, Chrdy and Nows# from the AT
+ bus. The machine outputs AT bus signals, including command, bus conversion, and control.
+ The AT bus state machine also routes data and address when an AT bus master or OMA
+ controller accesses memory.
+
+
+
+
+ 2.8 Bus Arbitration Logic
+
+ 82C493 arbitration is based on first-come, first serve basis. The SYSC arbitrates between
+ memory requests from the CPU, OMA controller, AT bus masters, and refresh logic. During
+ OMA and AT bus master write cycles, the SYSC asserts HOLD to the CPU, then the CPU
+ relinquishes bus control, returning HLDA. The SYSC asserts AHOLD and BOFF# during an
+ AT memory code read cycle. During refresh (and when hidden refresh is enabled), HOLD
+ remains negated, and the CPU continues its current program execution as long as it
+ achieves cache hits.
+
+
+ 2.9 Refresh Logic
+
+ The SYSC supports both normal refresh and hidden refresh. The average refresh period
+ (time between refresh cycles) is either 16us or 64us, the latter when slow refresh is enabled.
+ (Slow-refresh DRAMs must be used with slow refresh.) Hidden refresh separates refreshing
+ of AT-bus memory and local DRAM; the AT-bus controller arbitrates between CPU accesses
+ to the AT bus, OMA, and AT refresh, while the DRAM controller arbitrates between CPU
+ DRAM accesses and DRAM refresh cycles. Note that the DBC generates the refresh
+ address during AT-bus refresh cycles.
+
+
+
+
+                                             11
+     OPTi, Inc., 2525 Walsh Avenue, Santa Clara, CA 95051    (408) 980-8178 FAX: 408-980-8860
+11111
+ 2.10 System BIOS ROM and 1/0 Ports
+
+ The SYSC supports both 8-bit and 16-bit EPROM cycles. If the system BIOS is eight bits
+ wide, the system BIOS EPROM resides on the XD bus. If the system BIOS is 16 bits wide,
+ the EPROM must reside on the MD bus, and ROMCS# is connected to M16# through a open
+ collector; M16# informs the SYSC that the current system BIOS is 16 bits wide. The XO-bus
+ data buffers always drive toward the XD bus, except during an 1/0 read cycle at an address
+ smaller than 1OOh (byte-wide 1/0), INT A cycle and an 8-bit BIOS ROM cycle.
+
+ 2.11 Turbo and Non-Turbo Mode Operation
+
+
+ The system is operating at the full speed if the TURBO pin is asserted high. The non-turbo
+ mode operation is implemented by applying a periodic clock to the FLUSH# pin of 486
+ processor. The cache flush causes continuous cache update and eventually slows down
+ the whole system throughput. The clock source used is OSC (14.3818 Mhz) from 82C493.
+ For the system design, the TURBO pin must always be pulled high through a 1OK Ohm
+ resistor.
+
+
+ 2.12 Flexible Multiplexed DRAM Address
+
+ The following table describes how the DRAM address lines are multiplexed when different
+ memory devices types are used.
+
+
+                               Address to MA bus Mapping
+
+                               Mem             256K             1M              4M
+                               addr      Col      Row    Col      Row     Col     Row
+                              MAO        A2       A12    A2       A12     A2      A23
+                              MA1        A3       A13    A3       A13     A3      A13
+                              MA2        A4       A14    A4       A14     A4      A14
+                              MA3        A5       A15    A5       A15     A5      A15
+                              MA4        A6       A16    A6       A16     A6      A16
+                              MAS        A?       A17    A?       Al?     A?      Al?
+                              MA6        A8       A18    A8       A18     A8      A18
+                              MA?        A9       A19    A9       A19     A9      A19
+                              MAS        A10      A11    A10      A20     A10     A20
+                              MA9        x        x      Al 1     A21     A11     A21
+                              MA10       x        x      x        x       A12     A22
+
+
+
+
+                                             12
+     OPTi, Inc., 2525 Walsh Avenue, Santa Clara, CA 95051     (408) 980-8178 FAX: 408-980-8860
+11111
+ 3 SYSC SIGNALS DESCRIPTIONS
+
+ 3.1 Clock and Reset
+
+     Name            Type       Pin No                          Description
+    CLK21             I           82         Crystal oscillator Input which has a frequency
+                                             equal to twice the rated CPU clock if double
+                                            clock scheme is chosen. This signal is used for
+                                             secondary_ cache early_ write option only.
+     CLKI              I          79         Single clock input for SYSC internal state
+                                             machine.
+   BCLKS               I         142         ATCLK Selection.
+                                             Low ATCLK = CLKl/6.
+                                             H)g_h ATCLK = CLKl/4.
+    ATCLK             0          159         ATCLK to AT bus; it is a free running clock. It
+                                             could be one of following clock:CLKl/4, CLKl/6,
+                                             CLKl/3 and CLK21/5.
+    RST1#              I         134         Cold reset input either from Powergood signal of
+                                            _Q_ower supply_ or from Reset Switch
+    RST2#              I         135         CPU Reset input from Keyboard Controller or
+                                             from DBC's ERST2# pin.
+   CPURST             0           25         Reset for 486_Q_rocessor.
+
+
+ 3.2 CPU Interface
+
+   Name              Type      Pin No                          Descr~ion
+  CA(31 :24)          B      88-83,68-67     CPU Address Lines 31-24. They are input pins
+                                             during CPU cycle, and forced to be low for OMA
+                                             and MASTER cycles which allow 486 invalidating
+                                             the internal T AGs. Note that the CPU isn't on
+                                             HOLD when AT refresh cycle undergoing.
+  CAl23:21l           I         66-64        CPU Address Lines 23-21; Input only.
+   CA20               B          63          CPU Address Lines 20; it's an input pin during
+                                             CPU and OMA cycles, and becomes an output
+                                            _Qjn duril'!Q MASTER cycle.
+  CAl19:17)           I         62-60        CPU Address Lines 19-17; Input only.
+  CA(16:8)            B         59-51        CPU Address Lines 16-8. These are input pins
+                                             during CPU and MASTER cycles. CA(16:9) are
+                                             output pins for OMA address A 16-A9 by
+                                             latching XD(7:0) during 16-bit OMA cycle and
+                                             CA(15:8) are OMA address A15-A8 for 8-bit
+                                             OMA c_y_cle.
+
+
+
+
+                                             13
+     OPTi, Inc., 2525 Walsh Avenue, Santa Clara, CA 95051   (408) 980-8178    FAX: 408-980-8860
+11111
+   Name            Tvoe          Pin No                           Descr_jQtion
+  CAJ7:~             I           49-44         CPU Address Lines 7-2; l~ut only_.
+  BE(3:0)            B           31-34         Byte Enable 3-0. These are inputs during
+                                               CPU cycle and are outputs during OMA and
+                                               MASTER cycle, derived from SAO, SA1 and
+                                               SBHE# from AT bus.
+   ADS#              I             43          Status input from CPU. This active low signal
+                                               indicates that CPU is starting a new cycle.
+   WR#               I             36          CPU Write or Read Cycle Status. It indicates
+                                               a write cycle if high and read cycle if low.
+   DC#               I             35          CPU Data or Code Cycle Status. It indicates
+                                               data transfer operations when high, or control
+                                               operations1code fetch, halt, etc.) when low.
+   MIO#              I             37          CPU Memory or 1/0 Cycle Status. It indicates
+                                               a memory cycle if high, and 1/0 cycle if low.
+  LDEV#              I             18          Indication of CPU local Bus device Cycle, i.e.
+                                               WEITEK 4167 coprocessor. This signal is
+                                               sampled at the end of 1st T2.
+  BLST#              I             42          486 burst last cycle indication, SYSC
+                                               terminates the burst cycle as long as the
+                                               BLST# sampled low at the end of each T2
+                                               when BROY# is active.
+   ROY#              0             38          Ready output for CPU to terminate the current
+                                               cy_cle.This pin is not a tri-state output.
+   RDYI#             I             19          Local Device Ready Input, It will be
+                                               synchronized by SYSC before sending to
+                                               CPU.
+  BADY#              0             39          Burst ready output for CPU to sample the
+                                               read data during burst cycles. This pin is a tri-
+                                               state output.
+   KEN#              0             29          Cachable or non-cachable status for the
+                                               internal cache of CPU. This signal is low
+                                               normally, and is brought high at the end of T1.
+                                               SYSC will assert KEN# again if it is a
+                                               cachable 91.cle.
+  BOFF#              0             27          Backoff output tor CPU. This output forces
+                                               the 80486 microprocessor to float its bus in
+                                               the next clock and restart the cycle later.
+  TURBO              I            140          Turbo Mode Selection. I f Turbo pin is tied
+                                               to high; the system runs at full speed. This
+                                               pin is recommended to be always tied to h_i_g_h.
+   TLB#              0            110          i486 B stepping TLB corruption Problem Fix.
+                                               This pin is not needed it C or later stepping of
+                                               processor is used.
+
+
+
+
+                                          14
+   OPTi, Inc., 2525 Walsh Avenue, Santa Clara, CA 95051    (408) 980-8178        FAX: 408-980-8860
+11111
+ 3.3 Numeric Processor Interface
+
+      Name            ~             Pin No                            Descr~tion
+
+    NP ERR#             I            24             Numeric Processor Error Indication. Used to
+                                                   _g_enerate IGERR# for CPU.
+    IGERR#             0             21             This is a normally high signal and will become
+                                                    low as soon as the NPERR# is asserted. An
+                                                    10 write to either port FOh or F1 h, or CPU
+                                                    reset will force this sig_nal back to high.
+
+
+ 3.4 External Cache Control
+
+
+      Name            T~e           Pin No                            Descr~tions
+
+    TAGJ..7:01         B           77-71,69        TAG RAM in_QUt/outQµt Lines 7-0.
+     DRTY              B              78           Dirty Bit of Tag RAM to indicate its
+                                                   corres2._ondif!9. line has been written into.
+    TAGWE#             0             93            TAG RAM Write Enable. It is used to update
+                                                   the TAG RAM.
+   DTYWE#              0             94            Write strobe to Dir!Y_Bit of TAG RAM
+    CAOE#              0             89            External Cache Ou~ut Enable.
+  CAWE(3:0)#           0           105-102         External Cache Write Enable; each signal
+                                                   corres_QQ_nds to one b_yt_e of data
+     BECS#             0             91            External Cache Even Bank Chip Select; it is
+                                                   normally active and becomes high if CA2 is
+                                                   high during cache write hit cycle. Also it will
+                                                   toggle durin_g_ cache line fill c_ycle.
+     BOCS#             0             92            External Cache Odd Bank Chip Select; it is
+                                                   normally active and becomes high if CA2 is
+                                                   low during cache write hit cycle. lt will be a
+                                                   com_Q!ement of BEGS# durin_g_ cache line fills.
+     BEOE#             0             98            External Cache Even Bank Data Buffers
+                                                   Enable; Activated for cache write cycle and, if
+                                                   CA2 is low, cache read cycle. Also, toggles
+                                                   durin_g_ dif"!Y. write backs and CPU burst reads.
+     BOOE#             0             97            External Cache Odd Bank Data Buffers
+                                                   Enable. It is activated for cache write cycle
+                                                   and, if CA2 is high, cache read cycle. It will
+                                                   become a complement of BEOE# during dirty
+                                                   write back and CPU burst read c_ycle.
+
+
+
+
+                                              15
+     OPTi, Inc., 2525 Walsh Avenue, Santa Clara, CA 95051      (408) 980-8178 FAX: 408-980-8860
+11111
+      Name            Type         Pin No                            Descr~ion
+     BDIR#             0             96           External Cache Data Buffers Direction
+                                                  Control. It is normally high and forced to be
+                                                  low when writing_ data into cache.
+      BEA3             0             101          External Cache Even Bank Address Bit 3.lt is
+                                                  tri-stated during T1 and first half T2 cycle.
+                                                  Then it simply reflects the status of CA3 and
+                                                  will toggle during dirty write back, cache line
+                                                  fill, and CPU burst read ~cles.
+     BOA3              0             99           External cache oven bank address bit 3.lt is
+                                                  tri-stated during T1 and first half T2 cycle.
+                                                  Then it reflects the status of CA3 and will
+                                                  toggle during dirty write back, cache line fill,
+                                                  and CPU burst read ~cles.
+     CA3S#             0             95           External cache address bit 3 select; use this
+                                                  signal to choose between CA3 and BEA3 for
+                                                  even bank cache address bit 3, or BOA3 for
+                                                  odd bank cache address bit 3 respectively.
+                                                  becomes active for T1 and first T2 ~cles.
+
+
+ 3.5 Local DRAM Interface
+
+      Name            Type         Pin No                            Descr~ion
+
+     OWE#              0             133          DRAM Write Enable slg_nal.
+    RAS{3:0)#          0        132, 131, 129,    DRAM Row Address Strobe.
+                                     128
+   CASJ3:0l#           0          127-124         DRAM Column Address Strobe.
+   MA(10:0)            0          123,122,        DRAM Row/Column Address Line 10-0.
+                                  119-111
+
+
+
+
+                                             16
+     OPTi, Inc., 2525 Walsh Avenue, Santa Clara, CA 95051     (408) 980-8178 FAX: 408-980-8860
+Ill
+3.6 DBC Interface
+
+
+     Name             T...YQ_e    Pin No                        Descr~ion
+    LMEN#               0           109        Local Memory Access Indication. Used by
+                                               DBC to control the data bus flow.
+      DLE               0           107        DRAM Read Data Latch Enable; used for
+                                              _Qari!Y_ checkin_g_.
+    MI016#              0           143        Latched AT-bus 16-bit Slave Status; used for
+                                               bus conversion.
+   PC KEN#              0           106        Parity Checking Enable; used by DBC to
+                                              _Q_erform _Q_ari!Y_ checkin...9.:
+   ATCYC#               0           154        AT bus C_y_cle Indication.
+
+
+3.7 Bus Arbitration
+
+     Name             T..I2_e     Pin NO                        Descr!P._tion
+     HRQ                 I          145        DMA or Master C_y_cle Request from 82C206
+     OUT1                I          146        Refresh R~uest from Timer1 OutQ_ut.
+     HLDA                I          41         CPU Hold Acknowled_g_e.
+     ADS8                I          152        8-bit DMA Transfer Address Strobe. The
+                                               SYSC has to latch XD(7:0) by using ADS8
+                                               and translate to CA115:81 ou!Q_uts.
+    AEN8#                I          147        8-bit DMA Cycle Indication.
+    ADS16                I          153        16-bit DMA Transfer Address Strobe. The
+                                               SYSC has to latch XD(7:0) by using ADS16
+                                               and translate to CA116:91 ou!Q_uts.
+    AEN16#              I           148        16-bit DMA Transfer Indication.
+     HOLD               0           28         HOLD Request to CPU. Hidden refresh will
+                                               not hold the CPU.
+    HLDA1               0            7         DMA or Master C_y_cle Granted Notice.
+    RFSH#               B           158        AT Refresh Cycle Indication. It is an input pin
+                                               durin_g_ master or DMA cycle.
+    AHOLD               0           22         Address hold request to CPU; It will be
+                                               activated when HLDA is active and CPURST
+                                               isn't active, or right after AT memory code
+                                               read cycle if HOLD is pending. AHOLD will
+                                               last until HOLD ends.
+    EADS#               0           23         486 address snooping strobe; it's asserted for
+                                               two T states durin_g_ DMA or MASTER c_ycles.
+
+
+
+
+                                            17
+    OPTi, Inc., 2525 Walsh Avenue, Santa Clara, CA 95051   (408) 980-8178 FAX: 408-980-8860
+11111
+ 3.8 AT-BUS Interface
+
+
+   Name      Type       Pin No                                  Descr~ion
+
+   XAO         B         156       System Address Line 0. Input during master or 8-bit OMA
+                                   ~cles; ou!Q_ut_Qin during_ CPU, 16-bit OMA, or refresh qcle.
+   XA1         B         157       System Address Line 1, it is an input pin during master or OMA
+                                   9'_cle; becomes ou!Q_ut_Qin during_ CPU or refresh qcle.
+  CHRDY        I         139       Channel Rea~ ln_Q_ut from AT-BUS. Schmitt triQger in_Q_ut_Q)n.
+  NOWS#        I         138       Zero Wait State Input from AT-BUS. It is a Schmitt trigger input
+                                   pin. The system BIOS ROM is treated as AT one wait state
+                                   C..Y..Cle.
+  1016#        I         137       16-bit 10 Slave C..Y..cle Status. It is a Schmitt triQQer in_Q_ut_Qin.
+  M16#          I        136       16-bit Memo_iy Slave C_y_cle Status; Schmitt trigger in_Q_ut_Qin.
+ GATEA20       I         141       Gate A20 Input from 8042 or DBC emulated gateA20 pin. By
+                                   default, SYSC uses this signal to qualify CA20 during CPU
+                                   ~cle.
+  A20M#        0         26        GateA20 ANDed with fast GATEA20 output to CPU; it will
+                                   remain h)g_h durin..9...2._ower u_Q_ CPU resetJ;!_eriod.
+  XD(7:0)      B     9-11, 13-17   Peripheral Data Bus Line 7-0.Two purposes for these pins:
+                                   program the internal index register.* latch the OMA high order
+                                   address.
+   IORD#       B          4        AT 10 Read Command. It is an input pin during OMA or master
+                                   ~cle.
+  IOWR#        B          5        AT 10 Write Command. It is an input pin during OMA or master
+                                   9'_Cle.
+   MRD#        B          2        AT Memory Read Command. It is an input pin during OMA or
+                                   master 9'_Cle.
+   MWR#        B          3        AT Memory Write Command. It is an input pin during OMA or
+                                   master c_y_cle.
+  SMRD#        0         149       AT Memory Read Command, for address below 1 Meg. It has to
+                                   be activated during_ refresh qcle.
+  SBHE#        B         155       AT Bus High Enable. It is an in_Q_ut_Q)n during_ master 9'_Cle.
+  SMWR#        0         151       AT Memory Write Command, for address below 1 MB memory
+                                   ~ace.
+    ALE        0          6        AT Bus Address Latch Enable to represent that the AT cycle
+                                   has started. It is brou_g_ht to hig_h during_ non-CPU 9'_Cle.
+   INTA        0         144       Interrupt Acknowledge Cycle Indication. Hold will not send to
+                                   CPU between the INT A* 9'_cles.
+  ROMCS#       0          8        System BIOS ROM Output Enable. System BIOS ROM
+                                   accessing could be either 8-bit or 16-bit. This signal will be
+                                   asserted from the end of the first T2 to the end of the last T2.
+
+
+
+
+                                                 18
+      OPTi. Inc .. 2525 Walsh Avenue, Santa Clara, CA 95051      (408) 980-8178     FAX: 408-980-8860
+11111
+ 3.9 Ground and VCC
+
+
+      Name            ~                                 Pin No                         Descrmtion
+       vcc            I                           1,20,40,81,100, 120                      +5V
+       GND            I                 12,30,50,70,80,90, 108, 121, 130.150, 160     VSS or Ground
+
+
+
+
+ 4 SVSC REGISTERS DESCRIPTIONS
+
+ There are twelve configuration registers inside the 82C493. An indexing scheme is used to
+ access all the registers of OPTi-486SXWB chipset. Port 22h contains the index register and
+ port 24h is the data register. The index resets after every access; thus, every data access
+ (via port 24h) must be preceded by a write to port 22h, even if the same register is being
+ accessed. Unless mentioned otherwise, all reserved bits are set to zero by default and must
+ be set to zero for future compatibility purpose.
+
+ Control Register 1
+ Index: 20h
+
+      BIT                                     FUNCTION                                DEFAULT
+      7-6       Revision of 82C493 and is read-on!Y.                                    01
+       5        Burst wait state control                                                 0
+                1 = Secondary cache read hit cycle is 3-2-2-2 or 2-2-2-2.
+                0 = Secondary cache read hit cycle is 3-1-1-1 or 2-1-1-1 .
+                If bit 5 is set to "1 ", bit 4 of index 20h must be set to "O".
+       4        Cache memory data buffer output enable control                            0
+                0 = disable 1 = enable
+                When enabled, it will be activated half T state earlier during
+                read hit cycle.
+                Bit 4 must be set "O" for frequency smaller than or
+                e_g_ual to 33 Mhz. Otherwise, it must be set to "1 ".
+       3        Single ALE Enable- SYSC will activate single ALE instead of               0
+                multiple ALEs during bus conversion cycle if this bit is
+                enabled.
+                O =disable 1 =enable
+       2        Extra AT Cycle Wait State Enable. Insert one extra wait state             0
+                in standard AT bus c_ycle. 0 =disable 1 =enable
+      *1        Emulation keyboard Reset Control - turn on this bit requires              0
+                "Halt" instruction to be executed before SYSC generates
+                CPURST.
+                O =disable 1= enable
+                Note: This bit must be set to "1" in BIOS default value.
+       0        Fast Reset Enable- alternative fast CPU reset.                            0
+                0 = disable 1 =enable
+
+
+
+
+                                               19
+     OPTi, Inc .. 2525 Walsh Avenue, Santa Clara, CA 95051       (408) 980-8178 FAX: 408-980-8860
+11111
+ Control Register 2
+ Index: 21h
+
+      BIT                                  FUNCTION                                 DEFAULT
+      7        Master Mode Byte Swap Enable                                            0
+               O = disable 1 = enable
+      6        Emulation Keyboard Reset Delay Control                                  0
+               0 = Generate reset pulse 2 us later
+                1 = Generate reset_Q_ulse immediate!Y_
+      5        Parity Check                                                            0
+               0 = enable 1 =disable
+      4        Cache Enable                                                            0.
+               O =Cache is disabled and DRAM burst mode is enabled
+               1 = Cache enable and DRAM burst mode is disabled
+     3-2       Cache Size                                                              00
+               ~2 Cache Size
+               00     64KB
+               0 1 128KB
+               1 0 256KB
+               1 1 512KB
+       1       Secondary Cache Read Burst Cycles Control                               0
+               O = 3 - 1 - 1 - 1 Cycle
+               1 = 2 - 1 - 1 - 1 C__y_cle
+      0        Cache Write Wait State Control                                          0
+               O = 1 Wait state
+               1 = O Wait state
+
+
+
+
+                                             20
+     OPTi, Inc .. 2525 Walsh Avenue, Santa Clara. CA 95051   (408) 980-8178   FAX: 408-980-8860
+11111
+ Shadow RAM Control Register I
+ Index: 22h
+
+
+     BIT                                 FUNCTION                                 DEFAULT
+      7        ROM(FOOOO-FFFFFh) Enable                                               1
+               1 =read from ROM, write to DRAM. ROMCS# is generated
+               during read access only.
+               0 = read/write on DRAM and DRAM is write::Qrotected
+      6        Shadow RAM at DOOOOh - DFFFFh Area                                     0
+               0 = Disable 1 = Enable
+      5        Shadow RAM at EOOOOh - EFFFFh Area                                     0
+               0 = Disable shadow RAM, enable ROM CS# . The EOOOO-
+               EFFFFh ROM is defaulted to reside on XO bus.
+               1 =Enable shadow RAM and disable ROMCS#_g_eneration
+      4        Shadow RAM at DOOOOh - DFFFFh Area Write Protect                       0
+               Enable
+               0 = Disable 1 = Enable
+      3        Shadow RAM at EOOOOh - EFFFFh Area Write Protect                       0
+               Enable
+               O = Disable 1 = Enable
+      2        Hidden refresh enable (without holding CPU}                            1
+               1 = Disable O = Enable.
+               *Please see the followin_g_ note.
+      1        Unused Bit                                                             0
+      0        Slow Refresh Enable (4 times slower than the normal refresh)           0
+               0 = Disable 1 = Enable
+
+ Note: Hidden refresh must be disabled if 4MX1 or 1 MX4 bit DRAM are used.
+
+
+
+
+                                             21
+     OPTi, Inc., 2525 Walsh Avenue, Santa Clara, CA 95051   (408) 980-8178   FAX: 408-980-8860
+11111
+ Shadow RAM Control Register II
+ Index: 23h
+
+
+     BIT                                  FUNCTION                                DEFAULT
+      7         Shadow RAM at ECOOOh-EFFFFh area                                     0
+                O = Disable 1 = Enable
+      6         Shadow RAM at E8000h-EBFFFh area                                     0
+                O = Disable 1 = Enable
+      5         Shadow RAM at E4000h-E7FFFh area                                     0
+                O = Disable 1 = Enable
+      4         Shadow RAM at EOOOOh-E3FFFh area                                     0
+                O = Disable 1 = Enable
+      3         Shadow RAM at DCOOOh-DFFFFh area                                     0
+                O = Disable 1 = Enable
+      2         Shadow RAM at D8000h-DBFFFh area                                     0
+                O = Disable 1 = Enable
+      1         Shadow RAM at D4000h-D7FFFh area                                     0
+                O = Disable 1 = Enable
+      0         Shadow RAM at DOOOOh-D3FFFh area                                     0
+                0 = Disable 1 = Enable
+
+ DRAM Control Register I
+ Index: 24h
+
+
+     BIT                                  FUNCTION                                DEFAULT
+      7         0 = 256 K DRAM mode                                                  1
+                1 = 1M and 4 M DRAM mode. See the following table
+     6-4        DRAM types used for bankO and bank1. See the following              000
+                table
+      3         Unused                                                               0
+     2-0        DRAM types used for bank 2 and bank 3. See the following            111
+                table.
+
+
+
+
+                                             22
+      OPTi, Inc., 2525 Walsh Avenue, Santa Clara, CA 95051   (408) 980-8178 FAX: 408-980-8860
+1111
+    Bits                   Banko                    Bank 1
+   7654
+   0000                     256K                         x
+   0001                     256K                     256K
+   00 10                    256K                         1M
+   0011                       x                          x
+   01XX                       x                          x
+   1000                       1M                         x
+   1001                       1M                         1M
+   10 10                      1M                         4M
+   10 11                      4M                         1M
+   1100                       4M                         x
+   1 10 1                     4M                         4M
+   111   x                     x                         x
+
+     Bits                   Bank2                   Bank3
+    7210
+    xooo                      1M                         x
+    X001                      1M                         1M
+    x010                       x                         x
+    x011                      4M                         1M
+    X100                      4M                         x
+    x101                      4M                         4M
+    x11  x                     x                         x
+
+
+
+
+                                         23
+  OPTi, Inc., 2525 Walsh Avenue, Santa Clara, CA 95051    (408) 980-8178 FAX: 408-980-8860
+1111
+ DRAM Control Register II
+ Index: 25h
+
+
+     BIT                                   FUNCTION                                  DEFAULT
+     7-6        Read cycle wait state                                                   11
+                7 6 Additional wait States
+                00      Not used
+                01      0
+                10      1
+                11      2
+                Note: Base wait states is "3".
+     5-4        Write cycle wait state                                                  11
+                ~ 4 Additional wait states
+                0 0        0
+                0 1        1
+                1 0        2
+                1 1        3
+                Note: Base wait states is "2".
+      3         Fast decode enable. This function may be enabled in 20/25                0
+                Mhz operation to speed up the DRAM access.
+                O = Disable fast decode, DRAM base wait states is not
+                changed
+                1 = Enable fast decode, DRAM base wait states is
+                decreased by 1
+                This bit is automatically disabled even when it is set to 1 when
+                bit 4 of Index r~ister 21 hlcache enable bitl is enabled.
+       2        unused                                                                    0
+      1-0       ATCLK selection, bit O will reflect the BCLKS pin status and          00 or 01
+                bit 1 will be set to 0 when 82C493 is reset. Bit O is O if BCLKS   depending on
+                is tied to low and 1 if BCLKS is high.                               the low or
+                1 Q ATCLK selection                                                 high state of
+                0 0       ATCLK = CLKl/6(Default)                                      BCLKS
+                0 1       ATCLK = CLKl/4(Default)                                   respectively
+                1 0       ATCLK = CLKl/3                                           during power
+                1 1       ATCLK = CLK21/5                                             on reset
+
+
+
+
+                                              24
+      OPTi, Inc .. 2525 Walsh Avenue, Santa Clara. CA 95051   (408) 980-8178   FAX: 408-980-8860
+1111
+ Shadow RAM Control Register Ill
+ Index: 26h
+
+
+     BIT                                FUNCTION                                DEFAULT
+      7        Not used                                                             0
+      6        Shadow RAM copy enable for address area COOOOh-CFFFFh                0
+               0 = Read/write at AT bus
+               1 = Read from AT bus and write into shadow RAM
+      5        Shadow write protect at address area COOOOh-CFFFFh                   0
+               O = Write protect disable .
+               1 = Write ~rotect enable
+      4        Shadow RAM enable at COOOOh- CFFFFh area                             0
+                O = Disable 1 = Enable
+      3        Enable shadow RAM at CCOOOh-CFFFF area                               0
+                O = Disable 1 = Enable
+      2        Enable shadow RAM at C8000h-CBFFF area                               0
+               O = Disable 1 = Enable
+      1        Enable shadow RAM at C4000h-C7FFFh area                              0
+               O = Disable 1 = Enable
+      0        Enable shadow RAM at COOOOh-C3FFFh area                              0
+                O = Disable 1 = Enable
+
+
+
+
+                                             25
+     OPTi, Inc., 2525 Walsh Avenue, Santa Clara, CA 95051   (408) 980-8178 FAX: 408-980-8860
+11111
+ Control Register 3
+ Index: 27h
+
+
+      BIT                                     FUNCTION                               DEFAULT
+      7             Enable NCA# pin to low state, O=Disable 1 =Enable                    1
+     6-5            Unused                                                              00
+      4             Video BIOS at COOOOh-C8000h area non-cacheable                       1
+                    O = Cacheable 1 = Non-cacheable
+     3-0            Cacheable address range for local memory, see following            0001
+                    table
+
+ Note. Memory area at 640K-1 M is defaulted to be non-cacheable.
+
+             Bits               Cachable Address range
+            3210
+        0000                          0 - 64 Mb
+        0001                           0 -4 Mb
+        00 10                          0 - 8 Mb
+        00 11                         0 - 12 Mb
+        0100                          0 - 16 Mb
+        0101                          0 - 20 Mb
+        0 1 10                        0 - 24 Mb
+        0111                          0 - 28 Mb
+        1000                          0 - 32 Mb
+        1001                          0 - 36 Mb
+        10 10                         0 - 40 Mb
+        1011                          0 - 44 Mb
+        1100                          0 - 48 Mb
+        1101                          0 - 52 Mb
+        1110                          0 - 56 Mb
+        1111                          0 - 60 Mb
+
+ Note: If total memory is 1 Mb or 2Mb, the cacheable range is O - 1 or 0 - 2Mb respectively
+ and independent of the value of bit 0-3 of index register 27h ..
+
+
+
+
+                                                  26
+      OPTi, Inc .. 2525 Walsh Avenue, Santa Clara, CA 95051    (408) 980-8178   FAX: 408-980-8860
+11111
+ Non-cachable Block 1 Register
+ Index: 28h
+
+ This register is used in conjunction with Index 29h register to define a non-cacheable block.
+ The starting address for the Non-Cacheable Block must have the same granularity as the
+ block size. For example, if a 512 KB non-cacheable block is selected, its starting address is
+ a multiple of 512 KB; consequently, only address bits of A19-A23 are significant, A16-A18
+ are "don't care".
+
+
+      BIT                                    FUNCTION                                   DEFAULT
+      7-5         Size of non-cachable memory block 1, See followir}g_ table              100
+      4-2         Unused                                                                  000
+      1-0         Address bits of A25 and A24 of non-cachable memo!1_ block 1              00
+
+     765           Block Size
+     000              64K
+     001              128K
+     010              256K
+     011              512K
+     1xx            Disabled
+
+
+ Non-cachable Block 1 Register II
+ Index: 29h
+
+
+      BIT                                  FUNCTION                                     Default
+      7-0         Address bits A23-A 16 of non-cachable memor block 1                  0001xxxx
+
+
+                                    Valid Starting Address Bits
+
+   Block Size      A23    A22     A21     A20       A19      A18      A17    A16
+       64K          v      v       v        v        v        v        v      v
+      128K          v      v       v        v        v        v        v      x
+      256K          v      v       v        v        v        v        x      x
+      512K          v      v       v        v        v        x        x      x
+
+
+
+ x = Don't Care
+ V =Valid Bit
+
+
+
+
+                                              27
+      OPTi. Inc., 2525 Walsh Avenue, Santa Clara, CA 95051         (408) 980-8178 FAX: 408-980-8860
+11111
+ Non-cachable Block 2 Register I
+ Index: 2Ah
+
+ This register is used in conjunction with Index 2Bh register to define a non-cacheable block.
+ The starting address for the Non-Cacheable Block must have the same granularity as the
+ block size. For example, if a 512 Kb non-cacheable block is selected, its starting address is
+ a multiple of 512 Kb; consequently, only address bits of A19-A23 are significant, A16-A18 are
+ "don't care".
+
+
+      BIT                                   FUNCTION                                     DEFAULT
+      7-5         Size of non-cacheable memorY_ block 1 , See following table              100
+      4-2         Unused                                                                   000
+      1-0         Address bits of A25 and A24 of non-cachable memory block 1                00
+
+     765            Block Size
+     000              64K
+     001             128K
+     0 10            256K
+     011             512K
+     1 xx           Disabled
+
+
+
+ Non-cachable Block 1 Register II
+ Index: 2Bh
+
+
+      BIT         FUNCTION                                                                Default
+      7-0         Address bit A23-A 16 of non-cachable memor block 1                    0001xxxx
+
+
+                                   Valid Starting Address Bits
+
+   Block Size      A23     A22   A21     A20        A19     A18      A17     A16
+      64K           v        v    v        v        v        v        v       v
+      128K          v        v    v        v        v        v        v       x
+      256K          v        v    v        v        v        v        x       x
+      512K          v        v    v        v        v        x        x       x
+
+
+
+ x = Don't Care
+ V =Valid Bit
+
+
+
+
+                                               28
+      OPTi. Inc., 2525 Walsh Avenue, Santa Clara. CA 95051        (408) 980-8178   FAX: 408-980-8860
+11111
+ 5 82C392 DATA BUFFER CONTROLLER(DBC)
+
+ The DBC is a 160-pin PFP (Plastic Flat Package) device. The DBC integrates data buffers,
+ AT bus control, decode logic for an external keyboard controller, reset logic, and clock
+ generation logic .. It performs the following functions:
+
+     o data bus conversion
+     o parity generation/detection
+     o AT-BUS direction control
+     o reset logic
+     o clock source for 206 and 8042
+     o chip select for keyboard controller and RTC
+     o speaker control
+     o port B, 70H and NMI Logic
+     o floating-point coprocessor interface
+     o keyboard reset and gate A20 emulation logic
+
+ 5.1 Data Bus Conversion
+
+ The DBC performs data bus conversion when the CPU accesses 16- or 8-bit devices through
+ 32- and 16-bit instructions. The DBC also handles OMA and AT bus master cycles that
+ transfer data between local DRAM or cache memory and locations on the AT bus. The DBC
+ provides all of the signals necessary to control external bidirectional data buffers.
+
+ 5.2 Parity Generation/Detection Logic
+
+ During local DRAM write cycles, the DBC generates a parity bit for each byte of write data
+ from the processor. Parity bits are stored into dedicated local DRAM. Within the timing
+ window of "PCKEN" during a DRAM read, the DBC checks if each parity bit is correct for its
+ corresponding data byte. If it detects incorrect parity, the DBC generates a parity error. The
+ parity error will cause the NMI interupt if parity check bit( bit 5 of index 21 h) is set to 1.
+
+
+ 5.3 Clock Generation and Reset Control
+
+ The DBC provides the clock sources for timer 1 of the 80C206 and for the 8042 keyboard
+ controller to reduce the components count. The clocks are derived from 14.3 Mhz. The
+ OOC206 clock is 1.19 Mhz. (14.3Mhz divided by 12). The 8042 clock is 7.15 Mhz. (14.3Mhz
+ divided by 2.) The DBC also monitors both the PWGD# (Powergood) signal from power
+ supply and the reset signal, RST1. from the reset switch. The DBC routes RST1 to the
+ SYSC to generate the "cold reset". The DBC can also supply the RST2 keyboard controller
+ "warm reset" sequence, or RST2 can come from the keyboard controller. The reset
+ sequence is much faster when the DBC supplies RST2.
+
+
+
+
+                                              29
+      OPTi, Inc., 2525 Walsh Avenue, Santa Clara, CA 95051    (408) 980-8178 FAX: 408-980-8860
+11111
+ 5.4 Floating-Point Coprocessor Interface
+
+ The DBC monitors NPERR# and NPBUSY# to provide support for 387 and 3167 floating-
+ point coprocessors. (The 486 has an internal coprocessor and does not need this support.)
+ A coprocessor asserts NPERR# during a power on reset. to indicate it is there .. The
+ coprocessor asserts NPBUSY# while executing a floating-point calculation, and asserts
+ READY# when it is finished. If NPBUSY# is active and a coprocessor error occurs (the
+ coprocessor asserts NPERR#), the DBC latches NPBUSY# and generates INT13. INT13
+ also come from WINT# from the Weitek 3167 coprocessor. Latched BUSY# and INT13 can
+ be cleared by a 1/0 port FOH write command.
+
+
+
+
+ 6 82C392 (DBC) PIN DESCRIPTIONS
+
+ 6.1 Clock and Reset
+
+
+      Name             Type         Pin No                         Descr.!f.tion
+     OSCX1              I             43        14.3 Mhz osc. i~ut.
+     OSCX2              0             42        14.3 Mhz osc. ou!Q_ut.
+      osc               0             82        14.3 Mhz osc. Ou!Q_ut to AT bus.
+     OSC12              0             83        1.19 Mhz ou!Q_ut to 206
+      OSC2              0             85        14.3 Mhz/2 ou!Q_ut for 8042 clock.
+     OSC2#              0             84        14.3 Mhz/2 inverted ou!Q_ut for 8042 clock.
+     PWGD#              I             16        Power Good Status from power supply. It is
+                                                buffered throimh a Schmitt-tr_igger__gate.
+     RSTSW              I             4         Reset Switch Input. It is buffered through a
+                                                Schmitt-trigger__gate.
+     RST1#              0             10        Power-up or cold Reset signal derived from
+                                                PWGD# or RSTSW.
+
+
+
+
+                                              30
+      OPTi, Inc., 2525 Walsh Avenue, Santa Clara, CA 95051   (408) 980-8178 FAX: 408-980-8860
+11111
+ 6.2 Address and Data Buses
+
+
+      Name             ~           Pin No                         Descr_!E!ion
+    D_{_31 :231          B         79-71       CPU Data Bus
+    D_{_22:141_          B         69-61       CPU Data Bus
+     DJ_13:~             B         59-51       CPU Data Bus
+      DJ_4:Ql            B         49-45       CPU Data Bus
+      Al9:0l              I       119-110      Buffered AT SA_{_9:0laddress lines.
+    SBHE#                 I         25         B_yte H.!g_h Enable from AT bus and SYSC.
+    BE(3:0)#              I        39-36       CPU Byte Enables; used for data bus parity
+                                               checkirig_ of valid b_yte.
+    MDJ31 :26_1          B        156-151      Local DRAM Data Bus.
+    MDJ25:171            B        149-141      Local DRAM Data Bus
+    MDJ16:81             B        139-131      Local DRAM Data Bus
+     MDJ.7:01            B        129-122      Local DRAM Data Bus
+     MPJ.3:01            B       2,159-157     Local DRAM data bus Pari!Y_ Bits.
+     XD(7:41_            B        104-101      XO Data Lines 7-4.
+     XDJ3:01             B         99-96       XD Data Lines 3-0.
+
+
+
+
+ 6.3 Bus Arbitration
+
+
+      Name             "!}tp_e     Pin No                         Descr.!E.tion
+      HLDA                I          32        Hold Acknowledge from CPU in response to
+                                               hold r~uest.
+     AEN8#                I         28         8-bit OMA C_ycle Indication.
+     AEN16#               I         27         16-bit OMA C_ycle Indication.
+      AEN#               0          106        DMA C_ycle Indication.
+    MASTER#                I        26         Master C_y_cle Indication.
+     RFSH#                I         24         Refresh C_y_cle Indication.
+
+
+
+
+                                             31
+     OPTi, Inc., 2525 Walsh Avenue, Santa Clara, CA 95051   (408) 980-8178 FAX: 408-980-8860
+11111
+ 6.4 SYSC Interface
+
+
+     Name             l)tJ!e       Pin No                             Description
+     INTA#               I           23            lnterru_Q_t Acknowledge; for data flow direction.
+    ROMCS#               I           22            System BIOS ROM Chip Select,, used to
+                                                   direct the data bus flow.
+     LMEN#              I             21           Local Memory Enable. Indicate the current
+                                                   cycle is local DRAM Access. It is used to
+                                                   control the bus direction.
+      WR#               I             31           CPU Write or Read C_ycle Indication.
+      OLE               I             17           DRAM Read Data Latch, used to latch the
+                                                   data for pari!Y_ checki~
+     OWE#                I            3            DRAM Write Enable, to enable DRAM write.
+    ATCYC#               I            15           AT Cycle Indication. If asserted, the current
+                                                   access is AT bus 91_cle.
+    PC KEN#              I            18           Parity Checking Enable, to enable the Parity
+                                                   error signal if any.
+     Ml016               I            30            16-bit slave devices access indication. It is
+                                                   used to control the data flow i:>ath.
+     IOWR#               I            11           AT bus 1/0 Write Command.
+      IORD#              I            12            AT bus 1/0 Read Command.
+    MEMRD#               I            14            AT bus Memory_Read Command.
+    MEMWR#               I            13            AT bus Memory Write Command.
+
+
+ 6.5 Floating-Point Coprocessor Interfaces
+
+ *Note these signals won't be necessary if 486 processor is used.
+
+
+       Name            Type         Pin No                             Descr~tion
+
+    NPERR#               I            87           Error from the coprocessor. It is an active low
+                                                   input indicating that an unmasked error
+                                                   happens.
+    NPBUSY#              I            88           Busy from the coprocessor to indicate a
+                                                   CQQrocessor instruction is under execution.
+     NPRST              0             89           Reset Numeric Processor
+     BUSY#              0             34           Latched Coprocessor Busy Output to 80386
+                                                   to indicate a NPBUSY# or NPERR# signals
+                                                   has occurred.
+    BSYTOG#              I             9           Busy Toggled Control; used to toggle the
+                                                   BUSY# signal when the coprocessor is not
+                                                   installed.
+
+
+
+
+                                              32
+      OPTi, Inc., 2525 Walsh Avenue, Santa Clara, CA 95051     (408) 980-8178 FAX: 408-980-8860
+1111
+     Name            T_ype         Pin No                       DescriQ_tion
+     INT13             0             91        Coprocessor Interrupt; is an active high
+                                               output. It is an interrupt request from numeric
+                                               coprocessor and connected to IR013 of
+                                               interru_m controller.
+      ERR#              0            33        Error signal to 80386. It reflect the NPERR#
+                                               signal during the period from RST 4# active to
+                                               first ROMCS#.
+      WINT               I           92        Weitek 3167 Co:2_rocessor lnterru_m Re_g_uest.
+     PREQI               I           90        80387 co_Qrocessor Re_g_uest ln_Qut.
+     PREOO              0            35        Numeric Processor Re_g_uest to 80386.
+
+
+
+
+ 6.6 Miscellaneous Signals
+
+
+      Name            T..l'.E!_    Pin No                         Descrij>tion
+    KBDCS#              0           105         K~board Controller ChiQ Select.
+      NMI               0           95         Non-maskable Interrupt; due to parity error
+                                               from local memolJ"._ or AT bus channel check.
+     SPKD               0             8        Speaker Data Output, derived from the
+                                               function of OUT2 and _Q_Ort 61 H bit1.
+     GATE2              0            93        Timer 2 Gate Control.
+     ASRTC              0            94        Real Time Clock Address Strobe.
+     CHCK#               I           29        AT-BUS Channel Check.
+      OUT2              0            44        Timer 2 ou!Q_ut.
+      FAST               I            5        FAST is an active high input which will enable
+                                               the emulation of Fast GATEA20 and Reset
+                                               Control Enable.
+    EGTA20              0             7        GateA20 output. It is generated by emulating
+                                               Ke_yboard GATEA20.
+    ERST2#              0             6        RST2# output. It is generated by emulating
+                                               ke_yboard RST2#.
+      M16#              0            19        Master Access Local DRAM invalidation.
+     SDEN#              0            107       MD-bus to SD-bus Buffer Enable S!.g_nal.
+     SDIR1#             0            109       MD_l7:0l to SD17:0l Buffer Direction Control.
+     SDIR2#             0            108       MD{15:8) to SD(15:8) Buffer Direction
+                                               Control.
+
+
+
+
+                                             33
+     OPTi, Inc., 2525 Walsh Avenue, Santa Clara, CA 95051   (408) 980-8178 FAX: 408-980-8860
+11111
+ 6.7 Ground and VCC
+
+
+      Name               Type                                   Pin No                        Descr~ion
+       vcc                I                               20,60,86,100,140                        +5V
+       GND                I                   1,40,41,50,70,80,81, 120, 121, 130, 150, 160   VSS or Ground
+
+
+
+
+ 7 82C392(DBC) REGISTERS DESCRIPTIONS
+
+ Control Register Index 21 h(write only)
+
+         Bit 7-4 is a duplication of control register index 21 h of 82C491.
+         Bit 3-0 are not used.
+
+
+ 1/0 Port 60h
+
+ Port 60h and 64h emulate the registers of a keyboard controller, allowing the generation of a
+ fast gate A20 signal. The sequence here is BIOS transparent, and there is no need for the
+ modification of the current BIOS. The fast gate A20 generation is enabled when the "Fast"
+ pin is wired high. The sequence involves writing data D1 h to port 64h, then writing data 02h
+ to port 60h.When "Fast" is asserted, 1/0 port 60h indicates the status of a system reset (bit
+ 0) and gate A20 (bit 1).
+
+
+ 110 Port 61 h(Port B)
+
+                  Bit            Read/Write                        Function
+                   0            R/W                Timer 2 Gate.
+                   1            R/W                ~eaker Ou!Q_ut Enable.
+                   2            R/W                Pari!_l Check Enable.
+                   3            R/W                1/0 Channel Check Enable.
+                   4            R                  Refresh Detect.
+                   5            R                  Timer OUT2 Detect.
+                   6            R                  1/0 Channel Check.
+                   7            R                  S_y_stem Pari!.Y_ Check.
+
+
+
+
+                                              34
+      OPTi. Inc., 2525 Walsh Avenue, Santa Clara, CA 95051               (408) 980-8178 FAX: 408-980-8860
+11111
+ 1/0 Port 64h
+
+ 1/0 port 64h emulate the register inside a keyboard controller by generating a fast reset
+ pulse. Writing data FEh to port 64h asserts the reset pulse. The pulse is generated
+ immediately after the 1/0 write if bit 6 of Index 21 h is set, otherwise the pulse is asserted 2us
+ after the write.
+
+ Port 70h
+
+                Bit          Read/write                Function                  Polari
+                7              R/W                   NMI Enable                     0
+
+
+
+
+                                              35
+      OPTi, Inc., 2525 Walsh Avenue, Santa Clara, CA 95051        (408) 980-8178 FAX: 408-980-8860
+82C493/82C392 Absolute Maximum Ratings
+
+~            Description                        Min          Max           .u.nn.s
+Vee          Supply Voltage                                   6.5          v
+Vi           Input Voltage                       -0.5         5.5           v
+Vo           Output Voltage                      -0.5         5.5           v
+Top          Operating Temperature               -25          70            c
+Tstg         Storage Temperature                 -40          125           c
+Note : Permanent device damage may occur if Absolute Maximum Ratings are exceeded.
+
+
+
+
+82C493/82C392 DC Characteristics
+Temperature: Oc to 70c, Vee: 5V +/- 5%
+
+~            Description                         Min          Milx          .u.nn.s
+Vil          Input Low Voltage                   -0.5         0.8           v
+Vih          Input High Voltage                  2.0          5.5           v
+Vol          Output Low Voltage                               0.4           v
+             (lol = 4.0 mA)
+Voh          Output High Voltage                 2.4                        v
+             (loh = -1.6 mA)
+
+Iii          Input Leakage Current                            10            uA
+             (Vin= Vee)
+loz          Tristate Leakage Current                         10            uA
+
+Cin           Input Capacitance                               20            pf
+Cout          Output Capacitance                              20            pf
+
+Ice           Power Supply Current                            80            mA
+
+
+
+
+                                             ..:Ito
+            OPTi Inc. 2525 Walsh Avenue, Santa Clara, CA 95051
+82C493/82C392 AC Characteristics (20/25MHz)                              Preliminary
+Temperature: OC to 70C, Vee: 5V +/- 5%
+
+Sym    Description                                           Min   Typ   Max   Units
+
+t101   NPRST active delay from CLKIJ\                              10          ns
+t102   NPRST inactive delay from CLKIJ\                            10          ns
+t103   CPURST active delay from CLKIJ\                             10          ns
+t104   CPURST inactive delay from CLKIJ\                           10          ns
+
+t201   GAS* active to RAS* 0,3 active delay                  10          20    ns
+t202   GAS* inactive to RAS*0,3 inactive delay               10          20    ns
+t203   RAS*0,3 active to RAS*1,2 active delay                      15          ns
+t204   RAS*0,3 inactive to RAS*1,2 inactive delay                  15          ns
+
+t301   0(31 :0) valid to XD(7:0) valid delay                 8           20    ns
+t302   0(31 :0) valid to MP(3:0) valid delay                 8           18    ns
+t303   0(31 :0) invalid to XD(7:0) invalid delay             8           18    ns
+t304   0(31 :0) invalid to MP(3:0) invalid delay             8           18    ns
+t305   0(31 :0) valid to MD(31 :0) valid delay               8           18    ns
+t306   0(31 :0) invalid to MD(31 :0) invalid delay           8           18    ns
+t307   MD(31 :0) valid to 0(31 :0) valid delay               8           18    ns
+t308   MD(31 :0) invalid to 0(31 :0) invalid delay           8           18    ns
+t309   MD(31 :0) valid to MP(3:0) valid delay                8           18    ns
+t310   M~(31 :0) invalid to MP(3:0) invalid delay            8           18    ns
+t311   MD(31 :0) and MP(3:0) setup time to OLE inactive      6                 ns
+t312   MD(31 :0) and MP(3:0) hold time to OLE inactive       6                 ns
+t313   A(9:0) to KBDCS* active delay                         5           30    ns
+t314   A(9:0) to KBDCS* inactive delay                       5           30    ns
+t315   ORD* active to MD(31 :0) valid delay                  6           20    ns
+t316   ORD* inactive to MD(31 :0) invalid delay              6           20    ns
+t317   ORD* active to D(31 :0) valid delay                   6           20    ns
+t318   ORD* inactive to 0(31 :0) invalid delay               6           20    ns
+t319   MD(15:0) setup time to IORD*/MEMRD*J\                 6                 ns
+t320   MD(15:0) hold time to IORD*/MEMRD*J\                  6                 ns
+t321   MD(15:8) valid to MD(7:0) valid delay                 8           18    ns
+t322   MD(15:8) invalid to MD(7:0) invalid delay             8           18    ns
+
+t401   CPU address and status valid to CAOE* active delay          18    23    ns
+t402   CPU address and status valid to BEOE* acitve delay          18    23    ns
+t403   CLKIJ\ to BEOE* /BOOE* inactive delay                       12    18    ns
+t404   CLKIJ\ to BOOE* active delay                                12    18    ns
+t405   CLKIJ\ to BDIR* inactive delay                              15    22    ns
+t406   CPU address and status valid to BDIR*" active delay         16    23    ns
+t407   CLKIJ\ to BADY* active delay                                18    25    ns
+t408   CLKIJ\ to BROY* inactive delay                              18    25    ns
+t409   CPU address and status valid to BECS*/BOCS*                 15    20    ns
+       inactive delay
+t410   CPU address and status valid to BECS*/BOCS*                 15    20    ns
+       active delay
+t411   CLK21v to CAWE* active delay                                14    18    ns
+t412   CLK21v to CAWE* inactive delay                              12    17    ns
+
+                                               d7
+            OPTi Inc. 2525 Walsh Avenue, Santa Clara, CA 95051
+Sym     Description                                    Min   Typ      Max   Units
+
+t413    CLKlv to CAWE* active delay                          12       18    ns
+t414    CLKlv to CAWE* inactive delay                        12       18    ns
+t415    CLK21v to DTYWE* active delay                        14       18    ns
+t416    CLK21v to OTYWE* inactive delay                      12       17    ns
+t417    CLKlv to OTYWE* active delay                         12       17    ns
+t418    CLKlv to DTYWE* inactive delay                       12       17    ns
+1419/   CLKI" to ROY* active delay                           18       25    ns
+t421
+t420/   CLKI" to ROY* inactive delay                         18       25    ns
+t422
+t423    CLKlv to T AGWE* active delay                        12       18    ns
+t424    CLKlv to T AGWE* inactive delay                      12       18    ns
+t425    CPU address and status valid to BEA3/BOA3            13       19    ns
+        active delay
+t426    CLKI" to BEA3/BOA3 inactive delay                    13       19    ns
+t427    CLKI" to BDIR* active delay                          16       22    ns
+t428    CLKI" to BDIR* inactive delay                        16       22    ns
+t429    CLKI" to GAS* active delay                     10             16    ns
+t430/   CLKI" to GAS* inactive delay                   11             18    ns
+t439/
+t442
+t431    CLKI" to OLE active delay                      10             16    ns
+t432    CLKI" to OLE inactive delay                    11             18    ns
+t433    CLt<I" to RAS* inactive delay                  8              16    ns
+t434    CLKI" to RAS* active delay                     12             20    ns
+t435    CLKI" to column address valid delay            8              16    ns
+t436    CLKI" to row address hold time                 8              16    ns
+t437    CLKI" to OWE* active delay                     11             18    ns
+t438    CLKI" to OWE* inactive delay                   8              16    ns
+t440    RAS* precharge time                                  4CLKI
+t441    GAS* precharge time                                  1 CLKI
+t443    CLKI" to row address valid time
+1444    CAS* active to OLE active delay                6              18    ns
+1445    CAS-* inactive to OLE inactive delay           6              18    ns
+t446    CLKI" to LMEN* active delay                    5              22    ns
+t447    CLKI" to LMEN* inactive delay                  5              22    ns
+t448    MAD* active to BEGS* active delay              8     15       20    ns
+t449    MAD* inactive to BEGS* inactive delay          7     15       21    ns
+t450    MAD* active to BOCS* active delay              8     15       20    ns
+1451    MAD* inactive to BOGS* inactive delay          8     14       20    ns
+1452    MRD* active to CAOE* active delay              7     15       20    ns
+t453    MAD* inactive to CAOE* inactive delay          7     15       21    ns
+1454    MRD* active to BEOE*/BOOE* active delay        8     14       19    ns
+t455    MRD* inactive to BEOE*/BOOE* inactive delay    8     14       19    ns
+1456    MRD* active to BDIR* active delay              7     14       20    ns
+1457    MAD* inactive to BDIR* inactive delay          8     15       21    ns
+t458    MAD* active to RAS* active delay               8              16    ns
+1459    MAD* inactive to RAS* inactive delay           8              16    ns
+1460    MRD* active to GAS* active delay               10             20    ns
+t461    MRD* inactive to GAS* inactive delay           8              18    ns
+t462    MAD* active to column address valid delay      10             20    ns
+t463    MAD* active to row address hold time           10             20    ns
+
+                                              r.f,f?
+             OPTi Inc. 2525 Walsh Avenue, Santa Clara, CA 95051
+Sym      Description                                        Min   Typ   Max   Units
+
+t464     MWE* active to CAWE* active delay                  7     15    20    ns
+t465     MWE* active to OWE* active delay                   8           18    ns
+t466     MWE* inactive to OWE* inactive delay               8           18    ns
+
+t501     BCLKv to ALE active delay                          5           30    ns
+t502     BCLKA to ALE inactive delay                        5           30    ns
+t503     BCLKv to CMD active delay                          5           30    ns
+t504     BCLKA to CMD inactive delay                        5           30    ns
+t505     BCLKA to CMD active delay                          5           30    ns
+t506     M16* to BCLKA setup time                           8                 ns
+t507     M16* to BCLKA hold time                            8                 ns
+t508     1016* to BCLK A setup time                         10                ns
+t509     1016* to BCLKA hold time                           10                ns
+t510     NOWS* to BCLKA setup time                          10                ns
+t511     NOWS* to BCLKA hold time                           10                ns
+t512     CHRDY to BCLKA setup time                          12                ns
+t513     CHRDY to BCLKA hold time                           12                ns
+t515     ATCLKv to HOLD active delay                        5           16    ns
+t516     ATCLKA to HOLD inactive delay                      5           16    ns
+t517     ATCLKA to REF* active delay                        8           30    ns
+t518     ATCLKA to REF* inactive delay                      8           30    ns
+t519     ATCLKA to MEMRD* active delay                      5           25    ns
+t520     ATCLKA to MEMRD* inactive delay                    5           25    ns
+t521     HR91 setup time to ATCLKA                          10                ns
+t522     HRQ1 hold time to ATCLKA                           10                ns
+t523     HLDA active to HLDA1 active delay                  8           18    ns
+t524     HLDA inactive to HLDA 1 inactive delay             8           18    ns
+t525     ATCYC* active to SDIR1*,SDIR2* active delay        5           25    ns
+t526     ATCYC* inactive to SDIR1 *,SDIR2* inactive delay   5           25    ns
+t527     ATCYC* active to SDEN* active delay                5           25    ns
+t528     ATCYC* inactive to SDEN* inactive delay            5           25    ns
+
+
+
+
+Notes:
+         1.     A means rising edge.
+         2.     v means falling edge.
+
+
+
+
+                                                 ..59
+              OPTi Inc. 2525 Walsh Avenue, Santa Clara, CA 95051
+82C493/82C392 AC Characteristics (33MHz}                                Preliminary
+Temperature: OC to 70C, Vee: 5V +/- 5%
+
+
+Sym    Description                                          Min   Typ   Max   Units
+
+t101   NPRST active delay from CLKI"                              10          ns
+t102   NPRST inactive delay from CLKI"                            10          ns
+t103   CPURST active delay from CLKI"                             10          ns
+t104   CPURST inactive delay from CLKI"                           10          ns
+
+t201   CAS" active to RAS* 0,3 active delay                 10          20    ns
+t202   CAS* inactive to RAS*0,3 inactive delay              10          20    ns
+t203   RAS*0,3 active to RAS*1,2 active delay                     15          ns
+t204   RAS"0,3 inactive to RAS"1 ,2 inactive delay                15          ns
+
+t301   0(31 :0) valid to XD(7:0) valid delay                8           20    ns
+t302   0(31 :0) valid to MP(3:0) valid delay                8           18    ns
+t303   0(31 :0) invalid to XD(7:0) invalid delay            8           18    ns
+t304   0(31 :0) invalid to MP(3:0) invalid delay            8           18    ns
+t305   0(31 :0) valid to MD(31 :0) valid delay              8           18    ns
+t306   0(31 :0) invalid to MD(31 :0) invalid delay          8           18    ns
+t307   MD(31 :0) valid to 0(31 :0) valid delay              8           18    ns
+t308   MD(31 :0) invalid to 0(31 :0) invalid delay          8           18    ns
+t309   MD(31 :0) valid to MP(3:0) valid delay               8           18    ns
+t310   MD(31 :0) invalid to MP(3:0) invalid delay           8           18    ns
+t311   MD(31 :0) and MP(3:0) setup time to OLE inactive     6                 ns
+t312   MD(31 :0) and MP(3:0) hold time to OLE inactive      6                 ns
+t313   A(9:0) to KBDCS" active delay                        5           30    ns
+t314   A(9:0) to KBOCS" inactive delay                      5           30    ns
+t315   ORD* active to MD(31 :0) valid delay                 6           20    ns
+t316   ORD* inactive to MD(31 :0) invalid delay             6           20    ns
+t317   ORD* active to 0(31 :0) valid delay                  6           20    ns
+t318   ORD* inactive to 0(31 :0) invalid delay              6           20    ns
+t319   MD(15:0) setup time to IORD*/MEMRD*"                 6                 ns
+t320   MD(15:0) hold time to IORD*/MEMRD*"                  6                 ns
+t321   MD(15:8) valid to MD(7:0) valid delay                8           18    ns
+t322   MD(15:8) invalid to MD(7:0) invalid delay            8           18    ns
+
+t401   CPU address and status valid to CAOE* active delay         13    18    ns
+t402   CPU address and status valid to BEOE* acitve delay         14    19    ns
+t403   CLKI" to BEOE* /BOOE* inactive delay                       12    18    ns
+t404   CLKI" to BOOE* active delay                                12    18    ns
+t405   CLKI" to BDIR* inactive delay                              12    18    ns
+t406   CPU address and status valid to BDIR* active delay         13    19    ns
+t407   CLKI" to BROY* active delay                                12    17    ns
+t408   CLKI" to BROY* inactive delay                              12    17    ns
+t409   CPU address and status valid to BECS*/BOCS*                13    18    ns
+       inactive delay
+t410   CPU address and status valid to BECS*/BOCS*                13    18    ns
+       active delay
+t411   CLK21v to CAWE* active delay                               14    18    ns
+t412   CLK21v to CAWE* inactive delay                             12    17    ns
+
+
+                                                 ~
+            OPTi Inc. 2525 Walsh Avenue, Santa Clara, CA 95051
+Sym     Description                                   Min   Typ      Max   Units
+
+t413    CLKlv to CAWE* active delay                         12       18    ns
+t414    CLKlv to CAWE* inactive delay                       12       18    ns
+t415    CLK21v to DTYWE* active delay                       14       18    ns
+t416    CLK21v to DTYWE* inactive delay                     12       17    ns
+t417    CLKlv to DTYWE* active delay                        12       17    ns
+t418    CLKlv to DTYWE* inactive delay                      12       17    ns
+t419/   CLKI" to ROY* active delay                          12       17    ns
+t421
+t420/   CLKI" to ROY* inactive delay                        12       18    ns
+t422
+t423    CLKlv to T AGWE* active delay                       12       18    ns
+t424    CLKlv to TAGWE* inactive delay                      12       18    ns
+t425    CPU address and status valid to BEA3/BOA3           13       19    ns
+        active delay
+t426    CLKI" to BEA3/BOA3 inactive delay                   13       19    ns
+t427    CLKI" to BDIR* active delay                         12       17    ns
+t428    CLKI" to BDIR* inactive delay                       12       17    ns
+t429    CLKI" to GAS* active delay                    10             16    ns
+t430/   CLKI" to CAS* inactive delay                  11             18    ns
+t439/
+t442
+t431    CLKI" to OLE active delay                     10             16    ns
+t432    CLKI" to OLE inactive delay                   11             18    ns
+t433    CLKI" to RAS* inactive delay                  8              16    ns
+t434    CLKI" to RAS* active delay                    12             20    ns
+t435    CLKI" to column address valid delay           8              16    ns
+t436    CLKI" to row address hold time                8              16    ns
+t437    CLKI" to OWE* active delay                    11             18    ns
+t438    CLKI" to OWE* inactive delay                  8              16    ns
+t440    RAS* precharge time                                 4CLKI
+t441    GAS* precharge time                                 1 CLKI
+t443    CLKI" to row address valid time
+t444    CAS* active to OLE active delay               6              18    ns
+t445    GAS* inactive to OLE inactive delay           6              18    ns
+t446    CLKI" to LMEN* active delay                   5              22    ns
+t447    CLKI" to LMEN* inactive delay                 5              22    ns
+t448    MAD* active to BEGS* active delay             8     15       20    ns
+t449    MAD* inactive to BECS* inactive delay         7     15       21    ns
+t450    MAD* active to BOGS* active delay             8     15       20    ns
+t451    MRD* inactive to BOGS* inactive delay         8     14       20    ns
+t452    MAD* active to CAOE* active delay             7     15       20    ns
+t453    MRD* inactive to CAOE* inactive delay         7     15       21    ns
+t454    MAD* active to BEOE*/BOOE* active delay       8     14       19    ns
+t455    MAD* inactive to BEOE*/BOOE* inactive delay   8     14       19    ns
+t456    MAD* active to BDIR* active delay             7     14       20    ns
+t457    MAD* inactive to BDIR* inactive delay         8     15       21    ns
+t458    MAD* active to RAS* active delay              8              16    ns
+t459    MAD* inactive to RAS* inactive delay          8              16    ns
+t460    MAD* active to GAS* active delay              10             20    ns
+t461    MAD* inactive to CAS* inactive delay          8              18    ns
+t462    MAD* active to column address valid delay     10             20    ns
+t463    MAD* active to row address hold time          10             20    ns
+
+                                             ")//
+             OPTi Inc. 2525 Walsh Avenue, Santa Clara, CA 95051
+Sym      Description                                         Min   Typ   Max   Units
+
+t464     MWE* active to CAWE* active delay                   7     15    20    ns
+t465     MWE* active to OWE* active delay                    8           18    ns
+t466     MWE* inactive to OWE* inactive delay                8           18    ns
+
+t501     BCLKv to ALE active delay                           5           30    ns
+t502     BCLKA to ALE inactive delay                         5           30    ns
+t503     BCLKv to CMD active delay                           5           30    ns
+t504     BCLKA to CM D inactive delay                        5           30    ns
+t505     BCLKA to CMD active delay                           5           30    ns
+t506     M16* to BCLKA setup time                            8                 ns
+t507     M16* to BCLKA hold time                             8                 ns
+t508     1016* to BCLKA setup time                           10                ns
+t509     1016* to BCLKA hold time                            10                ns
+t510     NOWS* to BCLKA setup time                           10                ns
+t511     NOWS* to BCLKA hold time                            10                ns
+t512     CHRDY to BCLKA setup time                           12                ns
+t513     CHRDY to BCLKA hold time                            12                ns
+t515     ATCLKv to HOLD active delay                         5           16    ns
+t516     ATCLKA to HOLD inactive delay                       5           16    ns
+t517     ATCLKA to REF* active delay                         8           30    ns
+t518     ATCLKA to REF* inactive delay                       8           30    ns
+t519     ATCLKA to MEMRD* active delay                       5           25    ns
+t520     ATCLKA to MEMRD* inactive delay                     5           25    ns
+t521     HR91 setup time to ATCLKA                           10                ns
+t522     HRQ1 hold time to ATCLKA                            10                ns
+t523     HLDA active to HLDA 1 active delay                  8           18    ns
+t524     HLDA inactive to HLDA 1 inactive delay              8           18    ns
+ t525    ATCYC* active to SDIR1*,SDIR2* active delay         5           25    ns
+ t526    ATCYC* inactive to SDIR1*,SDIR2* inactive delay     5           25    ns
+ t527    ATCYC* active to SDEN* active delay                 5           25    ns
+ t528    ATCYC* inactive to SDEN* inactive delay             5           25    ns
+
+
+
+
+Notes:
+         1.     A means rising edge.
+         2.     v means falling edge.
+
+
+
+
+                                                    ,,(/,P
+              OPTi Inc. 2525 Walsh Avenue, Santa Clara, CA 95051
+82C493/82C392 AC Characteristics (50MHz)                                Preliminary
+Temperature: OC to 70C, Vee: 5V +/- 5%
+
+
+Sym    Description                                          Min   Typ   Max   Units
+
+t101   NPRST active delay from CLKl 11                            10          ns
+t102   NPRST inactive delay from CLKl 11                          10          ns
+t103   CPURST active delay from CLKl 11                           10          ns
+t104   CPURST inactive delay from CLKl 11                         10          ns
+
+t201   CAS* active to RAS* 0,3 active delay                 10          20    ns
+t202   CAS* inactive to RAS*0,3 inactive delay              10          20    ns
+t203   RAS*0,3 active to RAS*1 ,2 active delay                    15          ns
+t204   RAS*0,3 inactive to RAS*1,2 inactive delay                 15          ns
+
+t301   0(31 :0) valid to XD(7:0) valid delay                8           20    ns
+t302   0(31 :0) valid to MP(3:0) valid delay                8           18    ns
+t303   0(31 :0) invalid to XD(7:0) invalid delay            8           18    ns
+t304   0(31 :0) invalid to MP(3:0) invalid delay            8           18    ns
+t305   0(31 :0) valid to MD(31 :0) valid delay              8           18    ns
+t306   0(31 :0) invalid to MD(31 :0) invalid delay          8           18    ns
+t307   MD(31 :0) valid to 0(31 :0) valid delay              8           18    ns
+t308   MD(31 :0) invalid to 0(31 :0) invalid delay          8           18    ns
+t309   MD(31 :0) valid to MP(3:0} valid delay               8           18    ns
+t310   MD(31 :0) invalid to MP(3:0) invalid delay           8           18    ns
+t311   MD(31 :0) and MP(3:0) setup time to OLE inactive     6                 ns
+t312   MD(31 :0) and MP(3:0) hold time to OLE inactive      6                 ns
+t313   A(9:0) to KBDCS* active delay                        5           30    ns
+t314   A(9:0) to KBDCS* inactive delay                      5           30    ns
+t315   ORD* active to MD(31 :0) valid delay                 6           20    ns
+1316   ORD* inactive to MD(31 :O} invalid delay             6           20    ns
+t317   DAD* active to 0(31 :0) valid delay                  6           20    ns
+t318   ORD* inactive to 0(31 :0) invalid delay              6           20    ns
+t319   M0(15:0) setup time to IORD*/MEMAD* 11               6                 ns
+t320   M0(15:0) hold time to IORD*/MEMRD* 11                6                 ns
+t321   M0(15:8) valid to MD(7:0) valid delay                8           18    ns
+t322   MD(15:8) invalid to MD(7:0) invalid delay            8           18    ns
+
+t401   CPU address and status valid to CAOE* active delay         10    i3    ns
+t402   CPU address and status valid to BEOE* acitve delay         11    13    ns
+t403   CLKI" to BEOE* /BOOE* inactive delay                       10    12    ns
+t404   CLKI" to BOOE* active delay                                11    13    ns
+t405   CLKI" to BDIR* inactive delay                              11    13    ns
+t406   CPU address and status valid to BDIR* active delay         11    13    ns
+t407   CLKI" to BADY* active delay                                10    13    ns
+t408   CLKI" to BADY* inactive delay                              10    13    ns
+t409   CPU address and status valid to BECS*/BOCS*                11    14    ns
+       inactive delay
+t410   CPU address and status valid to BECS*/BOCS*                11    14    ns
+       active delay
+t411   CLK21v to CAWE* active delay                               14    18    ns
+t412   CLK21v to CAWE* inactive delay                             12    17    ns
+
+                                  "'Y.3
+            OPTi Inc. 2525 Walsh Avenue, Santa Clara, CA 95051
+Sym     Description                                       Mjn   Typ      Max   Units
+
+t413    GLKlv to GAWE" active delay                             10       12    ns
+t414    CLKlv to GAWE" inactive delay                           10       12    ns
+t415    CLK21v to DTYWE" active delay                           14       18    ns
+t416    CLK21v to DTYWE" inactive delay                         12       17    ns
+t417    CLKlv to DTYWE" active delay                            10       12    ns
+t418    CLKlv to DTYWE" inactive delay                          10       12    ns
+t419/   CLKl 11 to ROY" active delay                            10       13    ns
+t421
+t420/   CLKl 11 to ROY" inactive delay                          10       13    ns
+t422
+t423    GLKlv to T AGWE" active delay                           11       14    ns
+t424    GLKlv to T AGWE" inactive delay                         11       14    ns
+t425    CPU address and status valid to BEA3/BOA3               11       14    ns
+        active delay
+t426    GLKl 11 to BEA3/BOA3 inactive delay                     12       14    ns
+t427    GLKl 11 to BDIR" active delay                           11       13    ns
+t428    GLKl 11 to BDIR" inactive delay                         11       13    ns
+t429    GLKl 11 to GAS" active delay                      ·10            16    ns
+t430/   GLKl 11 to GAS" inactive delay                     11            18    ns
+t439/
+t442
+t431    GLKl 11 to OLE active delay                       10             16    ns
+t432    GLKl 11 to OLE inactive delay                     11             18    ns
+t433    Gqq 11 to RAS" inactive delay                     8              16    ns
+t434    GLKl 11 to RAS" active delay                      12             20    ns
+t435    GLKl 11 to column address valid delay             8              16    ns
+t436    GLKl 11 to row address hold time                  8              16    ns
+t437    GLKl 11 to OWE" active delay                      11             18    ns
+t438    CLKl 11 to OWE" inactive delay                    8              16    ns
+t440    RAS" precharge time                                     4 CLKI
+t441    CAS" precharge time                                     1 CLKl
+t443    CLKl 11 to row address valid time
+t444    GAS" active to OLE active delay                   6              18    ns
+t445    GAS" inactive to OLE inactive delay               6              18    ns
+t446    GLKl 11 to LMEN" active delay                     5              22    ns
+t447    GLKl 11 to LMEN* inactive delay                   5              22    ns
+t448    MRO* active to BECS* active delay                 8     15       20    ns
+t449    MRO* inactive to SECS* inactive delay             7     15       21    ns
+t450    MRO* active to BOGS* active delay                 8     15       20    ns
+t451    MRO" inactive to BOGS* inactive delay             8     14       20    ns
+t452    MRO* active to GAOE" active delay                 7     15       20    ns
+t453    MRD" inactive to CAOE" inactive delay             7     15       21    ns
+t454    MRD* active to BEOE"/BOOE" active delay           8     14       19    ns
+t455    MAD* inactive to BEOE"/BOOE" inactive delay       8     14       19    ns
+t456    MAD* active to BDIR* active delay                 7     14       20    ns
+t457    MRD* inactive to BDIR* inactive delay             8     15       21    ns
+t458    MRD" active to RAS" active delay                  8              16    ns
+t459    MRD* inactive to RAS* inactive delay              8              16    ns
+t460    MRD* active to CAS* active delay                  10             20    ns
+t461    MRD* inactive to GAS* inactive delay              8              18    ns
+t462    MRD* active to column address valid delay         10             20    ns
+t463    MRD* active to row address hold time              10             20    ns
+
+                                                --7.//'
+             OPTi Inc. 2525 Walsh Avenue, Santa Clara, CA 95051
+Sym      Description                                       Min   Typ   Max   Units
+
+t464     MWE* active to CAWE* active delay                 7     15    20    ns
+t465     MWE* active to OWE* active delay                  8           18    ns
+t466     MWE* inactive to OWE* inactive delay              8           18    ns
+
+t501     BCLKv to ALE active delay                         5           30    ns
+t502     BCLK" to ALE inactive delay                       5           30    ns
+t503     BCLKv to CMD active delay                         5           30    ns
+t504     BCLK 11 to CMD inactive delay                     5           30    ns
+t505     BCLK 11 to CMD active delay                       5           30    ns
+t506     M16* to BCLK 11 setup time                        8                 ns
+t507     M16* to BCLK 11 hold time                         8                 ns
+t508     1016* to BCLK 11 setup time                       10                ns
+t509     1016* to BCLK 11 hold time                         10               ns
+t510     NOWS* to BCLK" setup time                          10               ns
+1511     NOWS* to BCLK 11 hold time                         10               ns
+t512     CH ROY to BCLK 11 setup time                       12               ns
+t513     CHRDY to BCLK 11 hold time                         12               ns
+t515     ATCLKv to HOLD active delay                       ·5          16    ns
+t516     ATCLK 11 to HOLD inactive delay                    5          16    ns
+t517     ATCLK 11 to REF* active delay                      8          30    ns
+t518     ATCLK 11 to REF* inactive delay                    8          30    ns
+t519     ATCLK 11 to MEMRD* active delay                   5           25    ns
+t520     ATCLK 11 to MEMRD* inactive delay                 5           25    ns
+t521     HFl01 setup time to ATCLK 11                      10                ns
+t522     HRQ1 hold time to ATCLK 11                        10                ns
+t523     HLDA active to HLDA 1 active delay                8           18    ns
+t524     HLDA inactive to HLDA 1 inactive delay            8           18    ns
+t525     ATCYC* active to SDIR1*,SDIR2* active delay       5           25    ns
+t526     ATCYC* inactive to SDIR1*,SDIR2* inactive delay   5           25    ns
+t527     ATCYC* active to SDEN* active delay               5           25    ns
+ t528    ATCYC* inactive to SDEN* inactive delay           5           25    ns
+
+
+
+
+Notes:
+                11
+         1.          means rising edge.
+         2.     v means falling edge.
+
+
+
+
+                                                .-Y-6
+              OPTi Inc. 2525 Walsh Avenue, Santa Clara, CA 95051
+      CLKI        '\,_   /!   ·~s--/                       '\.        /          '\.      "".        '\.__
+
+    NPRST     -----1--1--     t101                                                        --i   1-   t102
+
+
+   CPURST
+              -----~--l+-t103                                                             -1    l+-t104
+
+
+
+                                               RESET TIMING
+
+
+
+
+    RFSH•
+                                                                                       ------
+
+
+~     HLDA
+
+CAS•[0.. 3]
+              ~~~~~~~--~~----
+                              j.-- t201 ---I                     -1       I+- t202
+                                                                          J-~~~~~~~~~~
+  RAS•0,3
+              ~~~~~~~~~~~--'--~--...
+                                         -1     I+- t203              -1       I+- t204
+                                                                               r~~~~~~~~-
+
+  RAS•1,2
+
+
+                                               REFRESH CYCLE
+
+
+
+
+               OPTI Inc. 2525 Walsh Avenue, Santa Clara, CA 95051               Tel : (408) 980-8178         Fax: (408) 980-8860
+  0(31:0)
+                      l+-t301--l                                    j+--t303~
+  XD(?:O)   ~~~~-i~~~(                                              •       ~~---------
+                                  t302                              ---t304--___..
+ MP(3:0)              +
+
+                      i·     t305        •I                              t306--l
+MD(31:0)
+
+
+                                                  D TO XO, MP AND MD DELAY
+
+
+MD(31:0)
+
+  0(31:0)
+            ~~~~~r--_t_3_o_?~~c                                    i.-t3osJ~~~~~~~~~~
+                      - - - t30'3                                           t31Q---+t
+ MP(3:0)
+
+
+
+                                                    MD TO D AND MP DELAY
+~
+\_J
+
+
+      OLE                                     /     1---- t311 ~
+MD(31:0)
+ MP(3:0)                                                      I--- t312----l
+
+                                         DATA SETUP AND HOLD TIME FOR OLE
+
+
+
+
+                OPTi Inc. 2525 Walsh Avenue, Santa Clara, CA 95051              Tel : (408) 980-8178   Fax: (408) 980-8860
+   A(9:0)     -- - · .. --·   -·-·
+ KDBCS•                                I- t313i.                    -..J      y-,__t3_1_4_ _ _ _ _ _ __
+
+
+
+                                           KDBCS* VALID AND INVALID DELAY
+
+
+
+
+       ORD•
+              -~~~~~~'---~--'-.
+                                     -.j      l+-t315          _,   l+-t316
+MD(31:0)
+
+ 0(31:0)
+              ~~~~~~~l-·~~-t3_1_7~--<<I                         t=t31s-S~~~~~~~~~~
+
+~-
+  .J
+                                           D(31:0) AND MD(31:0) TRISTRTED
+                                                  AND DRIVEN DELAY
+
+
+
+
+                    OPTi Inc. 2525 Walsh Avenue, Santa Clara, CA 95051         Tel : (408) 980-8178       Fax: (408) 980-8860
+IORD•, MEMRO•
+
+     MD(15:0)
+                                    "         I•    t31si   q~   t320-----...J
+
+
+
+
+                                        ORTA SETUP AND HOLD TIME
+                                            (!ORD* AND MEMRD*)
+
+
+ ~   MD(15:8)
+~     MD(?:O)
+                                                                                 f-t322
+
+                               ORTA VALID AND INVALID DELAY BETWEEN
+                                   MD(15:8) AND MD(7:0) SWAPPING
+
+
+
+
+                OPTi Inc. 2525 Walsh Avenue, Santa Clara, CA 95051   Tel : (408) 980-8178   Fax : (408) 980-8860
+        CLKI
+
+       ADS•
+=tDDR/STATUS   ==±=x.                                     x                                            :
+      BECS•
+
+      BOCS•
+
+      CAOE•    ---,--:::;i-,.,'\It t401                   .Af'J.: t4b 1                                •   r
+                         ::
+               __,.-"'-,._:
+                                   -.i. I+- t403
+                                          ~
+                                                              :        .     -.i. I+- t403
+                                                                                 ~
+
+      BEOE•
+                                                                  I+- t402         --.j   I+- t 403
+      BOOE•                 .        . "'\,___/    ~.
+
+
+               ----'--'"'-! i      ~ I+- t4o4      --+!  H t4os      --.i I+- t4o4                    -1 I+- t4os
+      BDIR•
+                       --.j !1+- t405                  • -! I+- t405                                   •
+      BLST•
+
+      BROY•
+                         _,
+                            ~
+
+
+               ---'----+:--.'..
+                                 I+- t407          y   •    ~     !
+
+                                                         I+- t408 :
+                                                       : /           ='ft t407
+                                                                                                ~
+                                                                                                      _,
+                                                                                                       i   r-
+                                                                                                               I+- t408
+
+
+
+~                       485 secondary cache                        485 secondary cache
+                        read hit cycle - Ows                       read hit cycle - 1ws
+                       (2-1-1-1 Burst cycle)                      (3-1-1-1 Burst cycle)
+
+
+                         486 SECONDARY CACHE READ HIT CYCLE
+
+
+
+
+               OPTi Inc. 2525 Walsh Avenue, Santa Clara, CA 95051                                      Tel : (408) 980-8178   Fax: (408) 980-8860
+       CLK2I
+
+         CLKI
+
+        ROS•       ~
+                   .
+                                     /:".
+                                          ..                     /
+                   .                          .
+
+100R/STATUS        :==x
+                   :   :
+                                              :.     x-oj 14- t409                        :.
+       SECS•
+                       -1 ;it409                     -1 {    t410
+       SOCS•
+                 _ ___,_,. : :              -+I    14- t403'----·"-------                         -oj    14- t403
+SEOE•/SOOE•        !      .,. :               :    ~
+                   •   --.j H- t402                  -1
+                                                    .~----,----------=-
+
+       CAOE•
+
+       SDIR•
+
+ CAWE(3 .. 0)•     -----.~.
+                              : :
+                                '---./•
+                                       -1
+                              •1 14- t~ii
+                                              bt412
+
+                                                                -1
+                                                                     .   "14-   t413 •
+                                                                                        -+I
+                                                                                          :
+
+                                                                                              •
+                                                                                               '4-t414
+                                                                                               /~----
+
+     OTYWE•      - - - - - - : - - .~t415                            •"          .  -.j /F-=t.4_1_8_ _
+                              • --i 14- t41s                     ~        '4-t41?
+        ROY•     -----:~,                   -1 k t420                           I   "           -l ,,+= t422
+                            __,     '4-t419 :                               -1          '4-t421
+l\
+~
+                   485 SECONDARY CACHE               485 SECONDARY CACHE
+                     WRITE HIT CYCLE                   WRITE HIT CYCLE
+                           ows                              1WS
+                                              KCLK2I is not used for this cycle)
+
+
+
+
+                                  486 SECONDARY CACHE WRITE HIT CYCLE
+
+
+
+
+                 OPTi Inc. 2525 Walsh Avenue, Santa Clara, CA 95051                                       Tel : (408) 980-8178   Fax: (408) 980-8860
+              CLKI
+                               T1 T2 T2 T2 iT2 T2 T2 T2 T2 T2 T2 T2 T2 T2 T2 T2 T2 T2
+             ADS•
+
+     ADDA/STATUS
+
+            SECS•
+
+            SOCS•
+
+            CADE•
+
+             HIT•     ~/·
+
+             DRTY     ™<"" ·---
+rRGWE•/DTYWE•
+                                .,.---~--~:_!._ ~ t423
+                                                                ~~~~~~~-=====
+      CAWE(3 .. 0)•
+                      -                   ~                 : .
+            BEDE•
+                                          :                     :
+
+                              '\..        :             '       l
+                                                                                                               =-i'~
+            BOOE•                                       i       .
+                          ': .            :             .
+                                                        .       .                                                 \+- t427 .
+            BDIR•
+(\                        ' -.j      fo- t 4 25         '     -.j   fo- t425                                               t428 -.j le-
+%'                    ~'\..               •             •           /------=--------~
+       BEA3/BOA3
+                          •             ~     \+- t429-+j   \+- t430                               '\..                  /,.--~
+             CAS•         :•              •'\..
+                                        -.i ;t431j
+                                                            ~                  ~
+                                                                                       '-------'~
+               OLE        ~               ;             .
+                                                             \+-t432
+                                                            '\....__/          '\..____/    '...____/
+                                                                                                           /
+                                                                                                                 ____
+                                                                                                           '\...._             ____.:._
+
+
+            BLST•
+
+            BROY•
+
+
+                                                  486 SECONDARY CACHE READ MISS CYCLE (NOT DIRTY)
+                          NOTE          1. The diagram considers page hit on DRAM.
+                                           In case of page miss onl1=J the first C1=JCle will get affected as per DRAM
+                                            page miss timing diagram.
+                                        2. This diagram considers the first address generated bid 486 to be 0.
+
+
+
+                  OPTi Inc. 2525 Walsh Avenue, Santa Clara, CA 95051                         Tel : (408) 980-8178    Fax: (408) 980-8860
+            CLKI
+                         T1 T2:T2 T2 T2 T2 T2 •T2 T2 T2 T2 T2 T2-T2 T2 T2 T2
+            ADS•
+
+  ADOR/STATUS
+
+           BECS•
+
+           BOCS•
+
+           CAOE•     ~
+                      ~;               -    -      --   -        -
+            HIT•
+                      ~~·-                         ------~-~--.
+
+
+
+            ORTY
+
+rAGWE * /OTYWE *                                   -~~.··-,
+                                                                                                                                     (lJ
+                                                                                                                                     (Jl
+     CAWE(3.. 0)•                                                                                                                    J1J
+                                                                                                                                     0..
+                                                                                                                                    +'
+                                                                                                                                     x
+          BEOE•                                                                                                                      (lJ
+                                                                                                                                     c
+ ~        BOOE•                            - ---                                                               r-                    0
+                                                                                                                                    +'
+                                                                                                                                    -0
+                                                                                                                                     OJ
+     BEA3/BOA3       ~\.                                                     j     /                           ~                     :J
+                                                                                                                                     c
+                                                                                                                                    :;:;
+           BDIR•           \.     :                          .
+                                                                                                                                     c
+                                                                                                                                     0
+                                =;i I- t433                 =-i I- t434                                                              0
+
+            RAS•
+                                                                        -.j I- t429
+            CAS•                 :::                                  ,   .,
+                                                                     ~ 1-~~
+                                                                                       ~           ~               r
+       MA(10.. 0)    ---~><J                    Row addr.              X.-------C-:--o-lu_m_n_a_d_d_r_.- - - - - - -
+                            -.j I- t437
+                     ------,._                                       -.J I- t43o
+           OWE•
+
+          BLST•
+
+          BROY•
+                                                                     READ MISS DIRTY CYCLE
+                      NOTE :    This diagram considers the first address generated by 485 to be 0.
+                                                                                                                               Page 1 of 3
+
+                    OPTi Inc. 2525 Walsh Avenue, Santa Clara, CA 95051                 Tel : (408) 980-8178   Fax: (408) 980-8860
+             CLKI
+                     T2T2     T2 :T2 T2 T2 T2 !T2TTff2T2 T2 T2                                   T2 T2 T2 T2
+            ROS•
+
+  ROOR/STRTUS
+                                                                                                                  ~
+
+           SECS•
+
+           SOCS•                                                                                   ~
+
+           CADE*
+
+             HIT•
+
+            ORTY
+
+      *
+rRGWE /OTYWE    *
+     CRWE(3 .. 0)•                                                                                     '-.,__,/
+                                                                                                                                             OJ
+           BEDE•                                                                                                                             en
+                                                                                                                                             11)
+                                                                                                                                             n.
+           BOOE•                                                                                                                            +'
+                                                                                                                                             x
+
+ ~
+                                                                                                                                             OJ
+                                                                                                                                             c
+     BER3/BOR3                                                                                                                               0
+                                                                                                                                            +'
+
+                     ------i....,...~.l-t433
+           BOIR•                                                                                                                            -0
+                                               --····· Ti-t434 ..                                                                            OJ
+                                                                                                                                             :i
+                                                                                                                                             c
+            RAS•                                                                                                                            :;:;
+                                                                                                                                             c
+                                     - - - t440                         -j·   I- t429   -l   I- t441                                         0
+                                                                                                                                             ()
+            CRS•
+                                 -l I- t439                    -..j    I- t435
+                     -----"'---'X              New row addr.          X~------N-e_w_c_o_lu_m_n_a_d_d_r_.- - - -
+       MR(10.. 0)
+                                 -+I I- t438                   -l I- t435
+            OWE•
+
+          BLST•
+
+           BROY•
+
+                                                               READ MISS DIRTY CYCLE
+                      NOTE : This diagram considers the first address generated by 485 to be 0.
+                                                                                                                                    Page 2 of 3
+
+                 OPTI Inc. 2525 Walsh Avenue, Santa Clara, CA 95051                      Tel : (408) 980-8178     Fax: (408) 980-8860
+              CLKI
+                      TZf2   T2 T2 T2 T2 T2 T2 T2
+             RDS•
+
+     AOOR/STRTUS
+
+            BECS•            "'-~--
+            BOCS•
+
+            CADE•
+
+             HIT•
+
+             ORTY
+
+rAGWE * /OTYWE *
+
+      CAWE(3.. 0)•
+
+            BEDE•
+                                                           ;,r-
+            BOOE•
+~      BEA3/BOA3
+ I
+            BOIR•
+
+             RAS•
+
+             CAS•
+
+        MA(10 .. 0)
+
+            OWE•
+
+           BLST•
+
+           BROY•
+
+                                 READ MISS DIRTY CYCLE
+                      NOTE    This diagram considers the first address generated by 48E> to be 0.
+                                                                                                                      Page 3 of 3
+
+
+                  OPTi Inc. 2525 Walsh Avenue, Santa Clara, CA 95051        Tel : (408) 980-8178    Fax: {408) 980-8860
+          CLKI
+
+          ADS•
+
+  ADDA/STATUS
+
+         SECS•                j
+
+         SOCS•            _   j/
+                              l ~
+                              .........
+         CADE•
+
+          HIT•~
+                      :            I
+                      l            :
+         DATY       ~(
+rAGWE•/OTYWE•
+
+   CAWE(3.. 0)•
+                      l____j
+
+
+
+
+         SDIR•
+
+    SEA3/SOA3      ~\.                     /
+
+          RAS•                            .r-
+          CAS•
+
+     MA(10.. 0)    _____________,X -            Row addr.   X   Column Rddr~
+
+         OWE•
+
+          ROY•
+
+
+
+
+                                                486 SECONDARY CACHE WRITE MISS CYCLE
+                                                     (DRAM Write Cycle - Page miss)
+
+                  OPTi Inc. 2525 Walsh Avenue, Santa Clara, CA 95051    Tel : (408) 980-8178   Fax: (408) 980-8860
+         CLKI
+                    : T1 T2 i T2 T2 T2 T2 :T2 T2 T2 T2 T2 T1                                           T2 T2 T2 T2 ·
+                  ~-                     !               !                         !             ~-                         !
+         ADS•
+1DDR/STATUS       =ex
+                   :
+                            i
+                           -+I f- t433
+                                         :
+                                         :
+                                                         : f- '
+                                                       __,   t~34   :
+                                                                                   :             x'
+                                                                                                   .
+                                                                                                          .                 :
+                                                                                                                            .
+                    :       '/           !               ·".,:      :
+         RAS•
+                    i       :            !               •    : -+I f- t429 :           -+I f- t442       •                    f- t442
+                                                                                                                            . r-
+                                                                                                                          __,
+         CAS•       I
+                    :
+                             I
+                             .
+                                         I
+                                         :
+                                                              .
+                                                              :     : ~
+                                                                                   .
+                                                                                   i     :
+                                                                                             /     I
+                                                                                                 ; :    -.j 'It Vl'.69           i
+                    •       :            ~   f- t443         -+I f- f435      :                    .      .     :                •
+    MA(10 .. 0)     !        !               X   Row addr.    X       Column ~ddr.                 X                             !
+                                                          -+I f- t43o •
+        OWE•
+                            ;                                           --l   f- t444        -+I f- t445 -+I f- t444            -+I f- t445
+          OLE
+                         _., f- t440
+                  ___._____:_'l..                                                       -+I /ft- t447         "'-                r
+       LMEN•
+
+         ROY•
+
+
+                                    DRAM READ - Page miss                                        DRAM READ - Page hit
+
+
+~
+
+                                                                         DRAM READ CY CLE
+
+
+
+
+                  OPTi Inc. 2525 Walsh Avenue, Santa Clara, CA 95051                     Tel : (408) 980-8178            Fax: (408) 980-8860
+          CLKI
+
+          RDS•
+
+=tOOR/STRTUS
+
+          RAS•
+                    :                                                     :
+          CRS•      :                                                     J                "              ~
+     MR(10 .. 0)    .____________,X         Row addr.   X    Column addr. :    X-                -   ~.
+
+
+         OWE•
+
+           OLE
+
+        LMEN•       i
+          ROY•      i
+
+
+                                    DRAM WRITE - Page miss                    ORAM WRITE - Page hit
+&)
+
+
+                                                             DRAM WRITE CYCLE
+
+
+
+
+                   OPTi Inc. 2525 Walsh Avenue, Santa Clara, CA 95051     Tel : (408) 980-8178       Fax : (408) 980-8860
+        CLKI
+
+       ADS•
+
+100R/STATUS     _-?x=- :!          -    ·=x=··-
+                                            :
+                                                                     x== --x==-I ----
+                                                                                     :
+                                                                                                ~
+
+
+
+       RAS•
+                              f.-t429~
+       CAS•
+                               :.,_,- ---!        f.-   t43s
+   MA(10.. 0)   _ _ __,X d,olu~n addr. X                             X      XColumn !addiX.___.___ _
+       OWE•
+                             -.j       f.- t444              -.j f.- t445
+                                                         ,.-.:....          ~
+
+         OLE
+                ~~~~~----,~t445                                                             ~       f.-t447
+      LMEN•                                                                                     v
+     BLAST•
+
+      BROY•
+                                                                                ""          /
+
+
+
+
+ ~
+
+                                        DRAM READ CYCLE - Page Hit
+
+
+
+
+                OPTi Inc. 2525 Walsh Avenue, Santa Clara, CA 95051                       Tel : (408) 980-8178   Fax: (408) 980-8860
+          CLKI
+
+          RDS•
+
+1DDR/STRTUS
+
+          RAS•
+                  T
+                  -----
+                           -<{
+                             :: /
+                                    H433    !
+                                            ::
+                                                         d''---'-~---,,-----+-:----~-----------------~
+                                                              H434    x        x     1
+                                                                                     ·1x
+                    :                                     :          -!    I+- t429_.j~
+         CRS•                .              :                         :"-.           ·~'----·---'~                        ~                /
+                             :              ~     I+- t443  -! I+- t43$         •   •
+     MR(10.. 0)              1                   X Row addr. X          Column ~ddri. X                       X                X.._________
+                                                            -! I+- t436 :       :   '
+                                                                           :         :    :
+         OWE•
+                   •         :                                            .., I+- t444-l I+- t445                              "'-    /            ~
+                   :         •                                             i/        • "'-          /        "'-     /
+           OLE
+
+        LMEN•
+                   !        =4   t   t44s                                          -.J    l+-t447                                                  r
+       BLAST•                                                                                                                                  /
+        BROY*
+
+~
+CJ
+
+
+
+                                                                     DRAM READ CYCLE - Page Miss
+
+
+
+
+                  OPTi Inc. 2525 Walsh Avenue, Santa Clara, CA 95051                          Tel : (408) 980-8178   Fax: (408) 980-8860
+        CLKI ~~
+        HLDA ~
+                             )<r-~~~~~-4)~~~~~~
+
+        MRD•
+
+       SECS•                 )                           :
+                             )                         -.j I- t448                    --+!     l-~t4_4_94$)-----'>~-------
+       SOCS•                                             :               s               : /
+                             )                         -+j I- t450                    --+! l-,...--t4_5_1..$,..._ _.....,.,___ _ _ _ __
+       CAOE•                                             :               s               : /
+        HIT•
+                ~~',,                       '          --1   fo-t452                  ::oi     fo-t453 '     ~
+                             7' "           /.I                        ,/;'              :
+                                                                                   ----~------
+                                                                                                       t'/
+                                                                                                       7-'     ((
+                                                                                                               ,,
+      TAGWE•
+
+ CAWE(3.. 0)•
+                             )                           :                               :                      ~
+                                                         ~                               ~
+                             )                           :
+BEOE•/BOOE•
+                             )                         ~     l-t454                   --+!     l-~t_45_5<4---(4--------
+       BDIR•
+                             )                         -+j   I- t456                            I- t457
+        CAS•
+~
+
+ ""
+
+
+
+                                          OMA READ CYCLE - SECONDARY CACHE HIT
+
+
+
+
+                OPTi Inc. 2525 Walsh Avenue, Santa Clara, CA 95051       Tel : (408) 980-8178        Fax: (408) 980-8860
+           CLKI    ~~                                                                ~JL_r'LJ[___J"LJ[_
+           HLDA    ~
+                                    }<;---~~~~~~~~~>-~~----
+          MRD•
+                                    }                          :                                                   $
+         BECS•
+                                    }~~~~~~~~~~~--<·f-~~~--~~~~~~~~~~~                   .....~~~~--~~~~""'1~~~~~~~~~~~~~~~~
+         BOCS•
+                                    <                                                    ~~~~---~~~-o'--~~--">•...-~~~~~~~~
+         CADE•
+
+           HIT•    ~~7                               s~                                                     s~~
+                                    }                          :
+       TAGWE•
+                                    }s--~~~~~~~~(f-~~--~~~~~~~---·,>-~~~---~~~~~~~~·r---~~~~~~~
+    CAWE(3.. 0)•
+                                    }                          :
+BEOE•/BOOE•
+
+                                                               :                                   :
+          BDIR•
+                                ~                        $   ~      l+-t458                       -+j l+-i---t4_5_9---7~>---~~------
+          RAS•                                                 :   "..               S5            /
+~                               ~                    5         ~     t4so       •I                -+j l+-,..--.t4_s_1~5 >---~~------
+~         CAS•                                                                  ~$                 /
+                                u                                                    u                     ~
+                                7                ----,                                ,--------            ))
+          OWE•
+                                                               i--t452--+l                                  ·~,A~
+      MA(10.. 0)   ~~x                               ~~ ow addr.         .X          ~s   Column addr.     s~
+
+
+
+
+                                              OMA READ CYCLE - SECONDARY CACHE MISS
+
+
+
+
+                   OPTi Inc. 2525 Walsh Avenue, Santa Clara, CA 95051         Tel : (408) 980-8178        Fax: (408) 980-8860
+          CLKI    ~~                                                                      ~J"L_I'LfL__Jl___JL_
+
+         HLOR     ~                                                                                                      ~~~~~
+        MWE•                       ,                                                       ~                             t
+                                   .(                                                            .               5           5
+BECS•/BOCS•                                                .                                         /
+                  -----~'r--------t-----l_,.·-~_t_44~                                      ~ --! ~ t44'3 $               5
+        CAOE•                                                                                                    55
+
+         HIT•     ~~\.                             s                                                              5    d~
+     TAGWE•
+                               ~                                                                 .                           ~
+
+
+
+ CAWE(3.. 0)•                      ~               $       •     \.                  ~           •                       5
+
+                  -----~.<r--------~~$-----l~·-~~t464                                            •       r--~5 ~--~r-------
+BEOE•/BOOE•
+
+        BDIR•                  ~
+                                                         -.j     i     t454
+                                                                                          55
+                                                                                               -+i /~ t455               t
+
+         RAS•
+                               '                         --1      1-- t458                 '   --1;      t459    ·5-----?:r--------
+                               ~                   5       l.'        t460      ~         51   --l) t461 $·>---~.~------
+                               ~                         ~            ~t465                          r~~t~46~6~:~·----------
+         CAS•
+~
+~                                                                                              --l
+        OWE•
+    MA(10 .. 0)
+                          4
+                           $S       i--t462--J
+                  ~~X,_--- <~Row addr.      :X:
+                                                                                     $
+                                                                                    ~s   Column addr.
+                                                                                                                 5~,A~
+                                                                                                                 s~~
+
+
+
+
+                                            OMA WRITE CYCLE - SECONDARY CACHE HIT
+
+
+
+
+                  OPTi Inc. 2525 Walsh Avenue, Santa Clara, CA 95051          Tel : (408) 980-8178              Fax: (408) 980-8860
+             CLKI    ~~                                                                     fL___JLJL___J4~LJLJLJL_
+            HLOA     _r---1>
+                                      ,,,__~~~~~~~~~>--~~~
+
+           MWE•
+
+           BECS•                   '                                                                                                $
+
+                                      ,.r-~~~~~~~~~~~~~>--~~~~~~~~;-~~~..,--~~~~~~~--'>'r-~~~~~~-
+           BOCS•
+
+           CADE•
+
+             HIT•
+
+         TAGWE•
+                     ~~7
+                     ~~~~-_______,
+                                   )
+
+
+
+                                                      s                                                              s~-
+                                                                                                                                    $
+
+
+
+
+                                                                                                                                    ~
+
+
+
+
+                                   ,~---~~----<t----_;_------~5..-----:----~t--_,r------~
+     CAWE(3 .. 0)•
+
+ BEOE•/BOOE•                      '                           i
+                                                              '                                                                 f
+           BDIR•
+
+            RAS•       ------,l·~-------~)----,~,            -4 ----,.,   1   '·--
+                                                                                             5          v1,.......:..•..:._:·-:..::----;5~~-~:r--------
+                                                                                                        l
+
+~                                           t460
+                     ~~~~~4~~~~~~~~~s~~~,~~~~--.~             i·                        ~             -l'/1+-,........:...t4.:..::6:..::1-4$:>---~:r-------
+            CAS•
+
+
+'*                                                           ~                                        ~~l+-_t~4~6~6-<~--------------
+                                                                                             5
+                                  ,:~---~----~<-----,-,-~ l+-t465
+            OWE•                                                          '------5~1----...J"
+                                                                i--t462--l                                                          ~
+       MA(10.. 0)    ~~X                              ~/3ow addr.       X                   ~~   Column addr.       -~~
+
+
+
+
+                                               OMA WRITE CYCLE - SECONDARY CACHE MISS
+
+
+
+
+                     OPTi Inc. 2525 Walsh Avenue, Santa Clara, CA 95051              Tel : (408) 980-8178         Fax : (408) 980-8860
+         BCLK
+
+
+                                                   1~~ ~t~5r:o2:__
+                                                                           0
+
+          ALE                                                                                     _____                    :-:~+c;r
+          CMO
+                 _______                                               ,_____~
+                                                                                   ---!           I*- t5o3               ---!       I*- t504
+                                                                                                                                    ~-------------
+
+
+
+
+( 1 CMD DELAY)                                                         .                          '
+
+
+
+         CMO
+                 ______ :+I                                      ___,_:----~
+                                                                                     I*- t505                                   /
+(0 CMD DELAY)                                          ---I            i.- t50$
+                                                                   ~
+         M16•    ~~~-~~~><
+                                                           :
+                                                                                  xl*--t~7 :                                .
+
+                                                                                     . -1 I'-- t508                      .
+                                                                                                  • ---I       I*- t50'3 :
+        1016•    ......
+                  ~,..,..,...,..,.,.,.,,.,.,..,,..,.,..,....,.,..,..,..,..,,""""""'""""""'"""""""'X          X " .........
+                                                                                                                 '"          '.""""''""""""'
+                                                                                                                          """""~..,,...,."""'""'='""""""'......,."""""""""""..,,...,."""'""'""""",..,..,..,,~
+
+
+
+                                                                                              -.j I*- tS 10              ---I          I*- t511
+       NOWS•     ---------~~                                                                           l*--t512          ---I       ~-13         _ _ _ _ _ _ _ _ _ _ __
+                                                                                                  .    :                    ;          .
+
+        CHRDY
+~
+C)
+
+                                                                                                           ATBUS TIMING
+
+
+
+
+                 OPTi Inc. 2525 Walsh Avenue, Santa Clara, CA 95051                                                                                   Tel : (408) 980-8178                        Fax: (408) 980-8860
+       RTCLK    --~       :: -I.        .
+                                   f.- t$15
+                                                          v•          '>,______/        "'       ,, •                     '
+                                                                                                                         -I    \+-- t515
+        HOLD
+
+        HLOR                                   .               .
+                ------,------!-:---- :              \+-- t517 :                                  -I     \+-- t518
+        REF•                                   0----s :                                                 .r-------.----
+                                               :    :         -I   \+-- t51 g                    -I     \+-- t520
+                                                                                                        _,....._---'------
+     MEMRD•
+                     -! ~ t521                            s                     -I   \+-- t522
+        HRQ1    ___,/                          .
+                      :                     -..j    ~(23                                                            -I         ~ t524
+       HLDR1
+
+
+
+                                                          ATBUS HOLD TIMING
+
+~
+      RTCYC•                        ~                                                                         ~
+                                     \+-- t525 -I                                                             -.i              \+-- t525
+SDIR1•,SOIR2•   --------~..-----x                       1+- ts27                                              ~               1-   t52s
+
+       SDEN•
+
+
+                                                              DIRECTION CONTROL
+
+
+
+
+                OPTi Inc. 2525 Walsh Avenue, Santa Clara, CA 95051                           Tel : (408) 980-8178               Fax: (408) 980-8860
+llitl
+
+
+       GNO
+       MA9
+       MA10
+       CASO#
+       CAS1#
+       CAS2/I
+       CAS3#
+       RASO#
+       RAS1#
+       GND
+       RAs:!#
+       RAS3#
+       [)WEI
+       RST1#
+       RST2#
+       M16#
+       1016#
+       NONS#
+       CH ROY
+       TURBO                              82C493
+       GATEA20
+       BCLKS                         SYSTEM
+       Ml016#
+       INTA#                       CONTROLLER
+       HAO
+       OUT1
+       AEN8#
+       AEN16'1
+       SMRO#
+       GND
+       SMWR#
+       AOS8
+       AOS16
+       ATCYC#
+       SBHEI
+       XNJ
+       XA1
+       RFSH#
+       ATCU<
+       GND
+
+
+
+
+  OPTi. Inc .. 2515 Walsh A Vc!nue. Santa Clara. C ..\ 95051   f-1-08) 980-8178   FAX: J.08-980-8860
+-
+
+         GNO
+          MOO
+         M01
+         M02
+         M03
+         M04
+         MOS
+         M06
+         M07
+         GNO
+         M08
+         MOS
+         M010
+         M011
+         M012
+         M013
+         M014
+         M015
+         M016
+         vcc
+         M017
+                                        82C392
+         M018                      DATA BUFFER
+         M019
+         M020                      CONTROLLER
+         M021
+         M022
+         M023
+         M024
+         M025
+         GNO
+         M026
+         M027
+         M028
+         M029
+         M030
+         M031
+         MPO
+         MP1
+         MP2
+         GNO
+
+
+
+
+    OPTi. Inc .. 2525 Walsh Avenue. Sanca Clara. CA 95051   1..l08l ')80-~ 178   F..\:(: ..lOX-cJX0-8801)
+11111
+
+QFP160-P-2828(160-Pin Plastic Flat Package)                                  ITENTATIVE j
+                         ]1.2±0.4                                                Unit:mm
+                         28.0±0.2                                                (As of Jul. '89)
+
+
+
+
+                                                  "' ...
+                                                  0 0
+                                                  +i   +i
+
+                                                  ... -
+                                                  0
+                                                  N
+                                                       "'
+                                                       M
+
+
+
+
+                                         I•I o.1J@I
+
+
+          j~M
+          I. 1~ t       29.6±0.4
+
+                                              0
+
+
+
+
+        OPTi. Inc .. 2525 Walsh Avenue. Santa Clara. CA 95051   (408) 980-8178     FAX: 408-980-8860
+                        OPTi Compatibility test Report
+                                Hardware
+
+Product:              486SXWB(82C493/82C392/82C206)
+Date:                 6/25/1991
+Configuration:        20/25/33 MHz
+                      8 I 64 Mb DRAM (80ns)
+                      64K Cache memory
+
+
+VEND QR                       PRODUCT
+[CPU]
+INTEL                         80486SX/80487SX
+
+
+[COPROCESSOR]
+WEITEK                        4167
+
+
+[DISK CONTROLLER]
+ADAPTEC                       SCSI AHA-1540/428
+NCL                           SCSI NCL500
+FUTURE DOMAIN                 SCSI TMC-950
+ADAPTEC                       SDI ACB-2322D
+DATA TECHNOLOGY               ESDI DTC-6280
+NCL                           ESDI NDC535
+WESTERN DIGITAL               ESDI WD1007A-WA2
+WESTERN DIGITAL               ESDI WD1007V-SE2
+ULTRASTOR                     ESDI ULTRA 12(F)
+ADAPTEC                       RLL ACB-2370/72C
+SEAGATE                       ALL ST-11                               8 BIT CARD
+DATA TECHNOLOGY               MFM DTC-5280
+DATA TECHNOLOGY               MFM DTC-7280
+WESTERN DIGITAL               MFM WD1003-WA2
+WESTERN DIGITAL               MFM WD1006V-MM2
+TMC                           IDE IFSP-1.0
+TMC                           DE CCAT-200/400
+
+
+
+
+   OPTi, Inc., 2525 Walsh Avenue, Santa Clara, CA 95051   (408) 980-8178 FAX: 408-980-8860
+11111
+ [DISK DRIVE]
+ FUJITSU                        SCSI M2611 SA
+ MAXTOR                         SCSI XT-4170S
+ SEAGATE                        SCSI ST-125N
+ MAXTOR                         ESDI XT-4380E
+ MAXTOR                         ESDI XT-8380E
+ MICROPOLIS                     ESDI 1355
+ NEC                            ESDI D5655
+ SEAGATE                        RLL ST-250R
+ TOSHIBA                        RLL MK134FA
+ IMPRIMIS                       M FM 94355-100
+ MICROPOLICS                    MFM 1335
+ SEAGATE                        MFM ST-SERIES
+
+
+ [REMOVEABLE DISK]
+ PLUS                           PASSPORT SYSTEM
+
+ [FLOPPY DRIVE]
+ TEAC                           FD-235HF
+ TEAC                           FD-55GFR
+
+ [TAPE BACKUP]
+ MOUNTAIN                       FILESAFE                                 INTERNAL TAPE
+                                                                         BACKUP
+
+
+ [VIDEO CARD]
+ ATI                            WONDER-16
+ INFINITI                       INVGA-16
+ LCS                            LCS-8856                                 8 BIT VGA
+ ORCHID                         PRO-DESIGNER 800                         8 BIT VEGA
+ ORCHID                         PRO-DESIGNER-16
+ ORCHID                         PRO-DESIGNER II
+ PARADISE                       VGA PLUS-16
+ TRIDENT                        TVGA 8800CS-16
+ VIDEO 7                        VGA 1024i-16
+ VIDEO 7                        VGAVRAM VGA
+
+
+ [EXPANDED MEMORY BOARD]
+ EVEREX                RAM-10000
+ INTEL                 ABOVE BOARD
+
+
+ [INPUT DEVICE]
+ LOGITECH                       BUS MOUSE
+ LOGITECH                       SERIAL MOUSE
+ MICROSOFT                      SERIAL MOUSE
+ PC MOUSE                       SERIAL MOUSE
+
+
+
+                                                  7/
+     OPTi. Inc., 2525 Walsh Avenue, Santa Clara, CA 95051   (408) 980-8178   FAX: 408-980-8860
+11111
+                          OPTi Compatibility test Report
+                                   Software
+
+ Product:               486SXWB(82C493/82C392/82C206)
+ Date:                  6/25/1991
+ Configuration:         20 /25/33 MHz
+                        8/ 64 Mb DRAM (BOns)
+                        64k Cache memory
+
+
+ VENDOR                         PRODUCT
+
+ [OPERATING SYSTEM /APPLICATION]
+
+ sco                            UNIX/V                                  R3.2.0
+ sco                            XSIGHT(XWINDOWS)                        R2.2.0
+ C!O WATERSIDE ASSOC.           SPEC BENCHMARK                          R1.2
+ IBM                            OPERATING SYSTEM /2                     V1.1
+ IBM                            OPERATING SYSTEM /2                     V1.2
+ MICROSOFT                      OPERATING SYSTEM /2                     V1.1
+
+ MICROSOFT                      DISK OPERATING SYSTEM                   V3.3
+
+ [LAN] - SERVER/STATION/BRIDGE/INTERFACE
+
+ NOVELL                         NETWARE 286                             V2.15
+ NOVELL                         NETWARE SFT                             V2.15
+ MICROSOFT                      WINDOWS(NETWORKING)                     V3.0
+ BORLAND                        PARADOX386(LAN PACK)                    R3.0
+ DATAPOINT                      ARCNET                                  8 BIT
+ DATAPOINT                      ARCNET                                  16 BIT
+ D-LINK                         ETHERNET DE-100                         8 BIT
+ D-LINK                         ETHERNET DE-150                         8 BIT
+ D-LINK                         ETHERNET DE-200                         16 BIT
+ EVEREX                         ETHERNET SPEEDLINK/PC16                 16 BIT
+ 3COM                           ETHERLINK II 3C503                      8 BIT
+ 3COM                           ETHERLINK PLUS 3C505                    16 BIT
+
+
+ [APPLICATION]
+
+ WINDOWS/SHELL
+ MICROSOFT                      WINDOWS                                 V3.0
+ QUARTERDECK                    DESQVIEW386                             V2.3
+
+
+
+
+                                                 7;9-
+     0PTi, Inc .. 2525 Walsh Avenue, Santa Clara, CA 95051   (408) 980-8178 FAX: 408-980-8860
+Ill
+CAD/GRAPHICS/PAINT
+AUTODESK                      AUTOCAD                                  V2.62
+AUTODESK                      AUTOCAD                                  V10
+MICROSOFT                     PAGEMAKER                                V3.0
+MICROSOFT                     PAINTPRUSH
+OR CAD                        ORCAD                                    V3.22
+SOFTWARE PUBLISHING           HARDVARD GRAPHICS                        V3.2
+VIEW LOGIC                    WORKVIEW                                 V4.0
+
+DATA BASE/SPREAD SHEET
+BORLAND                PARADOX 386                                     V3.0
+LOTUS                  LOTUS 123                                       V2.2/V3.1
+MICROSOFT              EXCEL                                           V2.1P
+
+WORD PROCESSING
+MICROSOFT                     WORD                                     V5.0
+
+UTILITIES
+CENTRAL POINT                 PC TOOLS                                 V5.5
+EXECUTIVE SYSTEM              XTREE-PRO                                V1.0
+FIFTH GENERATION              FASTBACK                                 V2.10
+SOFTLOGIC SOLUTION            DISK OPTIMIZER                           V4.05
+
+DIAGNOSTICS
+BYTE                          BYTE BENCHMARK                           V1 .3
+DIAGSOFT                      OAPLUS                                   V4.52
+DATA BASE                     POWER METER                              V1.5
+LANDMARK                      SPEED                                    V1 .14
+PC LAB                        BENCH                                    V5.5
+TOUCHSTONE                    CH EC KIT                                V2.01
+
+
+GAME
+MICROSOFT                     FLIGHT SIMULATOR                         V3.0
+
+
+
+
+                                           73
+   OPTi. Inc.. 2525 Walsh Avenue. Santa Clara. CA 95051   (408) 980-8178   FAX: 408-980 8860
+              OPTi-486SXWB Benchmark Test Report
+                           (82C493 & 82C392)
+
+
+Configuration :
+            486WB TMP Board, 64K cache, 8MB DRAM on board
+
+Power Meter 1.5 :
+
+            20MHz - 8.838 mips
+            25MHz - 11 .072 mips
+            33MHz - 14. 707 mips
+            50MHz - 22.145 mips
+
+Landmark Speed 1.14 :
+
+            20MHz - 90.SMHz
+            25MHz - 113.6MHz
+            33MHz - 151.3MHz
+            50MHz - 200+ MHz
+
+PC Magazine 5.5 :
+
+            20MHz -
+                 CPU instruction mix           1.84 secs
+                 CPU 128 NOP loop              0.95 secs
+                 CPU do nothing loop           0.70 secs
+                 CPU integar addition          0.27 secs
+                 CPU interger multiplication   0.30 secs
+                 CPU string sort & move        0.57 secs
+                 CPU prime number sieve        0.18 secs
+                 CPU floating point mix        2.96 secs
+                 Conventional memory read      0.33 secs
+                 Conventional memory write     0.27 secs
+                 Extended memory read          1.59 secs
+                 Extended memory write         1.42 secs
+
+            25MHz -
+                 CPU instruction mix           1.47 secs
+                 CPU 128 NOP loop              0.75 secs
+                 CPU do nothing loop           0.63 secs
+                 CPU integar addition          0.22 secs
+                 CPU interger multiplication   0.24 secs
+                 CPU string sort & move        0.44 secs
+                 CPU prime number sieve        0.14 secs
+                 CPU floating point mix        2.36 secs
+
+                                    ?.//
+          OPTi Inc. 2525 Walsh Avenue, Santa Clara, CA 95051
+                 Conventional memory read     0.28 secs
+                 Conventional memory write    0.28 secs
+                 Extended memory read         1.26 secs
+                 Extended memory write        1.15 secs
+
+           33MHz -
+                CPU instruction mix           1.11 secs
+                CPU 128 NOP loop              0.57 secs
+                CPU do nothing loop           0.47 secs
+                CPU integar addition          0.15 secs
+                CPU interger multiplication   0.18 secs
+                CPU string sort & move        0.34 secs
+                CPU prime number sieve        0.10 secs
+                CPU floating point mix        1.81 secs
+                Conventional memory read      0.22 secs
+                Conventional memory write     0.16 secs
+                Extended memory read          1.20 secs
+                Extended memory write         1.1 O secs
+
+           50MHz -
+                CPU instruction mix           0.71 secs
+                CPU 128 NOP loop              0.39 secs
+                CPU do nothing loop           0.32 secs
+                CPU integar addition          0.11 secs
+                CPU interger multiplication   0.12 secs
+                CPU string sort & move        0.24 secs
+                CPU prime number sieve        0.08 secs
+                CPU floating point mix        1.15 secs
+                Conventional memory read      0.16 secs
+                Conventional memory write     0.11 secs
+                Extended memory read          0.72 secs
+                Extended memory write         J.66 secs
+
+Norton SI 4.5, Computing Index:
+
+           20MHz - 31.3
+           25MHz - 39.0
+           33MHz - 51.6
+           50MHz - 65.5
+
+Byte Magazine 1.3 CPU Index :
+
+           20MHz - 2.87
+           25MHz - 3.60
+           33MHz - 9.60
+           50MHz - 14.4
+
+                                      :?~
+          OPTi Inc. 2525 Walsh Avenue, Santa Clara, CA 95051
+              OPTi-486SXWB Benchmark Test Report
+                           (82C493 & 82C392)
+
+
+Configuration :
+            486WB TMP Board, no secondary cache, 8MB DRAM on board
+
+Power Meter 1.5 :
+
+            20MHz - 8.566 mips
+            25MHz - 10.707 mips
+
+Landmark Speed 1.14:
+
+            20MHz - 87.5MHz
+            25MHz - 110.3MHz
+
+PC Magazine 5.5 :
+
+            20MHz -
+                 CPU instruction mix           1.92 secs
+                 CPU 128 NOP loop              0.83 secs
+                 CPU do nothing loop           0.79 secs
+                 CPU integar addition          0.28 secs
+                 CPU interger multiplication   0.31 secs
+                 CPU string sort & move        0.56 secs
+                 CPU prime number sieve        0.17 secs
+                 CPU floating point mix        3.25 secs
+                 Conventional memory read      0.44 secs
+                 Conventional memory write     0.33 secs
+                 Extended memory read          2.47 secs
+                 Extended memory write         2.30 secs
+
+            25MHz -
+                 CPU instruction mix           1.53 secs
+                 CPU 128 NOP loop              0.66 secs
+                 CPU do nothing loop           0.63 secs
+                 CPU integar addition          0.22 secs
+                 CPU interger multiplication   0.24 secs
+                 CPU string sort & move        0.46 secs
+                 CPU prime number sieve        0.14 secs
+                 CPU floating point mix        2.50 secs
+                 Conventional memory read      0.33 secs
+                 Conventional memory write     0.27 secs
+                 Extended memory read          1.92 secs
+                 Extended memory write         1.81 secs
+
+                                       /6
+          OPTi Inc. 2525 Walsh Avenue, Santa Clara, CA 95051
+Norton SI 4.5, Computing Index:
+
+           20MHz - 31.1
+           25MHz - 41.0
+
+Byte Magazine 1.3 CPU Index :
+
+           20MHz - 4.31
+           25MHz - 5.43
+
+
+
+
+                                       -??
+          OPTi Inc. 2525 Walsh Avenue, Santa Clara, CA 95051
+1111
+   486 WB TMP Board Jumper Information
+           (6 layers BABY AT Form Factor,Board # 486WB6A3.B1)
+
+
+  JP1        OPEN - Color Monitor
+             CLOSE- Mono
+
+  JP2        1 - 2 Discharge 82C206
+             2 - 3 Battery Connection (normal operation)
+
+  JP3        OPEN - ATCLK = CLK1/4
+             CLOSE- ATCLK = CLK1/6
+
+  JP4        1 - 2 Single phase clock
+             2 - 3 Double frequency clock
+
+  JPS        1 - 2 P23N Processor
+             2 - 3 80486 Processor
+             OPEN - P23 Processor
+
+  JP6        1 - 2 80486/P23N Processor
+             2 - 3 P23 Processor
+
+  JP7        CLOSE - 80486/P23N Processor
+             OPEN - P23 Processor
+
+
+             JPS                     OPEN                    CLOSE
+             JP9                     OPEN                    CLOSE
+             JP10                    OPEN                    OPEN
+             CACHE                   64K                     256K
+
+
+  JP11 :     OPEN - 64K CACHE
+             CLOSE - 256K CACHE
+
+
+
+
+  Other jumper and switch information can be read from the system
+  board.
+
+
+
+
+  OPTi, Inc., 2525 Walsh Avenue, Santa Clara, CA 95051   (408) 980-8178 FAX: 408-980-8860
+11111
+   486 WB TMP Board Jumper Information
+                        (4 layer BABY AT Form Factor)
+
+
+  JP1       1-2     Discharge 82C206
+            2-3     Battery Connection (normal operation)
+
+  JP2       OPEN - Color Monitor
+            CLOSE- Mono
+
+  JP3       1 - 2 P23N Processor
+            2 - 3 80486 Processor
+            OPEN - P23 Processor
+
+  JP4       CLOSE- 80486/P23N Processor
+            OPEN - P23 Processor
+
+  JPS       1 - 2 80486/P23N Processor
+            2 - 3 P23 Processor
+
+  JPS       OPEN -ATCLK = CLK1/4
+            CLOSE - ATCLK = CLK1/6
+
+ JP7        1 - 2 Single phase clock
+            2 - 3 Double frequency clock
+
+
+            JPS                     OPEN                     OPEN
+            JP9                     OPEN                     CLOSE
+            JP10                    OPEN                     CLOSE
+            CACHE                   64K                      256K
+
+
+ JP11 :    TURBO LED
+
+ JP12:     OPEN - 64K CACHE
+           CLOSE - 256K CACHE
+
+
+
+
+ Other jumper and switch information can be read from the system
+ board.
+
+
+
+   OPTi, Inc., 2525 Walsh Avenue, Santa Clara, CA 95051   (408) 980-8178   FAX: 408-980-8860
+

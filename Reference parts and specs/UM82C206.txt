@@ -1,0 +1,3157 @@
+                                                                              UM82C206
+                                                     INTEGRATED PERIPHERAL CONTROLLER
+PRELIMINARY
+
+
+
+
+FEATURES
+
+
+ | Fully compatible with PC/AT architecture            | 8 MHz DMA clock with programmable
+                                                         internal divider for 4 MHz operation
+ I Fully compatible with 8237 DMA controller,
+   8259    interrupt    controller,        8254        116M byte DMA address space’
+   timer/counter, and 146818 real time clock
+                                                       I Programmable wait states for the DMA
+ I    Provides 7 DMA channels, 13 interrupt              cycle
+     request channels, 2 timer/counter channels,
+     and a real time clock                             I Reduced recovery time (120ns) between I/O
+                                                         operations
+ | Built in 74LS612 memory mapper for DMA
+   page address
+
+ I Provides 114 bytes of CMOS RAM memory
+
+
+
+
+ GENERAL DESCRIPTION
+
+
+ The     UM82C206      Integrated    Peripheral        and improved speed performance. These
+ Controller includes two 8237 DMA controllers,         include an additional 64 bytes of user
+ two 8259 interrupt controllers, one 8254              definable CMOS RAM in real time clock and
+ timer/counter, one MC146818 compatible real           drastically reduced recovery time for the 8237,
+ time clock,an additional 64 bytes CMOS RAM,           8259 and 8254. Programmable wait state option
+ one 74LS612 memory mapper, and some top               is provided for the DMA cycles and CPU I/O
+ level decoder/configuration logic circuits. It is     cycles accessing this chip. This chip also
+ a single chip integration of all main                 provides programmable 8 or 4 MHz DMA
+ peripheral parts attached to the X bus of             clock selection. The UM82C206 is implemented
+ PC/AT architecture. While providing full              using advanced 1.5u CMOS design technology
+ compatibility with PC/AT architecture, the            and is packaged in an 84-pin PLCC.
+  UM82C206 also offers some enhanced features
+
+
+
+
+                                                6 -3
+                           UM82C206
+
+
+PIN CONFIGURATION
+
+
+
+
+                    6 -4
+                                                                                                   UM82C206
+
+
+BLOCK DIAGRAM
+
+
+
+
+         DR EOi                                                                                    DACKi
+           HLDA                        8237                                                        A D S T B .T C .A E N .H R O
+                                       DM A8
+                                                                                                   DMAMEMR ■/'DMAMEMH ■
+
+           D ATA
+                                                                                74612              ACK ■
+      ADD RESS                                                                 M EM ORY
+                                                                                                   X A 1 6 , A 17 ~ A 2 3
+   I O R • / ! OM"                                                             M AP PE R
+
+
+
+
+                                         TO P                MAI T
+                                                                          C O N F IG U R A TIO N
+                                                            S TA TE
+                                      DECODER                                 R E G IS T E R
+                                                         G EN ER A TO R                            IO C H P D Y
+
+
+
+
+                                       8259                                                         I NT R
+                                  IN T E R R U P T
+                                  O N TR O LLER -
+                                    <M A S T E R >
+
+
+                                       8259
+                                   IN T E R R U P T
+                                C O N T R O L L E R -:
+                                    <S L A V E >
+
+
+
+
+                                                                                                   OUT 1
+                                                                                                   OUT 2
+
+
+                                     146818
+                                       REAL
+                                       T I ME                                                      PWRGD
+                                      CLOCK
+                                    j U L   ram >                                                  PSRST B ■
+
+
+
+                     F I gure    2.          U M 8 2 C 20 6 B1 o c k        Di a g r a m
+
+
+
+
+                                                              6 -5
+                                                                              UM82C206
+
+
+PIN DESCRIPTION
+
+Pin No.     Symbol     I/O       Description
+
+Clock and Control
+
+21          SYSCLK     I         CLOCK INPUT is used to generate the timing signals for
+                                 DMA operation. This pin can be driven to 10 MHz frequency.
+                                 The internal clock used for DMA operation is either
+                                 SYSCLK or SYSCLK/2 which is a programmable option.
+
+72          OSCI       I         OSCILLATOR INPUT is used to generate the time base for
+                                 the time function of real time clock. External square waves
+                                 of 32.768 KHz may be connected to this pin.
+
+18          RESET      I         RESET is an active high input which affects the following
+                                 registers:
+
+                                 DMA controller: Clears the command, status, request,
+                                 temporary registers, byte pointer flip flop. Sets the mask
+                                 register. Following reset, DMA controller is in the idle state.
+
+                                 INTERRUPT controller: Clears the edge sense circuit, mask
+                                 registers, all ICW4 functions. IRQO is assigned the highest
+                                 priority. Slave address is set to 7. Special mask mode is dis­
+                                 able and status read is set to IRR.
+
+68           IOCHRDY       I/O   I/O CHANNEL READY is a bidirectional pin.
+
+                                 In the input mode, it is used to extend the memory read or
+                                 write pulses for the DMA controller to access slow memories
+                                 or I/O devices. It must satisfy setup and hold times with
+                                 respect to the DMA internal clock in order to work reliably.
+                                 A low on IOCHRDY causes the internal DMA ready signal
+                                 to go low asynchronously. When IOCHRDY goes high, one
+                                 DMA clock cycle will elapse before internal DMA ready
+                                 signal goes high.
+
+                                  In the output mode, it is an open drain output and provides
+                                  an active low output whenever a UM82C206 internal
+                                  register is accessed. It will remain low for a
+                                  pre-programmed number of DMA internal clock cycles (as
+                                  controlled by bits 7 and 6 of UM82C206 configuration
+                                  register) and then goes high. In this way, IOCHRDY can
+                                  insert wait states (as counted by DMA internal clock cycles)
+                                  when CPU accesses the UM82C206 internal registers. This
+                                  pin must be pulled up by an external resistor. In a PC/AT
+                                  architecture based design this pin should be wire-ORed to
+                                  the PC/AT's IOCHRDY signal.
+
+
+
+                                               6 -6
+                                                                     UM82C206
+
+
+
+Pin No.   Symbol    I/O   Description
+
+24-31     XD7-XD0   I/O   X DATA BUS are 3-state bidirectional pins which are
+                          connected to the XD bus in PC/AT architecture design.
+
+                          During CPU I/O read cycles, these they are output pins to
+                          read out the contents of UM82C206 internal registers.
+
+                          During CPU I/O write cycles, these are input pins to let
+                          CPU program the contents of UM82C206 internal registers.
+
+                          During DMA cycles, the most significant 8 bits of the
+                          address are ouput onto these pins to be strobed into an
+                          external latch by ADSTB8 or ADSTB16. During DMA
+                          memory-to-memory transfers, data from the memory comes
+                          into the DMA controller via these pins and stores in the
+                          internal temporary register during read from the memory
+                          partial cycle. In the write to memory partial cycle, the data
+                          stored in the temporary register will output via these pins
+                          again and write into the new memory location.
+
+                          During the interrupt acknowledge cycle, the interrupt
+                          controllers output the interrupt vector byte via these pins.
+                          These pins are also used as the multiplexed address/data
+                          bus for the real time clock and the CMOS RAM accesses.
+
+35-43     XA8-XA0   I/O   X ADDRESS BUS are connected to the XA bus in PC/AT
+34        XA9       I     architecture design. XA8-XA0 pins are bidirectional pins.
+                          XA9 is an input only pin.
+
+                          During CPU I/O accesses to the UM82C206, XA9-XA0 are
+                          used to address configuration register and the internal
+                          registers of 8237s, 8259s, 8254, MC146818, CMOS RAM,
+                          74LS612.
+
+                          During a CPU cycle, XA3-XA0 pins are used by the CPU to
+                          address the registers of the DMA controller corresponding
+                          to DMA channels 0-3. XA4-XA1 pins are used by the CPU to
+                          address the registers of the DMA controller corresponding
+                          to DMA channels 5-7.
+
+                          During a DMA cycle, XA7-XA0 pins are outputs and carry
+                          address information for DMA channels 0-3. XA8-XA1 pins
+                          are outputs and carry address information for DMA
+                          channels 5-7.
+
+
+
+
+                                  6 -7
+                                                                              UM82C206
+
+Pin No.   Symbol           I/O   Description
+
+54        XIOR*            I/O   X I/O READ is a bidirectional active low 3-state pin. In a non
+                                 DMA or non interrupt cycle, it is an input control signal
+                                 used by the CPU to read the UM82C206 internal registers. In
+                                 an active DMA cycle, it is an output control signal used by
+                                 the DMA controller to access data from a peripheral during
+                                 a DMA write memory transfer.
+
+52        XIOW*            I/O   X I/O WRITE is a bidirectional active low 3 state pin. In a
+                                 non DMA or non interrupt cycle, it is an input control signal
+                                 used by the CPU to write the UM82C206 internal registers.
+                                 In an active DMA cycle, it is an output control signal used
+                                 by the DMA controller to write data to a peripheral during a
+                                 DMA read memory transfer.
+
+61        D M A M EM R*    0     DMA MEMORY READ is an active low 3-state output pin
+                                 used to access data from the selected memory location
+                                 during DMA read memory or memory-to- memory transfer.
+
+62        D M A M EM W *   0     DMA MEMORY WRITE is an active low 3-state output pin
+                                 used to write data to the selected memory location during
+                                 DMA write memory or memory-to- memory transfer.
+
+73        HLDA1            I     HOLD ACKNOWLEDGE 1 is an active high signal from the
+                                 UM82C211C to indicate that the CPU has relinquished
+                                 control of the system busses.
+
+69        HRQ              0     HOLD REQUEST is an active high output to the
+                                 UM82C211C to request control of the system bus. When a
+                                 DREQ occurs and the corresponding mask bit is clear, or a
+                                 software DMA request is made, the DMA controller issues
+                                 HRQ to the'UM82C211C. After CPU releases the system bus,
+                                 the UM82C211C then issues a HLDA1 back to the UM82C206
+                                 if DMA has been permitted to control the system bus.
+
+44-47     DREQ0-           I     DMA REQUEST is an asynchronous DMA channel request
+          DREQ3                  input for each DMA channel. In fixed priority, DREQO has
+60-58                            the highest priority and DREQ7 has the lowest priority. A
+          DREQ5-                 periphal device will activate a DREQ line if it needs a DMA
+          DREQ7                  service. DACK will acknowledge the recognition of DREQ
+                                 request. DREQ must be maintained until the corresponding
+                                 DACK goes active. DREQ will not be recognized while the
+                                 DMA clock is stopped. Unused DREQ inputs should be kept
+                                 inactive and the corresponding mask bit should be set to
+                                 avoid an undesired DMA function. Polarity of DREQ is
+                                 programmable. Reset initializes these lines to active high.
+                                 DREQ0-DREQ3 support 8-bit transfers between 8-bit I/O
+                                 device and 8 or 16-bit system memory. DREQ5-DREQ7
+                                 support 16-bit transfers between 16-bit I/O device and 16-bit
+                                 system memory. DREQ4 is not externally available and is
+                                 used to cascade DREQ0-DREQ3.
+
+
+                                               6 -8
+                                                                     UM82C206
+
+
+Pin No.   Symbol    I/O   Description
+
+67        TC        0     TERMINAL COUNT is an active high signal. It indicates
+                          the completion of DMA services. A pulse is generated by the
+                          DMA controller when terminal count for any channel is
+                          reached except for channel 0 in memory-to-memory transfer
+                          mode. During memory-to-memory transfer terminal count
+                          will be generated when the terminal count for channel 1
+                          occurs. When a TC pulse occurs, the DMA controller will
+                          terminate the service, and if auto-initialize is enabled, the
+                          base registers will be written to the current registers of
+                          that channel. The mask bit and TC bit in the status register
+                          will be set for the currently active channel unless the
+                          channel is programmed for auto-initialization. In that case,
+                          the mask bit remains clear.
+
+48-51     DACKO-    0     DMA ACKNOWLEDGE is used to notify the individual
+          DACK3           peripherals when one has been granted a DMA cycle.
+57-55                     Because these signals are used internally for cascading the
+          DACK5-          DMA channels and for DMA page register selection, they
+          DACK7           must be programmed to active low and cannot be changed.
+                          Reset initializes them to active low.
+
+66        ADSTB8    o     ADDRESS STROBE 8 is an active high output. It is used to
+                          latch the upper address byte XA8-XA15 for 8-bit peripheral
+                          devices. During DMA block transfers, ADSTB8 will only be
+                          issued when the upper address byte must be updated, thus
+                          speeding transfer through elimination of SI states of DMA
+                          cycles. ADSTB8 is active for DMA channels 0-3.
+
+65        ADSTB16   0     ADDRESS STROBE 16 is an active high output. It is used to
+                          latch the upper address byte XA9-XA16 for 16-bit peripheral
+                          devices. During DMA block transfers, ADSTB16 will only be
+                          issued when the upper address byte must be updated, thus
+                          speeding transfer through elimination of SI states of DMA
+                          cycles. ADSTB16 is active for DMA channels 5-7.
+
+63        AEN8*     0     ADDRESS ENABLE 8 is an active low output. It is used to
+                          enable the latch of the upper address byte XA8-XA15 for
+                          8-bit peripheral devices. It is inactive when external bus
+                          master controls the system bus. AEN8* is active for DMA
+                          channels 0-3.
+
+64        AEN16*    o     ADDRESS ENABLE 16 is an active low output. It is used to
+                          enable the latch of the upper address byte XA9-XA16 for
+                          16-bit peripheral devices. It is inactive when external bus
+                          master controls the system bus. AEN16* is active for DMA
+                          channels 5-7.
+
+
+
+                                   6 -9
+                                                                           UM82C206
+
+
+
+Pin No.   Symbol    I/O     Description
+
+33        ACK*      I       MODULE SELECT ENABLE is a two purpose input. When
+          (MSE)             high, it enables the chip select function on one of the modules
+                            of UM82C206 for the CPU programming functions. When low,
+                            the UM82C206 is essentially disconnected from the system bus
+                            and is capable of performing an active DMA or an interrupt
+                            cycle. In a PC/AT architecture design, it is tied to ACK*
+                            signal of main board.
+
+11-5      A23-A17   O       A23-A17 and XA16 are 3-state output pins. A23- A17 are the
+13        XA16              upper 7 bits of the DMA page register. XA16 is the least
+                            significant bit of the DMA page register and is used for DMA
+                            transfers for 8-bit peripheral devices only. XA16 is not used
+                            for 16-bit DMA transfers as XA16-XA9 being provided by
+                            demultiplexing the data bus.
+
+76-       1RQ15-    I       INTERRUPT REQUESTS are asynchronous inputs. When
+82        1RQ9              8259 is operating in edge triggered mode, an interrupt request
+                            is executed by raising an IRQ input low to high and holding it
+83        IRQ7              high until it is acknowledged by CPU.
+84        IRQ6              When 8259 is operating in level triggered mode, an interrupt
+                            request is executed by raising an IRQ input high and holding
+1-        IRQ5-             it high until it is ack nowledged by CPU.
+3         IRQ3
+
+4         IRQ1
+
+16        INTA*         1    INTERRUPT ACKNOWLEDGE is an active low input. It is
+                             used to enable the interrupt controllers to output the vector
+                            •data on to the data bus by an interrupt acknowledge sequence
+                             from the CPU.
+
+70        INTR          0   INTERRUPT REQUEST is an active high output pin. It is
+                            connected to the CPU's interrupt pin and is used to interrupt
+                            the CPU when an interrupt request occurs.
+
+ 23       TMRCLK        I    TIMER CLOCK is an input clock for 8254 counter 0, counter 1
+                             and counter 2. In PC/AT architecture design, it is
+                             approximately 1.19 MHz.
+
+ 22       GATE2         I    GATE 2 is a gate input for 8254 counter 2. In PC/AT
+                             architecture design, the counter 2 is used for tone generation
+                             for speaker. It is driven by bit 0 of I/O port 61h.
+
+ 20        OUT1         0    OUT 1 is an output of 8254 counter 1. In PC/AT architecture
+                             design, the counter 1 is programmed as a rate generator to
+                             produce a 15 usee period signal for DRAM refresh.
+
+ 19        OUT2         o    OUT 2 is an output of 8254 counter 2. In PC/AT architecture
+                             design, counter 2 is used for tone generation for speaker.
+
+
+
+
+                                      6 -1 0
+                                                                       UM82C206
+
+
+Pin No.   Symbol    I/O   Description
+
+71        AS        I     ADDRESS STROBE is an active high input. It is pulsed by
+                          UM82C211C when CPU accesses the real time clock or
+                          CMOS RAM of the UM82C206. The falling edge of this pulse
+                          latches the address from the XD bus.
+
+15        PSRSTB*   I     POWER SUPPLY STROBE is an active low input. It is used
+                          to establish the condition of the control registers of real
+                          time clock when power is applied to the device. In PC/AT
+                          architecture design, it should be tied to the battery back-up
+                          circuit. When PSRSTB* and T E ST are both low, the follow­
+                          ing occurs:
+
+                           (a) Periodic Interrupt Enable (PIE) bit is cleared to zero.
+                           (b) Alarm Interrupt Enable (AIE) bit is cleared to zero.
+                           (c) Update ended Interrupt Enable (UIE) bit is cleared to
+                              zero.
+                           (d) Update ended Interrupt Flag (UF) bit is cleared to zero.
+                           (e) Interrupt Request status Flag (IRQF) is cleared to zero.
+                           (f) Periodic Interrupt Flag (PF) bit is cleared to zero.
+                           (g) The part is not accessible.
+                           (h) Alarm interrupt Flag (AF) bit is cleared to zero.
+                           (i) Square Wave output enable bit is cleared to zero.
+
+14        PWRG      I     POWER GOOD is an active high input and is connected to
+                          the power good of the power supply in PC/AT architecture
+                          design. It must be high for bus cycles in which the CPU
+                          accesses the real time clock. When it is low, all address, data,
+                          data strobe and R/W pins are disconnected from the
+                          processor.
+
+17        TEST      I     TEST is an active high input to enable the chip testing for
+                          production. It should be tied low for normal operation.
+
+32,75     VDD             POWER SUPPLY
+
+12,53,    vss             GROUND
+74
+
+
+
+
+                                   6-11
+                                                                                         UM82C206
+
+FUNCTIONAL/REGISTER DESCRIPTION
+
+TOP LEVEL DECODER AND CONFIGURATION REGISTER
+
+The UM82C206 top level decoder provides 8                 whenever an enable is generated to an internal
+separate enables to various subsystems of the             subsystem and the XIOR* signal is also asserted.
+device. Table 1. contains a truth table for the top       The decoder is enabled by signals ACK*, XA9,
+level decoder. The enabling of the UM82C206               XA8. To enable any internal subsystem ACK*
+XD0-XD7 output buffers is also controlled by              must be T and both XA9 and XA8 must be 'O'.
+this section. The output buffers are enabled
+
+
+                Table 1. UM82C206 Internal Decode
+
+
+
+          ACK* XA9 XA8 XA7 XA6 XA5 XA4 XA3 XA2 XA1 XAO          ADDRESS       SELECTED
+                                                                RANGE(HEX)   DEVICE
+
+           1     0   0   0    0   0   0    X   X      X     X   OOO-OOF      DMA8
+
+           1     0   0   0    0   1   0    0   0      0     X   020-021       INTC1
+
+           1     0   0   0    0   1   0    0   0      1     X   022-023      CONFIG
+
+           1     0   0   0    1   0   0    0   0      X     X   040-043       CTC
+
+           1     0   0   0    1   1   1    0   0      0     1   071           RTC
+
+           1     0   0   1    0   0   0    X   X      X     X   080-08F       DMAPAGE
+
+           1     0   0   1    0   1   0    0   0      0     X   0A0-0A1       INTC2
+
+           1     0   0   1    1   0   X    X   X      X     X   0C0-0DF       DMA16
+
+           0     X   X   X    X   X    X   X   X      X     X                 DISABLED
+
+           X     1   X    X   X   X    X   X   X      X     X                 DISABLED
+
+            X    X   1    X   X   X    X   X   X      X     X                 DISABLED
+
+
+
+
+                                                   6 -1 2
+                                                                                      UM82C206
+    Configuration Register
+
+    Index register port: 22H
+    Data register port: 23H
+    Index : 01H
+
+    Bits     Function
+    7-6    These bits contain the information of wait states inserted when the CPU accesses the
+           registers of UM82C206. Wait states are counted as SYSCLK clock cycles and are not affected
+           by the DMA clock selection.
+
+                    7    6     Register I/O ,R/W wait states
+
+                    0    0         1
+                    0    1         2
+                    1    0         3
+                    1    1         4 (default)
+
+     5-4   These bits contain the information of wait states inserted in 16 bit DMA cycles. Further
+           control of the DMA cycle length is available through the use of the IOCHRDY pin of the
+           UM82C206. During DMA cycle this pin is used as an input to the wait state generation logic
+           to extend the cycle if necessary.
+
+                     5   4    16 bit DMA wait states
+
+                     0   0        1 (default)
+                     0   1        2
+                     1   0        3
+                     1   1        4
+
+     3-2    These bits contain the information of wait states inserted in 8 bit DMA cycles. Further
+            control of the DMA cycle length is available through the use of the IOCHRDY pin of the
+            UM82C206. During DMA cycle this pin is used as an input to the wait state generation logic
+            to extend the cycle if necessary.
+
+                    3    2    8   bit DMA wait states
+
+                    0 0           1 (default)
+                    0 1           2
+                    1 0           3
+                    1 1           4
+
+     1       EMR bit enables the early DMAMEMR* function. In IBM PC/AT design DMAMEMR* is
+            delayed one clock cycle later than XMEMR*. If set to 1, it will start DMAMEMR* at the same
+            time as XMEMR*. If set to 0, it will start DMAMEMR* as an IBM PC/AT design (default).
+
+.    0      CLK bit selects the DMA clock. If this bit set to 0, the SYSCLK input is divided by two and is
+            used to drive both the 8-bit and 16-bit DMA subsystems (default). If this bit is set to 1, the
+            SYSCLK will directly drive the DMA subsystems. Whenever the state of this bit is changed,
+            an internal synchronizer controls the actual switching of the clock to prevent a short clock
+            pulse from causing a DMA malfunction
+
+                                                 6 -1 3
+® U M O                                                                        UM82C206
+DMA SUBSYSTEM
+
+The UM82C206 contains two 8237 DMA                DMA16 provides the cascade interconnection of
+controllers. Each controller is a four channel    the two DMA devices, thereby maintaining PC/
+DMA device which will generate the memory         AT compatibility. Hereinafter, the description
+addresses and control signals necessary to        of the DMA subsystem pertains to both DMA8
+transfer data between a peripheral device and     and DMA16 unless otherwise noted.
+memory directly. The two DMA controllers are
+                                                  DMA 1/0   Address   Map
+internally cascaded to provide four DMA
+channels for transfers to 8-bit peripherals       The I/O address map of the DMA subsystem of
+(DMA8), and three channels for transfers to       UM82C206 is listed in Table 2. The mapping is
+ 16-bit peripherals (DMA16). The channel 0 of     fully compatible with PC/AT architecture.
+
+                           Table 2. DMA Subsystem I/O Address Map
+
+ ADDRESS   OPERATION BYTE                  REGISTER
+ DMA8DMA16 XIOR* XIOW* POINTER             FUNCTION
+
+ 000H   OCOIl      0   1         0         Read channel 0 current address low byte
+                   0   1         1         Read channel 0 current address high byte
+                   1   0         0         Write channel 0 base and current address low byte
+                   1   0         1         Write channel 0 base and current address high byte
+
+ 001H 0C2H         0   1         0         Read channel 0 current word count low byte
+                   0   1         1         Read channel 0 current word count high byte
+                   1   0         0         Write channel 0 base and current word count low byte
+                   1   0         1         Write channel 0 base and current word count high byte
+
+ 002H   0C4H       0   1         0         Read channel 1 current address low byte
+                   0   1         1         Read channel 1 current address high byte
+                   1   0         0         Write channel 1 base and current address low byte
+                   1   0         1         Write channel 1 base and current address high byte
+
+ 003H   0C6H       0   1         0         Read channel 1 current word count low byte
+                   0   1         1         Read channel 1 current word count high byte
+                   1   0         0         Write channel 1 base and current word count low byte
+                   1   0         1         Write channel 1 base and current word count high byte
+
+ 004H 0C8H         0   1         0         Read channel 2 current address low byte
+                   0   1         1         Read channel 2 current address high byte
+                   1   0         0         Write channel 2 base and current address low byte
+                   1   0         1         Write channel 2 base and current address high byte
+
+ 005H 0CAH         0   1         0         Read channel 2 current word count low byte
+                   0   1         1 -       Read channel 2 current word count high byte
+                   1   0         0         Write channel 2 base and current word count low byte
+                   1   0         1         Write channel 2 base and current word count high byte
+
+ 006H 0CCH         0   1         0         Read channel 3 current address low byte
+                   0   1         1         Read channel 3 current address high byte
+                   1   0         0         Write channel 3 base and current address low byte
+                   1   0         1         Write channel 3 base and current address high byte
+
+                                                 6 -1 4
+                                                                     UM82C206
+
+
+DMA8 DMA16 XIOR* XIOW* POINTER   FUNCTION
+
+007H OCEH      0   1     0       Read channel 3 current word count low byte
+               0   1     1       Read channel 3 current word count high byte
+               1   0     0       Write channel 3 base and current word count low byte
+               1   0     1       Write channel 3 base and current word count high byte
+
+008H    ODOH   0 1        X      Read status register
+               1 0        X      Write command register
+
+009II   0D2H   0 1        X      Read DMA request register
+               1 0        X      Write DMA request register
+
+OOAH OD4H      0 1        X      Read command register
+               1 0        X      Write single bit DMA request mask register
+
+OOBH OD6H      0 1        X      Read mode register
+               1 0        X      Write mode register
+
+OOCH OD8H      0 1        X      Set byte pointer flip/flop
+               1 0        X      Clear byte pointer flip/flop
+
+OODH ODAH      0 1        X      Read temporary register
+               1 0        X      Master clear
+
+OOEH ODCH      0 1        X      Clear mode register counter
+               1 0        X      Clear all DMA request mask register bits
+
+OOFH ODEH      0 1        X      Read all DMA request mask register bits
+               1 0        X      Write all DMA request mask register bits
+
+
+
+
+                                  6 -1 5
+                                                                                       UM82C206
+DMA Operation
+
+
+During normal operation of the UM82C206, the           accessed. The XIOR* and XIOW* are used to
+DMA subsystem will be in either the idle               select and time the CPU reads or writes. When
+condition, the program condition or the active         DMA16 is selected, the XAO is not used to decode
+condition. When DMA controller is in the idle          and is ignored. Due to the large number and size
+condition, it only executes the SI idle state          of the internal registers of the DMA subsystem,
+cycles. The DMA controller will remain in the          an internal byte pointer flip/flop is used to
+idle condition unless it has been initialized to       supplement the addressing of the 16-bit word
+work and one of the DMA request pins has been          count and address registers. This byte pointer is
+asserted. In that case, the DMA controller will        used to determine the upper or lower byte of the
+exit the idle condition and enter the active           word count and address registers. This byte
+condition. The DMA controller will also exit the       pointer flip/flop is cleared by hardware RESET
+idle condition and enter the program condition         or a master clear command. It may also be set or
+when CPU attempts to access its internal regis­        cleared by the CPU's 'set byte pointer flip/flop'
+ters.                                                  or clear byte pointer flip/flop' commands. There
+                                                       are special commands supported by the DMA
+Idle   Condition                                       subsystem in the program condition. These
+                                                       commands do not use the data bus but are
+When no peripherals request service, the DMA           derived from a set of addresses, the internal
+subsystem will enter the idle condition and            select and XIOR* or XIOW*. These commands
+perform only the SI idle states. During this time      are listed at the end of table 2. Erratic operation
+the UM 82C206 will sample the DREQ input pins          of the UM82C206 can occur if a request for
+every clock cycle to determine if any peripheral       service occurs on an unmasked DMA channel
+is requesting a DMA service. The internal select       which is being programmed. The channel
+from the top level decoder and HLDA1 input pin         should be masked or the DMA should be
+will also sample at the same time to determine if      disabled to prevent the UM82C206 from
+the CPU is attempting to access the internal           attempting to service a peripheral with a
+registers. With either of the above two                channel which is only partially programmed.
+conditions satisfied, the DMA subsystem will
+exit the idle condition and enter the program           Active   Condition
+condition or the active condition. Note that the
+ program condition has priority over the active         The DMA subsystem will enter the active
+condition since a CPU cycle has already started         condition whenever a software request occurs
+ before DMA has been granted use of the bus.            or a DMA request occurrs on an unmasked
+                                                        channel which has already been programmed.
+                                                        When a DREQ occurs and the corresponding
+ Program     Condition
+                                                        mask bit is clear, or a software DMA request is
+                                                        made, the DMA subsystem issues HRQ to the
+ The DMA subsystem will enter the program
+                                                        UM82C211C. After CPU releases the system bus,
+ condition whenever HLDA1 input pin is inactive
+                                                        the UM82C211C then issues a HLDA1 back to
+ and an internal select from top level decoder is
+                                                        the UM82C206 if DMA has been permitted to
+ active. During this time, the address lines
+                                                        control the system bus. After being granted
+ XA0-XA3 become inputs if DMA8 is selected, or
+                                                        control of the bus, the DMA subsystem will then
+ XA1-XA4 become inputs if DMA16 is selected.
+                                                         begin a DMA transfer cycle. Take DMA read
+ These address inputs are used to decode the
+                                                        cycle as an example. After receiving a DREQ,
+ DMA controller registers which are to be
+
+
+
+
+                                                   6 -1 6
+                                                                                      UM82C206
+
+the UM82C206 will issue a HRQ to the                   word count register is decreased and the
+UM82C211C. Until a 1ILDA1 is returned, the             address register is increased or decrased
+DMA subsystem will remain in an idle condi­            depending on the DEC bit of mode register.
+tion. On the next clock cycle the DMA will exit        When the word count decrements from 0000H to
+idle and enter SO state. During SO the DMA will        FFFFH the terminal count bit in the status
+resolve priority and issue DACK on the highest         register is set and a pulse is output to TC pin. If
+priority channel which is requesting service.          the autoinitialization is selected, the channel
+The DMA will then enter SI state where the             will reinitialize itself for the next service.
+multiplexed addresses are output and latched.          Otherwise,      the DMA will set the cor_
+The DMA will then enter S2 State where the             responding DMA request bit mask and suspend
+ UM82C206 asserts DMAMEMR* command. The                transferring on that channel.
+DMA will then enter S3 state where the
+ UM82C206 asserts XIOW* command. The DMA               Block Transfer Mode - In this mode the DMA
+will then remain in S3 until the wait state            will begin transfers in response to either a
+counter has expired and IOCHRDY is high. Note          DREQ or a software request. If DREQ starts the
+that at least one additional S3 will occur unless      transfers, it need only be held active until
+compressed timing is programmed. Once a                DACK becomes active. The transfers will con­
+ ready condition is detected, the DMA will enter       tinue until the word count decrements from
+ S4 where DMAMEMR* and XIOW* are                       OOOOII to FFFFH, at which time TC pin is pulsed
+ deasserted. In compressed mode and demand             and the terminal count bit of status register is
+ mode, subsequent transfers will begin in S2           set. Again, an autoinitialization will occur at the
+ unless the intermediate addresses require             end of the last service if the channel has been
+ updating. In these subsequent transfers the           programmed to do so.
+ lower addresses are changed in S2.
+                                                        Demand Transfer Mode - In this mode the DMA
+T ransf er   Modes                                      will begin transfers in response to the assertion
+                                                        of DREQ and will continue until either terminal
+There are four transfer modes supported by the          count is reached or DREQ becomes inactive.
+DMA. They are single transfer mode, block               This mode is normally used for peripherals
+transfer mode, demand transfer mode and                 which have limited buffering capacity. The
+cascade mode. The DMA can be programmed on              peripheral can initiate a transfer and continue
+a channel by channel basis to operate in one of         until its buffer capacity is exhausted. The
+these four modes.                                       peripheral may then re-establish service by
+                                                        again asserting DREQ. During idle. periods
+Single Transfer Mode - In this mode the DMA             between transfers the CPU is released to
+will execute only one cycle at a time. DREQ             operate and can monitor the operation by
+must be held active until DACK becomes active           reading intermediate values from the address
+in order to be recognized. If DREQ is held active       and word count register. Once DREQ has been
+throughout the single transfer, the UM82C206            deasserted, higher priority channels are allowed
+will deassert HRQ and release the bus to the            to intervene. Reaching terminal count will
+system once the transfer is complete. After             result in the generation of a pulse on TC pin, the
+HLDA1 has gone inactive the UM82C206 will               setting of the terminal count bit in the status
+again assert HRQ and execute another transfer           register and autoinitialization if programmed to
+on the same channel unless a request from a             do so.
+higher priority channel has been received. In           Cascade Mode - This mode is used to
+single transfer mode the CPU is ensured of at           interconnect more than one DMA controller, to
+least one full machine cycle execution between          extend the number of DMA channels while
+DMA transfers. Following each transfer the
+
+
+
+                                                    6 -1 7
+        i § «"= —=
+                                                                                     UM82C206
+
+
+preserving the priority chain. In cascade mode        cascaded to the available channels in either
+the master DMA controller does not generate           DMA8 or DMA16 since cascade is not limited to
+address or control signals. The DREQ and              two levels of DMA controllers.
+DACK signals of the master are used to in­
+terface the HRQ and HLDA1 signals of the slave        When programming cascaded controllers, begin
+DMA devices. Once the master has received a           with the device which is actually generating
+HLDA1 from the CPU in response to a DREQ              HRQ to the system (first level device) and then
+caused by the HRQ from a slave DMA controller,        proceed to the second level devices. RESET
+ the master DMA controller will ignore all in­        causes the DACK* outputs to become active low
+puts except HLDA1 from the CPU and DREQ on            and are placed in the inactive state. To allow the
+active channel. This prevents conflicts between       internal cascade between DMA8 and DMA16 to
+the DMA devices.                                      function correctly, the active low state of
+                                                      DACK* should not be modified. The first level
+Figure 3. shows the cascade interconnection for       device's DMA request mask bits will prevent
+two levels of DMA devices. Note that channel 0        second level cascaded devices from generating
+of DMA16 is internally connected for cascade          unwanted hold requests during the initialization
+mode to DMA8. Additional devices can be               process.
+
+
+
+
+             Figure      3.   Cascade       Mode           Interconnect
+
+
+
+
+                                                  6 -1 8
+Q umo                                                                                 UM82C206
+Transfer   Types
+
+
+Single transfer mode, block transfer mode and        XD0-XD7 output pins during the write portion
+demand transfer mode can perform any of the          of the transfer and subsequently written to
+three transfer types. These three transfer types     memory location. Channel 0 may be pro­
+are read , write and verify transfers.               grammed to maintain the same source address
+Read Transfers - These transfers move data           on every transfer. This allows the CPU to
+from memory to an I/O peripheral by                  initialize large blocks of memory with the same
+generating the memory address and asserting          value. The DMA subsystem will continue
+DMAMEMR* and XIOW* during the same                   performing transfers until channel 1 reaches
+transfer cycle.                                      the terminal count.
+
+Write Transfers ■ These transfers move data
+                                                         Autoinitialization
+from an I/O peripheral to memory by
+generating the memory address and asserting
+                                                         The mode register of each DMA channel
+DMAMEMW* and XIOR’ during the same
+                                                         contains a bit which will cause the channel to
+transfer cycle.
+                                                         reinitialize after reaching terminal count.
+                                                         During autoinitialization , the base address
+Verify Transfers - The verify transfers are
+                                                         and base word count registers, which were
+pseudo transfers. In this type of transfer the
+                                                         originally programmed by the CPU,           are
+DMA will operate as in read or write transfers
+                                                         reloaded into the current address and current
+by generating HRQ, DACK, memory addresses
+                                                         word count registers. The base registers remain
+and respond to the terminal count. But it does
+                                                         unchanged during DMA active cycles and can
+not activate the memory and I/O command
+                                                         only be changed by the CPU. If the channel has
+signals. Since no transfer actually takes place
+                                                         been programmed to autoinitialize, the request
+IOCHRDY is also ignored during verify
+                                                         mask bit will remain cleared upon reaching
+transfers.
+                                                         terminal count. This allows the DMA to
+                                                         continue operation without CPU intervention. In
+Memory-to-Memory Transfers ■ In addition to
+                                                         memory-to-memory transfers the word count
+the above three transfer types, there is also a
+                                                         registers of both channel 0 and channel 1 must
+memory-to-memory transfer which can only be
+                                                         be programmed with the same starting value
+used on DMA channel 0 and channel 1. The
+                                                         for full autoinitialization.
+memory-to-memory transfer is used to move a
+block of memory from one location in memory
+to another. DMA channels 0 and 1 may be                  DREQ      Priority
+programmed to operate as memory-to-memory
+channels by setting a bit in the DMA command             The UM82C206 supports two types of priority
+register. Once programmed to do so the transfer          schemes which are software programmable.
+can be started by generating either a software           They are fixed priority and rotating priority.
+or an external request to channel 0. During the          Fixed priority assigns priority based on channel
+transfer, channel 0 provides the address for the         position. In this method channel 0 is assigned
+source block during the memory read portion of           the highest priority and channel 3 is the lowest
+the transfer, channel 1 generates the address for        priority. After the recognition of any one
+the destination block during the memory write            channel for service, the other channels are
+portion of the same transfer. During the read            prevented from interfering with that service
+portion transfer, a byte of data is latched in the       until it is completed. In rotating priority, the
+internal temporary register of DMA. The                  ordering of priority from channel 0 to channel 3
+contents of this register are then output on the         is maintained but the actual assignment of
+
+
+
+
+                                                6 -1 9
+                                                                                       UM82C206
+
+priority changes. The channel most recently             UM82C206 will issue a HRQ but will not freeze
+serviced will be assigned the lowest priority and       the priority logic until HLDA1 is returned.
+since the order of priority assignment remains          Once HLDA1 becomes active the priority logic is
+fixed, the remaining three channels rotate              frozen and DACK is asserted on the highest
+accordingly. The rotating priority assignment is        requesting channel. Priority will not be reevalu­
+illustrated in Figure 4. In instances where             ated until HLDA1 has been deactivated.
+multiple requests occur at the same time, the
+
+
+
+
+Address    Generation
+
+
+Eight intermediate bits of the address are               active, the UM82C206 will out- put the lower
+multiplexed onto the data lines during active            8-bits of address on XA0-XA7. The intermediate
+cycles of the DMA. This reduces the number of            8-bits of add- ress will be output on XD0-XD7
+pins required by the DMA subsystem. During SI            and ADSTB8 will be asserted for one DMA
+state, the intermediate addresses are out- put on        clock cycle. The falling edge of ADSTB8 is used
+data lines XD0-XD7. These addresses should be            to latch the intermediate address- es A8-A15. An
+externally latched and used to drive the system          enable signal, AEN8, issused to control the
+address bus. Since DMA8 is used for 8-bit                output drivers of the external latch. A16-A23 are
+transfers and DMA16 is used for 16-bit transfers,        also generated at this time from a DMA page
+a l-bit skew occurs in the intermediate                  register in the UM82C206. Note that A16 is
+address fields. DMA8 will therefore output               output on the XA16 pin of the device.
+addresses A8-A15 on the data bus at this time
+whereas DMA16 will output A9-A16. A separate             During 16-bit DMA transfers, in which DAM16
+set of latch and enable signals are provided for         is active, the UM82C206 will output the lower
+both DMA8 and DMA16 to accommodate the                   8-bits of address on XA1-XA8. The intermediate
+address skew.                                            8-bits of address A9-A16 will be output on
+                                                         XD0-XD7 and ADSTB16 will be asserted for one
+ During 8-bit DMA transfers, in which DAM8 is            DMA clock cycle. The falling edge of ADSTB16
+
+
+                                                    6 -2 0
+                                                                                     UM82C206
+
+is used to latch the in- termediate addresses         cascading to DMA8. Assignment of each of
+A9-A16. An enable signal, AEN16, issued to            these registers is shown in Table 3. along with
+control the output drivers of the external latch.     its CPU I/O read/write address.
+A17-A23 are also generated at this time from a        During demand and block transfers,          the
+DMA page register in the UM82C206. Note that          UM82C206 generates multiple sequen- tial
+XAO and XA16 remain 3-state during 16-bit             transfers. For most of these transfers the
+DMA transfers.                                        information in the external address latches will
+The DMA page registers are a set of 16 8-bit          remain the same, eliminating the need to be
+registers in the UM82C206 which are used to           relatched. Since the need to update the latches
+generate the high order addresses during DMA          occurs only when a carry or borrow from the
+ cycles. Only 8 of the registers are actually used    lower 8-bits of the address counter exists, the
+ but all 16 were included to maintaim PC/AT           UM82C206 will only update the latch contents
+ compatibility. Each DMA channel has a page           when necessary. The UM82C206 will therefore
+ register associated with it with the exception of    only execute SI state when necessary and
+ channel 0 of DMA16 which is used for internal        improve the overall system throughput.
+
+                          Table 3. DMA Page Register I/O Address Map
+
+                   I/O ADDRESS              TYPE            REGISTER FUNCTION
+
+                        080H                R/W             Unused
+
+                        081H                R/W             DMA8 channel 2 (DACK2)
+
+                        082H                R/W             DMA8 channel 3 (DACK3)
+
+                        083H                R/W             DMA8 channel 1 (DACK1)
+
+                        084H                R/W             Unused
+
+                        085H                R/W             Unused
+
+                        086H                R/W             Unused
+
+                        087H                R/W             DMA8 channel 0 (DACKO)
+
+                        088H                R/W             Unused
+
+                        089H                R/W             DMA16 channel 2 (DACK6)
+
+                        08AH                R/W             DMA16 channel 3 (DACK7)
+
+                        08BH                 R/W            DMA16 channel 1 (DACK5)
+
+                        08CH                 R/W            Unused
+
+                        08DH                 R/W            Unused
+
+                        08EH                 R/W            Unused
+
+                        08FH                 R/W            DRAM refresh cycle
+
+
+                                                     6-21
+                                                                                        UM82C206
+Compressed     Timing
+
+
+The DMA subsystem in the UM82C206 can be             one greater than the value programmed into the
+programmed to transfer a word in as few as 2         register. The register is decremented after each
+DMA clock cycles. Normal transfers require 4         transfer until it goes from zero to FFFFH. When
+DMA clock cycles since S3 is executed twice due      this roll-over occurs the UM82C206 will generate
+to the one wait state insertion. In systems          TC and either suspend operation on that
+capable of supporting higher throughput, the         channel and set the appropriate request mask
+UM82C206 can be programmed to omit one S3            bit or autoinitialize and continue.
+and assert both commands in S2. S2 begins the
+cycle by generat- ing the address and asserting      Base Address      Register
+both commands. One S3 cycle is executed and
+the cycle terminates in S4. If compressed timing         Associated with each Current Address Register
+is selected, TC will be output in S2 and SI cycles       is a Base Address Register. This is a write only
+will be executed as necessary to update the              register which is loaded by the CPU when
+address latch. Note that compressed timing is            writing to the Current Address Register. The
+not allowed for memory-to- memory transfers.             purpose of this register is to store the initial
+                                                         value of the Current Address Register for
+Register    Description                                  autoinitialization. The contents of this register
+                                                         are loaded into the Current Address Register
+Current    Address Register                              whenever terminal count is reached and the
+                                                         Autoinitialize Bit is set.
+Each DMA channel has a 16-bit current address
+register which holds the address used during             Base Word     Count Register
+transfers. Each channel can be programmed to
+increment or decrement this register whenever             This register preserves the initial value of the
+a transfer is completed. This register can be             Current Word Count Register. It is also a write
+read or written by the CPU in consecutive 8-bit           only register which is loaded by writing to the
+bytes. If autoinitialization is selected, this           (Current Word Count Register. This register is
+register will be reloaded from the base address           loaded into the Current Word Count Register
+register upon reaching terminal count in the              during autoinitialization.
+current word count register. Channel 0 can be
+prevented from incrementing or decrementing
+                                                         Command Register
+by setting the address hold bit in the command
+register.                                                This register controls the overall operation of a
+                                                         DMA subsystem. The register can be read or
+ Current   Word    Count Register                        written by the CPU and is cleared by either
+                                                         RESET or a Master Clear command.
+ Each channel has a current word count register
+ which determines the number of transfers. The
+ actual number of transfers performed will be
+
+
+
+
+                                                6 -2 2
+                                                                                       UM82C206
+
+                              Command Register Format ( Read/Write )
+
+   Bits        Function
+
+       7       DAK - Writing a "0" to this bit makes DACK an active low out- pin. Writing a 1" to this
+               bit makes DACK an active high output pin.
+
+       6       DRQ - Writing a ''0'' to this bit makes DREQ an active high input pin. Writing a "1" to
+               this bit makes DREQ an active low input pin.
+
+       5       EW - Writing a "1” to this bit enables Extended Write feature. It causes the write
+               command to be asserted one DMA cycle earlier during a transfer. Thus read and write
+               commands both begin in state S2 when enabled.
+
+       4        RP - Writing a "1" to this bit selects a Rotating Priority scheme for honoring DMA
+                requests. The default condition is fixed priority.
+
+       3        CT - Writing a 1" to this bit enables the Compressed Timing. The default condition
+                causes the DMA to operate with normal timing.
+
+       2        CD - Controller Disable. Writing a T to this bit disables the DMA subsystem (DMA8 or
+                DMA16). This function is normally used whenever the CPU needs to reprogram one of
+                the channels to prevent DMA cycles from occuring.
+
+       1        AH - Writing a "1“ to these bit enables the address hold feature in Channel 0 when
+                performing memory-to-memory transfer.
+
+       0        M-M - Writing a T" to this bit enables Channel 0 and Channel 1 to be used for memory-to
+                memory transfers.
+
+
+
+
+Mode       Register
+
+
+Each DMA channel has a Mode Register                      can be read by sequentially reading the Mode
+associated with it. All four Mode Registers               Register location. A Clear Mode register Counter
+reside at the same I/O address. Bits 0 and 1 of           command is provided to allow the CPU to
+the Write Mode Register command determine                 restart the mode read process at a known point.
+which channel Mode Register gets written.                 During mode read operations, bit 0 and 1 will
+The remaining six bits control the mode of the            both be 1.
+selected channel. Each channel Mode Register
+
+
+
+
+                                                 6 -2 3
+                                                                                UM82C206
+
+                           Mode Register Format ( Read/Write)
+
+Bits   Function
+
+7-6    These bits contain the information of mode selection for each channel:
+
+        7     6       Function
+
+       Ml     MO      Mode Select
+
+        0     0       Demand Mode
+        0     1       Single Cycle Mode
+        1     0       Block Mode
+        1     1       Cascade Mode
+
+ 5     DEC - Writing a T" to this bit DECrements the address after each transfer.
+
+ 4     AI - Writing a "1" to this bit enable Auto_Initialization function.
+
+3-2    These bits control the type of transfer which is to be performed.
+
+         3        2     Function
+
+       TT1 TT2          Transfer    Type Select
+
+         0        0     Verify Transfer
+         0        1     Write Transfer
+         1        0     Read Transfer
+         1        1     Illegal
+
+1-0    These bits determine which channel's Mode Register will be written. Read back of a mode
+       register will cause these bits to both be T .
+
+         1        0     Function
+
+        CS1   cso       Channel Selection
+
+         0        0     select Channel 0
+         0        1     select Channel 1
+         1        0     select Channel 2
+         1        1     select Channel 3
+
+
+
+
+                                             6 -2 4
+                                                                                      UM82C206
+Request   Register
+
+
+This is a four bit register used to generate           Mask has no effect on software generated
+software requests (DMA service can be                  requests. All four bits are read in one operation,
+requested either externally or under software          and appear in the lower four bits of the byte.
+control). Request Register bits can be set or          Bits 4 through 7 are read as ones . All four
+reset independently by the CPU. The Register           request bits are cleared to zero by RESET.
+
+
+
+
+                                   Request Register Write Format
+
+  Bits     Function
+
+ 7-3      Don't care.
+
+  2       RB - Writing a T" to this bit sets the Request Bit.
+
+  1-0     RS1-RS0 - Channel Request Select. These bits determine which channel's Request bit will be
+          set.
+
+
+           1    0       Function
+
+          RSI RSO       Channel Selection
+
+           0     0      select Channel 0
+           0     1      select Channel 1
+           1     0      select Channel 2
+           1     1      select Channel 3
+
+
+
+
+                                   Request Register Read Format
+
+  Bits      Function
+
+  7-4     Always reads T'.
+
+  3-0     RC3-RC0 - These bits contain the state of the request bit associated with each Request
+          Channel. The bit position corresponds to the channel number.
+          5    5 sS .x s5 “
+                                                                                         UM82C206
+Request        Mask     Register
+
+
+The Request mask register is a set of four bits             channel can be independently masked by
+which are used to inhibit external DMA                      writing to the Write Single Mask Bit location.
+requests from generating transfer cycles. This              The data format for this operation is shown
+register can be programmed in two ways. Each                below.
+
+
+
+                                    Request Mask Register Set/Reset Format
+
+  Bits         Function
+
+ 7-3          Don't care.
+
+  2           MB - Writing a T to this bit set the request Mask Bit and inhibits external requests.
+
+  1-0         MS1-MS0 - Channel request Mask Select. These bits determine which channel's Request
+              Mask bit will be set.
+
+                 1        0        Function
+
+               MSI MSO             Channel Selection
+
+                  0       0        select Channel 0
+                  0       1        select Channel 1
+                  1       0        select Channel 2
+                  1       1        select Channel 3
+
+
+
+
+Alternatively all four mask bits can be                     this and the Read All Mask Bits function is
+programmed in one operation by writing to the               shown below.
+Write All Mask Bits address. Data format for
+
+
+
+
+                                     Request Mask Register Read/Write      Format
+
+  Bits         Function
+
+  7-4         Always reads "1".
+
+  3-0         MB3-MB0 - These bits contain the state of the request Mask Bit associated with each
+              request channel. The bit position corresponds to the channel number.
+
+
+
+
+                                                       6 -2 6
+                                                                                        UM82C206
+                                                      Status Register
+
+
+All four mask bits are set following a RESET or       The status of all four channels can be
+a Master Clear command. Individual channel            determined by reading the Status Register.
+mask bits will be set as a result of terminal         Information is available to determine if a
+count being reached, if autoinitialize is disabled.   channel has reached Terminal Count and
+The entire register can be cleared, enabling all      whether an external service request is pending.
+four channels by performing a Clear Mask
+Register operation.
+
+
+
+
+                                Status Register Format ( Read )
+
+ Bits        Function
+
+ 7-4     DRQ3-DRQ0 - These bits show the status of each channel request, and are not affected by
+         the state of the Mask Register bits. Reading T means "request" occurs, and bits 7,6,5,4
+         represent channels 3,2,1,0 respectively.These bits can be cleared by RESET, Master Clear or
+         the pending request being deasserted.
+
+ 3-0     TC3-TC0 - These bits indicate which channel has reached Terminal Count reading "1".
+         These bits can be cleared by RESET, Master Clear or each time a Status Read takes place.
+         The channel number corresponds to the bit position.
+
+
+
+
+T emporary     Register
+
+
+The Temporary Register is used as a temporary          bus is ignored by the 82C206 whenever an
+holding register for data during memory-to-            XIOW* activated command is issued. Data
+memory transfers. The register is loaded during        returned on XIOR* activated commands is
+the first cycle of a memory-to-memory transfer         undefined.
+from XD0-XD7. During the second cycle of the
+transfer, the data in the Temporary Register is        1. Clear Byte Pointer Flip-Flop - This command
+output on the XDO- XD7 pins. Data from the last           is normally executed prior to reading or
+memory-to-memory transfer will remain in the              writing to the address or word count
+register.                                                 registers. This initializes the flip-flop to point
+                                                          to the low byte of the register and allows the
+Special Commands                                          CPU to read or write the register bytes in
+                                                          correct sequence.
+Five Special Commands are provided to make
+the task of programming the device easier.                 2. Set Byte Pointer Flip-Flop - Setting the Byte
+These commands are activated as a result of a                 Pointer Flip-Flop allows the CPU to adjust
+specific address and assertion of either a XIOR*              the pointer to the high byte of an address or
+or XIOW*. For these special commands, the data                word count register.
+
+
+
+
+                                                  6 -2 7
+                                                                                  UM82C206
+
+
+3. Master Clear - This command has the same          interrupt subsystem to be restructured, based on
+   effect as a hardware RESET. The Command           the system environment.
+   Register, Status Register, Request Register,
+   Temporary Register, Mode Register counter         Overview
+   and Byte pointer Flip-Flop are cleared and
+   Request Mask Register is set. Immediately       Two interrupt controllers, INTC1 and INTC2,
+   following Master Clear or RESET, the DMA        are included in the UM82C206. Each of the
+   will be in the Idle Condition.                  interrupt controllers is equivalent to an 8259A
+                                                   device operating in iPAX86 Mode. The two
+4. Clear Request Mask Register - This              devices are interconnected and must be
+    command enables all four DMA channels to       programmed to operate in Cascade Mode (see
+    accept requests by clearing the mask bits in   Figure 5) for proper operation of all 16 interrupt
+    the register.                                  channels. INTC1 is located at addresses
+                                                   020H-021H and is configured for Master
+ 5. Clear Mode Register Counter - In order to      operation (defined       below)    in    Cascade
+    allow access to four Mode Registers while      Mode. INTC2 is a Slave device (defined below)
+    only using one address, an internal counter is and is located at 0A0H-0A1H. The Interrupt
+    used. After clearing the counter all four      Request output signal from INTC2 (INT) is
+    Mode Registers may be read by successive       internally connected to the interrupt request
+    reads to the Mode Register. The order in       input Channel 2 (IR2) of INTC1. The address
+    which the registers will be read is Channel 0  decoding and Cascade interconnection matches
+    first, Channel 3 last.                         that of the IBM PC/AT.
+                                                   Two additional interconnections are made to
+INTERRUPT SU BSYSTEM                               the interrupt request inputs of the interrupt
+                                                   controllers. The output of Timer 0 in the
+INTERRUPT CONTROLLLER FUNCTIONAL DESCRIPTION Counter/Timer subsystem is connected to
+                                                    Channel 0 (IRO) of INTC1. Interrupt request
+The programmable interrupt controllers in the       from the Real Time Clock is connected to
+UM82C206 function as a system wide interrupt        Channel 0 (IRO) of INTC2. Table 4 lists the 16
+manager in an iPAX86 system. They accept            interrupt channels and their interrupt request
+requests from peripherals, resolve priority on
+                                                    source.
+pending interrupts and interrupts in service,
+ issue an interrupt request to the CPU, and         Description of the Interrupt Subsystem will
+provide a vector which is used as an index by       pertain to both INTC1 and INTC2 unless
+ the CPU to determine which interrupt service       otherwise noted. Wherever register addresses
+ routine to execute.                                are used, the address for the INTC1 register will
+A variety of priority assignment modes are          be listed first and the address for the INTC2
+provided, which can be recofigured at any time      register will follow in parenthesis. Example 02H
+during system operation, allowing the complete      (OAOH).
+
+
+
+
+                                                  6 -2 8
+                                                        UM82C206
+
+
+
+
+                  IN T A B      IN T
+
+
+
+
+                             CAS2
+
+                             CAS 1
+                             CASO
+
+
+
+
+                      IN TC 2
+
+                             CASO
+                  IN TA B    CAS1
+                             CAS2
+
+
+
+
+Figure   5.   Internal             Cascade   Interconnect
+
+
+
+
+                                6 -2 9
+                                                                          UM82C206
+                    Table 4. Interrupt Request Source
+
+
+Controller Number        Channel Name                   Interrupt Request Source
+
+    INTC1                    IRO                        Counter/Timer OutO
+
+    INTC1                    IR1                        IRQ1 Input Pin
+
+    INTC1                    IR2                        INTC2 Cascade Interrupt
+
+    INTC1                     IR3                       IRQ3 Input Pin
+
+    INTC1                     IR4                       IRQ4 Input Pin
+
+    INTC1                     IR5                       IRQ5 Input Pin
+
+    INTC1                     1R6                       IRQ6 Input Pin
+
+    INTC1                     IR7                       IRQ7 Input Pin
+
+    INTC2                     IRO                       Real Time Clock IRQ
+
+    INTC2                     IR1                       IRQ9 Input Pin
+
+    INTC2                     IR2                       IRQ10 Input Pin
+
+    INTC2                     IR3                       IRQ11 Input Pin
+
+    INTC2                     IR4                       IRQ12 Input Pin
+
+     INTC2                    IR5                       IRQ13 Input Pin
+
+     INTC2                    IR6                       IRQ14 Input Pin
+
+     INTC2                    IR7                       IRQ15 Input Pin
+
+
+
+
+                                       6 -3 0
+                                                                                      UM82C206
+Controller Operation
+
+
+Figure 6 is a block diagram of the major                Resolver evaluates inputs from the above three
+elements in the controller. The Interrupt               registers, issues an interrupt request, and
+Request Register (IRR) is used to store requests        latches the corresponding bit into the In-Service
+from all of the channels which are requesting           Register. During interrupt acknowledge cycles,
+service. Interrupt Request Register bits are            a master controller outputs a code to the slave
+labeled using the Channel Name IR7-IR0. The             device which is compared in the Cascade
+In-Service Register (ISR) contains all the              Buffer/ Comparator with a three bit ID code
+channels which are currently being serviced             previously written, if a match occurs in the
+(more than one channel can be in service at a           slave controller, it will generate an interrupt
+time). In-Service Register bits are labeled IS7-IS0     vector. The contents of the Vector Register are
+and correspond to IR7-IR0. The Interrupt Mask           used to provide the CPU with an interrupt
+Request (IMR)allows the CPU to disable any or           vector during Interrupt Acknowledge (INTA)
+all of the interrupt channels. The Priority             cycles.
+
+
+
+
+              Figure     B.    In te rru p t      Co n t r o l l e r   Block     Diagram
+
+
+
+
+                                                      6-31
+                                                                                          UM82C206
+
+Interrupt Sequence
+
+The UM82C206 allows the CPU to perform an                     IRR bit is reset. The internal Cascade address
+indirect jump to a service routine in response to             is generated.
+a request for service from a peripheral device.
+The indirect jump is based on a vector which is          5 - The CPU will execute a second INTA cycle,
+provided by the UM82C206 on the second of two               during which the UM82C206 will drive an
+CPU generated INTA cycles (the first INTA                   8-bit vector onto the data pins XD7-XD0,
+cycle is used for resolving priority and the                which is read by the CPU. The format of this
+second cycle is for transferring the vector to the          vector is shown in Table 5. Note that V7-V3 in
+CPU , see Figure 7). The events which occur                 Table 5 are programmable by writing to
+during an interrupt sequence are as follows:                Initialization Control Word 2 (see Initial­
+                                                            ization Command Words section below).
+1 - One or more of the interrupt requests
+  (IR7-IR0) becomes active,   setting the                 6 - At the end of the second INTA cycle, the ISR
+  corresponding IRR bit(s).                                  bit will -be cleared if the Automatic End Of
+                                                             Interrupt mode is selected (see End Of
+2 - The interrupt controller resolves priority               Interrupt section below). Otherwise, the ISR
+  based on the state of the IRR, IMR and ISR                 bit must be cleared by an End Of Interrupt
+  and asserts the INTR output if appropriate.                (EOI) command from the CPU at the end of
+                                                             the interrupt service routine to allows further
+ 3 - The CPU accepts the interrupt and responds              interrupts. If no interrupt request is present
+    with an INTA cycle.                                      at the beginning of the first INTA cycle (i.e. a
+                                                             spurious interrupt), INTC1 will issue an
+ 4 - During the first INTA cycle, the highest                interrupt level 7 vector during the second
+   priority ISR bit is set and the corresponding             INTA cycle.
+
+
+
+
+                                                     6 -3 2
+                                                                                      UM82C206
+
+End Of Interrupt
+
+EOI is defined as the condition which causes an       interrupt is acknowledged, priority is resolved,
+ISR bit to be reset. Determination of which ISR      the highest priority request's vector is placed on
+bit is to be reset can be done by a CPU command       the bus and the ISR bit for that channel is set.
+(specific EOI) or, the Priority Resolver can be       This bit remains set until an EOI (automatic or
+instructed to clear the highest priority ISR bit     CPU generated) is issued to that channel. While
+(non-specific EOI). The UM82C206 can determine        the ISR bit is set, all interrupts of equal or lower
+the correct ISR bit to reset when operated in         priority are inhibited. Note that a higher
+modes which do not alter the fully nested             priority service         routine will only be
+structure, since the current highest priority ISR     acknowledged if the CPU has internally
+bit is necessarily the last level acknowledged      , re-enabled interrupts.
+and serviced. In conditions where the fully
+nested structure is not preserved, a specific EOI    Specific Rotation Mode - Specific Rotatior
+must be generated at the end of the interrupt        allows the system software to re-assign priority
+service routine. An ISR bit that is masked, in       levels by issuing a command which redefines
+Special Mask Mode by an IMR bit, will not be         the highest priority channel.
+cleared by a non- specific EOI command. The
+interrupt controller can optionally generate an
+Automatic End Of Interrupt (AEOI) on the             Before Rotation
+trailing edge of the second INTA cycle.
+                                                                       Lowest          Highest
+ Priority Assignment                                 Priority Status      7 6 5 4 3 2 1 0
+
+Assignment of priority is based on an interrupt      (SPEcific Rotation command             issued   with
+channel's position relative to the other channels    Channel 5 specificed)
+in the interrupt controller. After the
+initialization sequence, IRO has the highest
+priority, IR7 the lowest, and priority assignment    After Rotation
+is fixed (Fixed Priority Mode). Priority
+assignment can be rotated either manually                              Lowest          Highest
+(Specific Rotation Mode) or automatically            Priority Status      5 4 3 2 1 0 7 6
+(Automatic Rotation Mode) by programming
+Operational Command Word 2 (OCW2).                   Automatic Rotation Mode - In applications
+                                                     where a number of equal priority peripherals
+Fixed Priority Mode - This is the default            are requesting interrupts, Automatic Rotation
+condition which exists unless rotation (either       may be used to equalize the priority assignment.
+manual or automatic) is enabled, or the              In this mode a peripheral, after being serviced,
+controller is programmed for Polled Mode. In         is assigned the lowest priority. All peripherals
+Fixed Priority Mode, interrupts are fully nested     connected to the controller will be serviced at
+with priority assigned as shown:                     least once in 8 interrupt requests to the CPU
+                                                     from the controller. Automatic rotation will
+                   Lowest         Highest            occur, if enabled, due to the occurrance of EOI
+ Priority Status     7 6 5 4 3 2 1 0                 (automatic or CPU generated).
+
+Nesting allows interrupts of a higher priority to
+generate interrupt requests prior to the             Before Rotation (IR3 is highest priority request
+completion of the interrupt in service. When an      being serviced)
+
+
+
+
+                                                6 -3 3
+                                                                                                UM82C206
+
+
+ISR Status Bit   IS7IS6IS5IS4IS3IS2IS1 ISO                      the start of an initialization sequence and does
+                  1 1 0 0 1 0 0 0                               the following:
+                Lowest              Highest
+Priority Status   7 6 5 4 3 2 1          0                      1 •The Initialization Command Word Counter is
+                                                                   reset to zero.
+(SPEcific Rotation command               issued    with
+Channel 4 specificed)                                           2 - ICW1 is latched into the device.
+After Rotation
+ISR Status Bit     IS7IS6IS5IS4IS3IS2IS1 ISO                    3 - Fixed Priority Mode is selected.
+                    1   1 0      0   0    0    0   0
+                Lowest         Highest                          4 - IR0 is assigned the highest priority.
+Priority Status   3 2 1 0 7 6 5 4
+                                                                5 - The Interrupt Mask Register is cleared.
+
+Programming The Interrupt Controller                            6 - The Slave Mode Address is set to 7.
+
+Two type of commands are used to control the                    7 - Special Mask Mode is disabled.
+UM82C206 interrupt controllers, Initialization
+Command Words (ICWs) and Operational                            8 ■The IRR is        selected   for    Status Read
+Command Words (OCWs).                                              operations.
+
+Initialization Command Words                                    The next three I/O writes to address 021H
+                                                                (0A1H) will load ICW2-ICW4. See Figure 8 for a
+The initialization process consists of writing a                flow chart of the initialization sequence. The
+sequence'of 4 bytes to each interrupt controller.               initialization sequence can be terminated at
+The initialization sequence is started by writing               any point (all 4 bytes must be written for the
+the first Initialization Command Word (ICW1) to                 controller to be properly initialized) by writing
+address 020H (0A0H) with a 1 on bit 4 of the data               to address 02H( 0A0H) with a 0 in data bit 4. Note,
+byte. The interrupt controller interprets this as                this will cause OCW2 or OCW3 to be written.
+
+
+
+
+                                     Table 5. Interrupt Vector Byte
+
+                            D7           D6            D5            D4     D3        D2        D1          DO
+
+           IR7             V7            V6            V5            V4     V3         1         1          1
+
+            IR6            V7            V6            V5            V4     V3         1         1          0
+
+            IR5            V7            V6            V5            V4     V3         1         0          1
+
+            IR4            V7            V6            V5            V4     V3         1         0          0
+
+            IR3            V7            V6            V5            V4     V3         0         1          1
+
+            IR2            V7             V6           V5            V4     V3         0         1          0
+
+            IR1            V7             V6           V5            V4     V3          0        0          1
+
+            IRQ             V7            V6           V5            V4     V3          0        0          0
+
+
+                                                            6 -3 4
+                                                                 UM82C206
+
+
+
+
+                            S TA R T
+
+
+
+
+                END OF I N I T I A L I Z A T I O N
+                   CO N TR O LLER READY
+
+
+
+
+F igur e   S.      I n i t i a l i z a t i on        Sequ ence
+
+
+
+
+                                   6 -3 5
+                                                                                  UM82C206
+ICWl - Address 020H (OAOH)
+      - Write Only
+
+Bits     Function
+
+7-5      Don't care.
+
+4        Must set ’1" for ICWl, Since ICWl, OCW2 and OCW3 share the same address,(020H, OAOH).
+
+3        LTM - Bit 3 selects Level Triggered Mode or Edge triggered Mode input to the IR. If a ’l"
+         is written to LTM, a high level on the IR input will generate an interrupt request and the
+         IR must be removed prior to EOI to prevent another interrupt. In Edge Triggered Mode, a
+         low to high transition will generate an interrupt request. In either mode, IR must be held
+         high until the first INTA cycle is started in order to generate the proper vector. IR7
+         vector will be generated if the IR input is deasserted early.
+
+2        Don't care.
+
+1        SM - This bit selects between Single Mode and Cascade Mode. Single Mode is used
+         whenever only one interrupt controller (INTC1) is used and is not recommended for this
+         device. Cascade Mode allows the two interrupt controllers to be connected through IR2 of
+         INTC1.1NTC1 will allow INTC2 to generate its own interrupt vectors if Cascade Mode is
+         selected and the highest priority IR pending is from an INTC2 input. INTC1 and INTC2
+         must be programmed for Cascade Mode for both devices to operate.
+
+0         Don't care.
+
+
+
+
+ICW2 - Address 021H (0A1H)
+     - Write Only
+
+
+Bits     Function
+
+7-3      V7-V3 - These bits are the upper 5 bits of the interrupt vector and are programmable by
+         the CPU. INTC1 and INTC2 need not be programmed with the same value in ICW2, usually
+         INTC1 is programmed with a value of 08H ,and INTC2 is programmed with a value of 70H.
+
+2-0      The lower three bits of the vector are generated by the Priority Resolver during INTA
+         (ses Table 5).
+
+
+
+
+                                               6 -3 6
+                                                                                  UM82C206
+ICW3 •Format for INTC1 - Address 021H
+     - Write Only
+
+Bits     Function
+
+7-0      S7-S0 - Selects which IR inputs have Slave Mode controllers connected. ICW3 in INTC1
+         must be written with a 04H(IRQ2) for INTC2 to function correctly.
+
+
+
+
+ICW3-Format for INTCl-Address 0A1H
+    ■Write Only
+
+Bits     Function
+
+7-3      Don't care.
+
+2-0      ID2-ID0 - Determines the Slave Mode address the controller will respond to during the
+         cascade INTA sequence. ICW3 in INTC2 should be written with a 02H(IRQ2 of INTC1) for
+         Cascade Mode operation.
+
+
+
+
+ICW4 - Address 021H (0A1H)
+     - Write Only
+
+Bits     Function
+
+7-5      Don't care.
+
+4        EMI - this bit will Enable Multiple Interrupts from the same channel in Fixed Priority
+         Mode. This allows INTC2 to fully nest interrupts, when Cascade Mode with Fixed Priority
+         Mode are both selected, without being blocked by INTO. Correct handling of this mode
+         requires the CPU to issue a non-specific EOI command to zero, when exiting an interrupt
+         service routine. If zero, a non-specific EOI command should be sent to INTO. If non-zero,
+         no command is issued.
+
+3-2      Don't care.
+
+1        AEOI - Auto End Of Interrupt is enabled when ICW4 is written with a one in bit 1. The
+         interrupt controller will perform a non-specific EOI on the trailing edge of the second
+         INTA cycle. Note, this function should not be used in a device with fully nested interrupts
+         unless the device is a cascade Master.
+
+0         Don't care.
+
+
+
+
+                                             6 -3 7
+                                                                                     UM82C206
+
+Operational Command Words
+Operational Command Words (OCWs) allow the             at address 021H (0A1H) and may be written any
+UM82C206 interrupt controllers to be controlled        time the controller is not in Initialization Mode.
+or reconfigured at any time while operating.           Operational Command Words 2 and 3 (OCW2,
+Each interrupt has 3 OCWs which can be                 OCW3) are located at address 020H (OAOH).
+programmed to affect the proper operating              Writing to address 020H (OAOH) with a 0 in bit 4
+configuration and a Status Register to monitor         will place the controller in operational mode and
+controller operation.                                  load OCW2 (if data bit 3 = 0) or OCW3 (if data bit
+Operational Command Word 1 (OCW1) is located           3 = 1).
+
+OCW1 - Address 021H (0A1H)
+    - Read/Write
+
+OCW2 - Address 020H (OAOH)
+    - Write Only
+
+ Bits     Function
+
+ 7-5      R,SL,EOI •These bits selects operational function. Writing a T" in bit 7 causes one of the
+          rotate functions to be selected.
+          Writing a "1" in bit 6 causes a specific or immediate function to occur. All specific
+          commands require L2-L0 to be valid except no operation.
+          Writing a "1" in bit 5 causes a function related to EOI to occur.
+
+                     7       6        5       Function
+
+                     R       SL       EOI     operational function
+
+                     0       0        0       Clear rotate in auto EOI mode
+
+                     0       0        1       Non-specific EOI Command
+
+                     0       1        0       No operation
+
+                     0       1        1       Specific EOI Command *
+
+                     1       0        0       Set rotate in auto EOI mode
+
+                     1       0        1       Rotate on non-specific EOI Command
+
+                     1       1        0       Set priority Command *
+
+                     1       1        1        Rotate on specific EOI Command *
+
+           * L2-L0 are used by these commands.
+
+ 4-3       These bits must be set "0" to indicate that OCW2 is selected, because ICW1, OCW2 and
+           OCW3 share the same address, (020H, OAOH).
+
+  2-0      L2-L0 - These three bits are internally decoded to select which interrupt channel is to be
+           affected by the Specific command. L2-L0 must be valid during three of the four specific
+           cycles.
+
+                                                  6 -3 8
+                                                                                   UM82C206
+0CW3 - Address 020H (OAOH)
+     - Write Only
+
+Bits     Function
+
+7        This bit must be set "0".
+
+6-5      ESMM - Writing a 1 in this bit position Enables the set/reset Special Mask Mode Function
+         controlled by bit 5 (SMM). ESMM allows the other functions in OCW3 to be accessed and
+         manipulated without affecting the Special Mask Mode state.
+         SMM - During Special Mask Mode, writing a 1 to any bit position of OCW1 inhibits
+         interrupts and a 0 enables interrupts on the associated channel by causing the Priority
+         Resolver to ignore the condition of the ISR.
+
+                  6        5         Function
+
+                    ESMM SMM         Mask mode enable/select
+
+                  0        X         No operation
+
+                  1         0        Reset special mask mode to normal mask mode
+
+                  1         1        Set special mask mode
+
+
+
+4-3      These bits must be set "0" to indicate that OCW3 is selected, because ICW1, OCW2 and
+         OCW3 share the same address, (020H, OAOH).
+
+2        PM - Writing a T to this bit of OCW3 enables Polled Mode. Writing OCW3 with poll mode
+         acts like the first INTA cycle, freezing all interrupt request lines and resolving priority.
+         The next read operation-to the controller acts like a second INTA cycle and polled vector
+         is output to data bus. The format of polled vector is described later (see Poll Mode Read).
+
+1-0      RR - Writing a "1” to this bit enable the contents of IRR or ISR (determined by RIS) to be
+         placed on XD7-XD0 when reading the Status Port at address 020H (OAOH). Asserting PM
+         forces RR reset.
+
+                    1       0        Function
+
+                    RR      RIS      select next read register
+
+                    0       X        No operation
+
+                    1       0        Read IRR on next read
+
+                    1       1        Read ISR on next read
+
+
+
+
+                                                6 -3 9
+                                                                                           UM82C206
+IRR, ISR and Poll Vector
+IRR, ISR and Poll Vector share the same address             to the address will select IRR or ISR depending
+(020H, OAOH). The selection of the registers                on the latest OCW3, if RR=1 and RIS=0, ISR is
+depends on the programming of ITC. If the                   selected. Note that poll command is cleared after
+latest OCW3 issued poll command, (PM=1), the                the first read to the ITC. After initialization
+poll vector is selected for the next read. Before           (ICW1 or RESET), IRR is selected.
+another poll command is issued, subsequent read
+
+IRR-Address 020H(0A0H)
+
+Bits          Function
+
+7-0           IR7-IR0 - These bits corresponds to the interrupt request bit of Interrupt Request Register.
+              A "1" on these bits indicate that an interrupt request is pending on the corresponding line.
+
+
+ISR-Address 020H(0A0H)
+
+Bits          Function
+
+7-0           IS7-IS0 - These bits correspond to the interrupt service bit of Interrupt Service Register. A
+              "1" on these bits indicate that an interrupt is being serviced on the corresponding line. EOI
+              will clear corresponding IS bit of ISR.
+
+
+ Poll Vector-Address 020H(0A0H)
+
+Bits           Function
+
+7              INT - A     in these bits indicates that a pending interrupt is polled. If there is no pending
+               interrupt request or the request is removed before the poll command, this bit is 0.
+
+6-3            Don't care.
+
+ 2-0           V2-V0 - These bits are the binary encoding of the highest priority level pending interrupt
+               request being polled. If no pending interrupt has been polled, all three bits are equal to 1.
+
+       Many registers share the same I/O address of
+       INTC. The following table summarizes the address of each register.
+
+                                     WRITE
+
+          A0             XD4         XD3             Register Selected
+
+          0                  0         0             OCW2
+
+          0                  0         1             OCW3
+
+          0                  1         X             ICW1
+
+                                                     ICW2,ICW3,ICW4 during initialization sequence
+          1                  X         X
+                                                     OCWl (Mask Register) after initialization sequence
+
+
+                                                        6 -4 0
+         ari 7 ==
+                                                                                     UM82C206
+
+
+                                    READ
+
+                     AO                                      Register Selected
+
+                     0                                     IRR, ISR or Poll Vector
+
+                      1                                    OCW1 (Mask Register)
+
+
+
+
+COUNTER/TIMER SU BSYSTEM
+
+
+COUNTER/TIMER                                      timer or a counter.
+FUNCTIONAL   DESCRIPTION                           All counters in this subsystem are controlled by
+                                                    a common control logic as shown in Figure 9.
+The UM82C206 contains a 8254 compatible             The control logic decodes and generates the
+counter/timer(CTC). The counter/ timer can be       necessary commands to load, read, configure
+used to generate accurate time delays under         and control each counter. Counter 0 and counter
+software control. It contains 3 16-bit counters     1 can be programmed for all six modes, but
+(counters 0-2) which can be programmed to           mode 1 and mode 5 have limited usefulness
+count in binary or binary-coded decimal (BCD).      because their gate is hardwired to VCC
+Each counter operates inde- pendently of the        internally. Counter 2 can be programmed to
+other and can be programmed for operation as a      operate in any of the six modes as listed below:
+
+
+
+
+                                                    CO UNTER O   Vcc
+
+
+
+
+                 Figure     9.   C o u n t e r / T i mer    Block      Diagram
+
+
+
+
+                                             6-41
+                                                                                    UM82C206
+
+
+ModeO         Interrupt on terminal count             register allows the software to monitor counter
+Mode 1        Hardware retriggerable one-shot         condition and read back the contents of the
+Mode 2        Rate generator                          control register.
+Mode 3        Square wave generator
+Mode 4        Software triggered strobe               The 16-bit counting element is a loadable
+Mode 5        Hardware retriggerable strobe           synchronous down counter. It is loaded or
+                                                      decremented on the falling edge of TMRCLK.
+                                                      The counting element contains a maximum
+All three counters in this subsystem are driven
+                                                      count when a 0 is loaded, which is equivalent to
+from a common clock input pin (TMRCLK)
+                                                      65536 in binary operation or 10000 in BCD. The
+which is different from other clock inputs to the
+                                                      counting element does not stop when it reaches
+UM82C206. Counter 0's output (OUTO) is
+                                                      0. In modes 2 and 3 the counting element will be
+internally connected to IRO of INTC1 and may
+                                                      reloaded and in all other modes it will wrap
+be used as an interrupt to the system for time
+                                                      around to 0FFFFH in binary operation or 9999
+keeping and task switching. Counter 1 may be
+                                                      in BCD.
+programmed to generate pulses or square waves
+for external devices. Counter 2 is a full function
+counter/timer. It can be used as an interval          The counting element is indirectly loaded by
+timer, a counter, or as a gated rate/pulse            writing one or two bytes (optional) to the
+generator. In PC/AT compatible design, counter        counter input latches, which are in turn loaded
+0 is used as a system timer, counter 1 is used as a   into the counting element. Thus the counting
+DRAM refresh rate generator, and counter 2 is         element can be loaded or reloaded in one
+used for speaker sound generation.                    TMRCLK cycle. The counting element is also
+                                                      read indirectly by reading the contents of the
+Counter Description
+                                                      counter output latches. The counter output
+                                                      latches are transparent latches which can be
+                                                      read while transparent or latched (see latch
+ Each counter in this subsystem contains a
+control register, a status register, a 16-bit         counter command).
+counting element, a pair of 8-bit counter input
+latchs, and a pair of 8-bit counter output latches.    Programming The Counter/Timer
+Each counter shares the same clock input
+(TMRCLK). GATE0,GATE1 and OUTO are not                 After system reset the contents of control
+externally accessible. This is fully compatible        registers, counter registers, counting elements,
+with PC/AT. Output of OUTO is dependent on             and the output of all counters are undefined.
+the counter mode, (see Mode Definitions)               Each counter must be programmed before it can
+                                                       be used. Each counter is programmed by
+The control register stores the mode and               writing its control register with a control word
+command information used to control the                and then giving an initial count to its counting
+counter. It may be loaded by writing a byte to         element. Table 6 lists the I/O address map used
+the write control word at port 043H. The status        by the counter/timer subsystem.
+
+
+
+
+                                                  6 -4 2
+                                                                                    UM82C206
+  Table 6. Counter/Timer I/O Address Map
+
+
+                 Address                                            Function
+
+                  040H                                    Counter 0 Read/Write
+
+                  041H                                    Counter 1 Read/Write
+
+                  042H                                    Counter 2 Read/Write
+
+                  043H                                    Control Register Write Only
+
+Read/Write Counter Command
+
+Each counter has a write only control register.       word to the I/O address 043H. The control word
+This control register is written with a control       format is described here.
+                             Control Word Format (Write Only)
+
+ Bits      Function
+
+ 7-6       SC1-SC0 - Select which counter this control word is written to.
+
+           7          6
+
+           SCI        SCO      Function
+
+           0          0      select counter 0
+
+           0          1      select counter 1
+
+           1          0      select counter 2
+
+           1          1      reserved for read-back command
+
+ 5-4       RW1-RW0        - Determine the counter read/write word size.
+
+           5          4
+
+           RW1      RWO        Function
+
+           0          0       reserved for counter latch command
+
+           0          1      read/write LSB only
+
+           1          0       read/write MSB only
+
+           1          1       read/write LSB     first,      then    MSB
+
+                              MSB = most significant byte
+                              LSB = least significant byte
+
+                                                6 -4 3
+       5    E r.   ~=
+                                                                                   UM82C206
+
+
+
+Bits        Function
+
+3-1          M2-M0 - Select the counter operating mode.
+
+              3     2   1
+
+             M2 Ml MO           Function
+
+              0     0   0    select mode 0
+
+              0     0   1    select mode 1
+
+              X     1   0     select mode 2
+
+              X     1   1     select mode 3
+
+              1     0   0     select mode 4
+
+              1     0   1     select mode 5
+
+           BCD - During read/write counter commands control word writing, a "1" selects binary
+           coded decimal counting format. A "0" selects binary counting format. During read-back
+           command word writing, this bit must be 0.
+
+
+
+
+When programming to a counter, the below              counter's output latches latch the current state
+sequences must be followed: First, each counter's     of the counting element. The counter's output
+control register must be written with a control       latches remain latched until read by the CPU or
+word before the initial count is written. Second,     the counter is reprogrammed. After that the
+writing the initial count must follow the format      output latches then return to a "transparent"
+specified in the control word (least significant      condition. Counter latch commands may be
+byte only, most significant byte only, or least       issued to more than one counter before reading
+significant byte and then most significant byte).     the first counter to which this commannd was
+A new initial count can be written into the           issued. Also, multiple counter latch commands
+counter at any time after programming without         issued to the same counter without reading the
+rewriting the control word.                           counter will cause all but the first command to
+                                                       be ignored. Below describes the counter latch
+Counter Latch Command                                 command format.
+
+When a counter latch command is issued, the
+
+
+
+
+                                                 6 -4 4
+       i
+                                                                                         UM82C206
+
+                            Counter Latch Command Format (Write Only)
+
+
+Bits        Function
+
+7-6        SC1-SC0 Select which counter is being latched.
+
+             7         6
+
+            SCI        SCO        Function
+
+              0         0       select counter 0
+
+             0          1       select counter 1
+
+              1         0       select counter 2
+
+              1         1       reserved for read-back command
+
+ 5-4       These two bits must be zero for the counter latch command.
+
+ 3-0       These four bits are don't care bits.
+
+
+ Read-Back Command
+
+The read-back command allows the user to                   counter(s). The format of      the   read-back
+check the count value, mode, and state of the              command is described below.
+OUT signal and null count flag of the selected
+
+                                 Read-Back Command Format (Write Only)
+
+
+Bits        Function
+
+7-6        These two bits must be "1" for the read-back command.
+
+ 5          LCOUNT - A "0” in this bit will latch the count of the counting element of the selected
+            counter(s).
+
+ 4          LSTATUS - A "0" in this bit will latch the status information of the selected counter(s).
+
+ 3-1        C2-0 - These three bits select which counter(s) the read-back command is applied to.
+
+             3     2        1
+
+            C2    Cl    CO         Function
+
+              0    X    X        select counter 2
+
+             X     0       X     select counter 1
+
+              X    X        0    select counter 0
+
+                                                    6—45
+        i
+        s   i r   s   =
+                                                                                      UM82C206
+
+Each counter's latches remain latched until             to transfer one or two bytes) from the counter
+either the latch is read or the counter is              result in the count being returned. Multiple
+reprogrammed. If both LSTATUS and LCOUNT                read-back commands issued to the same counter
+are "0", status will be returned on the next read       without reading the counter will cause all but
+from the counter. The next one or two reads (de­        the first command to be ignored. The status
+pending on whether the counter is programmed            read from each counter is described below.
+
+
+
+                                              Status Format
+
+Bits        Function
+
+7           OUT - This contains the state of the OUT signal of the counter.
+
+6           NC - This contains the condition of the null count flag. This flag is used to indicate that
+            the contents of the counting element are valid. It will be set to a "1" during a write to the
+            control register or the counter. It is cleared to a "0" whenever the counter is loaded from
+            the counter input register.
+
+5-4         RW1-0 - These two bits indicate the counter read/write word size. This information is
+            useful in determining where the high byte, the low byte or both must be transferred
+            during counter read/write operations.
+
+3-1         M2-0 - These bits reflect the operating mode of the counter and are interpreted in the same
+            manner as in the write control word format.
+
+ 0          BCD - This bit indicates the counting element is operating in binary format or BCD format.
+
+
+
+
+Counter Operation
+
+
+Because counter 0 and counter 1 have                    initialized - A control word written and the
+limitations in some of their operating modes, we        counter input latches loaded.
+will use counter 2 to describe the various
+counter operating modes. But the description of         Counter 2 can operate in one of the following
+modes 0, 2, 3 and 4 is suitable for all counters.       modes:
+The following terms are defined for describing          Mode 0 - Interrupt on terminal count
+counter/timer operation.                                Mode 1 - Hardware retriggerable one-shot
+                                                        Mode 2 - Rate generator
+TMRCLK pulse - A rising edge followed by a              Mode 3 - Square wave generator
+falling edge of the UM82C206 TMRCLK input.              Mode 4 - Software triggered, strobe
+                                                        Mode 5 - Hardware triggered strobe
+ trigger - The rising edge of the GATE2 input.
+
+
+ counter load - The transfer of the 16-bit value in
+ counter input latches to to the counting element.
+
+
+                                                    6 -4 6
+                                                                                       UM82C206
+
+Mode 0 - Interrupt on terminal count
+
+
+Mode 0 is usually used for event counting. After      counting element is loaded with the new count
+the counter being written with the control word,      and the one-shot pulse continues until the new
+ OUT2 of the counter goes low and remains low         count expires.
+until the counting element reaches 0 at which
+time it goes back high and remains high until a       Mode 2 - Rate generator
+new count or control word is written. Counting
+is enabled when GATE2 = 1 and disabled when           This mode functions as a divide-by-N counter.
+GATE2 = 0. GATE2 has no effect on OUT2.               After writing the control word during
+                                                      initialization the counter's OUT2 is set to high.
+The counting element is loaded at the first
+TMRCLK pulse after the control word and               When the initial count is decremented to 1,
+initial count are loaded. When both initial count     OUT2 goes low on the next TMRCLK pulse. The
+bytes are required, the counting element is           following TMRCLK pulse returns OUT2 high,
+loaded after the high byte is written. This           reloads the CE and the process is repeated. In
+TMRCLK pulse does not decrement the count,            Mode 2 the counter continues counting (if
+so for an initial count of N, OUT2 does not go        GATE2 = 1) and will generate an OUT2 pulse
+high until N+l TMRCLK pulses after                    every N TMRCLK cycles. Note that a count of 1
+initialization. Writing a new initial count to the    is illegal in Mode 2.
+counter reloads the counting element on the           GATE2 = 0 disables counting and forces OUT2
+next TMRCLK pulse and counting continues              high immediately. A trigger reloads the CE on
+from the new count. If an initial count is written    the next TMRCLK pulse Thus GATE2 can be
+ with GATE2 = 0, it will still be loaded on the       used to synchronize the counter to external
+ next TMRCLK pulse. But counting does not             events.
+ progress until GATE2 = 1. When GATE2 goes
+ high, OUT2 will go high after N TMRCLK               Writing a new count while counting does not
+ pulses later.                                        affect current operation unless a trigger is
+                                                      received. Otherwise, the new count will be
+Mode 1 - Hardware retriggerable one-shot              loaded at the end of the current counting cycle.
+
+Writing the control word causes OUT2 to go            Mode 3 - Square wave generator
+high initially. Once initialized the counter is
+armed and a trigger causes OUT2 to go low on          Mode 3 is similar to Mode 2 in every respect
+the next TMRCLK pulse. OUT2 then remains              except for the duty cycle of OUT2. OUT2 is set
+low until the counter reaches 0. An initial count     high initially and remains high for the first half
+of N results in a one-shot pulse N TMRCLK             of the count. When the first half of the initial
+cycles long. Any subsequent triggers while            count expires, OUT2 goes low for the remainder
+OUT2 is low cause the counting element to be          of the count.
+reloaded, extending the length of the pulse.          If the counter is loaded with an even count, the
+Writing a new count to counter input latches          duty cycle of OUT2 will be 50% (high = low =
+will not affect the current one-shot pulse unless     N/2). For odd count values, OUT2 is high one
+the counter is retriggered. In the latter case, the   TMRCLK cycle longer than it is low. Therefore,
+                                                      high = (N+l)/2 and low = (N-l)/2.
+
+
+
+
+                                                 6 -4 7
+                                                                                         UM82C206
+Mode 4 - Software triggered strobe                       Mode 5 - Hardware triggered strobe
+
+
+Writing the Control Word causes OUT2 to go               Writing the Control Word causes OUT2 to go
+high initially. Expiration of the initial count          high initially. Counting is started by trigger.
+causes OUT2 to go low for one TMRCLK cycle.              The expiration of the initial count causes OUT2
+GATE2 = 0 disables counting but has no effect            to go low for one TMRCLK cycle. GATE2 = 0
+                                                         disables counting.
+on OUT2. Also, a trigger will not reload the CE.
+
+The counting sequence is started by writing the           The CE is loaded on the TMRCLK pulse after a
+initial count. The CE is loaded on the TMRCLK             trigger. Since loading the CE inhibits
+pulse after initialization. The CE begins                 decrementing, OUT2 will go low for one
+decrementing one TMRCLK pulse later OUT2                  TMRCLK cycle, (N+l) TMRCLK cycles after the
+will golow for one TMRCLK cycle, (N+l) cycles             trigger.
+after the initial count is written.
+                                                          If a new count is loaded during counting, the
+                                                          current counting sequence will not be affected
+If a new initial count is written during a
+                                                          unless a trigger occurs. A trigger causes the
+counting sequence, it is loaded into the CE on
+                                                          counter to be reloaded from CIL and CIH,
+the next TMRCLK pulse and the sequence
+                                                          making the counter "retriggerable".
+continues from the new count. This allows the
+sequence to be "retriggerable" by software.
+
+
+
+
+                                     Table 7. Gate Pin Function
+
+                                                         Gate
+      Mode
+                           Low                                Rising                    High
+
+         0       Disables Counting             ~                                  Enables Counting
+
+               ...                             a)       Initiates Counting        ...
+
+
+
+
+                                               b)       Resets Out Pin            ...
+
+
+
+
+               a)    Disables Counting
+         2                                           Initiates Counting           Enables Counting
+               b)    Forces Out Pin High
+
+               a)    Disables Counting
+         3                                           Initiates Counting           Enables Counting
+               b)    Forces Out Pin High
+
+        4      Disables Counting               ...                                Enables Counting
+
+        5      ...                                   Initiates Counting           ...
+
+
+
+
+                                                     6 -4 8
+                                                                                       UM82C206
+
+GATE2
+
+In Modes 0,2,3 and 4 GATE2 is level sensitive           such a function is shown in Figure 10. It is used
+and is sampled on the rising edge of TMRCLK.            to eliminate power drain on the battery when
+In Modes 1, 2, 3 and 5 the GATE2 input is               the entire UM82C206 is active. It will also make
+rising-edge sensitive. This rising edge sets an         a clean and reliable transition between system
+internal flip-flop whose output is sampled on the       and battery power without drawing too much
+next rising edge of TMRCLK. The flip-flop               battery power.
+resets immediately after being sampled. Note
+that in Modes 2 and 3 the GATE2 input is both           The PWRGD pin is provided on the device to
+edge and level sensitive.                               protect the contents of RAM and the real time
+                                                        clock. It is also used to reduce power
+REAL TIME CLOCK SU BSYSTEM                              consumption whenever the system is powered
+                                                        down. This pin should be low whenever the
+REAL TIME CLOCK                                         system power supply is not within specifications
+FUNCTIONAL DESCRIPTION                                  for proper operation of the system. This pin may
+                                                        be driven by circuitry in either the power
+This subsystem of the UM82C206 integrates a             supply or on the system board. When the
+complete time-of-day real time clock with alarm,        PWRGD input is low, it will disable all un­
+one hundred year calendar, a programmable               necessary inputs and outputs. In this way it will
+periodic interrupt, and 114 bytes of CMOS               prevent noise on the inactive pins and reduce
+static RAM. The UM82C206 is designed to                 leakage current when the system is powered
+operate in a low power (battery powered) mode           down. This pin must therefore be at high level
+and protects the contents of both the CMOS              for the remainder of the device to operate
+static RAM and clock from change during                 properly when system power is applied.
+system power up and down.
+                                                         The PSRSTB* pin is provided to initialize the
+Power-Up/Down                                            device whenever power is applied to the
+                                                         UM82C206. This pin will not alter the RAM or
+Most applications will require the real time             real time clock contents but it will initialize the
+clock to remain active whenever the system               necessary control register bits. A low on
+power is turned off. To accomplish this the user         PSRSTB* pin disables the generation of
+must provide an alternate source of power to the         interrupts and sets a flag indicating that the
+UM82C206. This alternate source of power is              contents of the device may not be valid. A
+normally provided by connecting a battery to             recommended circuit for controlling the
+the Vcc pin to switch from the system power              PSRSTB* input is shown in Figure 10.
+supply to the battery. A circuit implementing
+
+
+
+
+                                                    6 -4 9
+          Ji V ll=                                                                    UM82C206
+
+
+
+
+         Figure       10.    Power       Conversion            and       Reset   C irc u itry
+
+
+
+
+Register Access
+
+Reading and writing to the 128 locations in this       plied to the XA9-XA0 inputs of UM82C206
+subsystem is accomplished by first placing the         during the AS asserted time.
+index address of the location you wish to access
+on the data input pins XD0-XD6 and then                    Address Map
+ strobing the AS input pin. The address will then
+ be latched into the index address register on the     Table 8 illustrates the internal register/RAM
+ falling edge of AS. The index address register is     organization of the real time clock subsystem of
+ then used as a pointer to the specific byte in this   the UM82C206. The 128 addressable locations in
+ subsystem, which may be read or written by            this subsystem are divided into 10 bytes which
+ asserting XIOR* or XIOW* with an address of           normally contain the time, calendar, alarm
+ 071H on the XA9-XA0 input pins.                       setting and four control and status bytes and
+                                                       114 general purpose CMOS RAM bytes. All 128
+In PC/AT compatible design,        the AS is           bytes are readable by the CPU. The CPU may
+generated by an I/O write operation to port            also write to all locations except registers OCH,
+070H. To avoid the unintentional change of the         ODH, bit 7 of register OAH and bit 7 of the
+contents of real time clock and CMOS RAM, it is        register 00H which is always 0.
+recommended that an address of 070H be ap­
+
+
+
+
+                                                  6 -5 0
+                                                           UM82C206
+
+      Table 8. Address Map for Real Time Clock Subsystem
+
+
+Index                      Function
+
+00H                        SECONDS
+
+01H                        SECONDS ALARM
+
+02H                        MINUTES
+
+03H                        MINUTES ALARM
+
+04H                        HOURS
+
+05H                        HOURS ALARM
+
+06H                        DAY OF WEEK
+
+07H                        DAY OF MONTH
+
+08H                        MONTH
+
+09H                        YEAR
+
+OAH                        REGISTER A
+
+OBH                        REGISTER B
+
+OCH                        REGISTER C
+
+ODH                        REGISTER D
+
+OEH                        USER RAM
+
+OFH                        USER RAM
+
+
+
+
+7EH                         USER RAM
+
+7FH                         USER RAM
+
+
+
+
+                            6-51
+(D u m p                                                                               UM82C206
+Time/Calender and Alarm Bytes
+
+
+The CPU can obtain the time and calendar                 the real time clock, the SET bit in register OBIT
+information by reading the appropriate                   should be set to a 'I" to prevent real time clock
+locations in the real time clock. Initialization of      from updating. The CPU then initializes the
+the time, calendar and alarm information is              first 10 locations in BCD format. The SET bit
+accomplished by writing to these bytes. Data             should then be cleared to allow updating. After
+stored in these locations are in binary-coded            initialized and enabled, the real time clock will
+decimal (BCD) format.                                    perform clock/calendar updates at a 1.024 KHz
+Before initialization of the internal registers of       rate in PC/AT compatible design.
+
+
+
+                                Table 9. Time, Calendar, Alarm Data Format
+
+
+ Index Register                                 Function                                   BCD Range
+    Address
+
+        OOH                                      Seconds                                      00-59
+
+        01H                                 Seconds of Alarm                                  00-59
+
+        02H                                      Minutes                                      00-59
+
+        03H                                 Minutes of Alarm                                   00-59
+
+                                                   Hours                                    01-12 (AM)
+                                              (12 hour mode)                                81-92 (PM)
+        04H
+                                                   Hours
+                                              (24 hour mode)                                   00-23
+
+                                             Hours of Alarm                                 01-12 (AM)
+                                             (12 hour mode)                                 81-92 (PM)
+        05H
+                                             Hours of Alarm
+                                             (24 hour mode)                                    00-23
+
+        06H                                    Day of Week                                     01-07
+
+        07H                                   Day of Month                                     01-31
+
+        08H                                       Month                                        01-12
+
+        09H                                           Year                                     00-99
+
+
+
+
+                                                  6 -5 2
+                                                                                                                            UM82C206
+
+
+The alarm bytes can be programmed to                                           indicate PM when it is a "1”.
+generate an interrupt at a specific time or they
+can be programmed to generate a periodic                                       Update Cycle
+interrupt. To generate an interrupt at a specific
+time, the user need only program the time that                                 During normal operation the real time clock
+the interrupt is to occur into the 3 alarm bytes.                              will perform an update cycle, assuming one of
+Alternately,     a periodic interrupt can be                                   the proper time bases is chosen, the divider bits
+generated by setting the high order two bits in                                DV2-DV0 isn't reset and the SET bit in register
+an alarm register to a "1", which turns that byte                              OBH is cleared. The function of the update cycle
+into a "don't care". For instance, an interrupt can                            is to increment the clock/calendar registers and
+ be generated once a second by programming the                                 compare them to the alarm registers. If a match
+ same value into all three alarm registers.                                    or don't care condition occurs between the two
+                                                                               sets of registers, an alarm is issued and an
+Table 9 shows the format for the ten clock,                                    interrupt control bits are enabled.
+calendar and alarm registers. The 24/12 bit in
+Register OBH determines whether the hour                                         During an update cycle, the lower 10 registers
+locations will be updated using a 1-12 or 0-23                                   are not accessible by the CPU. By this way it
+format. After initialization the 24/12 bit cannot                                can prevent the possible corruption of data in
+be changed without reinitializing the hour                                       the real time clock registers or the reading of
+locations. In 12 hour format the bit 7 of the                                    incorrect data. To avoid contention between the
+hours byte in both the time and alarm bytes will
+
+
+
+
+                                    U IP B IT
+                           (R E G I S T E R A )
+
+
+
+                           U P D A TE C Y C LE
+                          A C T I V E P E R IO D
+
+
+
+                                       UF B IT
+                            (R E G I S T E R C >
+
+
+                                n o te :
+                                      1.   R E G IS TE R 0 - 9   ARE    U N A V A IL A B L E   FOR READ       OR W R IT E
+                                           T H IS T IM E .
+
+                                      2.   UF      B IT   CLEAR ED   B Y R E A D IN G    R E G IS TE R   C.
+
+
+
+
+                                     Fig u re                 11.         Update                    C ycle
+
+
+
+
+                                                                       6 -5 3
+                                                                                        UM82C206
+
+
+
+real time clock and the CPU, a flag is provided         completion of the last read or write operation to
+in register OAH to alert the user of an update in       the clock calendar registers.
+progress cycle. This update in progress bit (UIP)
+is asserted 244us before the actual start of the        The second method of accessing the lower 10
+cycle and is maintained until the cycle is              registers is to read register OCH once and
+complete. Once the cycle is complete the UIP bit        disregard the contents. Then subsequently
+will be cleared and the update flag (UF) in             continue reading this register until the UF bit is
+register OCH will be set. Figure 11 illustrates the     a 1". This bit will become true immediately
+ update cycle. CPU access is always allowed to          after an update cycle has been completed. The
+ registers OAH through ODH during update                user then has to complete a read or write
+ cycles.                                                operation before the next update cycle.
+
+
+
+Two recommended methods can be used for
+                                                         Control and Status Registers
+reading and writing to the real time clock in a
+PC/AT compatible design. Both of them will
+allow the user to avoid contention between the           The UM82C206 contains four registers used to
+CPU and the real time clock for access to the            control the operation and monitor the status of
+time and date data.                                      the real time clock. The CPU can access these
+                                                         registers at any time with index address at
+The first method is to read register OAH,                0AH-0DH.
+determine the state of the UIP bit and if it is "0",
+perform the read or write operation. For this
+                                                         REGISTER OAH
+method to work successfully the entire read or
+write operation (including any interrupt service
+routines which might occur) must not require             Index register port: 70H
+longer than 244us to complete from the                   Data register port: 71H
+beginning of the read of register OAH to the             Index : OAH (Read/Write register except UIP)
+
+
+
+
+                                               REGISTER OAH
+
+  Bits      Function
+
+  7         UIP - Update in progress flag is a status bit used to indicate when an update cycle is about
+            to take place. A "1" indicates that an update cycle is taking place or is imminent. UIP will
+            go active (HIGH) 244us prior to the start of an update cycle and will remain active for an
+            additional 2ms while the update is occurring. The UIP bit is read only and is not affected
+            by reset. Writing a "1" to the SET bit in register OBH will clear the UIP status bit.
+
+  6-4       DV2-DV0 - These three bits are used to control the Divider/Prescaler on the real time
+            clock. While the UM82C206 can operate at frequencies higher than 32.768 KHz, this is not
+            recommended for battery powered operation due to the increased power consumption at
+            these higher frequencies.
+
+
+
+
+                                                       6 -5 4
+                                                                                    UM82C206
+
+
+Bits   Function
+
+
+         6            5        4        Divider Options
+
+        DV2       DV1         DVO          OSC1 Freq.                         Mode
+
+          0           0        0          4.194304MHz                        Operate
+
+          0           0        1          1.048576MHz                         Operate
+
+          0           1        0            32.768KHz                        Operate
+
+          1           1        X                          Reset Divider
+
+3-0    RS3-RS0 - These four bits control the periodic interrupt rate. The periodic interrupt is
+       derived from the divider /prescaler in the real time clock and is separated from the alarm
+       interrupt. Both the alarm and periodic interrupts do, however, use the same interrupt
+       channel in the interrupt controller. Use of the periodic interrupt allows the generation of
+       interrupts at rates higher than once per second. Below are the interrupt rates for which
+       the real time clock can be programmed.
+
+          3      2        1   0             Periodic Interrupt   Rate
+                                    4.194304MHz    time base
+        RS3 RS2 RSI RSO             1.048576MHz    time base     32.768KHz time base
+
+          0      0        0   0              None                            None
+
+          0      0        0   1           30.517 us                     3.90625     ms
+
+          0      0        1    0          61.035 us                       7.8125 ms
+
+          0      0        1   1          122.070 us                       122.070   us
+
+          0      1        0    0         244.141    us                    244.141 us
+
+          0      1        0    1         488281     us                    488281 us
+
+          0      1        1    0         976.562    us                    976.562 us
+
+          0      1        1    1         1.953125 ms                    1.953125 ms
+
+          1      0        0    0         3.90625 ms                     3.90625     ms
+
+          1      0        0    1          7.8125 ms                        7.8125 ms
+
+             1   0        1    0          15.625 ms                       15.625 ms
+
+             1   0        1               31.25 ms                         31.25    ms
+
+             1   1             1           62.5 ms                           62.5 ms
+
+          1       1       0    1           125 ms                            125 ms
+
+             1    1       1    0           250 ms                            250 ms
+
+             1   1        1    1           500 ms                            500 ms
+
+
+                                               6 -5 5
+                                                                                         UM82C206
+       REGISTER     OBH
+
+       Index register port: 70H
+       Data register port: 71H
+       Index : OBH (Read/Write register)
+
+Bits        Function
+
+7           SET - Writing a "0" to this bit enables the Update Cycle and allows the Real Time Clock to
+            function normally. When set to a "1" the Update Cycle is inhibited and any cycle in
+            progress is aborted. The SET bit is not affected by the RESET input pin.
+
+6           PIE - The Periodic Interrupt Enable Bit controls the generation of interrupts based on the
+            value programmed into the RS3-RS0 bits of Register OAH. This allows the user to disable
+            this function without affecting the programmed rate. Writing a 'T to this bit enables the
+            generation of periodic interrupts. This bit is cleared to "0" by Reset.
+
+5            AIE - The generation of alarm interrupts is enabled by setting this bit to a T". Once this
+             bit is enabled the Real Time Clock will generate an alarm whenever a match occurs
+             between the programmed alarm and clock information. If the don't care condition is pro­
+             grammed into one or more of the Alarm Registers, this will enable the generation of
+             periodic interrupts at rates of one second or greater. This bit is cleared by Reset.
+
+4            UIE - The update ended interrupt enable bit is used to enable the update end flag (UF) bit
+             in register OCH to generate an interrupt. A "1" in this bit enables the interrupt generating.
+             A "0" disables it. This bit is cleared by reset. It is also cleared when the SET bit goes high.
+
+3            SQWE - The square wave enable bit is always fixed to 0. It will disable the square wave
+             generation.
+
+2            DM - The data mode bit is always fixed to 0. It will always select the BCD format for real
+             time clock.
+
+1            24/12 - The 24/12 control bit is used to establish the format of both the Hour and Hour
+             Alarm bytes. If this bit is a 1", the Real Time Clock will interpret and update the
+             information in these two bytes using the 24 hour mode. This bit can be read or written by
+             the CPU and is not affected by Reset.
+
+ 0           DSE - The Real Time Clock can be instructed to handle daylight savings time changes by
+             setting this bit to a T . This enables two execeptions to the normal time keeping sequence
+             to occur. On the first Sunday in April the time increments from 1:59:59 AM to 3:00:00 AM.
+             On the last Sunday in October when the time first reaches 1:59:59 AM it changes to 1:00:00
+             AM. Setting this bit to a ”0" disables the execution of these two exceptions. RESET has no
+             effet on this bit.
+
+
+
+
+                                                    6 -5 6
+            i P - “ E—=
+            iE =   i==S
+                                                                                       UM82C206
+REGISTER OCH
+
+Index register port: 70H
+Data register port: 71H
+
+Bits        Function
+
+            IRQF ■The interrupt request flag bit is set to a '1" when any of the conditions which can
+7
+            cause an interrupt is true and the interrupt enable for that condition is true. The condition
+            which causes this bit to be set, also generates an interrupt. The logic expression for this
+            flag is :
+                      IRQF = PF & PIE + AF & AIE + UF & UIE
+            This bit and all other active bits in this register are cleared by reading the register or by
+            activating the PSRSTB* input pin. Writing to this register has no effect on the contents.
+
+            PF - The periodic interrupt flag is set to a ”1" when a transition, which is selected by
+6
+            RS3-RS0, occurs in the divider chain. This bit will become active, independent of the
+            condition of the PIE control bit. The PF bit will then generate an interrupt and set IRQF if
+            PIE is a T .
+
+            AF - A "1" appears in the AF bit whenever a match has occured between the time registers
+5
+            and alarm registers during an update cycle. This flag is also independent of it's enable
+            (AIE) and will generate an interrupt if AIE is true.
+
+             UF - A "1" appears in the UF bit whenever an update cycle is ended. This flag is also
+4
+             independent of it's enable (UIE) and will generate an interrupt if UIE is true.
+
+             Not used •All unused bits will be "0” when read and are not writeable.
+3-0
+
+    REGISTER       ODII
+
+    Index register port: 7011
+    Data register port: 7111
+    Index: ODH (Read Only register)
+
+Bits        Function
+
+7           VRT - The valid CMOS RAM and time bit indicates the condition of the contents of the
+            RAM and real time clock. This bit is cleared to a "0" whenever the PSRSTB* input pin is
+            low. This is normally derived from the power supply which supplies Vcc to the device and
+            will allow the user to determine whether the registers have been initialized since power
+            was applied to the device. Reset has no effect on this bit and it can only be set by reading
+            register ODH.
+
+6-0          Not used - All unused bits will be "0" when read and are not writeable.
+
+
+
+
+                                                   6 -5 7
+                                                                                              UM82C206
+
+
+CMOS Static RAM
+
+
+The 114 bytes of RAM from index address OEH             Typical apol icati-:>r.s will use these as
+to 7FH are not affected by the real time dock.          nonvolatile storage for system configuration
+They are accessible during the update cycle and         parameters. They are normally battery powered
+may be used for whatever the designer wishes.           when the system is turned off.
+
+                                 ABSOLUTE     MAXIMUM RATINGS*
+
+                  Parameter                       Symbol         Min.         Max.        Unit
+
+                  Supply     Voltage               VCC           -0.3         +6.7        V
+
+                  Input    Voltage                 Vi             -0.3        +6.7        V
+
+                  Output     Voltage               Vo             -0.3        Vcc+0.3     V
+
+                  Operating Temperature            Top            -20         +70        "C
+
+                  Storage Temperature              Tstg           -55         +125       'C
+
+
+
+
+•Comments
+
+Stresses above those listed under "Absolute             these or any other conditions above those
+Maximum Ratings" may cause permanent                    indicated in the operational sections of this
+damage to the device. These are a stress ratings         specification is not implied,
+only and functional operation of the device at
+
+DC ELECTRICAL CHARACTERISTICS
+(Vcc = 4.75 to 525V, Ta = -20 to +70 C)
+
+  Symbol    Parameter                         Min.          Max.         Unit           Test      Note
+                                                                                     Condition
+
+  ViL       Input Low Voltage                 -0.3          +0.8         V
+
+  ViH       Input High Voltage                +2.2          Vcc+0.3 V
+
+  VoL       Output Low Voltage (Iol=8mA)      -             0.5          V
+
+  VoH       Output High Voltage (Ioh=-2mA)    3.5           -            V
+
+  IiL       Input Leakage Current             -             1            uA
+
+  Iozi      Output High-Z Leakage Current      -            1            uA
+
+  Iccsb     Standby Power Supply Current                    10           uA
+
+
+                                                   6 -5 8
+                                                                           UM82C206
+AC ELECTRICAL CHARACTERISTICS (8 MHz)
+(Vcc = 4.75 to 5.25V, Ta = -20 to +70 °C)
+
+ Symbol Description                           Min.   Typ.   Max.   Unit     Test      Note
+                                                                          Condition
+
+  tl     Address setup to command active      25                   ns
+
+  t2     Command active period                              200    ns
+
+  t3     Address hold time from command 0                          ns
+         inactive
+
+  t4     Data valid delay                     160                  ns
+
+  t5     Data hold time from XIOR* inactive   10                   ns
+
+  t6     XD0-XD7 active from XIOR*            5             40     ns
+
+  t7     Data setup to XIOW* inactive         160                  ns
+
+  t8     Data hold time from XIOW* inactive   0                    ns
+
+  t9     Command recovery time                120                  ns
+
+  tio    Interrupt request low width          100                  ns
+
+  til    Interrupt request high width         200                  ns
+
+  tl2    INTR output delay                                  300    ns
+
+  t20    Real time clock cycle time                         500    ns
+
+  t21    AS pulse width                       160                  ns
+
+  t22    Data valid setup to AS inactive      160                  ns
+
+  t23    Data hold time from AS inactive      0                    ns
+
+  t24    OSCI period                          500                  ns
+
+  t25    OSCI high time                       200                  ns
+
+  t26    OSCI low time                        200                  ns
+
+  t27    PSRSTB high delay from VCC           5                    us
+
+  t28    PSRSTB low pulse width               5                    us
+
+  t29    VRT bit valid delay                                2      ns
+
+   t40   TMRCLK period                        125                  ns
+
+                                              6-59
+                                                                       UM82C206
+
+
+
+Symbol Description                       Min.     Typ.   Max.   Unit     Test      Note
+                                                                       Condition
+
+t41    TMRCLK low time                   50                     ns
+
+t42    TMRCLK high time                  50                     ns
+
+t43    GATE2 setup to TMRCLK             50                     ns
+
+t44    GATE2 hold time from TMRCLK       50                     ns
+
+t45    GATE2 low time                    50                     ns
+
+t46    GATE2 high time                   50                     ns
+
+t47    OUT2 delay from TMRCLK                            120    ns
+
+t48    OUT2 delay from GATE2                             120    ns
+
+t50     SYSCLK period     (DMA clock   = 125                    ns
+        SYSCLK)
+
+t50a    SYSCLK period     (DMA clock   = 62                     ns
+        SYSCLK/2)
+
+t51     SYSCLK low time (DMA clock = 43                         ns
+        SYSCLK)
+
+t51a    SYSCLK low time (DMA clock = 22                         ns
+        SYSCLK/2)
+
+t52     SYSCLK high time (DMA clock = 55                        ns
+        SYSCLK)
+
+t52a    SYSCLK high time (DMA clock = 27                        ns
+        SYSCLK/2)
+
+t53     DREQi setup to SYSCLK            0                      ns
+
+t54     HRQ v.alid from SYSCLK                                  ns
+                                                         75
+
+t55     HLDA1 setup to SYSCLK            45                     ns
+
+t56     AENi valid delay from SYSCLK                            ns
+                                                         105
+
+
+
+
+                                         6 -6 0
+                                                                           UM82C206
+
+
+
+Symbol Description                             Min.   Typ.   Max.   Unit     Test      Note
+                                                                           Condition
+
+t57    AENi invalid delay from SYSCLK                        80     ns
+
+t58    ADSTBi valid delay from SYSCLK                        50     ns
+
+t59    ADSTBi invalid delay from SYSCLK                      120    ns
+
+t60    XD0-XD7 active delay from SYSCLK                      60     ns
+
+t61    XD0-XD7 valid setup to ADSTBi low       65                   ns
+
+t62    XD0-XD7 hold time from ADSTBi low 25                         ns
+
+t63    XD0-XD7 tristate delay from SYSCLK                    135    ns
+
+t64    Address valid delay from SYSCLK                       60     ns
+
+t65    Address hold time from DMAMEMR 50                            ns
+       high
+
+t66    Address tristate delay from SYSCLK                    55     ns
+
+t67    DACKi delay from SYSCLK                               105    ns
+
+t68    Command enable delay from SYSCLK                      90     ns
+
+t69    Command active delay from SYSCLK                      120    ns
+
+t70    Write command inactive delay from                     80     ns
+       SYSCLK
+
+t71    Address hold      time   from    write 75                    ns
+       command high
+
+t72    Command       tristate   delay   from                 75     ns
+       SYSCLK
+
+t73    Read command inactive delay from                      115    ns
+       SYSCLK TC delay from SYSCLK
+
+t74    TC delay from SYSCLK                                  60     ns
+
+t75    XD0-XD7 setup to read command 90                             ns
+       inactive
+
+
+
+
+                                               6-61
+                                                                             UM82C206
+
+
+
+Symbol Description                       Min.         Type    Max.   Unit     Test      Note
+                                                                            Condition
+
+t76    XD0-XD7 hold time     from   read 0                           ns
+       command inactive
+
+t77    XD0-XD7 valid delay from SYSCLK                       120     ns
+
+t78    XD0-XD7 hold from write command 15                            ns
+       inactive
+
+t79     10CHRDY input setup to SYSCLK    35                          ns
+00
+
+
+
+
+        IOCHRDY input hold time from 20                              ns
+O
+
+
+
+
+        SYSCLK
+
+
+
+
+                                             6 -6 2
+                                                                                                                                                     UM82C206
+TIMING WAVEFORMS
+
+
+
+
+                                 F ig u re   12.    AC   C h a ra c te ris tic s   M e a s u re m e n t   W a ve fo rm     and    Load       C ir c u it
+
+
+
+
+        ------------------------------------i f -                         VALID                i!
+                                          -N ti                                           e-t3-^
+                                                     •-----------------12--------------- s-
+                                                                        > > A — — b s 4 ----------------------------------------------
+
+                                     P E R IP H E R A L R E A D / IN T A                                      CYCLE
+
+        ___________________ 31!___________ ™LID                         I
+                          -*| 11                                     t3-M
+                                  ;                                i
+                                      *------------ 17------------*
+                                      ■               VALID             1
+                                              P E R IP H E R A L W R ITE                                  CYCLE
+                                X I OR• ,
+                                XIO W a
+                                I NT A ■                                                                  r
+                                                     COMMAND RECOVERY
+
+
+
+                                               2'    3    ~
+
+
+                                                                                                                t4   (<—         -> |   tS   |<-
+                                                                                                                     f     ~*a> rn
+                                                                                                                     \ YESIftR_A
+                                                              IN T A       SEQUENCE
+
+                                                                            6 -6 3
+= 5~
+==; =¥ ! ! = »                                                                                                                                                  UM82C206
+
+
+
+
+                      REAL           TIME                     CLOCK                       ACCESS                           CYCLE
+
+
+
+                                                                                                            ______ JT
+                                                                                                    — 1 24 -
+
+                                                                                                    ____<.<_
+
+
+                                                                                                                                            «e—         128 —
+
+                                     -- ---------------------------------------------------------* --------------------------------> ;                          t
+
+
+
+
+                                     __________________________ / ----------------------- f t ---------------------------------                           _________________________________
+
+
+                    REPiL     TIME                  CLOCK                       POWER-UP                                  SEQUENCE
+
+
+
+
+                                         <--------------------- t 4 0 -------------------> ^ ----- t 4 1 ----- > <----- t 4 2   — >
+
+   T M R C LK
+                      /
+                      /
+                                     '
+                                         .______________/ -------------------------- .______________ .
+                                                                                                               >                  '
+                                                                                                                                                        /---------- \
+                                            144    <—                                   — > t4 3
+                       — H,   t4 3
+     —                    |                                          /
+                                                       f — 1 4 5 ^ -> < — 1 4 6 — >                                                   147       -----
+
+      OUT2                                                       I                                                                          X
+
+                                                           t « . L
+
+
+                                 COUNTER/TIMER                                                      PARAMETERS
+
+                                            r—                   —         —
+                                                                                       !
+                                                                                                    I
+                                                                                               CD
+
+
+
+
+                                            <—                ts i
+                —
+                                                                                                            ___________________________ /
+
+                                                                  DMA               RESET
+
+
+
+
+                                                                          6 -6 4
+                                                                                                                         UM82C206
+
+
+Si   I   Si        |   SO      |   SO        I    SI     |   S2     |   S3     |   S4     |   S2     |   S3     |   S4        I   Si   |   Si
+
+
+
+
+         I    SO       |    S ll   |       S 12   |    S13   |    S14   |    521   |    S22   |    S23   |    S24   |    Si       |
+
+
+
+
+              Memory                   -         to     —    Memory                    Tra n s fe r
+
+
+
+
+                                                             6 -6 5
+                                                                               UM82C206
+
+
+
+
+                               Compressed          Tra n sfe r
+
+
+
+
+N O TES:
+
+1. All timings referenced to SCLK are               4. IOCHRDY Input Timing.
+   independent of the state of the clock select
+   bit in the configuration register. SCLK shown    5. DMA wait states are added between S3,S4 in
+   in this diagram is the undivided clock              normal timing; between S2,S4 in compressed
+   directly from the input.                            timing; between S13, S14 and S23, S24 in
+                                                       memory-to-memory timing.
+2. Extended Write mode selected.
+
+3. Extended Read mode selected.
+

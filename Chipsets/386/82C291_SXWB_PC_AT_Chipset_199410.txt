@@ -1,0 +1,1943 @@
+OPTi                ®                                                                                                      82C291
+                                                                                           SXWB PC/AT Chipset
+
+1.0      Features
+• 100% IBM® PC/AT® compatible SX chipset                              • Programmable cache and DRAM read/write cycles
+• Supports AMD 386SX microprocessor
+                    ®                                                 • Hidden refresh, slow refresh, and CAS-before-RAS
+                                                                        refresh supported
+• Two chip PC/AT solution:
+  - 82C291 System Controller, 160-pin PQFP (Plastic                   • Shadow RAM option for system and channel ROM BIOS
+    Quad Flat Package)                                                • High performance local bus support
+  - 82C206 Integrated Peripherals Controller, 84-pin PLCC
+    (Plastic Leaded Chip Carrier)                                     • Turbo/slow speed selection
+
+• Supports systems running from 16 to 40MHz                           • Synchronous AT bus clock with programmable clock divi-
+                                                                        sion options: CLK2/4, /6, /8, or /10
+• Write-back direct-mapped cache with programmable size
+  selections: 16KB, 32KB, 64KB, 128KB                                 • Zero or one wait state options for 16-bit AT bus cycles
+
+• Supports four banks of 256KB, 1MB, and 4MB page mode                • Transparent 8042 emulation for fast CPU reset and
+  local DRAMs for configurations up to 16MB                             GATEA20 generation
+
+• Two programmable non-cacheable regions                              • Supports the 80387SX numerics coprocessor
+
+
+
+Figure 1-1        82C291/82C206-Based System Block Diagram
+
+                              386SX or             Numerics                   Local Bus
+                             CX486SLC             Coprocessor*               Peripherals
+
+
+          Control
+
+   CPU    CA[31:2]
+   Bus
+          CD[31:0]
+
+
+
+
+                                             MA[10:0]                                Cache
+                                  DRAMs                                                           Cache
+                                                                                     Control
+                                  4 Banks                       OPTi                              SRAM
+                                 1MB-16MB    RAS, CAS          82C291                            16K-128K
+                                                               System
+                                                              Controller                                            TAG/DIRTY
+                                                                                       Tag/Dirty Write Control
+                                                                                                                      SRAM
+
+                                            Control                                              Keyboard
+              Buffer
+                                                                                                 Controller
+                                                                        XD[15:0]
+                                                OPTi
+                                               82C206                                             EPROM
+                                                 IPC                                               BIOS
+                        Buffer                                      Buffer
+                                                      DACKs
+                                                      DRQs
+                                                      IRQs                                                                  Control
+
+                                                                                                                 SA[19:0], LA[23:17]   ISA
+                                                                                                                                       Bus
+                                                                                                                           SD[15:0]
+
+  *Optional
+
+
+
+
+October 1994                                                     OPTi Inc. · 2525 Walsh Avenue · Santa Clara, CA 95051 · (408) 980-8178
+82C291
+
+Features (Cont.)                                     2.0      Overview
+• Option for write protected, cacheable video BIOS   The OPTi SXWB provides a highly integrated solution for fully
+                                                     compatible, high-performance PC/AT platforms. Since the
+• Flash ROM support
+                                                     chipset is so critical to the performance and cost structure of
+• Combined system/video ROM support                  a PC, this highly integrated approach provides the foundation
+• Low power, high speed 1.0-micron CMOS technology   for a very cost effective platform without compromising per-
+                                                     formance. Together with OPTi’s 82C206 Integrated Peripher-
+                                                     als Controller (IPC), this silicon will support the Intel/AMD
+                                                     386SX and Cyrix CX486SLC microprocessors in the most
+                                                     cost effective and power efficient designs available today.
+                                                     This chipset offers optimum next generation performance for
+                                                     386SX systems running up to 33MHz. The OPTi SXWB solu-
+                                                     tion provides the performance benefits of a 32-bit program-
+                                                     ming architecture with the cost savings associated with 16-bit
+                                                     hardware systems. The OPTi SXWB chipset provides a solu-
+                                                     tion positioned to deliver value, without neglecting quality,
+                                                     compatibility, or reliability.
+                                                     The 82C291 integrates a write-back cache controller, a local
+                                                     DRAM controller, the CPU state machine, the AT bus state
+                                                     machine, and data buffers all in a single 160-pin Plastic Quad
+                                                     Flat Pack (PQFP). On-chip hardware provides the hooks for
+                                                     local bus device support.
+
+
+
+
+OPTi          ®
+
+
+
+
+Page 2                                                                                                 912-3000-011
+                                                       82C291
+
+3.0     Signal Definitions
+Figure 3-1           Pin Diagram
+
+
+
+
+                 DRTYW#
+                 CAWE1#
+                 CAWE0#
+
+
+
+
+                 A2CON
+                 CHCK#
+
+
+
+
+                 CAOE#
+
+
+
+                 DRTY
+
+                 TAG6
+                 TAG5
+                 TAG4
+                 TAG3
+                 TAG2
+                 TAG1
+                 TAG0
+                 GND
+
+
+
+
+                 GND
+                 VCC
+                 A10
+                 A11
+                 A12
+                 A13
+                 A14
+
+                 A15
+                 A16
+                 A17
+                 A18
+                 A19
+                 A20
+                 A21
+                 A22
+                 A23
+                 A6
+                 A7
+                 A8
+                 A9
+
+
+
+
+                 A5
+                 A4
+                 A3
+                 A2
+                 A1
+                120
+                119
+                118
+                117
+                116
+                115
+                114
+                113
+                112
+                111
+                110
+                109
+                108
+                107
+                106
+                105
+                104
+                103
+                102
+                101
+                100
+                 99
+                 98
+                 97
+                 96
+                 95
+                 94
+                 93
+                 92
+                 91
+                 90
+                 89
+                 88
+                 87
+                 86
+                 85
+                 84
+                 83
+                 82
+                 81
+       GND     121                                     80   A1CON
+      MA9#     122                                     79   D15
+      MA8#     123                                     78   D14
+      MA7#     124                                     77   D13
+       VCC     125                                     76   D12
+      MA6#     126                                     75   D11
+      MA5#     127                                     74   D10
+      MA4#     128                                     73   D9
+      MA3#     129                                     72   D8
+       GND     130                                     71   D7
+      MA2#
+      MA1#
+               131
+               132
+                                        82C291         70
+                                                       69
+                                                            GND
+                                                            D6
+      MA0#     133                                     68   D5
+      CAS1     134                                     67   D4
+      CAS0     135                                     66   D3
+        MP1
+        MP0
+               136
+               137
+                                   System Controller   65
+                                                       64
+                                                            D2
+                                                            D1
+    N0WS#      138                                     63   D0
+   CHRDYI      139                                     62   CPURST
+    IO WR#     140                                     61   VCC
+     MWR#      141                                     60   NPRST
+       ALE#    142                                     59   ADS#
+       M16#    143                                     58   BHE#
+      IO16#    144                                     57   MIO#
+        XA0    145                                     56   RDY#
+    XBHE#      146                                     55   WR#
+     IORD#     147                                     54   DC#
+      MRD#     148                                     53   A0
+    ATCLK      149                                     52   LMEGCS#
+       GND     150                                     51   FCLK2
+     RAS0#     151                                     50   GND
+     RAS1#     152                                     49   CLK2
+     RAS2#     153                                     48   BUSY#
+RAS3#/MA10     154                                     47   HLDA
+      DWE#     155                                     46   HOLD
+       VCC     156                                     45   RDYI#
+     SDIR1     157                                     44   NPBUSY#
+     SDIR2     158                                     43   NPERR#
+    SDEN#      159                                     42   LDEV#
+    TURBO      160                                     41   NPINT#
+                 1
+                 2
+                 3
+                 4
+                 5
+                 6
+                 7
+                 8
+                 9
+                10
+                11
+                12
+                13
+                14
+                15
+                16
+                17
+                18
+                19
+                20
+                21
+                22
+                23
+                24
+                25
+                26
+                27
+                28
+                29
+                30
+                31
+                32
+                33
+                34
+                35
+                36
+                37
+                38
+                39
+                40
+                     HRQ
+                    XD15
+                    XD14
+                    XD13
+                    XD12
+                    XD11
+                    XD10
+                     XD9
+                     XD8
+
+                     XD7
+                     XD6
+                     XD5
+                     XD4
+                     XD3
+                     XD2
+                     XD1
+                     XD0
+                  RFSH#
+
+                    GA20
+                   INTA#
+                  RST1#
+
+                  GATE2
+                  OSC12
+
+                    OUT2
+                    ADS8
+                  ADS16
+                  HLDA1
+
+                  AEN8#
+                 AEN16#
+                ROMCS#
+                KBDCS#
+
+                  RST4#
+                      NMI
+                     GND
+
+
+
+
+                     GND
+
+
+
+
+                     VCC
+
+
+
+
+                     OSC
+
+
+
+                  ASRTC
+
+
+
+
+                   SPKR
+
+
+
+                     GND
+
+
+
+
+                                                       OPTi      ®
+
+
+
+
+912-3000-011                                                Page 3
+82C291
+
+Table 3-1        Numerical Pin Cross-Reference
+
+ Pin No.     Pin Name         Pin No.    Pin Name   Pin No.    Pin Name   Pin No.    Pin Name
+     1      GND                  41     NPINT#         81     GND           121     GND
+     2      XD15                 42     LDEV#          82     A2CON         122     MA9#
+     3      XD14                 43     NPERR#         83     A1            123     MA8#
+     4      XD13                 44     NPBUSY#        84     A2            124     MA7#
+     5      XD12                 45     RDYI#          85     A3            125     VCC
+     6      XD11                 46     HOLD           86     A4            126     MA6#
+     7      XD10                 47     HLDA           87     A5            127     MA5#
+     8      XD9                  48     BUSY#          88     TAG0          128     MA4#
+     9      XD8                  49     CLK2           89     TAG1          129     MA3#
+    10      GND                  50     GND            90     TAG2          130     GND
+    11      XD7                  51     FCLK2          91     TAG3          131     MA2#
+    12      XD6                  52     LMEGCS#        92     TAG4          132     MA1#
+    13      XD5                  53     A0             93     TAG5          133     MA0#
+    14      XD4                  54     DC#            94     TAG6          134     CAS1
+    15      XD3                  55     WR#            95     DRTYW#        135     CAS0
+    16      XD2                  56     RDY#           96     DRTY          136     MP1
+    17      XD1                  57     MIO#           97     CAWE0#        137     MP0
+    18      XD0                  58     BHE#           98     CAWE1#        138     N0WS#
+    19      RFSH#                59     ADS#           99     CAOE#         139     CHRDYI
+    20      VCC                  60     NPRST         100     VCC           140     IOWR#
+    21      GA20                 61     VCC           101     A23           141     MWR#
+    22      INTA#                62     CPURST        102     A22           142     ALE#
+    23      RST1#                63     D0            103     A21           143     M16#
+    24      OSC                  64     D1            104     A20           144     IO16#
+    25      GATE2                65     D2            105     A19           145     XA0
+    26      OSC12                66     D3            106     A18           146     XBHE#
+    27      ASRTC                67     D4            107     A17           147     IORD#
+    28      OUT2                 68     D5            108     A16           148     MRD#
+    29      ADS8                 69     D6            109     A15           149     ATCLK
+    30      ADS16                70     GND           110     GND           150     GND
+    31      HLDA1                71     D7            111     A14           151     RAS0#
+    32      HRQ                  72     D8            112     A13           152     RAS1#
+    33      AEN8#                73     D9            113     A12           153     RAS2#
+    34      AEN16#               74     D10           114     A11           154     RAS3#/MA10
+    35      ROMCS#               75     D11           115     A10           155     DWE#
+    36      KBDCS#               76     D12           116     A9            156     VCC
+    37      SPKR                 77     D13           117     A8            157     SDIR1
+    38      RST4#                78     D14           118     A7            158     SDIR2
+    39      NMI                  79     D15           119     A6            159     SDEN#
+    40      GND                  80     A1CON         120     CHCK#         160     TURBO
+
+
+
+OPTi         ®
+
+
+
+
+Page 4                                                                                    912-3000-011
+                                                                                         82C291
+
+Table 3-2       Alphabetical Pin Cross Reference List
+
+     Pin Name      Pin No.        Pin Name    Pin No.      Pin Name   Pin No.     Pin Name   Pin No.
+A0                    53     CAWE1#              98     HOLD             46     RFSH#           19
+A1                    83     CHCK#              120     HRQ              32     ROMCS#          35
+A2                    84     CHRDYI             139     INTA#            22     RST1#           23
+A3                    85     CLK2                49     IOWR#           140     RST4#           38
+A4                    86     CPURST              62     IO16#           144     SDEN#          159
+A5                    87     D0                  63     IORD#           147     SDIR1          157
+A6                   119     D1                  64     KBDCS#           36     SDIR2          158
+A7                   118     D2                  65     LDEV#            42     SPKR            37
+A8                   117     D3                  66     LMEGCS#          52     TAG0            88
+A9                   116     D4                  67     MA0#            133     TAG1            89
+A10                  115     D5                  68     M16#            143     TAG2            90
+A11                  114     D6                  69     MA1#            132     TAG3            91
+A12                  113     D7                  71     MA2#            131     TAG4            92
+A13                  112     D8                  72     MA3#            129     TAG5            93
+A14                  111     D9                  73     MA4#            128     TAG6            94
+A15                  109     D10                 74     MA5#            127     TURBO          160
+A16                  108     D11                 75     MA6#            126     VCC             20
+A17                  107     D12                 76     MA7#            124     VCC             61
+A18                  106     D13                 77     MA8#            123     VCC            100
+A19                  105     D14                 78     MA9#            122     VCC            125
+A20                  104     D15                 79     MIO#             57     VCC            156
+A21                  103     DC#                 54     MP0             137     WR#             55
+A22                  102     DRTY                96     MP1             136     XA0            145
+A23                  101     DRTYW#              95     MRD#            148     XBHE#          146
+A1CON                 80     DWE#               155     MWR#            141     XD0             18
+A2CON                 82     FCLK2               51     N0WS#           138     XD1             17
+ADS#                  59     GA20                21     NMI              39     XD2             16
+ADS8                  29     GATE2               25     NPBUSY#          44     XD3             15
+ADS16                 30     GND                  1     NPERR#           43     XD4             14
+AEN8#                 33     GND                 10     NPINT#           41     XD5             13
+AEN16#                34     GND                 40     NPRST            60     XD6             12
+ALE#                 142     GND                 50     OSC              24     XD7             11
+ASRTC                 27     GND                 70     OSC12            26     XD8              9
+ATCLK                149     GND                 81     OUT2             28     XD9              8
+BHE#                  58     GND                110     RAS0#           151     XD10             7
+BUSY#                 48     GND                121     RAS1#           152     XD11             6
+CAS0                 135     GND                130     RAS2#           153     XD12             5
+CAS1                 134     GND                150     RAS3#/MA10      154     XD13             4
+CAOE#                 99     HLDA                47     RDY#             56     XD14             3
+CAWE0#                97     HLDA1               31     RDYI#            45     XD15             2
+
+
+
+                                                                                         OPTi        ®
+
+
+
+
+912-3000-011                                                                                   Page 5
+82C291
+
+3.1
+SignalSignal Descriptions
+      Descriptions (Cont.)
+
+3.1.1      Clock and Reset Interface Signals
+                                Signal
+ Signal Name         Pin No.    Type     Signal Description
+
+ RST1#                 23           I    Reset 1: This input reflects the “wired-OR” status of the external reset switch
+                                         and Power Good status from the power supply to indicate a cold reset condition.
+ CPURST                62          O     CPU Reset: When active (high), this signal resets the CPU. CPURST is active in
+                                         response to RST1#, keyboard fast reset emulation, or CPU shutdown cycles.
+ NPRST                 60          O     Numeric Coprocessor Reset: This output resets the numeric coprocessor. This
+                                         output is asserted along with CPU resets and on I/O writes to I/O Port F1h.
+                                         NPRST is synchronized with CLK2 and must last for at least 40 clock cycles.
+ RST4#                 38          O     System Reset: This active low signal is used as a system level reset which is
+                                         output in response to the RST1# input signal. It resets the AT motherboard
+                                         peripherals and is externally buffered and inverted to provide the RSTDRV signal
+                                         to the AT bus.
+ CLK2                  49           I    Clock 2: CLK2 is a master 2X clock which is used to drive all host CPU synchro-
+                                         nous signals and the 82C291's internal state machines. CLK2 is also used by the
+                                         cache/DRAM controller logic and to maintain the clock phase between the CPU
+                                         and the 82C291.
+ FCLK2                 51           I    Fast Clock 2: This is a fast (early) version of CLK2 used for generating the
+                                         CPURST and NPRST output signals.
+ ATCLK                149          O     AT Clock: This output is derived by dividing the CLK2 input by the setting speci-
+                                         fied in the AT control register (Register 20h[1:0]). Possible settings include:
+                                         CLK2/4, /6, /8, /10. AT clock is externally buffered before being sent out to the
+                                         AT bus.
+ OSC                   24           I    Oscillator: This 14.31818MHz oscillator input monitors the AT bus frequency. It
+                                         provides the clock source for the O1SC12 output. OSC must be externally buff-
+                                         ered to provide adequate drive for the AT bus.
+ OSC12                 26          O     Oscillator divided by 12: OSC is internally divided by 12 to provide this
+                                         1.19MHz output for use in the PC/AT counter/timer subsystem in the 82C206
+                                         Integrated Peripherals Controller.
+
+3.1.2      CPU Interface Signals
+                                Signal
+ Signal Name         Pin No.    Type     Signal Description
+
+ A[23:17],          101:107,        I    CPU Address Bus: Address lines 23 through 17 and 7 through 0.
+ A[7:0]             118:119,
+                    87:83, 53
+ A[16:8]            108:109,       I/O   CPU Address Bus: Address lines 16 through 8. These signals are inputs except
+                    111:117              during DMA cycles. A[16:9] become outputs and convey DMA address 16-9 for
+                                         16-bit DMA cycles. A[15:8] become outputs and convey DMA address 15-8 for 8-
+                                         bit DMA cycles.
+ BHE#                  58           I    CPU High Byte Enable: This signal identifies the byte(s) involved in a data
+                                         transfer.
+
+
+
+
+OPTi           ®
+
+
+
+
+Page 6                                                                                                         912-3000-011
+                                                                                                             82C291
+
+Signal Descriptions (Cont.)
+                               Signal
+ Signal Name         Pin No.   Type     Signal Description
+
+ D[15:0]             79:71,      I/O    CPU Data Bus: 16-bit wide data bus organized as two bytes.
+                     69:63
+ MIO#                  57         I     Memory or IO: CPU memory or I/O access indication. This signal along with
+                                        DC#, WR#, and BHE# comprise the primary bus definition signals used to
+                                        decode the type of cycle in progress.
+ DC#                   54         I     Data or Control: CPU data or control status. This signal along with DC#, WR#,
+                                        and BHE# comprise the primary bus signals used to decode the type of cycle in
+                                        progress.
+ WR#                   55         I     Write or Read: CPU write or read cycle status. This signal along with DC#,
+                                        WR#, and BHE# comprise the primary bus signals used to decode the type of
+                                        cycle in progress.
+ ADS#                  59         I     Address Status: An input from the CPU to indicate valid address and bus cycle
+                                        definition is present on the bus.
+ RDY#                  56        O      Ready: This output is driven to the CPU to terminate the current bus cycle.
+
+3.1.3      Numeric Coprocessor Interface Signals
+                               Signal
+ Signal Name         Pin No.   Type     Signal Description
+
+ NPERR#                43         I     Numeric Coprocessor Error: This input is driven by the coprocessor to indicate
+                                        an error condition when an unmasked exception occurs. It is used internally to
+                                        generate NPINT# (IRQ13), and BUSY# to the CPU. Additionally, if active after a
+                                        reset, it indicates the presence of a coprocessor.
+ NPBUSY#               44         I     Numeric Coprocessor Busy: This input is connected to the coprocessor's
+                                        BUSY# output and is used internally to generate NPINT and BUSY# to the CPU.
+ BUSY#                 48        O      Busy: This signal is active when the coprocessor is busy or when a coprocessor
+                                        error has occurred. It is also toggled if a coprocessor is not installed and the CPU
+                                        issues a coprocessor instruction.
+ NPINT#                41        O      Numeric Coprocessor Interrupt: This output is generated when a numeric
+                                        coprocessor error occurs. It is connected to IRQ13 of the interrupt controller.
+ RDYI#                 45         I     Local Device Ready Input: This input is driven directly by the coprocessor or a
+                                        local bus device to signal termination of its cycle. This signal is synchronized
+                                        before being sent to the CPU on the RDY# line. Synchronization requires one T-
+                                        state.
+ LDEV#                 42         I     Local Device: Local devices may drive this input to indicate that they are
+                                        responding to the current cycle. This signal is sampled at the end of the first T2.
+
+3.1.4      Cache Control Interface Signals
+                               Signal
+ Signal Name         Pin No.   Type     Signal Description
+
+ CAOE#                 99        O      External Cache Output Enable: External cache memory output enable control
+                                        signal.
+ CAWE[1:0]#          98, 97      O      External Cache Write Enables 1 and 0: Each of these external cache write
+                                        enable strobes corresponds to one byte of data.
+
+
+
+
+                                                                                                              OPTi             ®
+
+
+
+
+912-3000-011                                                                                                           Page 7
+82C291
+
+Signal Descriptions (Cont.)
+                              Signal
+ Signal Name       Pin No.    Type      Signal Description
+
+ DRTYW#              95         O       Tag/Dirty RAM Write Enable: This control strobe is used to update the Tag/
+                                        Dirty RAM with the new tag/dirty bits of the accessed cache line during external
+                                        cache read miss cycles.
+ TAG[6:0]           94:88       I/O     Tag RAM Data Bits 6 through 0: These input signals become outputs when-
+                                        ever DRTYW# is activated to write new tags to the tag RAM.
+ DRTY                96         I/O     Dirty Bit: This signal represents the dirty bit of the tag RAM used to indicate
+                                        whether a cache line has been overwritten. Normally an input, this signal
+                                        becomes an output when DRTYW# is activated.
+ A1CON               80         O       A1 Control: Cache address A1 toggle control.
+ A2CON               82         O       A2 Control: Cache address A2 toggle control.
+
+3.1.5    Local DRAM Interface Signals
+                              Signal
+ Signal Name       Pin No.    Type      Signal Description
+
+ DWE#                155        O       DRAM Write Enable: This signal is typically buffered externally before connec-
+                                        tion to the WE# input of the DRAMs.
+ CAS[1:0]          134, 135     O       Column Address Strobes 1 and 0: The CAS[1:0] outputs correspond to the
+                                        high and low bytes of each DRAM bank. CAS0 to the low byte of each DRAM
+                                        bank. CAS1 to the high byte of each DRAM bank.
+ RAS[2:0]#         153:151      O       Row Address Strobes 2 through 0: Each RAS# signal corresponds to a unique
+                                        DRAM bank. These signals are typically buffered externally before connection to
+                                        the RAS# input of the DRAMs.
+ RAS3#/MA10          154        O       RAS3# or Memory Address 10: This pin is multiplexed for use as RAS3# or
+                                        MA10. 4M DRAM (which uses MA10) is not supported in bank three when
+                                        RAS3# would be required.
+ MA[9:0]#          122:124,     O       Memory Address Bus: Multiplexed row/column address lines to the DRAM.
+                   126:129,
+                   131:133
+ MP[1:0]           136, 137     I/O     Memory Parity Bus: DRAM parity, one for each data byte.
+
+3.1.6    Bus Arbitration Interface Signals
+                              Signal
+ Signal Name       Pin No.    Type      Signal Description
+
+ HRQ                 32          I      Hold Request: DMA or master cycle request from the 82C206 IPC.
+ HOLD                46         O       CPU Hold Request: This output is connected to the HOLD input of the CPU.
+                                        This signal requests that the CPU allow another bus master complete control of
+                                        its buses. In response to HOLD going active, the CPU will float most of its output
+                                        and I/O pins; then it will assert HLDA.
+ HLDA                47          I      Hold Acknowledge: This input is connected to the HLDA output from the CPU.
+                                        This signal goes active in response to a hold request presented on the CPU
+                                        HOLD pin. It indicates that the CPU has relinquished bus control to another local
+                                        bus master.
+
+
+
+
+OPTi         ®
+
+
+
+
+Page 8                                                                                                         912-3000-011
+                                                                                                         82C291
+
+Signal Descriptions (Cont.)
+                             Signal
+ Signal Name       Pin No.   Type     Signal Description
+
+ HLDA1               31        O      Hold Acknowledge 1: This output indicates a hold acknowledge in response to
+                                      a DMA or master hold request. It is connected to the HLDA pin of the 82C206.
+ ADS8                29         I     8-Bit DMA Transfer Address Strobe: The system controller uses this signal to
+                                      latch XD[7:0] and pass them on to the A[15:8] lines.
+ AEN8#               33         I     8-Bit Address Enable: The system controller monitors this signal to decode 8-
+                                      bit DMA cycles.
+ ADS16               30         I     16-Bit DMA Transfer Address Strobe: The system controller uses this signal to
+                                      latch XD[7:0] and pass them on to the A[16:9] lines.
+ AEN16#              34         I     16-Bit Address Enable: The system controller monitors this signal to decode
+                                      16-bit DMA cycles.
+
+3.1.7    AT Bus Interface Signals
+                             Signal
+ Signal Name       Pin No.   Type     Signal Description
+
+ XA0                145        I/O    System Address XA0: This signal is an output except during master or 8-bit
+                                      DMA cycles when it serves as an input.
+ CHRDY              139         I     Channel Ready: This is an input from the AT bus which is pulled low (not ready)
+                                      by a slow memory or I/O device to lengthen memory or I/O cycles. Any slow
+                                      device using this line should drive it low immediately upon detecting its valid
+                                      address and a read/write command.
+ N0WS#              138         I     Zero Wait State: This input signal from the AT bus tells the 82C291 that it can
+                                      complete the current cycle without inserting any additional wait states.
+ IO16#              144         I     16-Bit I/O Slave: AT bus signal to indicate a 16-bit I/O slave is responding.
+ M16#               143        I/O    16-Bit Memory Slave: AT bus signal to indicate a 16-bit memory slave is
+                                      responding. Normally an input, this signal becomes an output when a master
+                                      accesses local memory.
+ GA20                21        I/O    Gated Address 20: Gated A20 (GA20) pin for the AT bus address line LA20. It
+                                      is normally an output, but becomes an input during master cycles.
+ IORD#              147        I/O    AT I/O Read: Normally an output, this pin becomes an input during master and
+                                      DMA cycles.
+ IOWR#              140        I/O    AT I/O Write: Normally an output, this pin becomes an input during master and
+                                      DMA cycles.
+ MRD#               148        I/O    AT I/O Memory Read: Normally an output, this pin becomes an input during
+                                      master and DMA cycles.
+ MWR#               141        I/O    AT I/O Memory Write: Normally an output, this pin becomes an input during
+                                      master and DMA cycles.
+ LMEGCS#             52        O      Low Meg Chip Select: Active when area below 1M is accessed.
+ ALE#               142        O      Address Latch Enable: ALE indicates the start of an AT cycle and is externally
+                                      buffered before connection to the AT bus. It is high during non-CPU cycles.
+ XBHE#              146        I/O    System Byte High Enable: Indicates a transfer on the upper byte of the AT data
+                                      bus SD[15:8]. Normally an output, this pin becomes an input during master
+                                      cycles.
+
+
+
+
+                                                                                                          OPTi             ®
+
+
+
+
+912-3000-011                                                                                                          Page 9
+82C291
+
+Signal Descriptions (Cont.)
+                               Signal
+ Signal Name       Pin No.     Type     Signal Description
+
+ INTA#               22           O     Interrupt Acknowledge: The 82C291 system controller drives this signal to
+                                        acknowledge an interrupt cycle.
+ ROMCS#              35           O     System BIOS ROM Chip Select: The system BIOS can be accessed as either
+                                        an 8- or 16-bit device based on M16# input status. For CPU accesses, ROMOE#
+                                        is active from the end of the first T2 until one-half of a T-state after the last T2.
+                                        For non-CPU accesses, ROMCS# is active along with MEMRD#.
+ XD[15:0]         2:9, 11:18      I/O   System Data Bus: These signals are typically used as the data bus for on-board
+                                        peripherals. A buffer is required between this bus (XD bus) and the AT data bus
+                                        (SD bus). SDIR1, SDIR2, and SDEN# control this buffer logic.
+ SDIR1               157          O     SD Bus Low Byte Direction Control: This signal controls the direction of the
+                                        low byte, XD[7:0], between the XD and the SD bus. When this signal is high, the
+                                        buffer points from the XD bus to the SD bus.
+ SDIR2               158          O     SD Bus High Byte Direction Control: This signal controls the direction of the
+                                        high byte, XD[15:8], between the XD and the SD bus. When this signal is high,
+                                        the buffer points from the XD bus to the SD bus.
+ SDEN#               159          O     AT Data Bus Buffer Enable: This signal controls the output enable of the SD/
+                                        XD bus buffers. It is enabled for CPU accesses to the AT bus.
+ CHCK#               120           I    AT Bus Channel Check: This signal provides the system with parity information
+                                        about memory or devices on the AT bus. It indicates a non-correctable system
+                                        error and is one of the sources used to generate a CPU NMI.
+ RFSH#               19           I/O   Refresh: Normally this is an output to indicate AT refresh cycles; it becomes an
+                                        input signal for DMA or master cycles. The refresh interrupt request comes from
+                                        the 8254 (integrated within the 82C206) via the OUT1 pin. In a PC/AT compati-
+                                        ble design, TIMER1 (8254) is programmed as a rate generator to produce a
+                                        15.9µs periodic signal used for interrupt request for refresh cycles. If slow refresh
+                                        DRAMs are being used, this period may be programmed to 63.6µs.
+
+3.1.8     Miscellaneous Signals
+                               Signal
+ Signal Name       Pin No.     Type     Signal Description
+
+ TURBO               160           I    Turbo Mode Selection: Normal (turbo) mode is maintained when this pin is
+                                        asserted (high). Non-turbo mode is entered when this input is deasserted, keep-
+                                        ing the CPU in its HOLD state for approximately two-thirds of the time.
+ KBDCS#              36           O     Keyboard Controller Chip Select: The 82C291 system controller decodes
+                                        accesses to the keyboard controller and issues this chip select signal when nec-
+                                        essary.
+ NMI                 39           O     Non-Maskable Interrupt: It is activated when a parity error from a local memory
+                                        read is detected or when the CHCK# signal from the AT bus is asserted (and the
+                                        corresponding control bit in Port B is also enabled).
+ GATE2               25           O     Timer 2 Gate Control: This signal is used as the gate 2 input (for counter 2) into
+                                        the 8254 counter/timer logic of the 82C206 integrated peripherals controller. In a
+                                        PC/AT compatible design, counter 2 is used for tone generation for the speaker.
+ SPKR                37           O     Speaker Data: SPKD is a function of OUT2 and Port 61h, bit 1.
+
+
+
+
+OPTi          ®
+
+
+
+
+Page 10                                                                                                          912-3000-011
+                                                                                                         82C291
+
+Signal Descriptions (Cont.)
+                              Signal
+ Signal Name     Pin No.      Type     Signal Description
+
+ OUT2               28          I      Timer 2 Output: This signal, from the timer 2 output of the 8254 compatible cir-
+                                       cuit in the 82C206, is used as an input for the speaker data logic.
+ ASRTC              27          O      Real Time Clock (RTC) Address Strobe
+
+3.1.9   Power and Ground Pins
+                   Pin        Signal
+ Signal Name       No.        Type     Signal Description
+
+ GND             1, 10, 40,     I      Ground Connection
+                50, 70, 81,
+                 110, 121,
+                 130, 150
+ VCC             20, 61,        I      Power Connection: +5.0V
+                100, 125,
+                  156
+
+
+
+
+                                                                                                          OPTi            ®
+
+
+
+
+912-3000-011                                                                                                     Page 11
+82C291
+
+4.0       Functional Description
+The 82C291 integrates a write-back cache controller, a local        The 82C291 emulates the keyboard controller reset function.
+DRAM controller, the CPU state machine, the AT bus state            The keyboard reset is intercepted by monitoring the I/O write
+machine, and data buffers into a single 160-pin PQFP. The           cycle “FE” command to Port 64h. This fast CPU reset from
+following is a functional description of these logical units.       the chipset will be generated directly after the I/O write is
+                                                                    decoded unless bit 5 of Index Register 21h is enabled, in
+                                                                    which case the reset will not start until a “HALT” instruction is
+4.1       CPU Interface                                             executed.
+The 386SX microprocessor is a 32-bit CPU with a 16-bit              When configured to interface with the 80387SX numerics
+external data bus and a 24-bit external address bus. The            coprocessor, the 82C291 will generate the NPRST signal
+82C291 CPU interface monitors and relays each CPU cycle             when the CPURST is activated, or if an I/O write to F1h is
+to the appropriate control unit within the 82C291 and returns       issued.
+the READY signal back to the CPU when the cycle is com-
+pleted.
+                                                                    4.3      System Clock Generation
+4.2       Reset Logic                                               The 82C291 has two high frequency clock inputs, FCLK2 and
+                                                                    CLK2. This clocking scheme provides support for all 386SX
+The RST1# input to the 82C291 is used to generate the CPU           platforms at speeds up to 80MHz (40MHz system speed).
+reset (CPURST), the numerics coprocessor reset (NPRST),
+and the system reset (RST4#) signals. RST1# is a “cold              FCLK2 is a fast (early) version of the 2X clock used in the
+reset” which is generated when either PWRGD goes low                generation of CPURST and NPRST.
+(from the power supply, indicating a low power condition) or        CLK2 provides the fundamental timing for the 82C291 and
+the system reset button is activated. This reset signal is used     the CPU. The 80386SX CPU divides this clock by two inter-
+to force the system to begin execution at a known state.            nally to generate the internal processor clock used for
+When RST1# is sensed active, the 82C291 will assert                 instruction execution. The internal clock is comprised of two
+CPURST, NPRST, and RST4#. The trailing edge of these                phases, “phase 1" and “phase 2". Each CLK2 period is a
+reset signals must coincide with CPU T-state phase two; this        phase of the internal clock. Figure 4-1 illustrates the relation-
+synchronizes the phase among the CPU, numerics coproces-            ship. The phase of the internal processor clock can be syn-
+sor, and the 82C291. CPURST is also generated when a                chronized to a known phase by controlling the falling edge of
+shutdown condition is detected from the CPU bus definition          the CPURST signal.
+signals. Reset signals are asserted for (128) CLK2 cycles.
+
+
+
+Figure 4-1        CLK2 Phase Relationship
+
+                                         Processor Clock Period                Processor Clock Period
+                                       CLK2 φ1            CLK2 φ2            CLK2 φ1             CLK2 φ2
+
+                            2V                 2V                 2V                 2V                  2V
+                    CLK2
+
+
+
+
+                 Internal
+          Processor Clock
+
+
+
+
+OPTi          ®
+
+
+
+
+Page 12                                                                                                                912-3000-011
+                                                                                                                     82C291
+CLK2 is a master 2X clock which is used to drive all host CPU       The following table details which CPU address bits are stored
+synchronous signals and the 82C291's internal state                 as tags for the various cache sizes supported in the 82C291.
+machines. CLK2 is also used by the cache/DRAM controller
+logic and to maintain the clock phase between the CPU and           Table 4-1        TAG and CPU Address
+the 82C291.
+                                                                                   Cache Size and Associated CPU Address
+The 82C291 generates the AT bus clock (ATCLK) from an
+internal division of CLK2. The ATCLK frequency is program-            Tag Bit        16K          32K          64K         128K
+mable and can be set to any of four clock division options by
+programming bits [1:0] of Index Register 20h. This allows the            6           A20          A20          A20          A20
+system designer to tailor the AT bus clock frequency to sup-             5           A19          A19          A19          A19
+port a wide range of system designs and performance plat-
+forms.                                                                   4           A18          A18          A18          A18
+
+OSC is the 14.318MHz oscillator input used to generate the               3           A17          A17          A17          A17
+OSC/12 (timer output) clock to the 82C206. The OSC signal                2           A16          A16          A16          A23
+is also buffered externally for use on the AT bus.
+                                                                         1           A15          A15          A22          A22
+                                                                         0           A14          A21          A21          A21
+4.4      Write-Back Cache Subsystem
+The integrated write-back cache controller dramatically             4.4.2    Dirty Bit
+boosts the overall performance of the local memory sub-             The “dirty bit” is a mechanism for monitoring coherency
+system. The write-back cache scheme derives its superior            between cache memory and the system DRAM. Each tag
+performance by optimizing write cycles. There is no perfor-         entry has a corresponding dirty bit to indicate whether the
+mance penalty in the cache write cycle, since the cache con-        data in that cache line has been modified since it was loaded
+troller does not need to wait for the much slower DRAM              from system memory. This allows the 82C291 to determine
+controller to finish its cycle before proceeding to the next. The   whether the data in DRAM memory is “stale” and needs to be
+write-back algorithm conventionally provides up to 10% per-         updated before a new memory location is allowed to over-
+formance enhancement over a write-through scheme,                   write the currently indexed cache entry. The write-back cycle
+although various operating systems and applications will per-       causes an entire cache line (eight bytes) to be written back to
+form differently.                                                   memory, followed by a line import from the new memory loca-
+Cache memory can be configured as one or two banks, and             tion into the cache (the last two bytes of this 8-byte cache lin-
+sizes of 16K, 32K, 64K, and 128K are supported. Provisions          efill are concurrently provided to the CPU). Normally, the
+for two programmable non-cacheable regions are provided.            performance advantage of completing fast writes to the
+The cache controller operates in non-pipeline mode with a           cache outweighs the “write-back” read miss penalties which
+fixed 8-byte line size in order to simplify motherboard design      are incurred while operating under the write-back scheme.
+without increasing cost or degrading system performance.
+                                                                    4.4.3    Non-Cacheable Areas
+The cache write scheme for DMA and bus master cycles is
+                                                                    The 82C291 supports two programmable non-cacheable
+always write-through because typical DMA and bus master
+                                                                    blocks in Configuration Registers 2Ah, 2Bh, and 2Ch. In addi-
+cycles are slow enough to allow time to update DRAM. Using
+                                                                    tion to these blocks, Register 28h[5], when enabled, will
+a write-back policy on these cycles would result in unneces-
+                                                                    cause all memory accesses to be non-cacheable and Regis-
+sarily paying a read-miss penalty.
+                                                                    ter 28h[4], when enabled, renders the area from 640K-1M
+                                                                    (A0000h-FFFFFh) non-cacheable. A summary of all non-
+4.4.1    TAG RAM
+                                                                    cacheable areas is defined below:
+A built-in tag comparator improves system performance while
+reducing component count on the system board. The com-              • The I/O address space.
+parator internally detects the cache hit/miss status by com-        • The memory address space A0000h-B0000h (video mem-
+paring the high-order address bits (for the memory cycle in           ory).
+progress) with the stored tag bits from previous cache
+entries. When a match is detected, and the location is cache-       • The memory address beyond the configured local DRAM
+able, a cache hit cycle takes place. If the comparator does           memory.
+not detect a match, or a non-cacheable location is accessed         • The two programmable non-cacheable blocks defined in
+(based on the internal non-cacheable region registers and             registers 2Ah, 2Bh, and 2Ch.
+the shadow control registers), the cycle is a cache miss.
+
+
+
+
+                                                                                                                     OPTi          ®
+
+
+
+
+912-3000-011                                                                                                                 Page 13
+82C291
+• Halt/shutdown cycles.                                         Table 4-2       Cache SRAM Requirements
+• The 256K remapped area.                                                                                      Cacheable
+• C0000h-FFFFFh block unless both read/write shadowed            Cache        Tag Field      Cache SRAM          Main
+  and non-write protected are enabled.                            Size      Address Tag/       Address          Memory
+                                                                  (Kb)       Dirty SRAM      Cache SRAMs         (MB)
+• The FE0000h-FFFFFFh block.
+                                                                   16         A[20:14]            A[13:1]             2
+• All memory accesses if Configuration Register 28h[5] is
+                                                                               8Kx8              (2) 8Kx8
+  enabled.
+                                                                   32         A[21:15]            A[14:1]             4
+• 640K-1M (A0000h-FFFFFh) if Configuration Register
+                                                                               8Kx8              (4) 8Kx8
+  28h[4] is enabled.
+                                                                   64         A[22:16]            A[15:1]             8
+4.4.4     Cache Cycles                                                         8Kx8              (2) 32Kx8
+                                                                   128        A[23:17]            A[16:1]            16
+4.4.4.1 Cache Read Hit
+                                                                              (2) 8Kx8           (4) 32Kx8
+The secondary cache provides data to the CPU.
+
+4.4.4.2 Cache Read Miss (Dirty Bit Negated)                     Table 4-3       SRAM Speed Requirements
+The cache controller does not need to update system mem-          System Speed       Cache Data       Tag/Dirty
+ory with the cache's current data, because that data has not       (Osc. Freq.)       SRAMs            SRAMs          DRAM
+been modified (evidenced by the Dirty bit negation). The
+cache controller asserts DRTYW#, causing the tag RAMs to         16MHz (32MHz)           35ns           25ns          70ns
+update with the new address, and asserts CAWE[1:0]#, caus-
+                                                                 20MHz (40MHz)           35ns           25ns          70ns
+ing cache memory to update with new data from DRAM.
+                                                                 25MHz (50MHz)           35ns*          20ns          70ns
+4.4.4.3 Cache Read Miss (Dirty Bit Asserted)                     33MHz (66MHz)           20ns           15ns          70ns
+The cache controller must update the system memory with
+data from the cache location that is going to be overwritten    Note:    The above recommended speed parts (or faster)
+because the system DRAM contains “stale” data. The con-                  may be used. DRAM and cache cycles are at their
+troller writes the 8-byte line from cache memory into DRAM,              minimum programmable wait states.
+then reads the new line from DRAM into the cache memory
+and deasserts the dirty bit. The cache controller asserts                *35ns SRAMs with a write pulse width of 20ns or
+CAWE[1:0]#, and DRTYW#. This new data is also presented                  less are required. Otherwise use 30/25ns SRAMs.
+to the CPU.
+
+4.4.4.4 Cache Write Hit                                         4.5      Local DRAM Control System
+Because this is a write-back cache, the cache controller does   The 82C291 supports up to four banks of page-mode local
+not need to update the much slower DRAM memory. Instead,        DRAM memory for configurations of up to 16MB. 256Kb,
+the controller updates the cache memory and sets the Dirty      1Mb, and 4Mb page-mode DRAM devices may be used. The
+bit. DIRTY may already be set, but that does not affect this    memory configuration and cycle performance are program-
+cycle. The contents of the tag RAM remains unmodified.          mable through Configuration Register 22h.
+                                                                Table 4-4 illustrates the DRAM configurations supported.
+4.4.4.5 Cache Write Miss
+The cache controller bypasses the cache entirely and writes     4.5.1    CPU Address to MA Bus Mapping
+the data directly into DRAM. DIRTY is unchanged.                Table 4-5 details the DRAM multiplexed addresses for all
+                                                                DRAM types supported.
+
+
+
+
+OPTi          ®
+
+
+
+
+Page 14                                                                                                           912-3000-011
+                                                                                                                   82C291
+
+Table 4-4        DRAM Configuration Table                             4.6      Refresh Logic
+  Bank 0       Bank 1         Bank 2        Bank 3         Total      The 82C291 supports both normal and hidden refresh. Nor-
+                                                                      mal refresh refers to the classical refresh implementation
+   256K         256K            X             X             1M        which places the CPU in “hold” while a refresh cycle takes
+   256K         256K          256K           256K           2M        place to both the local DRAM and any AT bus memory. This
+                                                                      is the default condition at power-up. However, hidden refresh
+    1M            X             X             X             2M        is performed independent of the CPU and does not suffer
+   256K         256K           1M             X             3M        from the performance restriction of losing processor band-
+                                                                      width by forcing the CPU into its hold state. Hidden refresh
+    1M           1M             X             X             4M        delivers higher system performance and is recommended
+   256K         256K           1M            1M             5M        over normal refresh. As long as the CPU does not try to
+                                                                      access local memory or the AT bus during a hidden refresh
+    1M           1M            1M             X             6M        cycle, refresh will be transparent to the CPU. The CPU can
+    1M           1M            1M            1M             8M        continue to execute from the secondary cache as well as
+                                                                      execute internal instructions during hidden refresh without
+    4M            X             X             X             8M
+                                                                      any loss in performance due to refresh arbitration. If a local
+   256K         256K           4M             X             9M        memory or AT bus access is required during hidden refresh,
+                                                                      wait states will be added to the CPU cycle until the resource
+    1M           4M             X             X            10M
+                                                                      becomes available. Hidden refresh also separates refreshing
+    1M           1M            4M             X            12M        of the AT bus and local DRAM. The DRAM controller arbi-
+    4M           4M             X             X            16M        trates between CPU DRAM accesses and DRAM refresh
+                                                                      cycles, while the AT bus controller arbitrates between CPU
+                                                                      accesses to the AT bus, DMA, and AT refresh. The AT bus
+Table 4-5        MA Bus Mapping                                       controller asserts the RFSH# and MEMR# commands and
+                                                                      outputs the refresh address during AT bus refresh cycles.
+                  256K                 1M                  4M
+ Memory                                                               The 82C291 implements refresh cycles to the local DRAM
+ Address       Col      Row      Col        Row      Col        Row   using CAS-before-RAS timing. CAS-before-RAS refresh has
+                                                                      lower power consumption than RAS-only refresh, which is
+   MA0         A1       A10      A1         A20      A1         A20
+                                                                      important when dealing with large memory arrays. CAS-
+   MA1         A2       A11      A2         A11      A2         A22   before-RAS refresh is used for both normal and hidden
+   MA2         A3       A12      A3         A12      A3         A12   refresh to local memory.
+
+   MA3         A4       A13      A4         A13      A4         A13   The output of timer 1 (OUT1) inside the 82C206 is pro-
+                                                                      grammed as a rate generator to produce the periodic refresh
+   MA4         A5       A14      A5         A14      A5         A14   request signal which occurs every 15.9µs. By programming
+   MA5         A6       A15      A6         A15      A6         A15   Configuration Register 20h[3], slow refresh is enabled which
+                                                                      will further divide the 15.9µs period by four to provide a
+   MA6         A7       A16      A7         A16      A7         A16   63.6µs “slow refresh” interval (slow refresh DRAMs must be
+   MA7         A8       A17      A8         A17      A8         A17   used with the slow refresh feature).
+
+   MA8         A9       A18      A9         A18      A9         A18
+   MA9                           A10        A19      A10        A19   4.7      Shadow RAM
+                                                                      Since accesses to local DRAM are much faster than those to
+   MA10                                              A11        A21
+                                                                      EPROM, the 82C291 provides shadow RAM capability. With
+                                                                      this feature, code from slow devices like ROM and EPROM
+4.5.2     Parity Generation/Detection Logic                           memories can be copied to local DRAM to speed up memory
+During local DRAM write cycles, the 82C291 generates a par-           accesses. Accesses to the specified EPROM space are redi-
+ity bit for each byte of write data from the processor. Parity        rected to the corresponding DRAM location. Shadow RAM
+bits are stored into local DRAM along with each data byte.            addresses range C0000h-FFFFFh. 16K granularity is pro-
+During a DRAM read, the parity bit is checked for each data           vided for the address range C0000h-EFFFFh, while the 64K
+byte. If the logic detects incorrect parity, the 82C291 will gen-     range from F0000h-FFFFFh (the location of system BIOS) is
+erate a parity error to the CPU. The parity error will invoke the     shadowable as an entire segment.
+NMI interrupt, providing the parity check bit is set to 0 in Con-
+figuration Register 21h[0]. Parity check must also be enabled         System BIOS, the F0000h-FFFFFh segment, may be shad-
+in the Port B (61h) Register, bits [3:2].                             owed if programmed. The default is AT ROM cycles for read,
+
+
+
+
+                                                                                                                    OPTi          ®
+
+
+
+
+912-3000-011                                                                                                                Page 15
+82C291
+and local DRAM cycles for writes. If configuration register        single ALE generation instead of multiple ALEs during bus
+23h[6] is set to 0, then both read/write will go to local DRAM.    conversion cycles. The AT bus state machine also; routes
+                                                                   data and address when an AT bus master or DMA controller
+The channel ROM BIOS, C0000h-EFFFFh segments, may
+                                                                   accesses memory.
+also be shadowed if programmed. The default is AT cycles
+for both read and write accesses. Configuration Registers
+26h, 25h, and 24h are used to enable read and write shadow         4.9      Bus Arbitration Logic
+RAM for the C/D/E0000 segments respectively. When
+enabled, each 16KB block access will be redirected to local        The 82C291 provides arbitration between the CPU, DMA
+DRAM. The ROMCS# output can be generated for the C/D/              controller, AT bus masters, and refresh logic. During DMA
+E0000 blocks if both read and write shadow RAM are dis-            and AT bus master cycles, the 82C291 asserts HOLD to the
+abled and the corresponding ROMCS# in Configuration Reg-           CPU. The CPU will respond to an active HOLD signal by gen-
+ister 23h is enabled. Thus, a single ROM for system and            erating HLDA (after completing its current bus cycle) and
+video BIOS may be implemented. Register 23h[7] may be              placing most of its output and I/O pins into a high impedance
+used to enable ROMCS# generation for write cycles to sup-          state. After the CPU relinquishes the bus, the 82C291
+port flash ROM devices.                                            responds by issuing RFSH# (refresh cycle) or HLDA1 (AT
+                                                                   bus master or DMA cycle), depending on the requesting
+Shadowed RAM write protect is provided in Register                 device. During hidden refresh, HOLD remains negated and
+27h[7:4]. If both read and write shadowed RAM are enabled,         the CPU continues its current program execution as long as it
+while global NCA (non-cacheable address) (28h[5:4]) are dis-       services internal requests or achieves cache hits (see Sec-
+abled, and write protect is disabled in register 27h, then these   tion 4.6, Refresh Logic).
+areas become cacheable areas for the 82C291 write-back
+cache controller.                                                  The AT bus controller in the 82C291 arbitrates between hold
+                                                                   and refresh requests, deciding which will own the bus once
+If the shadowed RAM feature is not utilized for the memory         the CPU relinquishes control with the HLDA signal. The arbi-
+between D0000h and EFFFFh, then memory remapping is                tration between refresh and DMA/master is based on a FIFO
+allowed. When memory remapping is enabled, the local               (first in-first out) priority. However, a refresh request (RFSH#)
+DRAM areas A0000h-B0000h and D0000h-EFFFFh, a total                will be internally latched and serviced immediately after DMA/
+of 256K, may be remapped to the top of system memory. The          master finishes its request if queued behind HRQ. HRQ must
+system BIOS (F0000h-FFFFFh) and video BIOS (C0000h-                remain active to be serviced if refresh request comes first.
+CFFFFh) areas remain there for shadow RAM and may not              DMA and bus masters share the same request pin HRQ. The
+be remapped. The memory remap starting address must be             82C291 will generate a HLDA1 back to the requesting device
+defined in Configuration Register 27h[3:0].                        (82C206) when the CPU confirms free bus status. During an
+                                                                   active HLDA1 period, the way to distinguish between DMA
+                                                                   and bus master requests is to monitor the AEN8# and
+4.8       AT Bus State Machine                                     AEN16# signals. AEN8#/AEN16# active indicates a 8/16-bit
+The AT bus state machine gains control when the 82C291's           DMA transfer, while these signals are inactive when an exter-
+decoding logic detects a non-local memory cycle. It monitors       nal bus master controls the system bus.
+status signals M16#, I016#, CHRDY and N0WS# and per-
+forms the necessary synchronization of control and status
+signals between the AT bus and the microprocessor. The             4.10     Numeric Coprocessor Cycles (NPU)
+82C291 supports 8- and 16-bit memory and I/O devices               The 82C291 monitors NPERR# and NPBUSY# to provide
+located on the AT bus.                                             support for 387SX coprocessors. A coprocessor asserts
+An AT bus cycle is initiated by asserting ALE in AT-TS1 state.     NPERR# during a power-on reset to indicate its presence.
+On the trailing edge of ALE, M16# is sampled for a memory          The coprocessor asserts NPBUSY# while executing a float-
+cycle to determine the bus size. It then enters AT-TC state        ing-point calculation, and asserts RDYO# when it is finished.
+and provides the command signal. For an I/O cycle, IO16# is        If NPBUSY# is active and a coprocessor error occurs (the
+sampled after the trailing edge of ALE until the end of the        coprocessor asserts NPERR#) the 82C291 latches
+command. Typically, the wait state for an AT 8/16-bit transac-     NPBUSY# and generates INT13. Latched BUSY# and INT13
+tion is 5/1 respectively. The command cycle is extended            can be cleared by an I/O Port F0h write command. If the NPU
+when CHRDY is pulled low (not ready), or the cycle is termi-       is not installed, the 82C291 treats any access to the NPU
+nated when zero wait state request signal (N0WS#) from the         address space as an AT cycle. With the coprocessor in place,
+AT bus is active. Upon expiration of the wait states, the AT       CPU accesses to the NPU address space are direct, except
+state machine terminates itself and passes internal READY          for the re-synchronizing of the numerics coprocessor ready
+to the CPU state machine for outputting synchronous RDY#           signal (RDYI#) before sending it back to the CPU.
+to the CPU. Index Register 21h[4] allows for the addition of
+an AT cycle wait state; bit 6 of this same register allows for a
+
+
+
+OPTi           ®
+
+
+
+
+Page 16                                                                                                               912-3000-011
+                                                                                                                 82C291
+
+4.11     System ROM BIOS Cycles                                    microprocessor. OSC12 is the clock source used. OSC12 is
+                                                                   internally derived from the 14.31818MHz OSC clock input to
+The 82C291 supports both 8- and 16-bit EPROM cycles. If
+                                                                   the 82C291. The hold is maintained approximately two-thirds
+the system BIOS is 16 bits wide, ROMCS# should be con-
+                                                                   of the time, while the CPU is allowed to process external
+nected to M16# through an open collector gate indicating to
+                                                                   demands in the remaining one-third interval. For system
+the 82C291 that a 16-bit EPROM is responding. The system
+                                                                   design, the TURBO pin should be pulled high through a 10K
+BIOS resides on the XD bus. The XD to SD data buffer is
+                                                                   resistor.
+enabled (SDEN# active) except during I/O cycles at
+addresses below 100h (byte-wide I/O), INTA cycles, and 8-bit
+ROM BIOS cycles.                                                   4.15     Keyboard Fast GATEA20 and CPU
+                                                                            RESET Emulation
+4.12     Local Bus Interface                                       The 82C291 will intercept commands to Ports 60h and 64h
+The 82C291 allows select peripheral devices to share the           so that it may emulate the keyboard controller, allowing the
+“local bus” with the CPU and numerics coprocessor. The per-        generation of the fast GATEA20 and fast CPURST signals.
+formance of these devices (which may include video sub-sys-        The decode sequence is software transparent and requires
+tems, hard disk adapters, or other PC/AT controllers) will         no BIOS modifications to function. The fast GATEA20 gener-
+dramatically increase when allowed to operate in this high-        ation sequence involves writing command “D1h” (write out-
+speed environment. These local devices are responsible for         put) port to Port 64h, then writing data “02h” to Port 60h. The
+their own address and bus cycle decode and must be able to         fast CPU “warm reset” function is generated when a Port 64h
+operate compatibility at the elevated frequencies required for     write cycle with data “FEh” is decoded. A write to Port 64h
+operation on the local CPU bus.                                    with data D0h will enable the status of GATEA20 (bit 1 of Port
+                                                                   60h) and the system reset (bit 0 of Port 60h) to be readable.
+The LDEV# input signal to the 82C291 indicates that a local
+device is intercepting the current cycle. If this signal is sam-
+pled at the end of the first T2 clock cycle, then the 82C291       4.16     Special Cycles
+will allow the responding local device to assume responsibil-
+                                                                   The 386SX microprocessor provides special bus cycles to
+ity for the current local cycle. When the device has completed
+                                                                   indicate that certain instructions have been executed, or cer-
+its operation, it must terminate the cycle by pulling on the
+                                                                   tain conditions have occurred internally. Special cycles, such
+RDYI# input pin of the 82C291. The RDYI# signal is synchro-
+                                                                   as Shutdown and Halt cycles, are covered by dedicated han-
+nized by the 82C291 before being sent to the CPU via the
+                                                                   dling logic in the 82C291. This logic decodes the CPU bus
+RDY# line. This synchronization requires one T-state. If zero
+                                                                   definition signals MIO#, DC#, and WR# and takes the appro-
+wait state local bus cycles are desired, enabling Configura-
+                                                                   priate action.
+tion Register 21h[1] will allow the local bus device to drive
+READY directly to the CPU without the 82C291 synchroniza-
+tion delay. However, the 82C291 must receive this same             4.17     Testability Features
+local READY signal so that it may wind down its state
+                                                                   I/O Configuration Register 20h[7:6] contains a 2-bit read only
+machines and terminate the current cycle.
+                                                                   value which indicates the revision level of the 82C291. This
+                                                                   allows the revision level of the 82C291 to be verified by soft-
+4.13     Data Bus Conversion/Data Path                             ware.
+         Control Logic                                             4.17.1 Tristate Test Mode (Outputs/Bidirectional)
+The 82C291 performs data bus conversion when the CPU               The 82C291 includes a tristate test mode to facilitate board
+accesses 16- or 8-bit devices through 32- or 16-bit instruc-       level testability and manufacturability. When this test mode is
+tions. It also handles DMA and AT master cycles that transfer      entered, all outputs and bidirectional pins become tristated,
+data between local DRAM or cache memory and locations on           allowing electrical isolation between the 82C291 and these
+the AT bus. The 82C291 provides all of the signals to control      signals on the PCB. (See Table 4-7 for a listing of the I/O and
+external bidirectional data buffers.                               bidirectional pins.)
+                                                                   At the trailing edge of the reset signal (RST1#) the 82C291
+4.14     Turbo/Slow Mode Operation                                 samples three pins to determine whether the tristate test
+The Turbo mode is controlled through the TURBO input pin to        mode should be entered. The following table illustrates the
+the 82C291. The system will operate at full speed if the           test function options at the RST1# sample point.
+TURBO pin is asserted high and non-turbo (slow) mode when
+the TURBO input is pulled low. Slow mode operation is imple-
+mented by applying a periodic clock to the HOLD input of the
+
+
+
+
+                                                                                                                  OPTi          ®
+
+
+
+
+912-3000-011                                                                                                              Page 17
+82C291
+
+Table 4-6         Test Functions at RST1# Sample Point
+ Pin 33     Pin 34    Pin 47              Function
+
+  High       Low          Low   Tristate test mode
+  Low        Low          Low   Odd number pins = high
+                                Even number pins = low
+  Low       High          Low   Odd number pins = low
+                                Even number pins = high
+  High      High          Low   Normal operation
+
+
+
+Table 4-7         I/O and Bidirectional Pins
+
+ Pin No.      Pin Name            Pin No.      Pin Name    Pin No.   Pin Name   Pin No.   Pin Name
+
+    2              XD15              26          OSC12       73        D9        112        A13
+    3              XD14              27         ASRTC        74        D10       113        A12
+    4              XD13              31          HLDA1       75        D11       114        A11
+    5              XD12              35        ROMCS#        76        D12       115        A10
+    6              XD11              36         KBDCS#       77        D13       116         A9
+    7              XD10              37            SPKD      78        D14       117         A8
+    8              XD9               38          RST4#       79        D15       136        MP1
+    9              XD8               39              NMI     80      A1CON       137        MP0
+   11              XD7               41            NPINT     82      A2CON       140       IOWR#
+   12              XD6               46            HOLD      88       TAG0       141       MWR#
+   13              XD5               48          BUSY#       89       TAG1       142       BALE
+   14              XD4               63              D0      90       TAG2       143       M16#
+   15              XD3               64              D1      91       TAG3       145        XA0
+   16              XD2               65              D2      92       TAG4       146       XBHE#
+   17              XD1               66              D3      93       TAG5       147       IORD#
+   18              XD0               67              D4      94       TAG6       148       MRD#
+   19             RFSH#              68              D5      96       DRTY       157       SDIR1
+   21              GA20              69              D6     108        A16       158       SDIR2
+   22             INTA#              71              D7     109        A15       159       SDEN#
+   25             GATE2              72              D8     111        A14
+
+
+
+
+OPTi          ®
+
+
+
+
+Page 18                                                                                     912-3000-011
+                                                                                                                     82C291
+
+5.0       Configuration Registers                                     5.1      Register Descriptions
+There are 13 Configuration Registers inside the 82C291. An            5.1.1    Keyboard I/O Control Registers - 60h, 64h
+indexing scheme is used to access all of these registers. Port        The 82C291 will intercept commands to Ports 60h and 64h
+22h is used as the Index Register and Port 24h is the Data            so that it may emulate the keyboard controller allowing the
+Register. Each access to a Configuration Register consists            generation of fast GATEA20 and fast CPURST signals. The
+of a write to Port 22h, specifying the desired register in the        decode sequence is software transparent and requires no
+data byte, followed by a read or write to Port 24h with the           BIOS modifications to function. The fast GATEA20 genera-
+actual register data. The index resets after every access;            tion sequence involves writing command “D1h” to Port 64h,
+therefore every data access (via Port 24h) must be preceded           then writing data “02h” to Port 60h. The fast CPU warm reset
+by a write to Port 22h, even if the same register is being            function is generated when a Port 64h write cycle with data
+accessed on consecutive occasions. All reserved bits are set          “FEh” is decoded. A write to Port 64h with data D0h will
+to zero by default and must be set to zero for future pur-            enable the status of GATEA20 (bit 1 of Port 60h) and the
+poses. PC/AT-compatible registers 61h (Port B) and 60h/64h            system reset (bit 0 of Port 60h) to be readable.
+are supported, as is PS/2-compatible register 92h (Port A).
+
+
+
+Table 5-1          Port 61h (Port B)
+ Bit(s)     Type                                                       Function
+
+ 7             R     System Parity Check: This bit indicates that an on-board RAM parity error has occurred. It can only be set
+                     if bit 2 (Parity Check Enable) = 0. This bit should be cleared by writing a 1 to bit 2.
+ 6             R     I/O Channel Check: This bit indicates that a peripheral device is reporting an error. It can only be set if bit
+                     3 (I/O Channel Check Enable) = 0. This bit should be cleared by writing a 1 to bit 3.
+ 5             R     Timer OUT2 Detect: This bit indicates the current state of the OUT2 signal from the on-board timer.
+ 4             R     Refresh Detect: This bit is tied to a toggle flip-flop which is clocked by REFRESH. It toggles the opposite
+                     state every time a refresh cycle occurs.
+ 3          R/W      I/O Channel Check Enable: When this bit is set low, it allows an NMI to be generated if the IOCHCK# input
+                     is pulled low. Otherwise, the IOCHCK# input is ignored and can not generate an NMI.
+                     0 = Enable                                     1 = Disable
+ 2          R/W      Parity Check Enable: When this bit is set low, it allows parity errors from on-board RAM memory to cause
+                     an NMI. When high, on-board RAM parity errors will not cause an NMI.
+ 1          R/W      Speaker Output Enable: This bit is gated with the output of Counter 2 from the on-board timer. When this
+                     bit is high, it allows the OUT2 frequency to be passed out on the SPKR pin. When low, the SPKR output is
+                     forced low.
+                     0 = Enable                                     1 = Disable
+ 0          R/W      Timer 2 Gate: This bit goes to the GATE2 input of the on-board timer to enable Counter 2 to produce a
+                     speaker frequency.
+                     0 = Enable                                     1 = Disable
+
+
+
+
+                                                                                                                      OPTi             ®
+
+
+
+
+912-3000-011                                                                                                                  Page 19
+82C291
+
+Table 5-2          Revision/AT Bus Configuration Register - Index 20h
+ Bit(s)     Type     Default                                               Function
+
+ 7:6        RO         00      82C291 revision number
+ 5:4        R/W        00      Back-to-back I/O recovery time
+                               00 = 3 ATCLKs between I/O cycles              10 = 5 ATCLKs between I/O cycles
+                               01 = 4 ATCLKs between I/O cycles              11 = 6 ATCLKs between I/O cycles
+ 3          R/W         0      Slow refresh mode:
+                               0 = Disable                                   1 = Enable
+ 2          R/W         0      Hidden refresh mode:
+                               0 = Disable                                   1 = Enable
+ 1:0        R/W        00      AT clock selection:
+                               00 = ATCLK = CLK2 divided by 10               10 = ATCLK = CLK2 divided by 6
+                               01 = ATCLK = CLK2 divided by 8                11 = ATCLK = CLK2 divided by 4
+
+Table 5-3          System Control Register - Index: 21h
+ Bit(s)     Type     Default                                               Function
+
+ 7          R/W         0      AT bus master byte swap:
+                               0 = Disable                                   1 = Enable
+ 6          R/W         1      ALE generation for each AT bus cycle:
+                               0 = Disable, a single ALE will generate during bus conversion cycles
+                               1 = Enable, multiple ALEs will be generated during bus conversion cycles
+ 5          R/W         0      Keyboard fast reset emulation control:
+                               0 = Enable, a “Halt” instruction is required before a fast CPU reset will be generated
+                               1 = Disable, fast CPU reset will be generated directly after the “FE” I/O write command to Port
+                               64h is decoded.
+ 4          R/W         0      AT cycle additional wait state:
+                               0 = Disable, standard AT cycle
+                               1 = Enable, inserts one extra wait state in standard AT bus cycle
+ 3:2        R/W        00      Reserved
+ 1          R/W         0      Local device ready control:
+                               0 = RDYI# input to the 82C291 will be synchronized and set as RDY# to the CPU one T-state
+                               delayed.
+                               1 = RDYI# input to the 82C291 will not be output to the CPU. READY# from the local device
+                               must be driven to the CPU and the 82C291. One T-state delay will not be incurred.
+ 0          R/W         0      System memory parity checking:
+                               1 = Disable, 82C291 will not check parity
+                               0 = Enable, 82C291 will check parity
+
+
+
+
+OPTi          ®
+
+
+
+
+Page 20                                                                                                                 912-3000-011
+                                                                                                     82C291
+
+Table 5-4          DRAM Configuration Register - Index: 22h
+ Bit(s)     Type     Default                                             Function
+
+ 7:6        R/W        11      DRAM read cycle wait states:
+                               00 = 0 wait states                10 = 2 wait states
+                               01 = 1 wait state                 11 = 3 wait states
+ 5:4        R/W        11      DRAM write cycle wait states:
+                               00 = 0 wait states                10 = 2 wait states
+                               01 = 1 wait state                 11 = 3 wait states
+ 3:0        R/W       0000     Banks 0 through 3 DRAM configuration:
+                               0000     256KB       256KB        -          -         1MB
+                               0001     256KB       256KB        256KB      256KB     2MB
+                               0010     256KB       256KB        1MB        -         3MB
+                               0011     256KB       256KB        1MB        1MB       5MB
+                               0100     256KB       256KB        4MB        -         9MB
+                               0101     1MB         -            -          -         2MB
+                               0110     1MB         1MB          -          -         4MB
+                               0111     1MB         1MB          1MB        -         6MB
+                               1000     1MB         1MB          1MB        1MB       8MB
+                               1001     1MB         4MB          -          -         10MB
+                               1010     1MB         1MB          4MB        -         12MB
+                               1011     4MB         -            -          -         8MB
+                               1100     4MB         4MB          -          -         16MB
+                               1101     Reserved
+                               1110     Reserved
+                               1111     Reserved
+
+
+Table 5-5          ROM Chip Select (ROMCS#) Control Register - Index 23h
+ Bit(s)     Type     Default                                             Function
+
+ 7          R/W         0      Enable ROMCS# for write cycles:
+                               0 = Disable
+                               1 = Enable, generates ROMCS# for write cycles to support flash ROMs
+ 6:0        R/W       1000     ROMCS# for XX000h-XXFFFh segments:
+                      000      0 = Disable                       1 = Enable
+                               Bit 6 = F0000h-FFFFFh             Bit 2 = D0000h-D7FFFh
+                               Bit 5 = E8000h-EFFFFh             Bit 1 = C8000h-CFFFFh
+                               Bit 4 = E0000h-E7FFFh             Bit 0 = C0000h-C7FFFh
+                               Bit 3 = D8000h-DFFFFh
+
+
+
+
+                                                                                                     OPTi     ®
+
+
+
+
+912-3000-011                                                                                            Page 21
+82C291
+
+Table 5-6          Shadow RAM Control Register (E0000h-EFFFFh) - Index 24h
+ Bit(s)     Type     Default                                       Function
+
+ 7:4        R/W       0000     Read shadow RAM for EX000h-EXFFFh segments:
+                               0 = Disable                   1 = Enable
+                               Bit 7 = EC000h-EFFFFh         Bit 5 = E4000h-E7000h
+                               Bit 6 = E8000h-EBFFFh         Bit 4 = E0000h-E3FFFh
+ 3:0        R/W       0000     Write shadow RAM for EX000h-EXFFFh segments:
+                               0 = Disable                   1 = Enable
+                               Bit 3 = EC000h-EFFFFh         Bit 1 = E4000h-E7000h
+                               Bit 2 = E8000h-EBFFFh         Bit 0 = E0000h-E3FFFh
+
+Table 5-7          Shadow RAM Control Register (D0000h-DFFFFh) - Index 25h
+ Bit(s)     Type     Default                                       Function
+
+ 7:4        R/W       0000     Read Shadow RAM for DX000h-DXFFFh segments:
+                               0 = Disable                   1 = Enable
+                               Bit 7 = DC000h-DFFFFh         Bit 5 = D4000h-D7000h
+                               Bit 6 = D8000h-DBFFFh         Bit 4 = D0000h-D3FFFh
+ 3:0        R/W       0000     Write shadow RAM for DX000h-DXFFFh segments:
+                               0 = Disable                   1 = Enable
+                               Bit 3 = DC000h-DFFFFh         Bit 1 = D4000h-D7000h
+                               Bit 2 = D8000h-DBFFFh         Bit 0 = D0000h-D3FFFh
+
+Table 5-8          Shadow RAM Control Register (C0000h-CFFFFh) - Index 26h
+ Bit(s)     Type     Default                                       Function
+
+ 7:4        R/W       0000     Read shadow RAM for CX000h-CXFFFh segments:
+                               0 = Disable                   1 = Enable
+                               Bit 7 = CC000h-CFFFFh         Bit 5 = C4000h-C7000h
+                               Bit 6 = C8000h-CBFFFh         Bit 4 = C0000h-C3FFFh
+ 3:0        R/W       0000     Write shadow RAM for CX000h-CXFFFh segments:
+                               0 = Disable                   1 = Enable
+                               Bit 3 = CC000h-CFFFFh         Bit 1 = C4000h-C7000h
+                               Bit 2 = C8000h-CBFFFh         Bit 0 = C0000h-C3FFFh
+
+
+
+
+OPTi          ®
+
+
+
+
+Page 22                                                                              912-3000-011
+                                                                                                              82C291
+
+Table 5-9          Shadow RAM Write Protect/Memory Remap Area Register - Index 27h
+ Bit(s)     Type     Default                                             Function
+
+ 7:4        R/W       0000     Write protect for X0000h-XFFFFh segments:
+                               0 = Disable                        1 = Enable
+                               Bit 7 = F0000h-FFFFFh              Bit 5 = D0000h-DFFFFh
+                               Bit 6 = E0000h-EFFFFh              Bit 4 = C0000h-CFFFFh
+ 3:0        R/W       0000     DRAM remap starting address: Bits [3:0] correspond to address bits A[23:20] respectively.
+                               0000     Disabled, no mapping
+                               0001     1MB
+                               :        :
+                               :        :
+                               1111     15MB
+
+Table 5-10         Cache Control Register - Index 28h
+ Bit(s)     Type     Default                                             Function
+
+ 7          R/W         0      82C291 write-back cache controller operation setting:
+                               0 = Disable Cache                  1 = Enable Cache
+ 6          R/W         0      DRAM performance mode:
+                               0 = Disable
+                               1 = Enable, intended to optimize DRAM performance. This bit should not be enabled unless
+                               external cache is disabled.
+ 5          R/W         0      All memory accesses non-cacheable:
+                               0 = Disable
+                               1 = Enable, all memory accesses will be non-cacheable
+ 4          R/W         0      640KB-1MB area non-cacheable:
+                               0 = Disable
+                               1 = Enable, 640KB-1MB area will be non-cacheable in the 892C291 external cache.
+ 3:2        R/W        10      Cache timing control bits:
+                               00 = Invalid
+                               01 = 0 wait state cache write hit without CAWE# extended. (Choose when using 8Kx8 SRAMs;
+                               cache size = 16KB or 32KB.)
+                               10 = 1 wait state cache write hit
+                               11 = 0 wait state cache write hit with CAWE# extended.(Choose when using 32Kx8 SRAMs;
+                               cache size = 64KB or 128KB)
+ 1:0        R/W        00      Cache size / cacheable DRAM:
+                               00 = 16KB / 2MB
+                               01 = 32KB / 4MB
+                               10 = 64KB / 8MB
+                               11 = 128KB / 16MB
+
+
+
+
+                                                                                                               OPTi         ®
+
+
+
+
+912-3000-011                                                                                                          Page 23
+82C291
+
+Table 5-11        Cacheable Upper Bound Register - Index 29h
+ Bit(s)    Type     Default                                               Function
+
+ 7:4                    1010   Reserved
+ 3:0       R/W          0000   Cacheable upper bound address: These bits control the cacheable upper bound address of the
+                               82C291 write-back cache. The factors to consider when programming this register are the
+                               amount of local DRAM installed and the size of the cache installed. The lesser of these two val-
+                               ues should be used to dictate the upper bound address for the 82C291 cache. A list of cache-
+                               able memory relative to installed cache size can be found in Table 4-2. Bits [3:0] correspond to
+                               address bits A[23:20] respectively.
+                               0000     Feature Disabled
+                               0001     1MB
+                               :        :
+                               :        :
+                               1111     15MB
+
+
+Table 5-12        Non-Cacheable Segments Register 1 - Index 2Ah
+This register is used in conjunction with Index Registers 2Bh and 2Ch to define the two non-cacheable segments. The starting
+address for the non-cacheable segment must have the same granularity as the block size. For example, if a 512KB non-cache-
+able block is selected, its starting address must be a multiple of 512KB; consequently, only address bits of A[23:16] are signifi-
+cant.
+
+ Bit(s)    Type     Default                                               Function
+
+ 7        R/W       0          Non-cacheable segment A:
+                               0 = Disable                          1 = Enable
+ 6:4      R/W       000        Size of non-cacheable memory segment A:
+                               000 = 64KB                           100 = 1MB
+                               001 = 128KB                          101 = 2MB
+                               010 = 256KB                          110 = 4MB
+                               011 = 512KB                          111 = 8MB
+ 3        R/W       0          Non-cacheable segment B:
+                               0 = Disable                          1 = Enable
+ 2:0      R/W       000        Size of non-cacheable memory segment B:
+                               000 = 64KB                           100 = 1MB
+                               001 = 128KB                          101 = 2MB
+                               010 = 256KB                          110 = 4MB
+                               011 = 512KB                          111 = 8MB
+
+
+Table 5-13        Non-Cacheable Segments Register 2 - Index 2Bh
+ Bit(s)    Type     Default                                               Function
+
+ 7:0       R/W          0000   Address bits A[23:16] for starting address of non-cacheable memory segment A
+                        0000
+
+
+
+
+OPTi          ®
+
+
+
+
+Page 24                                                                                                              912-3000-011
+                                                                                                                  82C291
+
+Table 5-14        Non-Cacheable Segments Register 3 - Index 2Ch
+ Bit(s)    Type     Default                                                Function
+
+ 7:0       R/W       0000      Address bits A[23:16] for starting address of non-cacheable memory segment B
+                     0000
+
+
+Table 5-15        PS/2 Fast Reset/A20 Control - 92h (Port A)
+ Bit(s)    Type     Default                                                Function
+
+ 1         R/W         1       Fast A20:
+                               0 = A20 always 0, emulating the 8086 1MB wrap-around addressing.
+                               1 = A20 Active
+ 0         R/W         0       Fast Reset:
+                               0 = Disabled
+                               1 = Reset Triggered
+
+The 82C291 can generate the fast GATEA20 and fast CPU Reset signals using either of two available mechanisms. Com-
+mands to I/O Ports 60h and 64h (keyboard controller emulation) are intercepted, and PS/2 compatible I/O Port 92 both provide
+a fast, parallel alternative to the standard PC/AT compatible method of using the keyboard controller to control the A20 and
+CPU Reset signals.
+Fast GATEA20 can be controlled via bit 1 of I/O Register 92h for PS/2 compatibility. When bit 1 = 1, A20 is active. When bit 1 =
+0, A20 is always 0, emulating the 8086 wrap-around addressing. This feature is fully integrated with the fast A20 control
+achieved through the keyboard controller emulation for strict PC/AT compatibility.
+Port 92h also provides a fast alternative to the keyboard controller in order to reset the microprocessor. This reset is ORed with
+the keyboard controller emulation reset signal so that either event evokes a reset. This provides a much quicker way for the sys-
+tem to jump between real and protected mode, thus speeding operation for OS/2. Bit 0 of I/O Register 92h is used for this pur-
+pose. When bit 0 = 1, a reset operation is triggered. This latch remains set until written again, or until the system controller is
+externally reset. The reset at 92h is always available, as is the reset activated by the BIOS through the keyboard controller emu-
+lation logic.
+
+
+
+
+                                                                                                                   OPTi          ®
+
+
+
+
+912-3000-011                                                                                                               Page 25
+82C291
+
+6.0       Maximum Ratings
+Stresses above those listed in the following tables may cause permanent damage to the device. These are stress ratings only
+and functional operation of the device at these or any other conditions above those indicated in the operational sections of this
+specification are not implied.
+
+
+6.1       Absolute Maximum Ratings
+ Symbol           Parameter                               Min            Max             Unit
+
+ VCC              Supply Voltage                                          6.5             V
+ VI               Input Voltage                           -0.5        VDD + 0.5           V
+ VO               Output Voltage                          -0.5        VDD + 0.5           V
+ TOP              Operating Temperature                     0            +70              °C
+ TSTG             Storage Temperature                      -40           +125             °C
+
+
+6.2       DC Characteristics: 5.0 Volt
+          VCC = 5.0V ±5%, TA = 0°C to +70°C
+
+ Symbol           Parameter                                Min              Max                Unit      Condition
+
+ VIL              Input Low Voltage                        -0.5             0.8                 V
+ VIH              Input High Voltage                        2.0          VDD + 0.5              V
+ VOL              Output Low Voltage                                        0.4                 V        IOL = 4.0mA
+ VOH              Output High Voltage                       2.4                                 V        IOH = -1.6mA
+ IIL              Input Leakage Current                                         10              µA
+ IOZ              Tristate Leakage Current                                      10              µA
+ CIN              Input Capacitance                                             20              pF
+ COUT             Output Capacitance                                            20              pF
+ ICC              Power Supply Current                                          80             mA
+
+
+
+
+OPTi          ®
+
+
+
+
+Page 26                                                                                                              912-3000-011
+                                                                                         82C291
+
+6.3     AC Characteristics - 33MHz
+ Symbol        Parameter                                        Min   Typ   Max   Unit   Condition
+
+ t101          NPRST active delay from FCLK2↑                   3           10    ns
+ t102          NPRST inactive delay from FCLK2↑                 3           10    ns
+ t103          CPURST active delay from FCLK2↑                  3           10    ns
+ t104          CPURST inactive delay from FCLK2↑                3           10    ns
+
+
+ Symbol        Parameter                                        Min   Typ   Max   Unit   Condition
+
+ t117          NPBUSY# active width                             14                ns
+ t118          NPERR# hold time from NPBUSY#                    5                 ns
+ t119          NPERR# setup time to NPBUSY#                     5                 ns
+ t120          NPBUSY# active to BUSY# active delay                   12          ns
+ t121          NPBUSY# inactive to BUSY# inactive delay               12          ns
+ t122          NPERR# low pulse width                           14                ns
+ t123          IOW# active to BUSY# inactive delay                    12          ns
+
+
+ Symbol        Parameter                                        Min   Typ   Max   Unit   Condition
+
+ t202          CAS# active delay from CLK2↑                     5           15    ns
+ t203          CAS# inactive delay from CLK2↑                   5            9    ns
+ t204          RDY# active delay from CLK2↑                     10          18    ns
+ t205          RDY# inactive delay from CLK2↑                   10          18    ns
+
+
+ Symbol        Parameter                                        Min   Typ   Max   Unit   Condition
+
+ t210          LDEV# setup time to start of second T2↑          5                 ns
+ t211          LDEV# hold time to start of second T2↑           4                 ns
+ t212          RAS# active delay from CLK2↑                     12          16    ns
+ t213          RAS# inactive delay from CLK2↑                   8           16    ns
+
+
+ Symbol        Parameter                                        Min   Typ   Max   Unit   Condition
+
+ t215          RDYI# setup time to CLK2↑                        5                 ns
+ t216          RDYI# hold time to CLK2↑                         4                 ns
+
+
+ Symbol        Parameter                                        Min   Typ   Max   Unit   Condition
+
+ t225          CLK2↑ to DWE# active delay                       8           16    ns
+ t226          CLK2↓ to DWE# inactive delay                     8           16    ns
+ t227          CLK2↑ to MA[10:0] valid delay or CPU addr/sta-   8           15    ns
+               tus valid to MA[10:0] valid delay
+ t228          CLK2↑ to MA[10:0] invalid delay                  8           15    ns
+
+
+
+
+                                                                                         OPTi        ®
+
+
+
+
+912-3000-011                                                                                  Page 27
+82C291
+
+AC Characteristics - 33MHz (Cont.)
+
+ Symbol   Parameter                                        Min   Typ   Max   Unit   Condition
+
+ t401     CPU addr/status valid to CAOE# active delay or   5           12    ns
+          CLK2↑ to CAOE# active delay
+ t402     CAOE# inactive delay from CLK2                   5           12    ns
+ t403     CLK2↓ to CAWE# active delay                      5           12    ns
+ t404     CLK2↓ to CAWE# inactive delay                    5           12    ns
+ t405     CLK2↓ to DRTYW# active delay                     5           12    ns
+ t406     CLK2↓ to DRTW# inactive delay                    5           12    ns
+ t407     CLK2↑ to CAWE# active delay                      7           14    ns
+ t408     CLK2↑ to CAWE# inactive delay                    7           14    ns
+ t409     CLK2↑ to DRTYW# active delay                     7           14    ns
+ t410     CLK2↑ to DRTYW# inactive delay                    7          14    ns
+
+
+ Symbol   Parameter                                        Min   Typ   Max   Unit   Condition
+
+ t440     CAS# active to RAS0# active delay                10          20    ns
+ t241     CAS# inactive to RAS0# inactive delay            10          20    ns
+ t242     RAS0# active to RAS1# active delay                     15          ns
+ t243     RAS0# inactive to RAS1# inactive delay                 15          ns
+ t244     RAS1# active to RAS2# active delay                     15          ns
+ t245     RAS1# inactive to RAS2# inactive delay                 15          ns
+ t246     RAS2# active delay to RAS3# active delay               15          ns
+ t247     RAS2# inactive to RAS3# inactive delay                 15          ns
+
+
+ Symbol   Parameter                                        Min   Typ   Max   Unit   Condition
+
+ t301     CD[15:0] valid to XD[15:0] valid delay           8           20    ns
+ t302     CD[15:0] valid to MP[1:0] valid delay            8           18    ns
+ t303     CD[15:0] invalid to XD[15:0] invalid delay       8           18    ns
+ t304     CD[15:0] invalid to MP[1:0] invalid delay        8           18    ns
+
+
+ Symbol   Parameter                                        Min   Typ   Max   Unit   Condition
+
+ t311     MD[15:0] setup time to IORD#/MEMEMR#↑            8           20    ns
+ t312     MD[15:0] hold time to IORD#/MEMEMR#↑             8           18    ns
+ t313     MD[15:8] valid to MD[7:0] valid delay            8           18    ns
+ t314     MD[15:8] invalid to MD[7:0] invalid delay        8           18    ns
+ t318     A[9:0] to KBDCS# active delay                    5           30    ns
+ t319     A[9:0] to KBDCS# inactive delay                  5           30    ns
+
+
+
+
+OPTi      ®
+
+
+
+
+Page 28                                                                              912-3000-011
+                                                                                            82C291
+
+AC Characteristics - 33MHz (Cont.)
+
+ Symbol        Parameter                                         Min   Typ   Max    Unit    Condition
+
+ t440          RAS# precharge time for DRAM cycles                      3          SYSCLK
+ t440a         RAS# precharge time for 0WS read miss dirty              2          SYSCLK
+               cycles
+ t440b         RAS# precharge time for 1/2/3WS read miss dirty          3          SYSCLK
+               cycles
+ t441          CAS# precharge time for DRAM cycles                      1          SYSCLK
+ t441a         CAS# precharge time for 0WS write in read miss           1          SYSCLK
+               cycles
+ t441b         CAS# precharge time for 1/2/3WS write in read           1.5         SYSCLK
+               miss cycles
+ t442a         CAS# precharge time for 0WS read in read miss           0.5         SYSCLK
+               cycles
+ t442b         CAS# precharge time for 1/2/3WS read in read             1          SYSCLK
+               miss cycles
+
+
+ Symbol        Parameter                                         Min   Typ   Max    Unit    Condition
+
+ t452          MEMR# active to CAOE# active delay                 7           20     ns
+ t453          MEMR# inactive to CAOE# inactive delay             7           20     ns
+ t458          MEMR#/MEMW# active to RAS# active delay            8           16     ns
+ t459          MEMR#/MEMW# inactive to RAS# inactive delay       10           20     ns
+ t460          MEMR#/MEMW# inactive to CAS# active delay         10           20     ns
+ t461          MEMR#/MEMW# inactive to CAS# inactive delay        8           18     ns
+ t462          MEMR#/MEMW# to column address valid delay         10           20     ns
+ t463          MEMR#/MEMW# to row address hold delay             10           20     ns
+ t464          MEMW# active to CAWE# active delay                 7           20     ns
+ t465          MEMW# active to DWE# active delay                  8           18     ns
+ t466          MEMW# inactive to DWE# inactive delay              8           18     ns
+
+
+ Symbol        Parameter                                         Min   Typ   Max    Unit    Condition
+
+ t501          BCLK↓ to ALE active delay                          5           30     ns
+ t502          BCLK↑ to ALE inactive delay                        5           30     ns
+ t503          BCLK↓ to CMD active delay                          5           30     ns
+ t504          BCLK↑ to CMD inactive delay                        5           30     ns
+ t505          BCLK↑ to CMD active delay                          5           30     ns
+ t506          M16# to BCLK↑ setup time                           8                  ns
+ t507          M16# to BCLK↑ hold time                            8                  ns
+ t508          IO16# to BCLK↑ setup time                         10                  ns
+
+
+
+
+                                                                                            OPTi        ®
+
+
+
+
+912-3000-011                                                                                     Page 29
+82C291
+
+AC Characteristics - 33MHz (Cont.)
+ Symbol       Parameter                               Min   Typ   Max   Unit   Condition
+
+ t509         IO16# to BCLK↑ hold time                10                ns
+ t510         NOWS# to BCLK↑ setup time               10                ns
+ t511         NOWS# to BCLK↑ hold time                10                ns
+ t512         CHRDY to BCLK↑ setup time               12                ns
+ t513         CHRDY to BCLK↑ hold time                12                ns
+ t515         ATCLK↓ to HOLD active delay             5           16    ns
+ t516         ATCLK↑ to HOLD inactive delay           5           16    ns
+ t517         ATCLK↑ to REF# active delay             8           30    ns
+ t518         ATCLK↑ to REF inactive delay            8           30    ns
+ t519         ATCLK↑ to MEMR# active delay            5           25    ns
+ t520         ATCLK↑ to MEMR# inactive delay          5           25    ns
+ t521         HRQ1 setup time to ATCLK↑               10                ns
+ t522         HRQ1 hold time to ATCLK↑                10                ns
+ t523         HLDA active to HLDA1 active delay       8           18    ns
+ t524         HLDA inactive to HLDA1 inactive delay   8           18    ns
+Notes:    1. ↑ means rising edge.
+          2. ↓ means falling edge.
+          3. DRAM access time = 20ns.
+
+
+
+
+OPTi          ®
+
+
+
+
+Page 30                                                                         912-3000-011
+                                                                                                                 82C291
+
+7.0     Mechanical Package Outline
+Figure 7-1       160-Pin Plastic Quad Flat Pack (PQFP)
+                                    He
+
+                                     E                                     A2         A1
+
+                                                                                                Υ
+Hd
+
+      D
+
+
+
+
+                                                                                                        L1
+                                                                                            L
+                                                         0.13(0.005) M           c
+                                         e       b
+
+
+
+
+                                                                                  Millimeter                     Inch
+             θ
+                                                                 Symbol   Min        Nom        Max      Min     Nom     Max
+
+                                                                    A1    0.05       0.25       0.50     0.002   0.010   0.020
+                                                                    A2    3.17       3.32       3.47     0.125   0.131   0.137
+                                                                     b    0.20       0.30       0.40     0.008   0.012   0.016
+                                                                     c    0.10       0.15       0.20     0.004   0.006   0.008
+                                                                     D    27.90      28.00      28.10    1.098   1.102   1.106
+                                                                     E    27.90      28.00      28.10    1.098   1.102   1.106
+                                                                     e               0.65                        0.026
+                                                                    Hd    31.65      31.90      32.15    1.246   1.256   1.266
+                                                                    He    31.65      31.90      32.15    1.246   1.256   1.266
+                                                                     L    0.65       0.80       0.95     0.025   0.031   0.037
+                                                                    L1               1.95                        0.077
+                                                                     Υ                          0.08                     0.003
+                                                                     θ     0                     10          0            10
+
+
+
+
+                                                                                                                 OPTi            ®
+
+
+
+
+912-3000-011                                                                                                             Page 49
+

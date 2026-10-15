@@ -1,0 +1,776 @@
+                                                     82344
+                                   ISA BUS CONTROLLER
+The 82344 ISA Bus Controller replaces several of the LSI controllers used in PC/AT*-type designs with one
+single 160-pin quad ffatpack. The Bus Controller provides the functions of OMA, page address register, timer,
+interrupt control, Port B logic, slot bus refresh address generation, and real time clock.
+
+The Bus Controller directly drives the refresh addresses onto the AT slot address bus during refresh cycles in
+response to a refresh cycle command from the System Controller. To avoid problems with sensitive slot bus
+add-in cards, the Bus Controller features "bus quiet" mode. When no valid slot bus accesses are occurring,
+the SA bus and control lines do not change states. Rather, they retain their previous logic state.
+
+Built-in sleep mode features work together with System Controller sleep features to provide a low power
+system idle state for extension of battery life in portable systems. When activated by the CPU via 1/0 write to
+an internal indexed configuration register, the OMA sybsystem clock is stopped and the AT slot bus remains in
+BUS QUIET state. The SYSCLK can be individually controlled. The interrupt controllers and the timers contin-
+ue to operate. If an interrupt occurs due to an external source or any of the timers, the Bus Controller "wakes
+up" and in turn wakes the System Controller.
+
+                                                   Block Diagram
+                 BE3 #. BEO #                                        i....
+                     IOCHROY                                                             SAO#. SBHEll
+                                                  DATA CONVERSION
+                                                  &: WAIT STATE                          XOREAOI/.
+                                                  CONTOL                                 SOSWAPI/,
+                      ROMB#
+                                                                                         SOHL/LH #,
+                                                                                         LATLO 11. LATH!#
+                                                                                         CHREADY#,
+                   CHM/10#,
+                 POWERGOOO - - - - - -
+                                                     264,266
+                                                     READY&: BUS
+                                                                     .._-----+ SYSCLK,
+                                                                                         BALE,RSTDRV
+                                                     CONTROL
+                                                                                          MEMR #. MEMW #,
+                                                            INTA
+                                                                              . . _ - - • IOR I/, IOW #,
+                                          L-.i1------k--.-J                               SMEMR II. SMEMW 11
+
+                   XDrXDo - - - - - -..
+                   CHM/10#,
+                                                                     ------+ OACK7  #, 0ACK511,
+                                                                             OACK3 #. OACKO 11
+                POWERGOOO - - - - - -
+            IR015-IR03, IRQt - - - - - - -            PERIPHERAL
+                                                                     ------+ INTR,OUT1
+                                                                             OMAHRQ, NMI,
+             BAT, PS, RTCOSC - - - - - - -            CONTROL
+                  PCK #, OSC - - - - - - -
+                                                                     ------+ AEN, TC, SPKR
+                   REFRESH 11   -------1
+                    DMAHLOA     ---------1                                    .._...,.__. SA19-SAO
+
+
+
+                      A19-A1    -------1
+                      EALE II -~----1:11
+                                                                                         LA23-LA17
+
+
+
+
+                                                                     t-------• CS8042 #
+                    BLKA2011    -----""'L-----__J
+                    HIORIVE# - - - - - - -
+                        TRI# - - - - - - -                                                                     240843-1
+
+
+ 386 is a trademark of Intel Corporation.
+*PC/AT is a registered trademark of International Business Machines Corporation.
+
+                                                                                                            October 1990
+                                                         1-24                                    Order Number: 240843-001
+intJ                                                         82344
+
+
+The upgraded OMA channels provide a superset of                        reduce bus ringing. A -ROMB pin selects the bus
+AT functionality by allowing OMA to the entire 64                      and bus size to use for BIOS ROM accesses. The
+Mbyte memory range of the 82340DX chip set. Addi-                      choices are 8- or 16-bit wide ROMs.
+tional functionality is provided via OMA wait state,
+clock, and -MEMR timing programmability.                               A three-state test control pin has been added for
+                                                                       board level. testability.
+A -HIDRIVE pin can be externally strapped to pro-
+vide for 12 mA or 24 mA drive to the slot bus. If left                 The Bus Controller features several megacells, im-
+open, an internal pull-up causes the drive current to                  plemented in 1.5-micron CMOS technology, and is
+default to 24 mA. This allows systems designed with                    intended to work in 386™ SX or 386TM DX micro-
+one to four slots to select a lower drive level and                    processor-based systems with CPU clock speeds up
+                                                                       to 33 MHz and bus speeds up to 16 MHz.
+
+
+PERIPHERAL CONTROL BLOCK DIAGRAM
+
+                                                                                                              INT
+
+                                      82C59A                                          82C37A
+                                                                                          OACKO# -             OACKO -
+                                                                                          OACK3#              OACK3
+                             IROO-IR07. INTA
+     IR03-IRQ7
+                             IOR#, IOW#                                                      Ao-A7            Do-D15
+                                                  INT
+                                                                              MEMR #. MEMW #.
+                             Oo-~                                             IOR#, IOW#
+       XOo-X~
+                             Ao                                               OROD-ORQ3, CLK
+                                                                              Do-D7
+           IRQ1
+
+          IRQ12    s                                                                                           AEN
+                       R
+                                      82C59A                                          82C37A
+                                                                                          DACKO# -             DACK4 -
+                                                                                          DACK3#              DACK?
+    IRQB-IR01 I.             IROO-IRQ7, INTA
+   IRQ13-IR015               IOR#, IOW#                                                      Ao-A7
+                                                  INT
+                                                                              MEMR f, MEMW #.
+                              Do-~                        RESET               IOR#, IOW I
+                              Ao                        PORT 60               DRQO-DRQ3, CLK
+                                                                              Do-D7
+                                                          IOR#
+
+
+    DROO-DRQ3
+                                                                                                  HLDA
+    DR04-DRQ7                                                                                     BMHz
+                                                                                                DMAHRQ
+                                       82C54
+                                                                                                   INTA
+        BOSC14                1.19M      OUTO,OUT1                                                             REF#
+
+
+                              XD 0 -X~         OUT2                                                            SPKR
+
+                                                        SPKDAT
+                                                                                                               A15-A23
+                                   PORT B LOGIC
+                                       NMI, PORT 70,
+          'IOW#               IOW#           PORT B,                                                           NMI
+           IOR#               IOR#            RESET
+        IOCHK#                                                                                DMA1 CS
+                              IOCHK#
+                                                                                              DMA2CS
+          PCKH                PCK#
+                                                                                               PIC1CS
+                                                                                               PIC2CS
+         XTALIN
+                                                                                                 TIMCS
+       XTALOUT
+                                       REAL                                                  PGREGCS
+                                       TIME                       INT/EXT                     PORT 70
+    PS/RCLR#/
+        IR08#                          CLOCK                      RTC MUX                     PROT 60
+                                                                                            PORT B CS
+           VBAT                                                                                 287CS
+
+
+                                                                                                              240843-2
+
+
+
+
+                                                                  1-25
+inter              82344
+
+
+
+                    82344
+
+
+
+
+                  •
+      SA6                   120    VssR
+   OACK2#                   119    XTALOUT
+      SAS                   118    XTALIN
+      T/C                   117    PS/RCLR #/IR08
+      SU                    116    VBAT
+     BALE         TOP       115    POWERGOOO
+      SA3                   114    TRI#
+      SA2         VIEW      113    HIORIV[f
+         osc                112    ROt.18#
+        VssR                11!    PCK#
+            SA1             110    IR013
+            SAO             109    IR01
+t.1Et.ICS16#                108    CS8042 #
+      SBHEH                 107    SPKR
+   IOCS16#                  106    VssR
+           LA23             105    LATHI#
+        IRQ10               104    LATLO#
+           LA22             103    XOREAO#
+           VOOR             102    SOLH/HL#
+           VssR             101    SOSWAP#
+          IRQ11             100    VooR
+           LA21              99    xoo
+         IRQ12               98    XD1
+           LA20              97    XD2
+        IRQ15                96    X03
+           LA19              95    X04
+        IRQ14                94    X05
+           LA18              93    VssR
+    OACl<O #                 92    X06
+           VssR              91    X07
+           LA17              90    OUT1
+           ORCO              89    OMAHRO
+      t.IEt.IR#              88    Ot.IAHLOA
+    OACKS #                  87    BLKA20 #
+     l.IEMW#                 86    BUSCLK
+           OR06              85    CHREAOY #
+    OACK8#                   84    BRORAt.1#
+           OROS              83    EALE#
+    DACK?#                   82    CHM/IOI
+           VssR               81   Yss1
+
+
+
+
+                                     240843-3
+
+
+
+
+                     1-26
+intJ                                      82344
+
+
+SIGNAL DESCRIPTIONS
+                  Pin
+    Name                 Type                                Description
+                Number
+CPU INTERFACE
+ A25, A24       43-44    0-TS     Address Bus-These pins are outputs during OMA, master, or
+                                  standard refresh modes. They are high impedance at all other
+                                  times. A25 and A24 are driven from the alternate 612 registers
+                                  during OMA and refresh cycles and are driven low during master
+                                  cycles.
+ A23-A2         45-58,   10-TTL   Address Bus-These pins are outputs during OMA, master, or
+                61-68             standard refresh modes. They are inputs at all other times. As
+                                  inputs, they are passed to the SA and LA buses and A 15-A2 are
+                                  used to address 1/0 registers internal to the bus control chip. As
+                                  outputs, they are driven from different sources depending on
+                                  which mode the Bus Controller is in. While in refresh mode, these
+                                  pins are driven from the 612 and refresh address counter. While
+                                  in OMA mode, they are driven from the 612 and OMA controller
+                                  subsection. If the Bus Controller is in master mode, the pins A23-
+                                  A 17 are driven from the inputs LA23- LA 17 and the pins A 16-A2
+                                  are driven from the inputs SA 16-SA2.
+-BE3              69     10-TTL   Byte Enable 3, active low-This pin is an output during OMA,
+                                  master, or standard refresh modes. It is an input at all other times.
+                                  As an input in 3860X mode, it is decoded along with the other
+                                  byte enable signals to generate SA 1, SAO and -SBHE. As an
+                                  output in 3860X mode SA 1, SAO, and -SBHE are used to
+                                  determine the value of -BE3. This pin should be left
+                                  unconnected when using this part in 286 mode. The pin has an
+                                  internal pull-up.
+ -BE2/A1          70     10-TTL   Byte Enable 2, active low, or A 1-This pin has a dual function
+                                  depending on the state of the 286/ -3860X input. If 286/ -3860X
+                                  is high (286 mode), then the pin is treated as address bit 1. If 286/
+                                  -386DX is low (3860X mode), the pin is treated as -BE2. This
+                                  pin is an output during OMA, master, or standard refresh modes.
+                                  It is an input at all other times. As an input in 3860X mode, it is
+                                  decoded along with the other byte enable signals to generate
+                                  SA 1, SAO, and -SBHE. As an output in 3860X mode. SA 1, SAO,
+                                  and -SBHE are used to determine the value of -BE2. When in
+                                  286 mode, it is interpreted as address A 1 and passed to SA 1. As
+                                  an output in 286 mode it is driven from the SA 1 input.
+ -BE1/-BHE        71     10-TTL   Byte Enable 1 or Byte High Enable, active low-This pin has a
+                                  dual function depending on the state of the 286/-3860X input. If
+                                  286/-3860X is high (286 mode), then the pin is treated as
+                                  -BHE. If 286/-386 is low (386 mode), the pin is treated as
+                                  -BE1. This pin is an output during OMA, master, or standard
+                                  refresh modes. It is an input at all other times. As an input in 386
+                                  mode, it is decoded along with the other byte enable signals to
+                                  generate SA 1, SAO, and -SBHE. As an output in 386 mode,
+                                  SA1, SAO, and -SBHE are used to determine the value of
+                                  -BE1. When in 286 mode, it is interpreted as -BHE and passed
+                                  to -SBHE. As an output in 286 mode, it is driven from the -
+                                  SBHE input.
+
+
+
+
+                                             1-27
+intJ                                          82344
+
+
+SIGNAL DESCRIPTIONS (Continued)
+                 Pin
+    Name                     Type                                Description
+               Number
+ CPU INTERFACE (Continued)
+ -BED/AO          72     10-TTL      Byte Enable O, active low, or AO-This pin has a dual function
+                                     depending on the state of the 286/-3860X input. If
+                                     286/-3860X is high (286 mode). then the pin is treated as
+                                     address bit 0. If 286/-3860X is low (386 mode), the pin is treated
+                                     as -SEO. This pin is an output during OMA, master, or standard
+                                     refresh modes. It is an input at all other times. As an input in 386
+                                     mode, it is decoded along with the other Byte Enable signals to
+                                     generate SA 1, SAO, and -SBHE. As an output in 386 mode, SA 1,
+                                     SAO, and -SBHE are used to determine the value of -BEO.
+                                     When in 286 mode, it is interpreted as AO and passed to SAO. As
+                                     an output in 286 mode, it is driven from the SAO input.
+ 286/-3860X       73         1-TPU   CPU is 286 or 3860X-This pin defines the type of address bus to
+                                     which the bus controller chip is interfaced. If the pin is tied high,
+                                     the address bus is assumed to be emulating 286 signals. In this
+                                     mode, A25, A24, and -BE3 would be left unconnected. The pins
+                                     -BE2/ A 1, -BE1 /-SHE and -BED/ AO would take on the 286
+                                     functions. If the pin is tied low, A25, A24 can be used to generate
+                                     up to 64 Mbyte addressing for OMA, and the byte enable pins will
+                                     take on the normal 3860X addressing functions. This pin has an
+                                     internal pull-up to cause the chip to default to 286 mode if left
+                                     unconnected. This pin is a hard wiring option and must not be
+                                     changed dynamically during operation. When strapped for 286
+                                     mode, the Bus Controller is assumed to be interfaced to the
+                                     82343 System Controller which in turn may be strapped for 286 or
+                                     386SX operation. The 82344 is strapped for 286 operation when
+                                     used with the 82343 strapped for 386SX operation.
+ HLOA             74         I-TTL   Hold Acknowledge-This is the hold acknowledge pin directly
+                                     from the CPU. It is used to control direction on address and
+                                     command pins. When HLOA is low, the Bus Controller is defined
+                                     as being in the CPU mode. In the CPU mode, the local address
+                                     bus (A bus) pins are inputs. The system address bus (SA and LA)
+                                     pins along with the command pins (-MEMR, -MEMW, -IOR
+                                     and -IOW) are outputs. When HLOA is high, the Bus Controller
+                                     can be in OMA, refresh, or master modes. In both OMA and
+                                     refresh modes, the commands and all address buses (A, SA and
+                                     LA) are outputs. In master mode, the commands and system
+                                     address bus (SA and LA) pins are inputs and the local address
+                                     bus (A bus) pins are outputs. The SA bus is passed directly to the
+                                     A bus exceptbits 17, 18, and 19 are ignored. LA23-LA17 is
+                                     passed directly to A23-A 17.
+ INTR             75          0      Interrupt Request-INTR is used to interrupt the CPU and is
+                                     generated by the 8259 megacells any time a valid interrupt
+                                     request input is received.
+ NMI              76          0      Non-Maskable Interrupt-This output is used to drive the NM!
+                                     input to the CPU. This signal is asserted by either a parity error
+                                     (indicated by -PCK being asserted after the ENPARCK bit in Port
+                                     B has been asserted), or an 1/0 channel error (indicated by
+                                     -IOCHCK being asserted after the ENIOCK bit in Port B has
+                                     been asserted). The NMI output is enabled by writing a Oto bit 07
+                                     of 1/0 port 70h. NMI is disabled on reset.
+
+
+
+                                                1-28
+intJ                                   82344
+
+
+SIGNAL DESCRIPTIONS (Continued)
+                Pin
+    Name               Type                              Description
+              Number
+ SYSTEM CONTROLLER INTERFACE
+ -CHSO/-MW      77     10-TTL   Channel Status O or active low Memory Write-This input is used
+                                along with-CHS1 and CHM/-10 to determine what type of
+                                bus cycle the Bus Controller is to perform. This input has the
+                                same meaning and timing requirements as the SO signal for a
+                                286 microprocessor. -CHSO going active indicates a write cycle
+                                unless -CHS1 is also active. When both status inputs are active
+                                it indicates an interrupt acknowledge cycle. This input is
+                                synchronized to the BUSCLK input. Activation of CPUHLDA
+                                reverses this signal to become an output to the System
+                                Controller. It is then a -MEMW signal for DMA or bus master
+                                access to system memory.
+ -CHS1/-MR      78     10-TTL   Channel Status 1 or active low Memory Read-This input is
+                                used along with-CHSO and CHM/-10 to determine the bus
+                                cycle type. This input has the same meaning and timing
+                                requirements as the S1 signal for a 286 microprocessor-CHS1
+                                going active indicates a read cycle unless -CHSO is also active.
+                                When both status inputs are active it indicates an interrupt
+                                acknowledge cycle. This input is synchronized to the BUSCLK
+                                input. Activation of CPUHLDA reverses this signal to become an
+                                output to the System Controller. It is then a -MEMR signal for
+                                DMA or bus master access to system memory.
+ CHM/-10        82     I-TTL    Channel Memory or active low 1/0 select-This input is used
+                                along with -CHSO and -CHS1 to determine the bus cycle type.
+                                This input has the same meaning and timing requirements as the
+                                M/-10 signal for a 286 microprocessor. CHM/-10 is sampled
+                                anytime -CHSO or -CHS 1 is active. If sampled high, it
+                                indicates a memory read or write cycle. If sampled low, an 1/0
+                                read or write cycle should be executed. This input is
+                                synchronized to the BUSCLK input.
+ -EALE          83     I-TTL    Early Address Latch Enable, active low-This input is used to
+                                latch the A25-A2 and Byte Enable signals. The latches are
+                                open when -EALE is low and hold their value when -EALE is
+                                high. The latched addresses are fed directly to the LA23-LA17
+                                bus to provide more address setup time on the bus before a
+                                command goes active. The lower latched addresses are latched
+                                again with an internal ALE signal as soon as -CHSO or -CHS 1
+                                is sampled active and fed to the SA 19-SAO and -SBHE
+                                outputs. In a 386DX system, this input is connected directly to
+                                the -ADS output from the CPU. In a 286 system, this input is
+                                connected to the -EALE output from the 82343 System
+                                Controller.
+ -BR DRAM       84      I-TTL   On-board DRAM, active low-An input from the System
+                                Controller indicating that the on-board DRAM is being
+                                addressed.
+
+
+
+
+                                         1-29
+                                         82344
+
+
+SIGNAL DESCRIPTIONS (Continued)
+               Pin
+   Name                 Type                               Description
+             Number
+ SYSTEM CONTROLLER INTERFACE (Continued)
+ -CH READY       85      0      Channel Ready, active low-This output is maintained in the
+                                active state when no bus accesses are active. This indicates that
+                                the Bus Controller is ready to accept a new command. During
+                                normal bus accesses, -CHREADY is negated as soon as a valid
+                                bus requested is sampled on the-CHSO and-CHS1 inputs. It is
+                                asserted again to indicate that the Bus Controller is ready to
+                                complete the current cycle. The bus command signals are then
+                                terminated on the next falling edge of the BUSCLK input.
+ BUSCLK          86    I-CMOS   Bus Clock-This is the main clock input for the Bus Controller. It
+                                runs at twice the frequency desired for the SYSCLK output. All
+                                inputs are synchronous with the falling edge of this input.
+ -BLKA20         87     1-TIL   Block A20, active low-This input is used while CPUHLDA is low
+                                to force the LA20 and SA20 outputs low anytime it is active. When
+                                -BLKA20 is negated LA20 and SA20 are generated from A20.
+ DMAHRQ          89      0      Hold Request-This output is generated by the DMA controller
+                                any time a valid OMA request is received. It is connected to the
+                                DMAHRQ pin on the System Controller.
+ DMAHLDA         8S     1-TIL   OMA Hold Acknowledge-An input from the System Controller
+                                which indicates that the current hold acknowledge state is for the
+                                OMA controller or other bus master.
+ OUT1            90      0      Output 1-lndicates a refresh request to the System Controller.
+                                This is the 15 µs output of timer channel 1.
+ ROM INTERFACE
+ -ROM8           112    1-TPU   S/ 16 bit ROM select-This input indicates the width of the ROM
+                                BIOS. If -ROMS is low, the Bus Controller chip generates S- to
+                                16-bit conversions for ROM accesses. Data buffer controls are
+                                generated assuming the ROM is on the MD bus. If -ROMS is
+                                high, data buffer controls are generated assuming 16-bit wide
+                                ROMs are on the MD bus.
+ BUS INTERFACE
+ -IOR            134   10-TIL   1/0 Read, active low-This signal is an input when CPUHLDA is
+                                high and-MASTER is low. It is an output at all other times. When
+                                CPUHLDA is low, -IOR is driven from the 2SS bus controller
+                                megacell. When CPUHLDA is high and -MASTER is high, it is
+                                driven by the S237 DMA controller megacells. This pin requires an
+                                external 1o Kn pull-up resistor.
+ -IOW            132   10-TIL   1/0 Write, active low-This signal is an input when CPUHLDA is
+                                high and -MASTER is low. It is an output at all other times. When
+                                CPUHLDA is low, -IOW is driven from the 2SS bus controller
+                                megacell. When CPUHLDA is high and -MASTER is high, it is
+                                driven by the S237 OMA controller megacells. This pin requires an
+                                external 1O Kn pull-up resistor.
+
+
+
+
+                                           1-30
+intJ                                           82344
+
+
+SIGNAL DESCRIPTIONS (Continued)
+                  Pin
+   Name                          Type                             Description
+                Number
+ BUS INTERFACE (Continued)
+ -MEMR              33           10-TTL   Memory Read, active low-This signal is an input when
+                                          CPUHLOA is high and -MASTER is low. It is an output at all
+                                          other times. When CPUHLOA is low, -MEMR is driven from
+                                          the 288 bus controller megacell. When CPUHLOA is high and
+                                          -MASTER is high, it is driven by the 8237 OMA controller
+                                          megacells. This signal does not pulse low for OMA addresses
+                                          above 16 Mbytes. OMA above 16 Mbytes is only performed to
+                                          the system board, never to the slot bus. This pin requires an
+                                          external 10 Kn pull-up resistor.
+ -MEMW              35           10-TTL   Memory Write, active low-This signal is an input when
+                                          CPUHLOA is high and -MASTER is low. It is an output at all
+                                          other times. When CPUHLOA is low, -MEMW is driven from
+                                          the 288 bus controller megacell. When CPUHLOA is high and
+                                          -MASTER is high, it is driven by the 8237 OMA controller
+                                          megacells. This pin requires an external 10 Kn pull-up
+                                          resistor.
+ -SMEMR            129           10-TTL   Memory Read, active low-This signal is an input when
+                                          CPUHLOA is high and -MASTER is low. It is an output at all
+                                          other times. When CPUHLOA is low, -MEMR is driven from
+                                          the 288 bus controller megacell. When CPUHLOA is high and
+                                          -MASTER is high, it is driven by the 8237 OMA controller
+                                          megacells. -SMEMR is active on memory read cycles to
+                                          addresses below 1 Mbyte. This pin requires an external 1O Kn
+                                          pull-up resistor.
+ -SMEMW            127           10-TTL   Memory Write, active low-This signal is an input when
+                                          CPUHLOA is high and -MASTER is low. It is an output at all
+                                          other times. When CPUHLOA is low, -MEMW is driven from
+                                          the 288 bus controller megacell. When CPUHLOA is high and
+                                          -MASTER is high, it is driven by the 8237 OMA controller
+                                          megacells. -SMEMW is active on memory write cycles to
+                                          addresses below 1 Mbyte. This pin requires an external 1O Kn
+                                          pull-up resistor.
+ LA23-LA17    16, 18, 22, 24,    10-TTL   Latchable Address bus-This bus in an input when CPUHLOA
+                26,28,31                  is high and -MASTER is low. It is an output bus at all other
+                                          times. When CPUHLOA is low, the LA bus is driven by the
+                                          latched values for the A bus. When CPUHLOA is high and
+                                          -MASTER is high, the SA bus is driven by the 612 memory
+                                          mapper for OMA cycles and normal refresh. The LA bus is
+                                          latched internally with the -EALE input.
+ SA19-SAO     131, 133, 135,     10-TTL   System Address bus-This bus is an input when CPUHLOA is
+              137, 141, 143,              high and -MASTER is low. It is an output bus at all other
+              145, 147, 149,              times. When CPUHLOA is low, the SA bus is driven by the
+              152, 154, 156,              latched values from the A bus. When CPUHLOA is high and
+                                          -MASTER is high, the SA bus is driven by the 8237 OMA
+              158, 1, 3, 5, 7,
+                                          controller megacells or refresh address generator. The SA
+                8, 11, 12                 bus will become valid in the middle of the status cycle
+                                          generated by the -CHSO and -CHS1 inputs. They are
+                                          latched with an internally generated ALE signal.
+
+
+
+
+                                                 1-31
+                                               82344
+
+
+SIGNAL DESCRIPTIONS (Continued)
+                 Pin
+       Name                  Type                                 Description
+               Number
+ BUS INTERFACE (Continued)
+ -SBHE            14       10-TTL     System Byte High Enable, active low-This pin is controlled the
+                                      same way as the SA bus. It is generated from a decode of the
+                                      -BE inputs in CPU mode. It is forced low for 16-bit OMA cycles
+                                      and forced to the opposite value of SAO for 8-bit OMA cycles.
+ -REFRESH         146        IT-OD    Refresh signal, active low-This 110 signal is pulled low whenever
+                                      a decoupled refresh command is received from the System
+                                      Controller. It is used as an input to sense refresh requests from
+                                      external sources such as the System Controller for coupled refesh
+                                      cycles or bus masters. It is used internally to clock the refresh
+                                      address counter and select a location in the memory mapper
+                                      which drives A23-A 17. -REFRESH is an open drain output
+                                      capable of sinking 24 mA and requires an external pull-up resistor.
+ SYSCLK           148          0      System Clock-This output is half the frequency of the BUSCLK
+                                      input. The bus control outputs BALE and the -IOR, -IOW,
+                                      -MEMR and -MEMW are synchronized to SYSCLK.
+ osc               9         I-TTL    Oscillator-This is the buffered input of the external 14.318 MHz
+                                      oscillator.
+ RSTDRV           122          0      Reset Drive, active high-This output is a system reset generated
+                                      from the POWERGOOD input. RSTDRV is synchronized to the
+                                      BUSCLK input.
+ BALE              6           0      Buffered Address Latch Enable, active high-A pulse which is
+                                      generated at the beginning of any bus cycle initiated from the
+                                      CPU. BALE is forced high anytime CPUHLDA is high.
+ AEN              128          0      Address Enable-This output goes high anytime the inputs
+                                      CPUHLDA and -MASTER are both high.
+ TIC               4           0      Terminal Count-This output indicates that one of the OMA
+                                      channels terminal count has been reached. This signal directly
+                                      drives the system bus.
+ -DACK?-         39, 37,       0      OMA Acknowledge, active low-These outputs are the
+ -DACK5,        34, 136,              acknowledge signals for the corresponding OMA requests. The
+ -DACK3-         2, 142,              active polarity of these lines is set active low on reset. Since the
+ -DACKO             29                8237 megacells are internally cascaded together, the polarity of
+                                      the -DACK signals must not be changed. This signal directly
+                                      drives the system bus.
+ DRQ7-DRQ5       41, 38,     1-TSPU   OMA Request-These asynchronous inputs are used by an
+ DRQ3-DRQO      36, 138,              external device to indicate when they need service from the
+                  124,                internal OMA controllers. DRQO-DRQ3 are used for transfers
+                144, 32               from 6-bit 1/0 adapters to/from system memory. DRQ5-DRQ7
+                                      are used for transfers from 16-bit 1/0 adapters to/from system
+                                      memory. DRQ4 is not available externally as it is used to cascade
+                                      the two OMA controllers together. All DRQ pins have internal pull-
+                                      ups.
+
+
+
+
+                                                 1-32
+intJ                                         82344
+
+
+
+SIGNAL DESCRIPTIONS (Continued)
+                  Pin
+    Name                     Type                               Description
+                Number
+ BUS INTERFACE (Continued)
+ IRQ15-IRQ9,     25, 27,     1-TPSU   Internal Request-These are the asynchronous interrupt
+ IRQ7-IRQ3,      110, 23,             request inputs for the 8259 megacells. IRQO, IRQ2, and IRQ8
+ IRQ1            21, 17,              are not available as external inputs to the chip, but are used
+                123, 151,             internally. IRQO is connected to the output of the 8254 counter
+                153, 155,             0. IRQ2 is used to cascade the two 8259 megacells together.
+                157, 159,             IRQ8 is output from the RTC megacell to the 8259 megacell. All
+                   109                IRQ input pins are active high and have internal pull-ups.
+ -MASTER           42        I-TTL    Master, active low-This input is used by an external device to
+                                      disable the internal DMA controllers and get access to the
+                                      system bus. When asserted it indicates that an external bus
+                                      master has control of the bus.
+ -MEMCS16          13        I-TTL    Memory Chip Select 16-bit-This input is used to determine
+                                      when a 16-bit to 8-bit conversion is needed for CPU accesses.
+                                      A 16 to 8 conversion is done anytime the System Controller
+                                      requests a 16-bit memory cycle and-MEMCS16 is sampled
+                                      high.
+ -IOCS16           15        I-TTL    1/0 Chip Select 16-bit-This input is used to determine when a
+                                      16-bit to 8-bit conversion is needed for CPU accesses. A 16 to 8
+                                      conversion is done anytime the System Controller requests a
+                                      16-bit 1/0 cycle and-IOCS16 is sampled high.
+ -IOCHK            121       I-TTL    1/0 Channel Check, active low-This input is used to indicate
+                                      that an error has taken place on the 1/0 bus. If 1/0 checking is
+                                      enabled, an -IOCHK assertion by a peripheral device
+                                      generates an NMI to the processor. The state of the -IOCHI<
+                                      signal is read as data bit 06 of the Port B register.
+ IOCHRDY           126       I-TTL    1/0 Channel Ready-This input is pulled low in order to extend
+                                      the read or write cycles of any bus access when required. The
+                                      cycle can be initiated by the CPU, DMA controllers or refresh
+                                      controller. The default number of wait states for cycles intiated
+                                      by the CPU are four wait states for 8-bit peripherals, one wait
+                                      state for 16-bit peripherals and three wait states for ROM
+                                      cycles. One DMA wait state is inserted as the default for all
+                                      DMA cycles. Any peripheral that cannot present read data, or
+                                      strobe-in write data in this amount of time must use -IOCHRDY
+                                      to extend these cycles.
+ -WSO              125        I-TTL   Wait State 0, active lowo-This input is pulled low by a peripheral
+                                      on the S bus to terminate a CPU controlled bus cycle earlier
+                                      than the default values defined internally on the chip.
+ POWER GOOD        115       1-TSPU   System power on reset-This input signals that power to the
+                                      board is stable. A Schmitt-trigger input is used. This allows the
+                                      input to be connected directly to an RC network.
+ PERIPHERAL INTERFACE
+ -CS8042           108         0      Chip select for 8042. This output is active any time an SA
+                                      address is decoded at 60h or 64h. It is intended to be
+                                      connected to the chip select of the keyboard controller. If
+                                      BUSCTL[6] = 1, this pin is also active for RTC accesses at 70h
+                                      and 71 h. This is for use when the internal RTC is disabled and
+                                      an external RTC is used.
+
+
+
+                                               1-33
+intef                                        82344
+
+
+SIGNAL DESCRIPTIONS (Continued)
+                Pin
+   Name                  Type                                   Description
+              Number
+ PERIPHERAL INTERFACE (Continued)
+ XTALIN         118      I-CMOS     Crystal Input-An internal oscillator input for the real time clock
+                                    crystal. It requires a 32.768 KHz external crystal or stand-alone
+                                    oscillator.
+ XTALOUT        119        0        Crystal Output-An internal oscillator output for the real time
+                                    clock crystal. See XTALIN. This pin is a no connect when an
+                                    external oscillator is used.
+ PS/-RCLR/      117      1-TSPU     The Power Sense input (active high) is used to reset the status of
+ IRQ8                               the Valid RAM and Time (VRT) bit. This bit is used to indicate that
+                                    the power has failed, and that the contents of the RTC may not be
+                                    valid. This pin is connected to an external RC network. When
+                                    BUSCTL[6] = 1, this pin becomes -IRQ8 input for use with an
+                                    external RTC.
+ VBAT           116        I        Voltage Battery-Connected to the RTC hold-up battery between
+                                    2.4 and 5V.
+ SPKR           107        0        Speaker-This output drives an externally buffered speaker. This
+                                    signal is created by gating the output of timer 2. Bit 1 of Port B,
+                                    61 H, is used to enable the speaker output, and bit O is used to
+                                    gate the output timer.
+ DATA BUFFER INTERFACE
+ XD7-XDO       91, 92,   10-TTL     Peripheral data bus-The bidirectional X data bus outputs data on
+
+  .            94-99                an INTA cycle or 1/0 read cycle to any valid address within the
+                                    Bus Controller. It is configured as an input at all other times .
+ -SDSWAP        101        0        System Data Swap, active low during some 8-bit accesses-It
+                                    indicates that the data on the SD bus must be swapped from low
+                                    by1e to high by1e or vice versa depending on the state of the
+                                    SDLH/-HL pin. -SDSWAP is active for 8-bit OMA cycles when
+                                    an odd address access occurs for data more than one by1e wide.
+                                    For non-OMA accesses. -SDSWAP is active for any bus cycle to
+                                    an 8-bit peripheral that is addressing the odd by1e.
+ SDLH/-HL       102        0        System Data Low to High, or High to Low-This signal is used to
+                                    determine which direction data bytes must be swapped when
+                                    -SDSWAP is active. When SDLH/-HL is high, it indicates that
+                                    data.on the low byte must be transferred to the high byte. When
+                                    SDLH/-HL is low, it indicates that data on the high byte must be
+                                    transferred to the low byte. SDLH/-HL is low for 8-bit OMA
+                                    memory read cycles. For non-OMA accesses, SDLH/-HL is low
+                                    for any memory write or 1/0 write when -SBHE is low.
+                                    SDLH/-HL is high at all other times.
+ -XDREAD        103        0        Peripheral Data Read-This output is active low any time an INT A
+                                    cycle occurs or an 1/0 read occurs to the address space from
+                                    OOOOh to OOFFh, which is defined as being resident on the
+                                    peripheral bus.
+
+
+
+
+                                               1-34
+intJ                                                82344
+
+
+SIGNAL DESCRIPTIONS (Continued)
+                  Pin
+   Name                      Type                                    Description
+                Number
+ DATA BUFFER INTERFACE (Continued)
+ -LATLO            104         0       Latch Low byte-This output is generated for all 1/0 read and
+                                       memory read bus accesses to the low byte. It is active with the same
+                                       timing as the read command and returns high at the same time as the
+                                       read command. This signal latches the data into the data buffer chip
+                                       so that it can be presented to the CPU at a later time. This step is
+                                       required due to the asynchronous interface between the System
+                                       Controller and Bus Controller.
+ -LATHI            105         0       latch High byte-This output is generated for all 1/0 read and
+                                       memory read bus accesses to the high byte. It is active with the same
+                                       timing as the read command and returns high at the same time as the
+                                       read command. This signal latches the data into the data buffer chip
+                                       so that it can be presented to the CPU at a later time. This step is
+                                       required due to the asynchronous interlace between the System
+                                       Controller and Bus Controller.
+ -PCK              111       1-TPU     Party Check input, active low with pull-up-Indicates that a parity
+                                       error has occurred in the on-board memory array. Assertion of this
+                                       signal (ii enabled) generates an NMI to the processor. The state of
+                                       the -PCK signal is read as data bit 07 of the Port B register.
+ -HI DRIVE         113       1-TPU     High Drive Enable-This pin is a wire strap option. When this input is
+                                       low, all bus drivers defined with an IOL spec of 24 mA will sink the full
+                                       24 mA of current. When this input is high, all pins defined as 24 mA
+                                       have the output low drive capability cut in half to 12 mA. Note that all
+                                       AC specifications are done with the outputs in the high drive mode
+                                       and a 200 pF capacitive load-HIDRIVE has an internal pull-up and
+                                       can be left unconnected if 12 mA drive is desired. It is tied low if
+                                       24 mA drive is desired.
+ TEST MODE PIN
+ -TRI              114       1-TPU     Three-state-This pin is used to control the three-state drive of all
+                                       outputs and bidirectional pins on the chip. If this pin is pulled low, all
+                                       pins on the chip except XTA LOUT are in a high impedance mode.
+                                       This is useful during system test when test equipment or other chips
+                                       drive the signals or for hardware fault tolerant applications. -TRI has
+                                       an internal pull-up.
+ POWER AND GROUND PINS
+ The power connections are split into an internal supply for the core-logic, and a pad-ring supply for the 1/0
+ drivers. Each supply should be individually bypassed wih decoupling capacitors.
+ VDDR            19, 59,      PWR      Pad-ring power connection, nominally + 5V. These pins along with
+                100, 139               the VSSR pins should be separately bypassed.
+ VSSR            10, 20,      GND      Pad-ring ground connection, nominally OV. These pins along with the
+                 30, 40,               VDDR pins should be separately bypassed.
+                 60, 80,
+                93, 106,
+                120, 130,
+                140, 150,
+                  160
+ VDDI               79        PWR      Internal core-logic power connection, nominally + 5V. This pin along
+                                       with the VSSI pin should be separately bypassed.
+ VSSI               81        GND      Internal core-logic ground connection, nominally OV. This pin along
+                                       with the VDDI pin should be separately bypassed.
+
+                                                      1-35
+inter                   82344
+
+
+Signal Type Legend
+        Signal Code                      Signal Type
+        I-TTL         TTL Level Input
+        1-TPD         Input with 30 KO Pull-Down Resistor
+        1-TPU         Input with 30 KO Pull-Up Resistor
+        1-TSPU        Schmitt-Trigger Input with 30 KO Pull-Up Resistor
+        I-CMOS        CMOS Level Input
+        10-TTL        TTL level Input/Output
+        IT-OD         TTL level Input/Open Drain Output
+        10-0D         Input or Open Drain, Slow Turn On
+        0             CMOS and TTL Level Compatible Output
+        0-TTL         TTL Level Output
+        0-TS          Three-State Level Output
+        11            Input used for Testing Purposes
+        GND           Ground
+        PWR           Power
+
+
+
+
+                          1-36
+

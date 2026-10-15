@@ -1,0 +1,4 @@
+https://github.com/joncampbell123/dosbox-x/tree/master/src/hardware
+https://github.com/86Box/86Box/tree/master/src/sound
+https://elixir.bootlin.com/linux/v5.0/source/sound/isa/sb
+https://elixir.bootlin.com/linux/v5.0/source/sound/isa/es18xx.c
