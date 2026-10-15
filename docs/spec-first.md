@@ -59,8 +59,8 @@ the IRQ and DMA, the delivered mark on the trap exit. Still open:
 | Mixer | Every index is plain RAM; SB 2.0 has a mixer it should not | B |
 | ESS | 2xCh status always 7Fh: FIFO full and empty and data available together | C |
 | ESS | No compatibility-mode model: always the extended register set | C |
-| Output | Game stream held, not interpolated; at half rate pairs averaged across a drifting phase (the Descent 2 wobble) | D |
-| Output | Output rate fixed at 44100 (or 22050), so every game rate is resampled | D |
+| Output | Game stream held (zero-order), not band-limited; at half rate pairs averaged across a drifting phase (the Descent 2 wobble) | D |
+| Output | No emulation of the card's reconstruction filter (ESS A2h, SB Pro 0Eh) | D |
 
 ## 3. Layer A: the platform
 
@@ -165,8 +165,8 @@ kHz/(256-X) with it set (ES1868 data sheet, "Extended Mode Sample Rate
 Generator"). In Compatibility Mode it is 1 MHz/(256-X) for 40h and 1.5
 MHz/(256-X) for 41h. The game's A2h sets the filter roll-off, which the
 sheet puts at 80 to 90 percent of half the sample rate (filter clock 7.16
-MHz/(256-X), roll-off a 82nd of it). Under passthrough the physical A2h is
-the game's A2h too. A Descent 2 stream at A1h=DCh plays at 22097 Hz, and its DMA
+MHz/(256-X), roll-off a 82nd of it). The game's A2h sets the emulated
+reconstruction filter (layer D). A Descent 2 stream at A1h=DCh plays at 22097 Hz, and its DMA
 consumption and interrupts follow 22097 Hz. That is already true of the
 consumption (the rig found it). What is not true is the output, which
 resamples it; layer D fixes that.
@@ -174,6 +174,22 @@ resamples it; layer D fixes that.
 **BAh clock trim** is the physical driver's business. The virtual BAh
 reads and stores as the sheet says. Its bit 6 changes the virtual card's
 clock only if a game sets it, which no surveyed driver does.
+
+**Measured so far** (ESSSTAT on 86Box's ES1688; the bare ES1868F on the
+development PC is the reference still to run):
+
+- 2xCh on the bare chip reads 00h idle, 01h (bit 0, the extended DMA
+  counter) at a block's interrupt, and 04h (bit 2, the DSP processor) at
+  an F2h interrupt. Each is cleared by the 2xEh read. The virtual ESS
+  reads 7Fh throughout, so a driver telling the two sources apart (the
+  Miles driver polls 2xCh some two thousand times) sees both at once.
+- B1h and B2h read 1Ah on the bare chip and on the real ES1868F after
+  UNISOUND: bit 4, the IRQ or DMA selection in bits 3:2, and bit 1. Bit 6
+  is clear until a driver sets it. The virtual ESS reads 58h (the 50h
+  base from the programming sequence plus the selection). No data sheet
+  gives 50h as a reset value. The virtual card should report what the
+  physical chip read before the driver configured it, with bits 3:2 for
+  the virtual IRQ and DMA.
 
 **What the sheet says that the virtual ESS must add:**
 
@@ -191,64 +207,89 @@ clock only if a game sets it, which no surveyed driver does.
 
 ## 6. Layer D: the output, where CD audio lives
 
-**The principle.** The game's stream is the subject and the CD is the
-guest. Where the physical card can play the virtual card's programmed rate
-exactly, the physical output runs at that rate and the game's samples pass
-through untouched (format conversion only, which is lossless). The CD
-stream is then the one resampled, to the game's rate, as it already is
-whenever the rates differ. Where the physical card cannot hit the rate, the
-game stream is resampled with a proper interpolating, band-limited
-resampler, never held.
+**The model of the period hardware.** A game's samples reached the speaker
+through the card's DAC at the rate the game programmed, then the card's own
+reconstruction filter, then the analog mixer. Disc audio reached the same
+mixer by the drive's analog cable at full bandwidth, whatever the DAC was
+doing. uCDD mixes digitally, which already departs from that; the design
+keeps the departure invisible to the game and as small as possible to the
+ear.
 
-**By pairing:**
+**The design: emulate the card's DAC, at a fixed output rate.**
 
-| Virtual | Physical | Game stream | CD stream |
-| --- | --- | --- | --- |
-| ESS | ESS | Passthrough: the physical A1h is the game's A1h, so 22097 Hz is 22097 Hz | Resampled 44100 to the game's rate |
-| SB16 | SB16 | Passthrough: the physical 41h is the game's rate, and whatever the SB16 makes of it is what the real card makes of it | Resampled |
-| SB Pro, SB 2.0 | SB16 | Near passthrough: 1 MHz/(256-tc) to the nearest Hz, at most 0.002 percent off | Resampled |
-| Any | WSS | Resampled to the nearest codec crystal rate, interpolated | Resampled |
-| SB16 | ESS | Resampled (the ESS divider cannot make arbitrary rates), interpolated | Resampled |
-| Nothing playing | Any | None | Native 44100 where the card allows |
+- The physical card plays at 44100 Hz (the trimmed ESS, the SB16, the
+  WSS codec), the disc's own rate. Disc audio is never resampled on a
+  card that can play 44100 Hz, as on the cable. That is the case on the
+  development PC.
+- The game's stream is upsampled from its programmed rate to 44100 Hz by
+  a band-limited interpolator (a polyphase FIR) whose cutoff is the
+  emulated card's reconstruction filter. The game itself names both
+  parameters:
+  - On the ESS in Extended Mode the rate comes from A1h and the roll-off
+    from A2h. The data sheet puts it at 80 to 90 percent of half the
+    sample rate, from a filter clock of 7.16 MHz/(256-X) with the
+    roll-off at a 82nd of it.
+  - In Compatibility Mode, and on the SB Pro, the filter follows the
+    time constant and mixer 0Eh's filter switch.
+  - On the SB16 it follows the rate.
+  Upsampling loses nothing, so the game's audio comes out as the real
+  card would have played it, which is the emulation the spec asks for.
+- Timing is unchanged and already exact. The game's samples are consumed,
+  counted and interrupted at its programmed rate: 22097 Hz is 22097 Hz to
+  the game.
+- A rate change is the game's own business and changes only the
+  interpolator's step and filter. The physical output never restarts, and
+  disc audio never moves.
 
-**What it costs.**
+**Why not passthrough** (the first draft of this section played the
+physical card at the game's rate):
 
-- *A rate change restarts the physical output.* The driver must time the
-  restart at a block boundary and carry the CD stream across it, so the
-  disc audio does not click. Games change rate rarely: at a sound
-  effect's start, between music and speech. A real card's analog CD path
-  is unaffected by the game's rate, so ours must be too.
-- *The fast mode in its current form goes.* Its purpose, less ISA DMA
-  time on a slow machine, is served better by passthrough. A 22097 Hz
-  stream played at 22097 Hz moves half the bytes of 44100 Hz output, with
-  no averaging. On a slow machine with CD audio alone, 22050 Hz output
-  stays a choice.
-- *The mixer runs at a variable output rate.* The period, the ring and the
-  CD step are already in terms of `output_rate`. What becomes per-stream
-  is the rate itself.
+- *It would put disc audio through the game's rate.* A game firing 11 kHz
+  sound effects would drag the music down to 11 kHz bandwidth, and even
+  at 22 kHz the ESS's own filter would cut the disc above about 9 kHz.
+  On the hardware the cable never met the DAC.
+- *Every rate change would restart the physical output.* An ESS start
+  takes 0.66 ms, with the first interrupt 1.25 ms after the call
+  (ISSUES.md). Older games play each effect as its own single-cycle block
+  with its own time constant.
+
+**What it replaces.**
+
+- The held game samples, a zero-order hold, which colour the output with
+  images and with a beat whenever the rate is not a divisor of the
+  output.
+- The half-rate pair average, the source of the Descent 2 wobble.
+- `fast-resample` is not merged.
+
+**Cost.** An 8 to 16-tap polyphase filter on the game's stream, only while
+a game stream plays: an estimated 2 to 4 percent of a Pentium 233, to be
+measured. Disc audio alone costs nothing new.
+
+**The slow-machine mode** (a 386 is best effort, as the author always
+said):
+- The game's stream keeps its rate and timing, with linear interpolation
+  in place of the filter.
+- The disc may play at 22050 Hz output.
+- It costs the guest stream and the filter quality, never the virtual
+  card's behaviour.
 
 **Read-ahead within the hardware's margin.** Two periods of read-ahead
-must not exceed what the card being emulated buffers:
+must not exceed what the emulated card buffers:
 
-| Card | Buffer | Read-ahead needed |
+| Card | Buffer | Read-ahead allowed |
 | --- | --- | --- |
 | SB16 | A few samples | Small |
 | ESS, Compatibility Mode | 64 bytes | Small |
 | ESS, Extended Mode | 256 bytes | At most 256 bytes |
 
-At 64 frames of 44.1 kHz 16-bit stereo, two periods are 512 bytes. So for
-the ESS in Extended Mode the period should be 32 frames, and the 32-frame
-click problem the rig found must be solved, not avoided. On the Pentium
-the period costs nothing measurable down to 32 frames.
+On the Pentium a 32 or 64-frame period costs nothing measurable. The
+32-frame click the rig found must be solved, not avoided. The
+interpolator adds its own delay, half its length (4 to 8 output frames),
+which counts toward the same margin.
 
-**What the current branches become.**
-
-- `fast-resample` (pair-held game samples) is an interim fix for the
-  current fixed-rate design. With passthrough on ESS to ESS it is no
-  longer needed. I recommend not merging it unless passthrough is far
-  off.
-- `event-timer` section 0, the short period plus the physical one-shot,
-  is the timing mechanism for layers B and C, unchanged.
+**What carries over.** `event-timer` section 0 (the short period and the
+physical card's own one-shots) remains the timing mechanism for layers B
+and C.
 
 ## 7. Layer E: speedups, last
 
@@ -274,7 +315,7 @@ observable behaviour identical with it on and off.
 3. Every deviation that stays gets a row in ISSUES under "Deviations from
    specification", with the reason.
 4. Order: layer A's open rows, layer B's table, layer C's two modes, layer
-   D's passthrough, then layer E. A layer is done when its matrix has no
+   D's DAC emulation, then layer E. A layer is done when its matrix has no
    open row without a recorded reason.
 
 ## 9. Branch disposition under this proposal
@@ -284,20 +325,18 @@ observable behaviour identical with it on and off.
 | `spec-fixes` | Spec corrections, regression clean | Merge into `fixes` now |
 | `ess-position`, `miles-irq`, `virtual-timing` | Spec corrections (count timing, B1h/B2h, IRQ delivery) | Merge into `fixes` now, after `spec-fixes` |
 | `fast-dma`, `setup-layout` | Layer E (Type F), plus the UCDDSET layout | Hold until A to C, as asked; or merge now as off by default, since Type F changes nothing observable and the UCDDSET layout is not a speedup. Michael's call |
-| `fast-resample` | Interim layer D fix, retest pending | Do not merge if passthrough is next |
+| `fast-resample` | Interim layer D fix, passed in 86Box | Not merged: layer D's DAC emulation replaces it |
 | `event-timer` | Timing design | Keep; section 0 feeds layers B and C |
 
 ## 10. Questions for Michael
 
-1. Layer D's passthrough changes the physical output rate whenever a game
-   stream starts at a new rate. Accept the restart, carried at a block
-   boundary with the CD stream continuous, as the cost of exactness?
+1. Answered: DAC emulation at a fixed output rate, not passthrough
+   (sections 6 and 11).
 2. The ESS's reference model: the ES1868 with the family's differences
    only as needed, or one model per chip from the start?
-3. `fast-dma` and `setup-layout`: hold until layers A to C are done, or
-   merge now as off-by-default (section 9)?
-4. Fast mode: retire it in favour of passthrough, or keep it as a
-   CD-audio-only choice for slow machines?
+3. Answered: merged (section 11).
+4. Answered: retired, with a slow-machine mode that costs only the guest
+   stream (section 11).
 
 ## 11. Decisions (Michael, after the proposal)
 
@@ -308,8 +347,8 @@ observable behaviour identical with it on and off.
    36h/37h on the SB16). The game set only that volume and the MSCDEX play
    commands; the DAC's rate never touched the disc audio. So the virtual
    card's rate is the game's, and the CD stream is the guest that adapts to
-   it, continuously across any rate change: this confirms layer D's
-   passthrough and its requirement that a restart never clicks the disc.
+   it, continuously across any rate change: this is why layer D emulates the DAC at a fixed output rate: the disc
+   never meets the game's rate.
 2. ESS behaviour is guided by what ESS games expect: the eleven ESS driver
    binaries in the 147 ESS-aware games of the survey (HMI's five variants
    in 62 games, ADRV688.DIG in 52, ESFM.MDI in 21, AUDIODRV.DIG's two in
@@ -317,16 +356,13 @@ observable behaviour identical with it on and off.
    proven, each against the data sheet.
 3. `fast-dma` and `setup-layout` are merged into `fixes` (fcf67f2, with
    `spec-fixes` and the rig's three branches).
-4. Fast mode as a physical output mode is retired in favour of
-   passthrough: it keeps the ESS out of spec (every game rate resampled to
-   22050 Hz and pair-averaged). Its one remaining reason, half the ISA DMA
-   time on a slow machine, is met by passthrough when the game plays at 22
-   kHz, and by an option to play disc audio alone at 22050 Hz, which
-   touches only the guest stream. `fast-resample` is not merged.
+4. Fast mode as a physical output mode is retired: it keeps the ESS out of
+   spec (every game rate resampled to 22050 Hz and pair-averaged). Layer D
+   emulates the card's DAC instead (section 6), and passthrough is dropped
+   for the two reasons given there. `fast-resample` is not merged.
 5. A slow-machine mode stays, on one condition: it may cost the CD stream
-   (disc audio at 22050 Hz, the guest) but never the virtual card. The
-   game's stream keeps its programmed rate, passthrough where the card
-   allows.
+   (disc audio at 22050 Hz, the guest) and the filter's quality (linear
+   interpolation), but never the virtual card's behaviour.
 6. The game comes first, always. A game expects to talk to a card in a
    specific way and to get specific results; it does not know the CD is
    being mixed. Mixing the disc digitally is itself a departure from the
@@ -340,4 +376,8 @@ observable behaviour identical with it on and off.
    686, 8231: a doubled DMA clock rather than Type F), and SiS (5597,
    5598, 5582, with the 5595 revision check). Each one detect-only, off by
    default, cited to its data sheet, and proven to change nothing a game
-   can observe.
+   can observe. A chipset nobody here owns is built to its data sheet and
+   shipped; reports from its owners correct it.
+8. Every deviation in section 2 is fixed, whether or not it changes the
+   sound. Evidence from the ESS drivers and the game set decides the
+   order, never whether.
