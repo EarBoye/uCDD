@@ -3,6 +3,11 @@
 
 ; BX selects a stereo source. SI selects its channel.
 sb_mixer_gain:
+%ifdef ESS_CARD
+    ; The virtual ESS has its own mixer and level laws.
+    cmp byte [virtual_model], 4
+    je ess_mixer_gain
+%endif
     push ebx
     push edx
     mov al, [virtual_mixer+bx+si]

@@ -11,6 +11,8 @@
 ; periods up to 256 frames.
 %if OUTPUT_SHIFT <= 8
 %define ESS_FIFO_MODEL
+; The virtual ESS AudioDrive (audio/ess/card.asm), which needs the model.
+%define ESS_CARD
 %endif
 %define WSS_INPUT 1
 %include "audio/layout.inc"
@@ -53,6 +55,7 @@ audio_linked db 0
 %include "audio/background.asm"
 %include "audio/irq.asm"
 %include "audio/ess_fifo.asm"
+%include "audio/ess/card.asm"
 %include "audio/sb_patch.asm"
 %include "audio/standby.asm"
 %include "audio/host_jemm.asm"

@@ -1,7 +1,9 @@
 ; SPDX-FileCopyrightText: 2026 the uCDD contributors
 ; SPDX-License-Identifier: GPL-3.0-only
 
-; The virtual ESS's FIFO and DAC in Extended Mode (docs/ess-fifo.md).
+; The virtual ESS's FIFO and DAC (docs/ess-fifo.md), for both modes: the
+; 256-byte hardware FIFO of Extended Mode and the 64-byte firmware FIFO of
+; compatibility mode (SPEC 6), started by audio/ess/card.asm.
 ;
 ; ES1868 data sheet: "a 256-byte FIFO is used as an intermediary between the
 ; ISA bus and the ADC and DAC"; the DMA counter "will be incremented after
@@ -24,10 +26,13 @@
 %ifdef ESS_FIFO_MODEL
 
 ESS_FIFO_BYTES equ 256
+ESS_COMPAT_FIFO_BYTES equ 64
 ; The DAC ring holds the output delay (at most two and a half periods) plus
 ; a period at up to 48 kHz 16-bit stereo: 16 bytes per output frame of the
 ; period.
 ESS_DAC_BYTES equ 16*PERIOD_FRAMES
+; The FIFO's copy follows the ring in the same allocation.
+ESS_FIFO_OFFSET equ ESS_DAC_BYTES
 ; The mixer reads the DAC ring two output periods behind the DAC clock; with
 ; the physical ESS at half rate it needs half a period more (Descent 2 on the
 ; virtual ESS: 38 clicks/s at two periods, 1.1 at two and a half, the floor).
@@ -63,6 +68,22 @@ ess_fifo_start:
     call ess_fifo_block
     mov al, [game_frame_shift]
     mov [ess_shift], al
+    ; The mode's FIFO, its block-end interrupt (2xCh bit 0, the counter's,
+    ; or bit 2, the processor's), and the compatibility mode's 8-bit stereo,
+    ; right channel first (SPEC 6, 7.2, 8.4).
+    mov dword [ess_fifo_size], ESS_FIFO_BYTES
+    mov byte [ess_block_latch], 1
+    mov byte [ess_swap], 0
+    cmp byte [ess_compat], 0
+    je .mode_ready
+    mov dword [ess_fifo_size], ESS_COMPAT_FIFO_BYTES
+    mov byte [ess_block_latch], 4
+    cmp al, 1
+    jne .mode_ready
+    test byte [game_format], 1
+    jnz .mode_ready
+    mov byte [ess_swap], 1
+.mode_ready:
     mov eax, [game_step]
     mov [ess_step], eax
     ; The DMA's fill rate in 1/256 bytes per DAC frame.
@@ -175,18 +196,17 @@ ess_fifo_source:
     mov [ess_src_wrap], al
     ret
 
-; The counter reload (A4h/A5h, the two's complement of the block) and the
-; transfer kind (B8h bit 2, auto-initialise), from the current position.
+; The block (ess_block_len: A4h/A5h in Extended Mode, the command's count in
+; compatibility mode) and the transfer kind (ess_auto), from the current
+; position.
 ess_fifo_block:
-    movzx eax, word [ess_virtual_regs+0a4h-0a0h]
-    neg eax
-    add eax, 10000h
+    mov eax, [ess_block_len]
     mov [ess_block], eax
     add eax, [ess_d]
     mov [ess_next_overflow], eax
     mov dword [ess_d_cap], 0ffffffffh
-    test byte [ess_virtual_regs+0b8h-0a0h], 4
-    jnz .ready
+    cmp byte [ess_auto], 0
+    jne .ready
     mov [ess_d_cap], eax
 .ready:
     ret
@@ -221,7 +241,7 @@ ess_fifo_stop_dma:
 ess_dac_allocate:
     cmp byte [virtual_model], 4
     jne .done
-    mov bx, ESS_DAC_BYTES/16
+    mov bx, (ESS_DAC_BYTES+ESS_FIFO_BYTES)/16
     mov ah, 48h
     int 21h
     jc .done
@@ -242,6 +262,14 @@ ess_dac_free:
 .done:
     ret
 
+; 2x6h bit 1: the FIFO emptied (SPEC 3).
+ess_fifo_flush:
+    push eax
+    mov eax, [ess_d]
+    mov [ess_q], eax
+    pop eax
+    ret
+
 ; A software reset ends the stream.
 ess_fifo_reset:
     mov byte [ess_fifo_on], 0
@@ -252,6 +280,7 @@ ess_fifo_reset:
 
 ; Bring the model up to the output clock. DS=CS; all registers kept.
 ess_fifo_service:
+    call ess_card_service
     cmp byte [ess_fifo_on], 0
     jne .run
     ret
@@ -278,9 +307,13 @@ ess_fifo_service:
     cmp byte [ess_dma_on], 0
     je .next
     ; B2h bit 6 enables the DRQ for Extended Mode DMA; clear, the chip
-    ; requests nothing (data sheet, B2h).
+    ; requests nothing (data sheet, B2h). Compatibility-mode DMA runs
+    ; without it, as on the chip after a reset (B2h 1Ah).
+    cmp byte [ess_compat], 0
+    jne .dma
     test byte [ess_virtual_regs+0b2h-0a0h], 40h
     jz .next
+.dma:
     call ess_dma_frame
 .next:
     inc dword [ess_k]
@@ -308,9 +341,13 @@ ess_fifo_service:
 .raise:
     cmp byte [ess_raise], 0
     je .done
-    ; B1h bit 6: an interrupt for each overflow of the DMA counter.
+    ; Extended Mode: B1h bit 6 enables an interrupt for each overflow of
+    ; the DMA counter. A compatibility-mode block end always interrupts.
+    cmp byte [ess_compat], 0
+    jne .signal
     test byte [ess_virtual_regs+0b1h-0a0h], 40h
     jz .done
+.signal:
     mov al, [game_irq_bit]
     call virtual_dsp_raise_line
 .done:
@@ -323,14 +360,16 @@ ess_fifo_service:
 ess_dma_frame:
     mov eax, [ess_credit]
     add eax, [ess_credit_step]
-    cmp eax, ESS_FIFO_BYTES*256
+    mov ecx, [ess_fifo_size]
+    shl ecx, 8
+    cmp eax, ecx
     jbe .credit
-    mov eax, ESS_FIFO_BYTES*256
+    mov eax, ecx
 .credit:
     mov [ess_credit], eax
     shr eax, 8
     mov ecx, [ess_q]
-    add ecx, ESS_FIFO_BYTES
+    add ecx, [ess_fifo_size]
     sub ecx, [ess_d]
     cmp eax, ecx
     jbe .room
@@ -352,7 +391,8 @@ ess_dma_frame:
     mov eax, [ess_d]
     cmp eax, [ess_next_overflow]
     jb .end
-    or byte [ess_status_latch], 1
+    mov al, [ess_block_latch]
+    or [ess_status_latch], al
     mov byte [ess_raise], 1
     mov eax, [ess_block]
     add [ess_next_overflow], eax
@@ -370,6 +410,8 @@ ess_dma_frame:
 
 ; ECX bytes from the game's buffer into the FIFO, from stream byte ess_d.
 ess_move_bytes:
+    push es
+    mov es, [ess_dac_segment]
 .byte:
     mov eax, [ess_d]
     sub eax, [ess_seg_start]
@@ -386,6 +428,7 @@ ess_move_bytes:
     jb .address
     mov byte [ess_dma_on], 0
     call ess_fifo_position
+    pop es
     ret
 .address:
     add eax, [ess_src]
@@ -397,10 +440,11 @@ ess_move_bytes:
     mov al, [fs:si]
     mov bx, [ess_d]
     and bx, ESS_FIFO_BYTES-1
-    mov [ess_fifo+bx], al
+    mov [es:ESS_FIFO_OFFSET+bx], al
     inc dword [ess_d]
     dec ecx
     jnz .byte
+    pop es
     ret
 
 ; One DAC frame: from the FIFO when it holds a whole frame, else silence.
@@ -419,16 +463,32 @@ ess_dac_frame:
     cmp eax, edx
     jb .empty
     mov dword [ess_idle], 0
+    cmp byte [ess_swap], 0
+    jne .swapped
     mov ecx, edx
 .copy:
     mov bx, [ess_q]
     and bx, ESS_FIFO_BYTES-1
-    mov al, [ess_fifo+bx]
+    mov al, [es:ESS_FIFO_OFFSET+bx]
     mov [es:di], al
     inc di
     inc dword [ess_q]
     dec ecx
     jnz .copy
+    pop es
+    ret
+.swapped:
+    ; Compatibility-mode 8-bit stereo: the first byte is the right channel's;
+    ; the ring holds left first.
+    mov bx, [ess_q]
+    and bx, ESS_FIFO_BYTES-1
+    mov al, [es:ESS_FIFO_OFFSET+bx]
+    mov [es:di+1], al
+    inc bx
+    and bx, ESS_FIFO_BYTES-1
+    mov al, [es:ESS_FIFO_OFFSET+bx]
+    mov [es:di], al
+    add dword [ess_q], 2
     pop es
     ret
 .empty:
@@ -511,6 +571,10 @@ ess_status:
     xor ebx, ebx
     cmp byte [ess_fifo_on], 0
     je .fill
+    ; Compatibility mode has no FIFO flags (Table 8): the extended FIFO
+    ; reads empty [inference; the TIMES script measures 2xCh then].
+    cmp byte [ess_compat], 0
+    jne .fill
     mov ebx, [ess_d]
     sub ebx, [ess_q]
 .fill:
@@ -528,7 +592,7 @@ ess_status:
     or al, 8
 .half:
     or al, [ess_status_latch]
-    cmp byte [reply_count], 0
+    cmp byte [ess_reply_count], 0
     je .done
     or al, 40h
 .done:
@@ -554,6 +618,8 @@ ess_next_overflow dd 0
 ess_idle dd 0
 ess_credit dd 0
 ess_credit_step dd 0
+ess_block_len dd 2048
+ess_fifo_size dd ESS_FIFO_BYTES
 ess_silence dw 8080h
 ess_shift db 0
 ess_src_wrap db 0
@@ -562,10 +628,12 @@ ess_dma_on db 0
 ; Set by D0h while the DMA ran, cleared by D4h, B8h and a reset.
 ess_dma_paused db 0
 ess_raise db 0
+ess_auto db 0
+ess_block_latch db 1
+ess_swap db 0
 ; 2xCh bits 0 (DMA counter overflow) and 2 (processor interrupt) until a 2xEh
 ; read.
 ess_status_latch db 0
-ess_fifo times ESS_FIFO_BYTES db 0
 ; The DAC ring, a DOS allocation at install when the virtual card is the ESS
 ; (ess_dac_allocate), or 0: the stream then keeps the previous path.
 ess_dac_segment dw 0

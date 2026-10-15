@@ -1084,6 +1084,14 @@ resident_io:
     ; rest goes to the driver.
     cmp dword [ebp+resident_fast], 0
     je .callback
+    ; The virtual ESS (model 4) keeps its own mixer and status
+    ; (audio/ess/card.asm): every access to its ports goes to the driver.
+    mov esi, [ebp+resident_fast+24]
+    test esi, esi
+    jz .not_ess
+    cmp byte [esi], 4
+    je .callback
+.not_ess:
     ; The write that starts a single-cycle block times its hold at the
     ; driver's exit; nothing here is that write, but a hold of 1 is left to
     ; the driver all the same.

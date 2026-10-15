@@ -89,6 +89,27 @@ the development machine):
    sees the exact state. An interrupt is requested at the first service
    after its moment: within one output period (0.73 ms at 32 frames).
 
+## Compatibility mode (ess-clean)
+
+The same model runs the ESS's own SB Pro mode (vess-spec.md section 7),
+started by audio/ess/card.asm:
+
+- a 64-byte FIFO (the firmware FIFO of Table 8) in place of 256 bytes;
+- the block end raises the processor interrupt (2xCh bit 2), not the
+  counter's, with or without B1h;
+- the rate from 40h (1 MHz) or 41h (1.5 MHz), halved per channel in stereo
+  (mixer 0Eh bit 1);
+- unsigned data only; 16-bit stereo left low byte first;
+- 8-bit stereo right channel first, the real cards' swapped-stereo quirk:
+  the DAC writes each pair into the ring swapped;
+- no FIFO flags in 2xCh during the stream (Table 8: none in compatibility
+  mode) [inference: the TIMES script measures the chip].
+
+Where the interrupt falls in compatibility mode (the block entering the
+FIFO, as here, or the block played) is open question 1 of vess-spec.md.
+
+The FIFO's copy lives in the DAC ring's DOS allocation, after the ring.
+
 ## Limits and deviations, recorded
 
 - **The clock step.** The DAC clock uses the mixer's 16.16 step, game rate

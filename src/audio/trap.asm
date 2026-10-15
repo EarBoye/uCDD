@@ -297,6 +297,12 @@ port_callback:
     cmp bx, 0fh
     ja .not_sb_port
     lea dx, [bx+220h]
+%ifdef ESS_CARD
+    ; The virtual ESS is its own card (audio/ess/card.asm): none of its
+    ; ports reach the Sound Blaster code below.
+    cmp byte [virtual_model], 4
+    je ess_port
+%endif
 .not_sb_port:
     jmp .dispatch
 .dma_port:
@@ -389,11 +395,6 @@ port_callback:
     mov byte [sb_silence], 0
     call virtual_irq_reset
 %endif
-    ; A reset leaves the ESS extension commands disabled and its registers
-    ; at their reset values (A5h F8h, B1h and B2h bits 4 and 6).
-    call ess_virtual_reset
-    test al, al
-    jnz .done
     inc word [virtual_resets]
     mov word [reply], 0aah
     mov byte [reply_count], 1
@@ -402,7 +403,6 @@ port_callback:
     jmp .done
 .mixer_index:
     mov [virtual_mixer_index], al
-    mov byte [ess_id_phase], 0
     jmp .done
 .mixer_data:
     movzx bx, byte [virtual_mixer_index]
@@ -414,28 +414,6 @@ port_callback:
     je .done
     test bl, bl
     jz .mixer_reset
-    cmp byte [virtual_model], 4
-    jne .mixer_not_twin
-    call ess_mixer_twin_write
-.mixer_not_twin:
-    ; The virtual ESS's registers 30h to 3Fh are its own (32h master, 36h FM,
-    ; 38h CD, 3Eh line among them); the same numbers in virtual_mixer are the
-    ; SB16 per-channel gains the mixer reads. They are kept apart, and the
-    ; ESS twins reach the gains only through their pair routing below.
-    cmp byte [virtual_model], 4
-    jne .mixer_store
-    cmp bl, 30h
-    jb .mixer_store
-    cmp bl, 3fh
-    ja .mixer_store
-    mov [ess_mixer_high+bx-30h], al
-    cmp bl, 32h
-    je .master_pair
-    cmp bl, 36h
-    je .fm_pair
-    cmp bl, 38h
-    je .cd_pair
-    jmp .done
 .mixer_store:
     mov [virtual_mixer+bx], al
     cmp bl, 0eh
@@ -534,19 +512,6 @@ port_callback:
     mov [virtual_mixer+36h], ax
     mov dword [virtual_mixer+3ch], 0b151fh
     mov dword [virtual_mixer+44h], 80808080h
-    ; The virtual ESS's own registers 30h to 3Fh: the three twins at the
-    ; SB Pro pairs' reset level, the rest zero.
-    mov di, ess_mixer_high
-    mov cx, 8
-    xor ax, ax
-    rep stosw
-    mov al, 0cch
-    mov [ess_mixer_high+2], al
-    mov [ess_mixer_high+6], al
-    mov [ess_mixer_high+8], al
-    cmp byte [virtual_model], 4
-    jne .volume_update
-    mov [virtual_mixer+14h], al
     jmp .volume_update
 .flip_reset:
     mov byte [si+DMA_FLIP], 0
@@ -733,47 +698,13 @@ port_callback:
     cmp word [reply_pointer], 0
     jne .done
     mov [dsp_command], al
-    cmp byte [virtual_model], 4
-    jne .common_command
-    ; The ESS AudioDrive's own commands come first: E7h identifies it, C6h
-    ; and C7h switch the extension registers on and off, and with them on
-    ; A0h to BFh write a register and C0h reads one. Everything else is the
-    ; Sound Blaster Pro's (DSP 3.01).
-    cmp al, 0e7h
-    je .ess_identify
-    cmp al, 0c6h
-    je .ess_extend
-    cmp al, 0c7h
-    je .ess_compatible
-    cmp byte [ess_extended], 0
-    je .common_command
-    cmp al, 0c0h
-    je .time_constant
-    cmp al, 0a0h
-    jb .common_command
-    cmp al, 0bfh
-    ja .common_command
-    jmp .time_constant
-.ess_identify:
-    ; The physical chip's own answer (ess_setup), so the game sees the chip
-    ; in the machine; 68h 8Bh before any start.
-    mov ax, [ess_physical_id]
-    mov [reply], ax
-    mov byte [reply_count], 2
-    jmp .done
-.ess_extend:
-    mov byte [ess_extended], 1
-    jmp .done
-.ess_compatible:
-    mov byte [ess_extended], 0
-    jmp .done
 .common_command:
     cmp al, 10h
     je .time_constant
     cmp al, 41h
-    je .rate_or_ess
+    je .rate
     cmp al, 42h
-    je .input_or_ess
+    je .input_rate
     cmp al, 40h
     je .time_constant
     cmp al, 48h
@@ -906,14 +837,6 @@ port_callback:
 %endif
     jmp .done
 .resume8:
-%ifdef ESS_FIFO_MODEL
-    ; D4h continues the DMA that D0h paused, from the same counter.
-    cmp byte [ess_fifo_on], 0
-    je .resume8_sb
-    call ess_fifo_unpause
-    jmp .done
-.resume8_sb:
-%endif
     cmp byte [game_irq_bit], 2
     je .done
     jmp .resume
@@ -994,25 +917,10 @@ port_callback:
     mov [game_exit_frame], eax
     jmp .done
 .pause8:
-%ifdef ESS_FIFO_MODEL
-    ; Extended Mode on the virtual ESS: D0h pauses the DMA only, and the
-    ; FIFO plays out (data sheet, Table 10).
-    cmp byte [ess_fifo_on], 0
-    je .pause8_sb
-    call ess_fifo_pause
-    jmp .done
-.pause8_sb:
-%endif
     cmp byte [game_irq_bit], 2
     je .done
     jmp .pause
 .pause16:
-    ; On the ESS, D5h returns one byte, 1, for the ES488 (Table 10).
-    cmp byte [virtual_model], 4
-    jne .pause16_sb
-    mov al, 1
-    jmp .one_reply
-.pause16_sb:
     cmp byte [game_irq_bit], 2
     jne .done
 .pause:
@@ -1052,21 +960,6 @@ port_callback:
     mov byte [sb_paused], 1
     mov byte [game_active], 0
     jmp .done
-.input_or_ess:
-    ; On the ESS, 42h takes one byte, the filter clock, which the virtual
-    ; card has no use for (the ES1868 data sheet's command table).
-    cmp byte [virtual_model], 4
-    jne .input_rate
-    mov byte [arguments], 1
-    jmp .done
-.rate_or_ess:
-    ; On the ESS, 41h is the time constant of 40h on a 1.5 MHz clock, one
-    ; byte: rate = 1500000 / (256 - X).
-    cmp byte [virtual_model], 4
-    jne .rate
-    mov byte [dsp_command], 40h
-    mov byte [ess_clock_alternate], 1
-    jmp .time_constant
 .input_rate:
     ; The SB16 uses one sample rate for output and input.
     mov byte [dsp_command], 41h
@@ -1115,18 +1008,6 @@ port_callback:
     call sb_dac_write
     jmp .argument_done
 .normal_argument:
-    cmp byte [virtual_model], 4
-    jne .common_argument
-    cmp byte [ess_extended], 0
-    je .common_argument
-    mov bl, [dsp_command]
-    cmp bl, 0c0h
-    je .ess_read
-    sub bl, 0a0h
-    cmp bl, 1fh
-    ja .common_argument
-    jmp .ess_write
-.common_argument:
     cmp byte [dsp_command], 0e2h
     jne .invert_argument
     call sb_identify
@@ -1241,11 +1122,6 @@ port_callback:
     neg ecx
     add ecx, 256
     mov eax, 1000000
-    cmp byte [ess_clock_alternate], 0
-    je .time_clock
-    mov byte [ess_clock_alternate], 0
-    mov eax, 1500000
-.time_clock:
     xor edx, edx
     div ecx
     cmp eax, 65535
@@ -1333,9 +1209,6 @@ port_callback:
     mov byte [game_source], 0
     mov si, dma8
     mov cl, 0
-    ; The ESS moves 16-bit data over its one 8-bit channel, in bytes.
-    cmp byte [virtual_model], 4
-    je .dma_selected
     cmp byte [pending_frame_shift], 2
     je .wide_dma
     test byte [pending_format], 1
@@ -1526,10 +1399,6 @@ port_callback:
     mov byte [sb_sign16+1], 80h
 .sign16_ready:
     mov al, 1
-    ; The ESS signals every transfer on the 8-bit status (22Eh), whatever
-    ; the format; the SB16 signals 16-bit data on 22Fh.
-    cmp byte [virtual_model], 4
-    je .irq_bit
     cmp cl, 2
     je .wide_irq
     cmp word [game_dma], dma16
@@ -1597,10 +1466,6 @@ port_callback:
     ; SB16's output filter follows the sample rate, for legacy commands too.
     cmp byte [virtual_dsp_version], 4
     jae .filter_clear
-    ; So does the ES1868's: it ignores the SB Pro filter bits (data sheet,
-    ; Table 14 note) and sets its filter from 40h/41h or 42h (Table 10).
-    cmp byte [virtual_model], 4
-    je .filter_clear
     mov byte [sb_filter_legacy], 1
     ; A block that follows a filtered block is the same output stream. Keep the
     ; filter state: the response to the last block has not ended.
@@ -1621,14 +1486,6 @@ port_callback:
     mov bl, [game_active]
     mov byte [game_active], 1
     inc word [virtual_starts]
-%ifdef ESS_FIFO_MODEL
-    cmp byte [ess_start_request], 0
-    je .model_start_done
-    mov byte [ess_start_request], 0
-    call ess_fifo_start
-    jnc .done
-.model_start_done:
-%endif
 %ifdef RESIDENT_AUDIO
     ; An output interrupt can be pending when this write returns. The game
     ; must run before a block that starts a stream can end.
@@ -1664,155 +1521,6 @@ port_callback:
 %ifdef WSS_INPUT
 %include "audio/wss_input.inc"
 %endif
-; ESS extension register write: BL=register minus A0h, AL=the value, from
-; .argument with arguments=1. Only B8h acts: bit 0 starts or stops the
-; transfer, with the format taken from B7h, the rate from A1h and the byte
-; count from A4h/A5h; the other registers are stored for C0h reads.
-; B1h and B2h keep bits 3:0, which are read-only on the ES1868 (data sheet,
-; B1h and B2h descriptions). B1h bit 7 does not take a write: the ES1868F
-; reads 5Ah after DAh is written (measured, 15 Oct 2026).
-.ess_write:
-    xor bh, bh
-    cmp bl, 0b1h-0a0h
-    je .ess_write_b1
-    cmp bl, 0b2h-0a0h
-    jne .ess_write_store
-    and al, 0f0h
-    jmp .ess_write_low
-.ess_write_b1:
-    and al, 70h
-.ess_write_low:
-    mov ah, [ess_virtual_regs+bx]
-    and ah, 0fh
-    or al, ah
-.ess_write_store:
-    mov [ess_virtual_regs+bx], al
-    cmp bl, 0b8h-0a0h
-    jne .argument_done
-    test al, 1
-    jz .ess_stop
-    cmp byte [ess_started], 0
-    jne .argument_done
-    mov byte [ess_started], 1
-    ; Recording is not emulated.
-    test al, 2
-    jnz .command_unsupported
-    ; B7h: bit 2 16-bit, bit 3 stereo, bit 5 signed (Table 11 of the data
-    ; sheet). pending_format: bit 0 16-bit mono, bit 1 unsigned 16-bit,
-    ; bit 2 signed 8-bit.
-    mov al, [ess_virtual_regs+0b7h-0a0h]
-    xor bl, bl
-    xor cl, cl
-    test al, 4
-    jz .ess_8bit
-    inc cl
-    test al, 8
-    jz .ess_16_mono
-    inc cl
-    jmp .ess_16_sign
-.ess_16_mono:
-    or bl, 1
-.ess_16_sign:
-    test al, 20h
-    jnz .ess_format_ready
-    or bl, 2
-    jmp .ess_format_ready
-.ess_8bit:
-    test al, 8
-    jz .ess_8_sign
-    inc cl
-.ess_8_sign:
-    test al, 20h
-    jz .ess_format_ready
-    or bl, 4
-.ess_format_ready:
-    mov [pending_format], bl
-    mov [pending_frame_shift], cl
-    ; A1h: 397.7 kHz / (128 - x) with bit 7 clear, 795.5 kHz / (256 - x)
-    ; with it set.
-    movzx ecx, byte [ess_virtual_regs+0a1h-0a0h]
-    mov eax, 397700
-    test cl, 80h
-    jz .ess_divider
-    mov eax, 795500
-    sub ecx, 128
-.ess_divider:
-    neg ecx
-    add ecx, 128
-    xor edx, edx
-    div ecx
-    cmp eax, 4000
-    jb .command_unsupported
-    cmp eax, 48000
-    ja .command_unsupported
-    mov [game_rate], ax
-    shl eax, 16
-    xor edx, edx
-    mov ecx, OUTPUT_RATE
-    div ecx
-    mov [game_step], eax
-%ifdef ESS_FIFO_MODEL
-    ; The DAC still plays the stream: the DMA resumes into it, unless the
-    ; rate or the format changed, which starts a new one.
-    cmp byte [ess_fifo_on], 0
-    je .ess_fresh
-    cmp eax, [ess_step]
-    jne .ess_restart
-    mov al, [pending_frame_shift]
-    cmp al, [ess_shift]
-    jne .ess_restart
-    mov al, [pending_format]
-    cmp al, [game_format]
-    jne .ess_restart
-    call ess_fifo_continue
-    jmp .argument_done
-.ess_restart:
-    call ess_fifo_reset
-    mov byte [game_active], 0
-.ess_fresh:
-    mov byte [ess_start_request], 1
-%endif
-    ; The B8h write's argument is taken: the start below joins the Sound
-    ; Blaster starts, which arrive with none left. Without this the next
-    ; command byte was read as another B8h value (D0h stopped the stream,
-    ; C0h B8h lost its reply).
-    mov byte [arguments], 0
-    ; A4h/A5h hold the two's complement of the byte count: the count less
-    ; one, as the start commands take it, is its complement.
-    mov ax, [ess_virtual_regs+0a4h-0a0h]
-    not ax
-    mov byte [sb_finished], 0
-    mov byte [sb_exit_pending], 0
-    mov byte [sb_input], 0
-    mov byte [sb_single], 1
-    test byte [ess_virtual_regs+0b8h-0a0h], 4
-    jz .start_kind
-    mov byte [sb_single], 0
-    jmp .start_kind
-.ess_stop:
-    cmp byte [ess_started], 0
-    je .argument_done
-    mov byte [ess_started], 0
-%ifdef ESS_FIFO_MODEL
-    cmp byte [ess_fifo_on], 0
-    je .ess_pause
-    call ess_fifo_stop_dma
-    jmp .argument_done
-.ess_pause:
-%endif
-    ; Bit 0 cleared: the transfer stops where it is, as D0h pauses it; a new
-    ; start programs the counters again.
-    mov byte [arguments], 0
-    jmp .pause
-.ess_read:
-    sub al, 0a0h
-    cmp al, 1fh
-    ja .command_unsupported
-    movzx bx, al
-    mov al, [ess_virtual_regs+bx]
-    mov [reply], al
-    mov byte [reply_count], 1
-    jmp .argument_done
 .read:
     cmp dx, 226h
     je .reset_read
@@ -1894,34 +1602,11 @@ port_callback:
     ; Only bit 7 is defined; a card reads the other bits as set. Busy while
     ; a string reply waits to be read.
     mov al, 7fh
-%ifdef ESS_FIFO_MODEL
-    ; The ESS's 2xCh is its status register (ess_status).
-    cmp byte [virtual_model], 4
-    jne .ready_busy
-    call ess_status
-.ready_busy:
-%endif
     cmp word [reply_pointer], 0
     je .result
     or al, 80h
     jmp .result
 .status:
-%ifdef ESS_FIFO_MODEL
-    ; The ESS answers 2xEh with the low status bits, bit 7 for data
-    ; available, and clears its interrupt sources (measured on the ES1868F:
-    ; 01h, 09h, 1Ch at the interrupts).
-    cmp byte [virtual_model], 4
-    jne .status_sb
-    call ess_status
-    and al, 3fh
-    mov byte [ess_status_latch], 0
-    and byte [virtual_dsp_irq], 0feh
-    cmp byte [reply_count], 0
-    je .result
-    or al, 80h
-    jmp .result
-.status_sb:
-%endif
 %ifdef VIRTUAL_IRQ
     and byte [virtual_dsp_irq], 0feh
 %endif
@@ -1968,35 +1653,7 @@ port_callback:
     jmp .result
 .mixer_value:
 %endif
-    cmp bx, 40h
-    jne .mixer_stored
-    cmp byte [virtual_model], 4
-    jne .mixer_stored
-    ; The physical chip's identification sequence, four reads after the
-    ; index write (which the host answers for a protected-mode game, so the
-    ; sequence also wraps after four).
-    movzx bx, byte [ess_id_phase]
-    mov al, [ess_physical_mixer_id+bx]
-    inc bl
-    and bl, 3
-    mov [ess_id_phase], bl
-    jmp .result
-.mixer_stored:
-    cmp byte [virtual_model], 4
-    jne .mixer_plain
-    cmp bx, 30h
-    jb .mixer_ess_low
-    cmp bx, 3fh
-    ja .mixer_plain
-    mov al, [ess_mixer_high+bx-30h]
-    jmp .result
-.mixer_ess_low:
-    ; The ES1868's SB Pro registers read bits 0 and 4 as 1, and 0Ch bit 0
-    ; as 1 (data sheet, before Table 14).
-    mov al, [virtual_mixer+bx]
-    call ess_mixer_read_bits
-    jmp .result
-.mixer_plain:
+
     mov al, [virtual_mixer+bx]
     jmp .result
 .dma_read:
@@ -2336,77 +1993,6 @@ dma_port:
 .done:
     ret
 
-; The ESS extension state after a DSP reset: commands off and the registers
-; at the values the ES1868F sets on a software reset. Measured with ESSSTAT
-; on 15 Oct 2026: known values written, 2x6h 3 then 0, read back. The data
-; sheet's "set up for 8 kHz sampling" is A2h = E7h (a 3.5 kHz roll-off) and
-; its 2048-byte count is A4h/A5h = 00h/F8h; A1h, which the sheet leaves
-; "unknown", is DCh (22097 Hz). A9h, BAh and BCh were not written in the
-; test; their values are what the chip reads after a reset. Keeps AL (the
-; reset port value) for the caller.
-ess_virtual_reset:
-    push ax
-    push cx
-    push si
-    push di
-    push es
-    push cs
-    pop es
-    mov si, ess_reset_values
-    mov di, ess_virtual_regs
-    mov cx, 16
-    cld
-    rep movsw
-    pop es
-    pop di
-    pop si
-    push di
-    push es
-    ; B1h and B2h bits 3:0 are read-only and decode the card's IRQ and DMA
-    ; channel, the same two bits in 3:2 and 1:0 (ES1868 data sheet, B1h and
-    ; B2h descriptions): IRQ 2/9 0000, 5 0101, 7 1010, 10 1111; DMA 0 0101,
-    ; 1 1010, 3 1111, others 0000. They report the virtual card's own
-    ; selection; the Miles ESS driver reads them when its settings leave IRQ
-    ; or DMA at -1, and ADRV688 keeps them in its read-modify-write. The
-    ; upper bits are bit 4 set and 7:5 clear, as the ES1868F reads (1Ah with
-    ; IRQ 7 and DMA 1, measured after UNISOUND, 15 Oct 2026); the data sheet
-    ; gives no reset value for them.
-    push bx
-    mov ah, 10h
-    mov bx, ess_irq_bits
-.irq_bits:
-    cmp byte [bx], 0ffh
-    je .irq_ready
-    mov cl, [virtual_irq]
-    cmp cl, [bx]
-    je .irq_found
-    add bx, 2
-    jmp .irq_bits
-.irq_found:
-    or ah, [bx+1]
-.irq_ready:
-    mov [ess_virtual_regs+0b1h-0a0h], ah
-    mov ah, 10h
-    mov bl, [virtual_dma8]
-    cmp bl, 3
-    ja .dma_ready
-    xor bh, bh
-    or ah, [ess_dma_bits+bx]
-.dma_ready:
-    mov [ess_virtual_regs+0b2h-0a0h], ah
-    pop bx
-    mov byte [ess_extended], 0
-    mov byte [ess_started], 0
-    mov byte [ess_clock_alternate], 0
-%ifdef ESS_FIFO_MODEL
-    call ess_fifo_reset
-%endif
-    pop es
-    pop di
-    pop cx
-    pop ax
-    ret
-
 trap_ports:
 %include "audio/ports.inc"
     dw 0
@@ -2425,101 +2011,11 @@ game_irq_bit db 1
 ; Bit 0: 16-bit mono. Bit 1: unsigned 16-bit. Bit 2: signed 8-bit.
 game_format db 0
 pending_format db 0
-; The virtual ESS AudioDrive (virtual_model 4): the extension registers A0h
-; to BFh behind commands C6h/C7h, and whether B8h bit 0 is set.
-ess_extended db 0
-; 1 from the ESS's 41h until its time constant byte is taken.
-ess_clock_alternate db 0
-ess_started db 0
-; Set by the B8h start for the common start code to hand over to the model.
-ess_start_request db 0
-; A0h to BFh after a software reset, as the ES1868F reads them (B1h and B2h
-; are then given the code for the virtual IRQ and DMA).
-ess_reset_values:
-    db 00h, 0dch, 0e7h, 00h, 00h, 0f8h, 00h, 00h      ; A0h to A7h
-    db 02h, 0ch, 00h, 00h, 00h, 00h, 00h, 00h         ; A8h to AFh
-    db 00h, 10h, 10h, 00h, 0ffh, 00h, 80h, 44h        ; B0h to B7h
-    db 00h, 00h, 00h, 00h, 76h, 00h, 00h, 00h         ; B8h to BFh
-; IRQ number, bits 3:0 for B1h; 0FFh ends the list (ES1868 data sheet).
-; The ES1868's mixer (data sheet, the extended-access passage before Table
-; 14): 04h, 22h, 26h, 28h and 2Eh are the registers 14h, 32h, 36h, 38h and
-; 3Eh seen through the SB Pro address. Written there, bits 0 and 4 are
-; cleared; read there, they are 1. Written at the twin, all 8 bits. 0Ch
-; bit 0 is cleared by a write and reads 1. BL=the register, AL=the value
-; (changed as the register keeps it); both copies are kept the same.
-ess_mixer_twin_write:
-    push si
-    push di
-    cmp bl, 0ch
-    jne .pairs
-    and al, 0feh
-    jmp .done
-.pairs:
-    mov si, ess_mixer_twins
-.find:
-    mov di, [si]
-    test di, di
-    jz .done
-    cmp bl, [si]
-    je .sb_pro
-    cmp bl, [si+1]
-    je .extended
-    add si, 2
-    jmp .find
-.sb_pro:
-    and al, 0eeh
-    movzx di, byte [si+1]
-    jmp .store_twin
-.extended:
-    movzx di, byte [si]
-    mov [virtual_mixer+di], al
-    jmp .done
-.store_twin:
-    cmp di, 30h
-    jb .twin_low
-    mov [ess_mixer_high+di-30h], al
-    jmp .done
-.twin_low:
-    mov [virtual_mixer+di], al
-.done:
-    pop di
-    pop si
-    ret
-
-; BX=an ESS mixer register below 30h, AL=its stored value: the read value.
-ess_mixer_read_bits:
-    cmp bl, 0ch
-    jne .pairs
-    or al, 1
-    ret
-.pairs:
-    cmp bl, 4
-    je .stuck
-    cmp bl, 22h
-    je .stuck
-    cmp bl, 26h
-    je .stuck
-    cmp bl, 28h
-    je .stuck
-    cmp bl, 2eh
-    jne .done
-.stuck:
-    or al, 11h
-.done:
-    ret
-
-ess_mixer_twins db 04h,14h, 22h,32h, 26h,36h, 28h,38h, 2eh,3eh, 0, 0
-
-ess_irq_bits db 2, 0, 9, 0, 5, 5, 7, 0ah, 10, 0fh, 0ffh
-; B2h bits 3:0 for DMA 0 to 3 (channel 2 has no code: 0000).
-ess_dma_bits db 5, 0ah, 0, 0fh
-ess_id_phase db 0
 ; E3h on a DSP 4.xx: the text the CT1741 firmware sends, zero included. While
 ; reply_pointer is set the write port reads busy and commands are dropped.
 reply_pointer dw 0
 copyright_text db 'COPYRIGHT (C) CREATIVE TECHNOLOGY LTD, 1992.',0
 copyright_length equ $-copyright_text
-ess_virtual_regs times 32 db 0
 game_block_bytes dd 4096
 game_exit_frame dd 0
 game_mix_frame dd 0
@@ -2527,9 +2023,6 @@ virtual_resets dw 0
 virtual_starts dw 0
 virtual_mixer_index db 0
 %include "audio/mixer.asm"
-; The virtual ESS's mixer registers 30h to 3Fh (trap .mixer_data), from
-; the same reset values as .mixer_reset gives them.
-ess_mixer_high db 0, 0, 0cch, 0, 0, 0, 0cch, 0, 0cch, 0, 0, 0, 0, 0, 0, 0
 virtual_mixer:
     times 4 db 0
     db 0ffh

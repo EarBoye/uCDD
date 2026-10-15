@@ -27,12 +27,13 @@ virtual_irq_reset:
     ret
 
 virtual_irq_tick:
-%ifdef ESS_FIFO_MODEL
-    cmp byte [ess_fifo_on], 0
-    je .not_model
+%ifdef ESS_CARD
+    ; The virtual ESS keeps its own time (audio/ess/card.asm, ess_fifo.asm).
+    cmp byte [virtual_model], 4
+    jne .not_ess
     call ess_fifo_service
     ret
-.not_model:
+.not_ess:
 %endif
     cmp byte [game_active], 0
     je .done
