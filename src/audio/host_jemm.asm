@@ -226,6 +226,10 @@ host_io_irq:
     ; gets it now. Only a vector that leads into the host goes through the
     ; host bridge, as sb_real_irq passes it (.protected there); the bridge
     ; holds it while the client has interrupts off in protected mode.
+    ; Nothing while the interrupted code is the host's own.
+    movzx eax, word [ebx+own_host_active+2]
+    cmp ax, [ebp+44]
+    je .done
     movzx ecx, byte [ebx+guest_vector]
     mov cx, [ecx*4+2]
     cmp cx, ax
