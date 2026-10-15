@@ -21,6 +21,9 @@ fault db 0
 cd_position dw 0
 game_phase dd 0
 game_step dd 32768
+; The game step for the first and second frame of an output pair (mix_half).
+game_step_first dd 32768
+game_step_second dd 32768
 game_limit dd 4096*65536
 game_rate dw 22050
 game_segment dw 0

@@ -65,6 +65,34 @@ mix_half:
     mov eax, edx
 .full_ring:
     mov ebp, eax
+    ; The game step of each frame. Outputs at half the frame rate (the SB
+    ; Pro, the SB 2.0, the ESS at half rate) average each pair of frames. A
+    ; game played at about half the frame rate or less would then be
+    ; averaged across a pair in some pairs and not in others as its phase
+    ; drifts against them: a 22097 Hz stream (an ESS time constant of DCh)
+    ; against 22050 Hz pairs swings the treble about 47 times a second.
+    ; Both frames of a pair take the same sample instead, so the stream is
+    ; sampled once per output frame: no step on the first, twice the step on
+    ; the second. Pair boundaries keep their positions. A faster stream
+    ; keeps the average, which is then its filter.
+    mov edx, [game_step]
+    mov [game_step_first], edx
+    mov [game_step_second], edx
+%ifdef RESIDENT_AUDIO
+    cmp edx, 34816
+    ja .steps_ready
+    cmp byte [sound_card], 1
+    je .steps_paired
+    cmp byte [sound_card], 3
+    je .steps_paired
+    cmp byte [ess_half], 0
+    je .steps_ready
+.steps_paired:
+    mov dword [game_step_first], 0
+    shl edx, 1
+    mov [game_step_second], edx
+.steps_ready:
+%endif
     mov cx, PERIOD_FRAMES
 %ifdef RESIDENT_AUDIO
     cmp byte [sb_patch_active], 0
@@ -683,7 +711,14 @@ mix_half:
     sar esi, 16
 .phase_step:
 %endif
-    add ebp, [game_step]
+    ; An even count is the first frame of an output pair.
+    test cl, 1
+    jnz .second_step
+    add ebp, [game_step_first]
+    jmp .stepped
+.second_step:
+    add ebp, [game_step_second]
+.stepped:
     cmp dword [game_limit], 0
     je .sum
 .wrap:

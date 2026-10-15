@@ -349,8 +349,16 @@ mix_run_wrap:
     jae .again
     ret
 
+; An even count is the first frame of an output pair (mix_half sets the
+; two steps).
 %macro MIX_RUN_ADVANCE 0
-    add ebp, [game_step]
+    test cl, 1
+    jnz %%second
+    add ebp, [game_step_first]
+    jmp %%stepped
+%%second:
+    add ebp, [game_step_second]
+%%stepped:
     cmp ebp, [game_limit]
     jb %%placed
     call mix_run_wrap
