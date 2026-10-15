@@ -21,6 +21,8 @@ virtual_irq_init:
 virtual_irq_reset:
     mov byte [virtual_dsp_irq], 0
     mov byte [virtual_pic_request], 0
+    mov byte [f2h_held], 0
+    mov byte [f2h_seen], 0
     mov dword [virtual_block_seen], 0
     ret
 
@@ -203,6 +205,68 @@ virtual_dsp_raise_line:
 .held:
     or [virtual_dsp_irq], al
     ret
+
+; F2h. The chip runs its commands in turn and raises each F2h's interrupt
+; 11.7 to 14.2 us after the command (ES1868F, F2TEST 15 Oct 2026), while
+; the program runs on: two F2h a few microseconds apart give two interrupts
+; one after the other. The Miles ESS driver depends on that: it sends F2h
+; twice, then waits for its interrupt count to read exactly 1, then 2.
+; A trap cannot interrupt the program later on its own, so the first F2h
+; raises at once (the trap itself takes about as long as the chip). One
+; that comes within F2H_CALLS trapped port accesses and F2H_FRAMES output
+; frames of the last one raised is held: in the chip's latency a program
+; makes only a few port accesses. Counting accesses keeps the rule the same
+; on a 386 and a Pentium. f2h_service raises the held ones, one at each
+; later trapped access or output interrupt.
+F2H_CALLS equ 8
+F2H_FRAMES equ 128
+virtual_f2h:
+    pushad
+    cmp byte [f2h_held], 0
+    jne .hold
+    call output_clock
+    cmp byte [f2h_seen], 0
+    je .raise
+    mov edx, [port_calls]
+    sub edx, [f2h_calls]
+    cmp edx, F2H_CALLS
+    jae .raise
+    mov edx, eax
+    sub edx, [f2h_last]
+    cmp edx, F2H_FRAMES
+    jb .hold
+.raise:
+    mov [f2h_last], eax
+    mov byte [f2h_seen], 1
+    call f2h_raise
+    popad
+    ret
+.hold:
+    cmp byte [f2h_held], 0ffh
+    je .done
+    inc byte [f2h_held]
+.done:
+    popad
+    ret
+
+f2h_service:
+    cmp byte [f2h_held], 0
+    jne .due
+    ret
+.due:
+    pushad
+    call output_clock
+    mov [f2h_last], eax
+    dec byte [f2h_held]
+    call f2h_raise
+    popad
+    ret
+
+f2h_raise:
+    mov eax, [port_calls]
+    mov [f2h_calls], eax
+    mov al, 1
+    jmp virtual_dsp_raise
 
 ; Far entry (RETF). Called with CS pushed from sb_patch's hold check, and by
 ; the host's real-mode call through the CDF pointer block (the host takes the
@@ -406,6 +470,10 @@ virtual_pic_write:
     jmp .physical
 
 virtual_dsp_irq db 0
+f2h_last dd 0
+f2h_calls dd 0
+f2h_held db 0
+f2h_seen db 0
 virtual_pic_mask db 0ffh
 ; ICW bytes still to come on port 21h after an ICW1.
 pic_icw_pending db 0
@@ -419,8 +487,10 @@ physical_pic_initial db 0ffh
 physical_irq_bit db 20h
 pic_visible_bits db 0dfh
 physical_pic_read db 0ah
-; Set when the virtual interrupt reaches the game's handler (the real-mode
-; jump in audio_irq, or the DPMI host's delivery), cleared by its EOI.
+; Set when the virtual interrupt reaches the game's handler, cleared by its
+; EOI: 1 from the DPMI host's delivery, 2 from the driver's own (the real-mode
+; jump in audio_irq, the trap exit) and once audio_irq_reflected has passed
+; a host delivery through the guest vector on to the game's handler.
 virtual_pic_delivered db 0
 ; Periods during which a signalled interrupt sat unacknowledged with nothing
 ; requested or in service.

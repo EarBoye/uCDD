@@ -52,6 +52,7 @@ branches are gone; their names stay as the names of the changes.
 | `odd-long-block` | A block longer than the DMA buffer skips the whole-frame check (Descent 2's HMI ESS driver). 86Box regression: SBT16 and SADUMP on six pairings, verify-mix, Doom, Duke, Heretic, Wolf3D, Witchaven unchanged |
 | `ess-position` | The virtual ESS reports a polled DMA count one output period behind the mix (Descent 2 crackle). 86Box: SBT16 and SADUMP on seven pairings unchanged, verify-mix 0 bad on the virtual ESS with and without CD audio |
 | `virtual-timing` | An auto-initialised transfer's polled DMA count follows the output clock, as a real card's counter does, instead of the mix's whole periods; never past the mix. 86Box: SBT16 on seven pairings unchanged, verify-mix 0 bad on eight runs, Doom, Duke, Heretic, Wolf3D, Witchaven, Theme Hospital (SB16.DIG), Warcraft II as before, Descent 2 clean on ESS and SB16. Tomb Raider (whose CD audio support brought in the mix-based count, 9f3b5bd) with its CD mounted (data track and 60 s of track 2) sounds the same second by second, about 30 detector events a second on both builds; whether those are its sound or an older fault needs a bare-card run |
+| `miles-ess` | The Miles ESS digital driver: F2h interrupts one after the other (a held F2h raised at the next trapped access or output interrupt), and the DPMI host's delivery through the guest vector passed on to the game's handler when the card and the game share the IRQ. 86Box: Theme Hospital with AUDIODRV.DIG plays with sound on the virtual ESS (silent, then frozen, before). Regression: SBT16 identical on seven pairings, SADUMP the same but for the driver's addresses, verify-mix 0 bad in nine cases, E2TEST as the hardware, Doom 1652 realtics (1654), Descent 2 on the virtual ESS 1.1 and 0.9 clicks a second at 128 and 32 frames (0.9 and 1.1), Theme Hospital on SB16.DIG and Warcraft II as before. docs/miles-ess.md |
 | `ess-irq-bits` | B1h/B2h report the virtual IRQ and DMA in bits 3:2. 86Box: SBT16 on five pairings unchanged, Descent 2 and Doom on the virtual ESS as before |
 | `fast-dma` | Type F ISA DMA on the output channel through the PIIX's MBDMA0 register, behind a UCDDSET switch, set at every output start and restored at every stop; the bridge (8086h:7000h, 122Eh or 7110h) found at install. Real PC (ECS P5HX-A, PIIX3, ES1868, by the standalone tool before the driver option): tone unchanged by ear at 22.05 and 44.1 kHz; memory copy loss with the stream running 9.0 to 0.7 percent at the half rate, 18.0 to 1.5 at the full rate; Doom timedemo 1788 to 1613 realtics, full Quake 19.8 to 22.0 fps with CD music; the PIIX3 keeps bit 3 of the register, so the write preserves bits 6:3. Cards known to accept the timing: ES1868. The driver option on the real PC (combined-test 772941d, Type F on, virtual ESS into the ES1868): Doom timedemo 1519 to 1522 realtics at 32, 64, 128 and 256 frames, at the half and the full rate. On the original PIIX (122Eh) bit 3 is DMC, which selects the ISA slot's DREQ and DACK# over the motherboard pair; the write sets it there (86Box writes 89h, but does not model DMC, so the failure it prevents is not reproducible in emulation) |
 | UCDDSET layout | The main screen redone to a mockup agreed with the fork's owner: the box one row taller, Options and Detected columns, tick boxes that grey themselves with a help line saying why, the chipset named. Tested in 86Box and accepted by the fork's owner |
@@ -122,30 +123,23 @@ changed volumes.
   (`ess-position`, under "Limits" above); with the Sound Blaster 16 setting
   86Box shows none, so the hardware report there is still open.
 - The Miles ESS digital driver (AUDIODRV.DIG; Theme Hospital, Dungeon
-  Keeper, Heroes 2 and 13 more in the libraries) under the virtual ESS: it
-  sends F2h twice and spins about 0.5 ms on a Pentium with no port access
-  for the interrupt. The trap exit (`host_io_irq`) delivered nothing while
-  a protected-mode client with its own handler sat in a real-mode call,
-  so the interrupt came a period late and the driver found no card.
-  `miles-irq` delivers it there to the real-mode handler the game
-  installed (or through the host bridge when the vector leads into the
-  host), with the delivered mark set so the handler's EOI is credited.
-  86Box: both F2h interrupts are taken and acknowledged at once and the
-  detection passes (6 exit counts of the old skip before, none after).
-  The real-mode delivery now sets virtual_pic_delivered: host_io_irq never
-  did since 412fe80 introduced the mark, so a handler's EOI after a
-  delivery from the trap exit was not credited and the virtual line stayed
-  in service. A latent bug only this real-mode-call case reached: on the
-  old code the path delivered 0 times in 64303 trap exits across Wolf3D
-  (real mode) and Doom (DOS/4GW).
-  STILL OPEN: the game then never starts digital playback (no further
-  card access after the ESFM driver's own check; the intro is silent),
-  so something later in Miles' install refuses the card. Regression of
-  the delivery change: SBT16 and SADUMP on six pairings, verify-mix on
-  seven, Doom, Duke, Heretic, Wolf3D, Witchaven, Descent 2 on ESS, Theme
-  Hospital on SB16.DIG and Warcraft II on SBPRO.DIG with ESFM all as
-  before. Until solved, those games run with a Sound Blaster digital
-  driver and ESFM.MDI music.
+  Keeper, Heroes 2 and 13 more in the libraries) under the virtual ESS.
+  Three faults in turn, all in 86Box:
+  - `miles-irq` (earlier): the F2h interrupt was not delivered while the
+    game sat in a real-mode call; fixed in the trap exit.
+  - `miles-ess`, F2h: the F2h interrupts came at once instead of one after
+    the other; fixed with the hold above.
+  - `miles-ess`, delivery: with the card's IRQ and the game's the same
+    (7 and 7), the DPMI host delivered the virtual interrupt by running the
+    guest vector in real mode. That vector is the driver's own handler,
+    which found no physical interrupt and returned as from a spurious IRQ
+    7, so the game's handler never ran and its playback waited for ever
+    (the intro froze on its first frame). Fixed: `audio_irq` passes such an
+    entry to the game's handler (`audio_irq_reflected`, the delivered mark
+    1 from the host, 2 from the driver's own paths).
+  Theme Hospital with AUDIODRV.DIG (IRQ and DMA -1) now plays its intro
+  with sound on the virtual ESS. The full account, the driver's sequence
+  and how it was traced: docs/miles-ess.md. Not yet on the real PC.
 - HMI's 16-bit ESS modes (E01Bh, E01Ch) are silent on 86Box's bare ES1688
   too, so they are untested; their register sequence is the 8-bit one
   with another format byte (B7h F4h, BCh).
@@ -252,22 +246,18 @@ changed volumes.
   writes, B1h bit 7 is dropped, and the reset value is 10h plus the code,
   as the chip reads. AUDIODRV.DIG reads them when its DIG.INI leaves IRQ
   or DMA at -1; ADRV688.DIG keeps bits 3:0 in its read-modify-write.
-- The Miles ESS digital driver (AUDIODRV.DIG) tests the card with two F2h
-  commands a few microseconds apart and waits for its interrupt counter to
-  read one, then two. On the ES1868F each F2h raises its own interrupt
-  11.7 to 14.2 us after the command, so the counter passes through one
-  (F2TEST, 15 Oct 2026); two F2h are not merged. The virtual card delivers
-  each at once, the count goes from none to two, and the test fails. Measured in DOSBox-X on a bare ESS688 (with a port
-  logger added to a local DOSBox-X build): the second F2h 3 us after the
-  first, the interrupt 13 us after
-  the first, then a spin of about 0.5 ms with no port access for the
-  counter to reach one. Use the game's Sound Blaster 16 or Pro driver with
-  the virtual Sound Blaster (every one of the 16 Miles ESS games in the
-  libraries ships them). A latency model needs a time source finer than
-  the output period; the physical chip's own F2h (its interrupt delivered
-  from audio_irq) is the candidate, then the RTC. The next step of the same
-  test, the E2h DMA identification, already matches the hardware: E2TEST
-  (four arguments after a reset, one byte each by single-mode write DMA on
+- The Miles ESS digital driver (AUDIODRV.DIG) tests the card with F2h:
+  two F2h a few microseconds apart, then a spin with no port access until
+  its interrupt count reads exactly 1, then F2h and a spin for 2, then F2h
+  and a spin for 3. On the ES1868F each F2h raises its own interrupt
+  11.7 to 14.2 us after the command, one after the other (F2TEST, 15 Oct
+  2026). The virtual card raised each inside its own trap, the count went
+  from none to two, and the driver found no card. Fixed (`miles-ess`): an
+  F2h within 8 trapped accesses of the last one raised is held and raised
+  at the next trapped access or output interrupt. Details, and the second
+  fault this uncovered, in docs/miles-ess.md. The next step of the same
+  test, the E2h DMA identification, matches the hardware: E2TEST (four
+  arguments after a reset, one byte each by single-mode write DMA on
   channel 1) reads 40h 30h F3h 98h with the 8237 TC bit, and 40h through
   22Ah with the channel masked, on 86Box's SB16 and ES1688 and on the
   virtual SB16, SB Pro and ESS alike.

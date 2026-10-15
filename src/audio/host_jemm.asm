@@ -254,7 +254,8 @@ host_io_irq:
 .ivt_vector:
     ; A real-mode handler gets it here: the virtual PIC credits its EOI to
     ; the virtual interrupt only with the delivered mark set (sb_real_irq).
-    mov byte [ebx+virtual_pic_delivered], 1
+    ; 2: straight to the handler (sb16.asm, audio_irq_reflected).
+    mov byte [ebx+virtual_pic_delivered], 2
     movzx esi, byte [ebx+guest_vector]
     mov esi, [esi*4]
     mov al, [ebx+guest_irq]

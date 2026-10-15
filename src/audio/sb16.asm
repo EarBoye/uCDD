@@ -399,6 +399,7 @@ audio_irq:
     call mix_half
     DRV_TSC_END mix
 %ifdef VIRTUAL_IRQ
+    call f2h_service
 %ifdef RESIDENT_AUDIO
     cmp byte [sb_single_hold], 0
     je .tick
@@ -532,7 +533,15 @@ audio_irq:
     mov sp, [irq_sp]
     pop ax
     pop ds
+%ifdef OWN_HOST
+    call audio_irq_reflected
+    jz audio_irq_to_game
+%endif
     jmp far [cs:old_irq]
+%ifdef OWN_HOST
+audio_irq_to_game:
+    jmp far [cs:sb_game_vector]
+%endif
 
 audio_irq.nested:
     pop ax
@@ -541,7 +550,40 @@ audio_irq.nested:
 audio_irq.spurious:
     pop ax
     pop ds
+%ifdef OWN_HOST
+    call audio_irq_reflected
+    jz audio_irq_to_game
+%endif
     iret
+
+%ifdef OWN_HOST
+; The DPMI host delivers the virtual interrupt to a real-mode handler by
+; running the guest vector (dpmi.asm, .real_irq). When the guest IRQ is the
+; card's own, that vector is this handler and the game's is sb_game_vector:
+; with no physical interrupt behind the entry it would end as spurious (IRQ 7)
+; or go to the vector before the driver's, and the game's handler never ran
+; (the Miles ESS driver in Theme Hospital, IRQ 7 on both). The host's fresh
+; delivered mark (1) tells it apart; it becomes 2, still set for the EOI
+; credit (virtual_pic_write), so a later physical entry is not taken for it.
+; ZF set: go to the game's handler. Flags only; called with DS unknown.
+audio_irq_reflected:
+    push ax
+    cmp byte [cs:virtual_pic_delivered], 1
+    jne .done
+    mov al, [cs:guest_irq]
+    cmp al, [cs:sb_irq]
+    jne .done
+    cmp word [cs:sb_game_vector+2], 0
+    je .not_set
+    mov byte [cs:virtual_pic_delivered], 2
+    cmp al, al
+    jmp .done
+.not_set:
+    or al, 1
+.done:
+    pop ax
+    ret
+%endif
 
 audio_irq_mask:
     mov dx, 21h

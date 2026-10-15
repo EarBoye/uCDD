@@ -253,6 +253,9 @@ port_callback:
     pop ds
     DRV_TSC_BEGIN trap
     inc dword [port_calls]
+%ifdef VIRTUAL_IRQ
+    call f2h_service
+%endif
 %ifdef ESS_FIFO_MODEL
     call ess_fifo_service
 %endif
@@ -890,9 +893,9 @@ port_callback:
     jmp .done
 .force_irq:
 %ifdef VIRTUAL_IRQ
-    ; F2h adds the 8-bit request; a 16-bit one already pending stays.
-    mov al, 1
-    call virtual_dsp_raise
+    ; F2h adds the 8-bit request; a 16-bit one already pending stays. One
+    ; close behind another waits its turn (irq.asm, virtual_f2h).
+    call virtual_f2h
 %endif
     jmp .done
 .resume8:

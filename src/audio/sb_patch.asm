@@ -157,8 +157,9 @@ sb_real_irq:
 .vector:
     mov [sb_real_vector], eax
     mov byte [sb_real_pending], 1
-    ; The jump at the end of audio_irq delivers the interrupt to the game.
-    mov byte [virtual_pic_delivered], 1
+    ; The jump at the end of audio_irq delivers the interrupt to the game,
+    ; straight to its handler (2: audio_irq_reflected has nothing to pass).
+    mov byte [virtual_pic_delivered], 2
 .done:
     ret
 ; A client's real-mode call was interrupted. Its protected-mode handler gets
