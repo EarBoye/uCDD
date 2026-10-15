@@ -764,6 +764,9 @@ mix_run_fused_s8%1_half:
 %endif
     mov [pro_pair_left], edx
     mov [pro_pair_right], esi
+    ; The count drops per frame: MIX_RUN_ADVANCE takes the pair's first or
+    ; second step from its parity.
+    dec cx
     MIX_RUN_STEREO8
 %if %2
     MIX_RUN_DISC_UNITY_ADD
@@ -775,7 +778,7 @@ mix_run_fused_s8%1_half:
     mov [es:di], dx
     mov [es:di+2], si
     add di, 4
-    sub cx, 2
+    dec cx
     jnz %%pair
     jmp mix_half.half_complete
 %endmacro
@@ -826,6 +829,9 @@ mix_run_fused_m8%1_half:
 %endif
     mov [pro_pair_left], edx
     mov [pro_pair_right], esi
+    ; The count drops per frame: MIX_RUN_ADVANCE takes the pair's first or
+    ; second step from its parity.
+    dec cx
     MIX_RUN_MONO8
 %if %2
     MIX_RUN_DISC_UNITY_ADD
@@ -837,7 +843,7 @@ mix_run_fused_m8%1_half:
     mov [es:di], dx
     mov [es:di+2], si
     add di, 4
-    sub cx, 2
+    dec cx
     jnz %%pair
     jmp mix_half.half_complete
 %endmacro
