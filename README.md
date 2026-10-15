@@ -59,7 +59,7 @@ The fork leaned on these people, projects and sites:
 - The DPMI 0.9 and 1.0 specifications, the VCPI specification kept findable by the [EDM2 wiki](http://www.edm2.com/), and the LIM EMS 4.0 text kept by the [Spice86 wiki](https://github.com/OpenRakis/Spice86/wiki); the internal host was read against them section by section.
 - The Linux ALSA es18xx driver, against which the ES1868 identification was checked.
 - [NASM](https://www.nasm.us/) and Python, which build everything here, and [FreeDOS](https://www.freedos.org/) with [QEMU](https://www.qemu.org/) as the first test bench.
-- The data sheets and specifications in the reference library (PDFs in the [references release](https://github.com/EarBoye/uCDD/releases/tag/references), text copies on the `references` branch), most of them found through DOS Days and [the Ardent Tool's data sheet](https://www.ardent-tool.com/datasheets/) and [Intel document](https://www.ardent-tool.com/CPU/Docs_Intel.html) collections.
+- The data sheets and specifications in the reference library (PDFs in the [references release](https://github.com/EarBoye/uCDD/releases/tag/references), text copies on the `reference-library` branch), most of them found through DOS Days and [the Ardent Tool's data sheet](https://www.ardent-tool.com/datasheets/) and [Intel document](https://www.ardent-tool.com/CPU/Docs_Intel.html) collections.
 - [The Ardent Tool of Capitalism](https://www.ardent-tool.com/), [DOS Days](https://dosdays.co.uk/index.php), [The Retro Web](https://theretroweb.com/) and [Phil's Computer Lab](https://www.philscomputerlab.com/), for being excellent references on the machines this driver runs on.
 
 The original README follows, updated where the fork changed things.
