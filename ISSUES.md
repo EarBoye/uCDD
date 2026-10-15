@@ -247,6 +247,22 @@ changed volumes.
   after UNISOUND at IRQ 7 and DMA 1 (HWLOG run 1), 86Box's ES1688 reads
   5Ah. The real chip's other bits differ from the virtual 50h base
   (bit 6 clear, bit 1 set); not acted on.
+- The Miles ESS digital driver (AUDIODRV.DIG) tests the card with two F2h
+  commands a few microseconds apart and expects one interrupt after the
+  DSP's latency; the virtual card delivers each at once, the test counts
+  two and fails. Measured in DOSBox-X on a bare ESS688 (a rig-only port
+  logger): the second F2h 3 us after the first, the interrupt 13 us after
+  the first, then a spin of about 0.5 ms with no port access for the
+  counter to reach one. Use the game's Sound Blaster 16 or Pro driver with
+  the virtual Sound Blaster (every one of the 16 Miles ESS games in the
+  libraries ships them). A latency model needs a time source finer than
+  the output period; the physical chip's own F2h (its interrupt delivered
+  from audio_irq) is the candidate, then the RTC. The next step of the same
+  test, the E2h DMA identification, already matches the hardware: E2TEST
+  (four arguments after a reset, one byte each by single-mode write DMA on
+  channel 1) reads 40h 30h F3h 98h with the 8237 TC bit, and 40h through
+  22Ah with the channel masked, on 86Box's SB16 and ES1688 and on the
+  virtual SB16, SB Pro and ESS alike.
 - The virtual ESS AudioDrive plays only: B8h with its direction bit
   (recording) is refused, the ESPCM and ADPCM start commands are the SB
   Pro parser's refusals, port 2xCh reads 7Fh (no FIFO status), and of the
