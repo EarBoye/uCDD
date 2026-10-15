@@ -16,8 +16,8 @@ before relying on a detail.
 
 To read a document without checking out the branch:
 
-    git fetch origin references
-    git show "origin/references:Sound Cards/ESS AudioDrive/DS1878A.txt"
+    git fetch origin reference-library
+    git show "origin/reference-library:Sound Cards/ESS AudioDrive/DS1878A.txt"
 
 ## What the library covers
 
