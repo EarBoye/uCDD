@@ -675,6 +675,11 @@ trap-based card's limit.
 11. After a normal-mode extended block, does B8h bit 0 still read 1 (the
     sheet: DMA halts until restarted) or 0 (DOSBox-X clears it: "right?")?
     The EXT script reads it.
+12. 2xCh at an extended block interrupt: the model gives 21h (FIFO full
+    as the last byte goes in), the ES1868F gave 01h in ESSSTAT [hw], and
+    the virtual card gives 01h. The chip seems to hold its FIFO short of
+    full while it refills; the TIMES fill timelines and EXT on the chip
+    should show how. The model is left as the sheet reads until then.
 
 ## 17. Where the current uCDD virtual ESS departs from this document
 
@@ -760,3 +765,60 @@ answers at step 2. [design consequence]
   reset (STEREO script, 16 Oct). The sheet: any reset stops DMA (SPEC 4.2).
 - 86Box's master emulation tables match E69 Tables 19 and 20, except that a
   written 0 gives level 0 where the sheet gives "mute, 24".
+
+## 19. The driver's physical ESS path against the family (16 Oct 2026)
+
+uCDD's own output on a physical ESS (src/audio/wss_output.asm ess_setup,
+ess_rate_adjust, ess_identify, wss_stop), checked against the five sheets
+and the Linux drivers. Rule 6: the physical path handles every model with
+a sheet. [sheet unless noted]
+
+In line with every sheet:
+- Reset with 3 (FIFO cleared), C6h, then the Table 11 sequence for 16-bit
+  signed stereo: B8h 04h (auto-init DAC), B9h 02h (demand, 4 bytes),
+  B6h 00h, B7h 71h, B7h BCh; B8h bit 0 to start; stop by B8h 0, then a
+  reset back to compatibility mode.
+- A1h EEh (795.5 kHz / 18 = 44194 Hz) or DCh (/ 36); A2h FBh / F6h, the
+  roll-off the sheet and Linux compute (section 18.3).
+- B1h and B2h: bits 4 and 6 set, 5 and 7 cleared, bits 3:0 kept as
+  UNISOUND left them (read-only decodes on the 1868/1869, selects on the
+  1878/1888, mirrors of 7Fh on the 1887). The ES1887 sheet calls B1h bit 6
+  a "mask" in its Table 4, yet its own start sequence sets it, as every
+  other sheet does; the driver follows the sequence.
+- The clock trim (BAh bit 6) only on a chip that identifies as the ES1868
+  or ES1878 through mixer 40h, the two sheets that document it; and only
+  if the bit follows a write. Every other chip (ES1869, 1887, 1888, 688,
+  1688) is left on the formula and the mixer is told the real rate.
+- The master through 22h: translated into 60h/62h on the ES1868 and later
+  (Table 20). Saving 22h and writing it back is exact for every 4-bit
+  value (Table 19 then 20 is the identity); counters set directly (60h,
+  62h or the volume buttons) can move one step on the first restore, then
+  stay.
+- The ES688/ES1688 (no sheet): Linux plays 16-bit through the same
+  extended-mode sequence on both [driver], so the path holds there too.
+
+Departures, all low:
+1. A8h (stereo) is written after the clocks; Table 11's step 2 writes it
+   with B8h and B9h, before them. No sheet says the order matters.
+2. No delay before D1h. Step 7 recommends about 100 ms after the reset
+   "before enabling voice input to mixer" (E68:2840), to let the analog
+   side settle; skipping it risks a pop at the output start. Not reported
+   on the PC.
+3. Audio 1 (14h) is set to FFh: +1.5 dB (Table 21); 0 dB is EEh. Full-scale
+   output then has 1.5 dB of analog gain on top. Whether that clips the
+   chip's output stage is unmeasured.
+4. E7h is sent to every chip, though the ES1878's table lacks it (open
+   question 9). The wait for its reply times out, and Linux sends E7h to
+   every chip too [driver].
+
+Opportunity [sheet]: the ES1869's "new reg A1h" mode (mixer 71h bit 5,
+E69:4499-4515). A1h then works as Audio 2's 70h does: bit 7 picks the
+master clock (1 = 768 kHz for 48 kHz and its divisors, 0 = 793.8 kHz for
+44.1 kHz and its divisors), bits 6:0 a two's complement divisor; 6Eh gives
+793.8 kHz / 18 = 44100 Hz exactly (the sheet's own example). On an ES1869
+CD audio could then play at its own rate with no resampling (rule 3),
+where today the driver resamples to 44194 Hz because the ES1869 has no
+trim. Only the ES1869 sheet documents it (not the 1868, 1878, 1887 or
+1888 sheets); Linux names the ES1879 as having it too [driver]. Not used
+yet; worth doing when an ES1869 can be tested (86Box's ESS models start
+at the ES1688, so emulation cannot confirm it).
