@@ -137,44 +137,87 @@ written.
 
 ### 4.4 Taking IRQ 8 without breaking what uses it
 
-- Install: at audio_engage, read register B. If bit 6 (periodic) is already
-  set, somebody has the RTC; do not install, fall back to today's behaviour
-  and note it in the status word UCDDSET shows. Otherwise hook vector 70h,
-  set the rate, set bit 6, unmask IRQ 8 at the slave (A1h bit 0) and make
-  sure the cascade IRQ 2 is unmasked at the master (21h bit 2; the BIOS
-  leaves it so, a game's mask write through our virtual PIC must not hide
-  it: extend pic_visible_bits' trick to the cascade bit). Restore all of it
-  at audio_release and at the driver's exit.
-- Trap 70h and 71h (two more ports; nobody polls CMOS, so no steady cost)
-  and A0h and A1h (likewise rare). The game's view: register A rate and
-  register B bit 6 as the game last wrote them, register C showing the
-  periodic flag on the game's ticks, slave mask with bit 0 as the game wrote
-  it. If a game turns the periodic interrupt on at rate R, the real RTC
-  runs at the faster of R and ours, and the game's handler (the vector it
-  installed, chained from ours) is called every ours/R ticks with its
-  register C flag set. Reading 70h/71h and A1h back gives the game its own
-  values. This is a small virtual RTC, about the size of the virtual PIC's
-  mask handling, and it is what makes the timer safe under any game. Games
-  that use IRQ 8 at all are rare (a few demos and some protected-mode
-  schedulers); games that read the CMOS clock registers do so through
-  INT 1Ah, which is untouched.
-- Under the DPMI host: IRQ 8 arrives in protected mode. The host already
-  singles out the sound card's IRQ (dpmi_audio_irq, twelve sites) and lets
-  disk and RTC interrupts through its refill wait (monitor.asm .disk_irq,
-  bridge.asm). The timer IRQ gets the same treatment as the audio IRQ: a
-  byte in the CDF pointer block names it, the host reflects it to the
-  driver's real-mode handler ahead of the client, and the handler's EOIs
-  are not counted as the client's. A client that installs a protected-mode
-  handler for IRQ 8 is handed the game's ticks the way its IRQ 7 handler
-  is handed the virtual card's.
-- Under Jemm alone (real-mode game): Jemm reflects IRQ 8 through the IVT
-  to our handler. host_io_irq is unchanged.
-- Delivery from the timer handler of a virtual IRQ 7 to the game: EOI the
-  real IRQ 8 first, then take the virtual interrupt into service and jump
-  to the game's handler with the interrupted frame, exactly audio_irq's
-  .real_tail. The PIC sees nothing in service; the virtual PIC tracks the
-  virtual line. A second timer tick during the game's handler finds the
-  virtual line in service and leaves it alone.
+The first draft assumed nobody in DOS games uses the RTC. The survey in
+section 9 proved that wrong: about twenty titles run the periodic interrupt,
+and the BIOS does too for INT 15h AH=83h and 86h. So the virtual RTC is not
+an optional courtesy; it has to be complete, and the design below is sized
+to the survey.
+
+**Taking the interrupt.** IRQ 8 is taken in Jemm's IRQ slot table (the one
+host_irq_dispatch already uses for the card's IRQ, indexed by vector and
+called before Jemm reflects through the IVT), at vector 70h. That makes the
+timer independent of who owns IVT entry 70h: a game that hooks it through
+INT 21h, writes the IVT directly (Future Dimension), or restores it on exit
+(Lords of the Realm) changes only where our reflection goes, not whether we
+see the tick. Under the DPMI host the same IRQ is singled out the way the
+card's IRQ is (a byte in the CDF block, like dpmi_audio_irq).
+
+**When it is held.** Only while the driver is engaged, never while it has
+stepped aside, and the slot is installed at audio_engage and removed at
+audio_release. Most of the surveyed users are floppy titles that run with no
+disc mounted, so the step-aside already leaves them alone. If a game sends
+ICW1 to the slave PIC (Inner Worlds remaps it from 70h to 28h), the vector
+the slot watches is gone: the timer stands down until audio_release and
+deadlines fall back to trap exits and period ticks.
+
+**The game's view: a virtual RTC on ports 70h and 71h.** Both are trapped
+while the timer is held. Each RTC user in the survey writes them at most a
+few hundred times a second (A.G.E., the worst, 190 a second), about half a
+percent of a Pentium at 26 us a trap.
+
+- Index latch: the game's last index (and its NMI bit 7) is kept. The
+  timer's own handler selects register C and then writes the game's index
+  back before it returns, so a game interrupted between its 70h write and
+  its 71h access reads the register it selected.
+- Register A: bits 6:4 and bit 7 pass through; bits 3:0 (the rate) are the
+  game's, stored. The chip runs at the faster of the game's rate and ours.
+- Register B: bit 6 (PIE) is the game's, stored; the chip's PIE is ours
+  while the timer is held. Every other bit passes through, including SET
+  (bit 7) and the time format bits, so clock writes reach the chip (The
+  Horde writes register B SET and time registers 00h, 02h, 04h). The
+  MC146818 keeps the periodic interrupt running while SET holds updates.
+- Register C: the chip's register C is read only by the timer's handler,
+  once per hardware tick (it must be, or no further interrupt comes). The
+  bits it returns other than PF (AF, UF, from a BIOS alarm or an
+  update-ended interrupt) are kept for the game; PF is set in the game's
+  copy at each of the game's virtual ticks whether or not its PIE is on
+  (the chip sets PF regardless of PIE, and The Horde's 1 s measurement or
+  any polling loop depends on that). A game's read of register C returns
+  its copy and clears it, with bit 7 (IRQF) set when an enabled flag is.
+- Registers D and the clock and CMOS bytes (00h to 09h, 0Dh up): pass
+  through.
+
+**Tick splitting.** The handler keeps the game's rate as a period in units
+of the hardware tick. Each hardware tick adds one tick's time to the game's
+accumulator; when it reaches the game's period, the game's PF is set and,
+if the game's PIE is set and the game's slave mask bit 0 is clear, the tick
+is reflected to the game's IVT 70h entry (or its protected-mode handler)
+with the interrupted frame, after our EOIs. The accumulator is in 122 us
+units, so it survives our own rate switches (section 4.3) without
+disturbing the game's phase. A game at 8192 Hz (IAS) runs the chip at 8192
+Hz; every tick is the game's, and ours piggyback on it.
+
+**Slave PIC mask, port A1h.** Trapped while the timer is held. Bit 0 is the
+game's, stored; the chip's bit 0 stays clear. Every other bit passes
+through. Lords of the Realm sets bit 0 on exit; without this trap the timer
+would stop for whatever ran next. A game's ICW sequence on A0h/A1h stands
+the timer down as above, since the mask bits then mean another vector base.
+
+**Port A0h.** Trapped only to see ICW1 and EOIs. A game's EOI to the slave
+for its own virtual tick goes to the chip only if the chip's IRQ 8 is in
+service for the game, the same delivered-mark rule the virtual PIC applies
+to IRQ 7; the timer handler sends its own EOIs before it reflects, so the
+game's are normally stray and must be swallowed. The A0h and 20h EOI pair
+from a game's INT 70h handler is the common pattern (BIOS included).
+
+**The BIOS's own use.** INT 15h AH=83h and 86h (RBIL INTERRUP.C: "many BIOSes
+use the 1/1024 second fast interrupt from the AT real-time clock chip which
+is available on INT 70") set PIE and the rate through ports 70h and 71h and
+count in their own INT 70h handler. Under Jemm that BIOS code runs in
+virtual 8086 mode, so its port accesses are trapped like a game's, and its
+INT 70h handler receives the virtual ticks at the rate it asked for. Nothing
+special is needed, but a static scan cannot find these users, so the
+acceptance set must include a game that calls INT 15h AH=86h.
 
 ### 4.5 Degradation
 
@@ -196,8 +239,14 @@ F2h writes 3 us apart, count the interrupts, measure the latency with the
 8237 count: expect one interrupt, 23 to 45 us); Theme Hospital's
 AUDIODRV.DIG on the virtual ESS plays; Descent 2 click rate unchanged
 (about 1/s); Doom, Duke, Heretic, Wolf3D, Witchaven, Warcraft II unchanged;
-a game that uses IRQ 8 if we can find one (the rig's 147-game survey can
-answer this: grep the binaries for the 70h/71h index writes 0Ah and 0Bh);
+the RTC users from the survey (section 9): A.G.E. (rewrites registers A and B
+and A1h every frame), Future Dimension (direct IVT write, 1024 and 64 Hz
+switches), a MIDPAK RTC build at 128 Hz (Capitalism), Lords of the Realm
+(A1h on exit, then a second program must still get the timer), The Horde
+(register B SET and clock writes, 1 s measurement), each with a disc
+mounted so the driver is engaged, and the same games with the driver aside;
+a program that calls INT 15h AH=86h; the clock and date (INT 1Ah and DOS)
+correct after each run;
 realtics on the Pentium and the 386 within noise; CMOS registers A and B
 byte-identical before install and after exit.
 
@@ -250,10 +299,12 @@ microseconds after a command (none known to need it).
    measurements, or commit to both?
 2. The tick rate default for phase 2: 1024 Hz is the RTC's power-on rate
    and the one every BIOS leaves behind, so it is the least surprising.
-3. The rig should first run the IRQ 8 survey over the game set before any
-   code, so the virtual RTC in 4.4 is sized by evidence.
+3. Done: the survey is in section 9 and section 4.4 is sized to it.
 
 ## 8. References used
+
+- docs/references/inter61*.zip: INTERRUP.C INT 15h AH=83h and 86h (the
+  BIOS's use of the periodic interrupt).
 
 - docs/references/inter61b.zip: CMOS.LST tables C0001 to C0003 (registers
   A, B, C), PORTS.A 0070h (index port, NMI bit, the 71h follow-up rule).
@@ -267,3 +318,33 @@ microseconds after a command (none known to need it).
   measurements.
 - The rig's DOSBox-X port log of Theme Hospital on a bare ESS688
   (rig86/runs/dbx/th_iolog.txt) for the F2h timing figures.
+
+## 9. The RTC survey (86Box rig, static scan and DOSBox-X port logs)
+
+Scope: 790 games, 13,636 unique files, 4,950 of them code. 571 of 762
+compressed executables unpacked and rescanned; 191 files in 117 games
+(PKLITE 154, UPX 13, some odd LZEXE and EXEPACK) not scanned. 34 runtime
+logs on 70h, 71h, A0h, A1h and IVT 70h. Full report: rig86/rtc_survey.md.
+
+| Group | Titles | Behaviour |
+| --- | --- | --- |
+| Periodic interrupt users, confirmed | A.G.E., Galactix, Space Max | 1024 Hz; A.G.E. rewrites register A, register B and A1h every frame (12.6k register writes in 66 s) |
+| | Future Dimension | IVT 70h written directly; 1024 and 64 Hz switched many times a minute |
+| | Capitalism, Zack, Stronghold | 128 Hz from MIDPAK's RTC builds (PMIDPAK, TMIDPAK and some MIDPAK.COM do not use the RTC) |
+| | Lords of the Realm | 256 Hz; on exit restores the vector and sets A1h bit 0 |
+| | The Horde | 128 Hz for about 1 s (a timing measurement), then register B SET and clock writes |
+| Same code, not confirmed at runtime | KKND, Lost Vikings 2 (128 Hz), Alien Logic, IAS (8192 Hz), Perfect General II's MIDPAK, the RTC MIDPAK in Ultima III to V, Simon 2, Capitalism Plus | Failed under DOSBox-X or stopped at copy protection |
+| | Ultima VII, Serpent Isle | Program 8192 Hz. Their memory manager refuses an EMM, so they never run under the driver |
+| Code present, never used | Blood, Redneck Rampage, Shadow Warrior (Build), Seek and Destroy, Puyo Puyo 2's GPS.COM, UniVBE's speed test | No RTC access at runtime |
+| Extenders | DOS/4GW, Phar Lap, Borland DPMI16 | Only CMOS 0Fh (shutdown byte) and a PIC mask around a 286-style reset, and only without a VCPI host, so never under JEMMEX. CauseWay, PMODE/W, CWSDPMI, DOS/32A: no RTC code |
+| | Inner Worlds' extender | Remaps the slave PIC base from 70h to 28h |
+| The five oldest games | Donkey, Softporn, Wizardry I, Ball, Zork I | No RTC or IRQ 8 access |
+
+What it changed in the design: the virtual RTC is complete rather than a
+stand-down check (register C semantics, tick splitting, rate switching at
+the game's pace); the timer takes IRQ 8 in Jemm's slot, not the IVT; A1h
+bit 0 is virtualised; clock writes pass through; a slave PIC remap stands
+the timer down; and the timer is held only while the driver is engaged.
+Confidence: high for the confirmed list, medium for completeness (the
+unscanned files, code a byte scan cannot see, and the BIOS's own INT 15h
+use).
