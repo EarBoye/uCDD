@@ -323,3 +323,21 @@ observable behaviour identical with it on and off.
    time on a slow machine, is met by passthrough when the game plays at 22
    kHz, and by an option to play disc audio alone at 22050 Hz, which
    touches only the guest stream. `fast-resample` is not merged.
+5. A slow-machine mode stays, on one condition: it may cost the CD stream
+   (disc audio at 22050 Hz, the guest) but never the virtual card. The
+   game's stream keeps its programmed rate, passthrough where the card
+   allows.
+6. The game comes first, always. A game expects to talk to a card in a
+   specific way and to get specific results; it does not know the CD is
+   being mixed. Mixing the disc digitally is itself a departure from the
+   period hardware (the analog cable to the mixer), so its cost, in CPU,
+   bus time and anything audible, is kept as small as possible and never
+   paid by the game.
+7. Chipset speedups (layer E) are extended beyond the PIIX family to the
+   other bridges in `notes/chipsets.md` on `reference-library`. If space
+   in the resident driver becomes a concern, Intel first: the PIIX family
+   (done), then the 82378 SIO. Then ALi (M1523B, M1543C), VIA (586, 596,
+   686, 8231: a doubled DMA clock rather than Type F), and SiS (5597,
+   5598, 5582, with the 5595 revision check). Each one detect-only, off by
+   default, cited to its data sheet, and proven to change nothing a game
+   can observe.
