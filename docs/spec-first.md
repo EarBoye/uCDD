@@ -2,7 +2,7 @@
 
 Status: adopted (Michael), updated 15 Oct with the ES1868F measurements.
 Was: proposal. Written on `fixes` at 77979b2, with `spec-fixes`,
-`setup-layout`, the rig's three branches (`combined-test` 772941d),
+`setup-layout`, the three 86Box-tested branches (`combined-test` 772941d),
 `fast-resample` and `event-timer` in view. Sources: the reference library
 (branch `reference-library`, notes in `notes/`) and S95Sedan's disassembly
 of the CT1741 SB16 DSP firmware.
@@ -36,9 +36,9 @@ the game's audio is a deviation, not an implementation detail.
 ## 2. What is already known to deviate
 
 From the library review (`notes/README.md` on `reference-library`) and the
-rig's work. Fixed on `spec-fixes` (634ca66): the virtual ESS mixer twins
+86Box testing. Fixed on `spec-fixes` (634ca66): the virtual ESS mixer twins
 writing the internal gains, ESS 41h/42h argument counts, non-specific EOI
-forms 21h to 27h, F2h dropping a 16-bit request. Fixed on the rig's
+forms 21h to 27h, F2h dropping a 16-bit request. Fixed on the 86Box-tested
 branches: the polled DMA count follows the played position, B1h/B2h carry
 the IRQ and DMA, the delivered mark on the trap exit. Still open:
 
@@ -118,7 +118,7 @@ registers. Unimplemented indices read as the chip reads them, not as RAM.
 **Timing that is part of the spec.**
 
 - The DMA count moves at the programmed rate and is read as the played
-  position. Done on the rig's branches.
+  position. Done on the 86Box-tested branches.
 - The block-end interrupt comes when the count wraps or expires.
 - F2h and F3h raise their interrupt after the DSP's latency, not at once.
 - Reset takes about 100 us before AAh is readable.
@@ -169,7 +169,7 @@ sheet puts at 80 to 90 percent of half the sample rate (filter clock 7.16
 MHz/(256-X), roll-off a 82nd of it). The game's A2h sets the emulated
 reconstruction filter (layer D). A Descent 2 stream at A1h=DCh plays at 22097 Hz, and its DMA
 consumption and interrupts follow 22097 Hz. That is already true of the
-consumption (the rig found it). What is not true is the output, which
+consumption (found in 86Box). What is not true is the output, which
 resamples it; layer D fixes that.
 
 **BAh clock trim** is the physical driver's business. The virtual BAh
@@ -340,7 +340,7 @@ must not exceed what the emulated card buffers:
 | ESS, Extended Mode | 256 bytes | At most 256 bytes |
 
 On the Pentium a 32 or 64-frame period costs nothing measurable. The
-32-frame click the rig found must be solved, not avoided. The
+32-frame click found in 86Box must be solved, not avoided. The
 interpolator adds its own delay, half its length (4 to 8 output frames),
 which counts toward the same margin.
 
@@ -361,7 +361,7 @@ observable behaviour identical with it on and off.
 1. A conformance matrix per layer, in `docs/conformance/`: requirement,
    document and line, code, test, status. A row without a document line is
    marked as hardware-measured or firmware-derived, with the evidence.
-2. Conformance tests, on the rig and the PC. Existing: SBT16, SADUMP,
+2. Conformance tests, in 86Box and on the PC. Existing: SBT16, SADUMP,
    E2TEST, E41TEST, TONE4, verify-mix. To add:
    - F2TEST: latency and merging (written; ES1868F measured).
    - A DSP command sweep per model, compared with a bare card on the PC.
@@ -413,7 +413,7 @@ observable behaviour identical with it on and off.
    16) set the order in which layer C's registers and behaviours are
    proven, each against the data sheet.
 3. `fast-dma` and `setup-layout` are merged into `fixes` (fcf67f2, with
-   `spec-fixes` and the rig's three branches).
+   `spec-fixes` and the three 86Box-tested branches).
 4. Fast mode as a physical output mode is retired: it keeps the ESS out of
    spec (every game rate resampled to 22050 Hz and pair-averaged). Layer D
    emulates the card's DAC instead (section 6), and passthrough is dropped
