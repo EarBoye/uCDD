@@ -25,7 +25,7 @@ Tested in emulators:
 
 - A PCI disk controller on any IRQ no longer freezes DOS/4GW games. `UCDD -install` finds the controllers through the PCI BIOS and passes their IRQs to DOS directly; UCDDSET shows them in a Disk row and takes an IRQ by hand for one the BIOS does not report.
 - Single-cycle playback: a new sound no longer loses its first milliseconds at large output periods, and very short blocks are accepted (King's Quest V's driver test).
-- A review of the whole driver and a second pass against the hardware and interface specifications in `docs/references`, with the fixes listed in ISSUES.md: DOS re-entry from the disc hotkeys, Ctrl+Break during CD reads, DSP command parsing, the 8237 and 8259 emulation, MSCDEX details, the DPMI host's handling of program exits, callbacks, faults and the INT 1Ch/23h/24h handlers of protected-mode programs.
+- A review of the whole driver and a second pass against the hardware and interface specifications in the reference library, with the fixes listed in ISSUES.md: DOS re-entry from the disc hotkeys, Ctrl+Break during CD reads, DSP command parsing, the 8237 and 8259 emulation, MSCDEX details, the DPMI host's handling of program exits, callbacks, faults and the INT 1Ch/23h/24h handlers of protected-mode programs.
 - Doom's effects turning into a wash with the physical and the virtual card on IRQ 7: fixed.
 - The driver steps aside while no mounted disc has CD audio and the physical card can be the virtual one, so most games run exactly as without it (the **Driver** setting in UCDDSET).
 - UCDDSET: a review of the setup program.
@@ -59,7 +59,7 @@ The fork leaned on these people, projects and sites:
 - The DPMI 0.9 and 1.0 specifications, the VCPI specification kept findable by the [EDM2 wiki](http://www.edm2.com/), and the LIM EMS 4.0 text kept by the [Spice86 wiki](https://github.com/OpenRakis/Spice86/wiki); the internal host was read against them section by section.
 - The Linux ALSA es18xx driver, against which the ES1868 identification was checked.
 - [NASM](https://www.nasm.us/) and Python, which build everything here, and [FreeDOS](https://www.freedos.org/) with [QEMU](https://www.qemu.org/) as the first test bench.
-- The data sheets kept in `docs/references`, most of them found through DOS Days and [the Ardent Tool's data sheet](https://www.ardent-tool.com/datasheets/) and [Intel document](https://www.ardent-tool.com/CPU/Docs_Intel.html) collections.
+- The data sheets and specifications in the reference library (PDFs in the [references release](https://github.com/EarBoye/uCDD/releases/tag/references), text copies on the `references` branch), most of them found through DOS Days and [the Ardent Tool's data sheet](https://www.ardent-tool.com/datasheets/) and [Intel document](https://www.ardent-tool.com/CPU/Docs_Intel.html) collections.
 - [The Ardent Tool of Capitalism](https://www.ardent-tool.com/), [DOS Days](https://dosdays.co.uk/index.php), [The Retro Web](https://theretroweb.com/) and [Phil's Computer Lab](https://www.philscomputerlab.com/), for being excellent references on the machines this driver runs on.
 
 The original README follows, updated where the fork changed things.
