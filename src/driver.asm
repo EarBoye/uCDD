@@ -1605,6 +1605,7 @@ audio_prepare:
     call fast_dma_scan
     jc .no_fast_dma
     mov [fast_dma_bridge], ax
+    mov [fast_dma_device], cx
     mov byte [fast_dma_present], 1
 .no_fast_dma:
 %endif

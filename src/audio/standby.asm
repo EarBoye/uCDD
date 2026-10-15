@@ -108,8 +108,10 @@ audio_engage:
 
 ; Type F ISA DMA on the output channel (82371FB data sheet, MBDMA0 at PCI
 ; configuration offset 76h of the ISA bridge: bit 7 fast, bits 2:0 the
-; channel, bits 6:3 kept as read since the PIIX3 holds a reserved bit
-; there). Only with the UCDDSET switch on and a PIIX found at install;
+; channel, bits 6:3 kept as read since the PIIX3 and PIIX4 hold a reserved
+; bit there, except that the PIIX's bit 3 is set). Type F serves the
+; output, which reads memory; the PIIX has no Type F for transfers that
+; write it. Only with the UCDDSET switch on and a PIIX found at install;
 ; set when the output starts, the old byte put back when it stops. The
 ; register is read and written through the PCI BIOS.
 fast_dma_set:
@@ -129,6 +131,14 @@ fast_dma_set:
     mov [fast_dma_saved], cl
     and cl, 78h
     or cl, 80h
+    ; On the PIIX, bit 3 (DMC) picks the ISA slot's DREQ and DACK# over the
+    ; motherboard pair for the channel; left at 0, the card is cut off (PIIX
+    ; and PIIX3 data sheet, MBDMA registers). The PIIX3 and PIIX4 keep it
+    ; reserved, so the read value stays there.
+    cmp word [fast_dma_device], 122eh
+    jne .fast_bits
+    or cl, 8
+.fast_bits:
     ; The output channel: the high one on an SB16, the low one elsewhere.
     mov al, [sb_dma8]
     cmp byte [sound_card], 0
@@ -158,6 +168,8 @@ fast_dma_clear:
     ret
 ; Set at install by fast_dma_scan (disk_scan.asm).
 fast_dma_bridge dw 0
+; The bridge's PCI device ID (fast_dma_scan).
+fast_dma_device dw 0
 fast_dma_present db 0
 fast_dma_active db 0
 fast_dma_saved db 0
