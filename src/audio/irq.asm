@@ -160,10 +160,26 @@ sb_silence_tick:
     sub eax, [sb_silence_end]
     js .done
     mov byte [sb_silence], 0
-    or byte [virtual_dsp_irq], 1
+    mov al, 1
+    call virtual_dsp_raise
+.done:
+    ret
+
+; AL=the DSP interrupt bits to set (1 the 8-bit, 2 the 16-bit). The DSP's
+; interrupt line is a level, held until the game reads 2xEh or 2xFh, and
+; the 8259 takes an edge: while any DSP request is still unacknowledged
+; the line is already high, so a new one only adds its bit, as the bare
+; SB16 and ES1688 do (F2TEST: one interrupt for F2h twice without the
+; acknowledge). A request to the controller only from a clear line.
+virtual_dsp_raise:
+    cmp byte [virtual_dsp_irq], 0
+    jne .held
+    or [virtual_dsp_irq], al
     mov al, [guest_irq_bit]
     mov [virtual_pic_request], al
-.done:
+    ret
+.held:
+    or [virtual_dsp_irq], al
     ret
 
 ; Far entry (RETF). Called with CS pushed from sb_patch's hold check, and by

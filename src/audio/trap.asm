@@ -881,17 +881,15 @@ port_callback:
     jmp .one_reply
 .force_irq16:
 %ifdef VIRTUAL_IRQ
-    or byte [virtual_dsp_irq], 2
-    mov al, [guest_irq_bit]
-    mov [virtual_pic_request], al
+    mov al, 2
+    call virtual_dsp_raise
 %endif
     jmp .done
 .force_irq:
 %ifdef VIRTUAL_IRQ
     ; F2h adds the 8-bit request; a 16-bit one already pending stays.
-    or byte [virtual_dsp_irq], 1
-    mov al, [guest_irq_bit]
-    mov [virtual_pic_request], al
+    mov al, 1
+    call virtual_dsp_raise
 %endif
     jmp .done
 .resume8:
