@@ -250,8 +250,9 @@ changed volumes.
 - The Miles ESS digital driver (AUDIODRV.DIG) tests the card with two F2h
   commands a few microseconds apart and expects one interrupt after the
   DSP's latency; the virtual card delivers each at once, the test counts
-  two and fails. Measured in DOSBox-X on a bare ESS688 (a rig-only port
-  logger): the second F2h 3 us after the first, the interrupt 13 us after
+  two and fails. Measured in DOSBox-X on a bare ESS688 (with a port
+  logger added to a local DOSBox-X build): the second F2h 3 us after the
+  first, the interrupt 13 us after
   the first, then a spin of about 0.5 ms with no port access for the
   counter to reach one. Use the game's Sound Blaster 16 or Pro driver with
   the virtual Sound Blaster (every one of the 16 Miles ESS games in the
