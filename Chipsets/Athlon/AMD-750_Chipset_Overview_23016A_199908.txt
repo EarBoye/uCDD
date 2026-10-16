@@ -1,0 +1,447 @@
+                       AMD-750             TM
+
+
+
+
+                                Chipset
+
+                                Overview
+
+
+
+
+Publication # 23016    Rev: A
+Issue Date: August 1999
+                            © 1999 Advanced Micro Devices, Inc. All rights reserved.
+
+               The contents of this document are provided in connection with Advanced
+               Micro Devices, Inc. (“AMD”) products. AMD makes no representations or
+               warranties with respect to the accuracy or completeness of the contents of
+               this publication and reserves the right to make changes to specifications and
+               product descriptions at any time without notice. No license, whether express,
+               implied, arising by estoppel or otherwise, to any intellectual property rights
+               is granted by this publication. Except as set forth in AMD’s Standard Terms
+               and Conditions of Sale, AMD assumes no liability whatsoever, and disclaims
+               any express or implied warranty, relating to its products including, but not
+               limited to, the implied warranty of merchantability, fitness for a particular
+               purpose, or infringement of any intellectual property right.
+
+               AMD’s products are not designed, intended, authorized or warranted for use
+               as components in systems intended for surgical implant into the body, or in
+               other applications intended to support or sustain life, or in any other applica-
+               tion in which the failure of AMD’s product could create a situation where per-
+               sonal injury, death, or severe property or environmental damage may occur.
+               AMD reserves the right to discontinue or make changes to its products at any
+               time without notice.
+
+
+
+
+Trademarks
+AMD, the AMD logo, AMD Athlon, and combinations thereof, AMD-750, AMD-751, and AMD-756 are trademarks
+of Advanced Micro Devices, Inc.
+
+Microsoft and Windows are registered trademarks of Microsoft Corporation.
+
+Other product names used in this publication are for identification purposes only and may be trademarks of
+their respective companies.
+23016A—August 1999                                                    AMD-750™ Chipset Overview
+
+
+
+
+AMD-750™ Chipset
+                         The AMD Athlon™ processor powers the next generation of
+                        computing platforms, delivering the ultimate performance for
+                         cutting-edge applications and an unprecedented computing
+                                                 experience.
+
+                     The AMD-750™ chipset is a highly integrated system logic
+                     so lut io n t h a t d e livers e n h a n c e d p er fo rm a n c e for t h e
+                     AMD Athlon processor and other AMD Athlon frontside
+                     bus-compatible processors. The AMD-750 chipset consists of
+                     the AMD-751™ system controller in a 492-pin plastic ball-grid
+                     array (PBGA) package and the AMD-756™ peripheral bus
+                     controller.
+
+                     The AMD-751 system controller features the AMD Athlon
+                     frontside bus, system memory controller, accelerated graphics
+                     port (AGP) controller, and peripheral component interconnect
+                     (PCI) bus controller.
+
+                     The AMD-756 peripheral bus controller features three primary
+                     blocks (PCI-to-ISA bridge, USB controller interface, EIDE
+                     UDMA-33 and -66 controller), each with independent access to
+                     the PCI bus, a complete set of PCI interface signals and state
+                     machines, and capable of working independently with separate
+                     devices.
+
+                     Figure 1 on page 2 shows the block diagram of the AMD-750
+                     chipset system.
+
+
+
+
+                                    AMD-750™ Chipset                                          1
+AMD-750™ Chipset Overview                                                                                 23016A—August 1999
+
+
+
+
+                                     AMD Athlon™
+                                      Processor
+
+
+
+                                  Frontside Bus
+                                                           AGP Bus
+                                                  72-bit                                    AGP
+                                                            64-bit
+
+
+                                    AMD-751™                  Memory Bus
+                                                                                           SDRAM
+                                                                                           DRAM
+                                 System
+                                 System Controller
+                                        Controller                    64-bit
+
+
+
+                SERR#
+                PREQ#
+                                                           PCI Bus
+                PGNT#                                        32-bit
+                WSC#
+
+                                   AMD-756™
+                                  Peripheral Bus
+                                  Southbridge                                                      SCSI
+                                    Controller                            LAN
+                                                                       Ethernet
+            System Management,
+            Reset, Initialize,                                                     SMBus
+            Interrupts
+                                                                               ISA Bus
+                                                                                16-bit
+                                                                 USBus
+                                                            EIDE Bus
+                                                                                                          BIOS
+
+
+
+
+Figure 1.      AMD-750™ Chipset System Block Diagram
+
+
+
+
+2                                                 AMD-750™ Chipset
+23016A—August 1999                                             AMD-750™ Chipset Overview
+
+
+
+
+AMD-751™ System Controller
+                     Key features of the AMD-751 system controller are provided in
+                     this section. For more information, see the AMD-751™ System
+                     Controller Data Sheet, order# 21910.
+
+                     The AMD-751 system controller is designed with the following
+                     features:
+                     n   The AMD Athlon frontside bus supports three 200-MHz
+                         high-speed channels
+                     n   The 33-MHz 32-bit PCI 2.2-compliant bus interface supports
+                         up to six masters
+                     n   The 66-MHz AGP 2.0-compliant interface supports 2x data
+                         transfer mode
+                     n   High-speed memory—The AMD-751 system controller is
+                         designed to support 100-MHz PC-100 revision 1.0 SDRAM
+                         DIMMs
+
+
+ AMD Athlon™ System Bus
+
+                     The AMD Athlon frontside bus has the following features:
+                     n   High-performance point-to-point system bus topology
+                     n   Source synchronous clocking for high-speed transfers
+                     n   HSTL-like low-voltage swing transceiver logic signal levels
+                     n   Three 200-MHz independent high-speed channels:
+                         • 13-pin processor request channel
+                         • 13-pin system probe channel
+                         • 72-pin data transfer channel (8-bit ECC)
+                     n   1.6 Gbytes per second peak-data-transfer rates at 200 MHz
+                     n   Large 64-byte (cache line) data burst transfers
+                     n   Data Buffers:
+                         • Memory write FIFO (MWF)
+                         • Memory read FIFO (MRF)
+                         • PCI/APCI (AGP-PCI) write buffer
+                         • PCI/APCI read buffer
+
+                              AMD-751™ System Controller                               3
+AMD-750™ Chipset Overview                                                    23016A—August 1999
+
+
+
+
+                            n   Transaction Queues:
+                                • Command queue (CQ)
+                                • Memory write queue (MWQ)
+                                • Memory read queue (MRQ)
+                                • Probe (snoop) queue (PQ)
+
+
+Integrated Memory Controller
+
+                            The integrated memory controller has the following features:
+                            n   Memory Request Organizer (MRO)—Serves as a data
+                                crossbar, determines request dependencies, and optimizes
+                                scheduling of memory requests
+                            n   The AMD-751 system controller supports the following
+                                concurrences:
+                                • Processor-to-main-memory with PCI-to-main-memory
+                                • Processor-to-main-memory with AGP-to-main-memory
+                                • Processor-to-PCI with PCI-to-main-memory or
+                                   AGP-to-main-memory
+                            n   Memory error correcting code (ECC) support
+                            n   Supports the following DRAM:
+                                • Up to three non-buffered PC-100 revision 1.0 SDRAM
+                                   DIMMs using 16-Mbit, 64-Mbit, and 128-Mbit technology
+                                • 64-bit data width, plus 8-bit ECC paths
+                                • Flexible row and column addressing
+                            n   Supports up to 768 Mbytes of memory
+                            n   Four open pages within one CS (device selected by chip
+                                select) for one quadword
+                            n   Default two-page leapfrog policy for eight quadword
+                                requests
+                            n   BIOS-configurable     memory-timing      parameters    and
+                                configuration parameters
+                            n   3.3-V memory interface operation with no external buffers
+                            n   Four cache lines (32 quadwords) of processor-to-DRAM
+                                posted write buffers with full read-around capability
+                            n   Concurrent DRAM writeback and read-around-write
+                            n   Burst read and write transactions
+
+4                                    AMD-751™ System Controller
+23016A—August 1999                                            AMD-750™ Chipset Overview
+
+
+
+                     n   Decoupled and burst DRAM refresh with staggered CS
+                         timing
+                     n   Provides the following refresh options:
+                         • Programmable refresh rate
+                         • CAS-before-RAS
+                         • Populated banks only
+                         • Chipset powerdown via SDRAM automatic refresh
+                            command
+                         • Automatic refresh of idle slots—improves bus
+                            availability for memory access by the processor or
+                            system
+
+
+ PCI Bus Controller
+                     The PCI bus controller has the following features:
+                     n   Compliance with PCI Local Bus Specification, Revision 2.2
+                     n   Supports six PCI masters
+                     n   32-bit interface, compatible with 3.3-V and 5-V PCI I/O
+                     n   Synchronous PCI bus operation up to 33 MHz
+                     n   PCI-initiator peer concurrence
+                     n   Automatic processor-to-PCI burst cycle detection
+                     n   Four-entry, 64-bit PCI master (processor or AGP) write FIFO
+                     n   Extensive utilization of FIFOs
+                     n   Zero wait-state PCI initiator and target burst transfers
+                     n   PCI-to-DRAM data streaming up to 132 Mbytes per second
+                     n   Enhanced PCI command optimization, such as memory read
+                         line (MRL), memory read multiple (MRM), and
+                         memory-write-and-invalidate (MWI)
+                     n   Timer-enforced fair arbitration between PCI initiators
+                     n   Supports advanced concurrency
+                     n   Supports retry disconnect for improved bus utilization
+                     n   PCI read buffer keeps track of each master
+                     n   PCI target request queue
+
+
+
+
+                              AMD-751™ System Controller                             5
+AMD-750™ Chipset Overview                                                  23016A—August 1999
+
+
+
+
+AGP Features
+                            The AGP features include the following:
+                            n   Bus Features
+                                • Compliance with AGP 1.0 specification
+                                • Synchronous 66-MHz 1x and 2x data-transfer modes
+                                • Multiplexed and demultiplexed transfers
+                                • Up to four pipelined grants
+                                • Support of sideband address (SBA) bus
+                            n   Request Queue Features
+                                • Separate read-request and write-request queues
+                                • Reordering of high-priority requests over low-priority
+                                   requests in queue
+                                • Concurrent issuing of requests from both the write
+                                   queue and read queue
+                                • Selects next request to optimize bus utilization
+                            n   Transaction Queues
+                                • Memory-to-AGP and processor-to-AGP transaction
+                                   queues
+                            n   FIFO Features
+                                • 16-entry (64-bit) AGP-to-memory write FIFO
+                                • 64-entry (64-bit) memory-to-AGP read FIFO
+                            n   Secondary PCI Bus Features
+                                • Pipelined burst reads and writes
+                                • Extensive utilization of FIFOs
+                            n   GART (graphics address remapping table) Features
+                                • Conventional (two-level) GART scheme
+                                • Eight-entry, fully-associative GART table cache (GTC)
+                                • Three fully-associative GART directory caches (GDC)
+                                   • One 4-entry for PCI
+                                   • One 8-entry for the processor
+                                   • One 16-entry for AGP
+
+
+
+
+6                                    AMD-751™ System Controller
+23016A—August 1999                                         AMD-750™ Chipset Overview
+
+
+
+ Power Management
+
+                     The power management features include the following:
+                     n   Support for both ACPI and Microsoft® PC 98 power
+                         management
+                     n   AMD-751 system controller supports the following power
+                         states:
+                         • Processor Halt/Stop-Grant/Sleep states
+                         • Power-On-Suspend
+
+
+
+
+                              AMD-751™ System Controller                          7
+AMD-750™ Chipset Overview                                                   23016A—August 1999
+
+
+
+
+AMD-756™ Peripheral Bus Controller
+                            Key features of the AMD-756 controller are listed in this
+                            section. For more information, see the AMD-756™ Peripheral
+                            Bus Controller Data Sheet, order# 22548.
+
+                            The AMD-756 contains the following functional units:
+                            n   Integrated ISA bus controller
+                            n   Enhanced master-mode PCI IDE controller with ultra
+                                DMA-33/66 support
+                            n   USB controller
+                            n   Keyboard/mouse controller
+                            n   Real-time clock
+
+
+PCI-to-ISA Bridge
+
+                            The AMD-756 controller includes a PC97-compliant PCI-to-ISA
+                            bridge with the following features:
+                            n   PCI 2.2-compliant interface
+                            n   Eight-level doubleword buffer between PCI and ISA buses
+                            n   Dual cascaded AT-8259-compatible interrupt controllers
+                            n   Dual AT-8237-compatible DMA controllers
+                            n   Type F DMA transfer support
+                            n   Support for ISA legacy distributed DMA across the PCI bus
+                            n   AT-8254-compatible programmable interval timer
+                            n   Integrated real-time clock w/extended 256-byte CMOS RAM
+                            n   Programmable ISA bus clock
+                            n   Fast reset and gate A20 operation
+                            n   Edge-triggered or level-sensitive interrupts
+                            n   Flash, 2-Mbyte EPROM, BIOS support
+                            n   Integrated keyboard controller with PS/2 mouse support
+
+
+
+
+8                                 AMD-756™ Peripheral Bus Controller
+23016A—August 1999                                              AMD-750™ Chipset Overview
+
+
+
+ Enhanced IDE Controllers
+
+                     The AMD-756 controller includes enhanced master mode PCI
+                     and IDE controllers with the following features:
+                     n   Ultra DMA-33/66 support for a primary and secondary dual-
+                         drive port
+                     n   Transfer rates up to 33 Mbytes per second supporting PIO
+                         modes 1–4, multi-word DMA mode-2 drivers, and up to 66
+                         Mbytes per second supporting the ultra DMA-66 interface
+                     n   Sixteen-level doubleword prefetch and write buffers
+                     n   Commands can be interleaved between the two channels
+                     n   Bus master programming interface for compliance with
+                         SFF-8038i 1.0 and Microsoft Windows® 95
+                     n   Full-featured scatter-gather capability
+                     n   Support for ATAPI-compliant devices
+                     n   Support for PCI-native and ATA-compatibility modes
+                     n   Complete bus mastering software driver support
+
+
+ Universal Serial Bus Controller
+
+                     The AMD-756 controller includes a universal serial bus (USB)
+                     controller with the following features:
+                     n   USB 1.0 and OHCI compliant
+                     n   Sixteen-level doubleword FIFO for burst PCI bus access
+                     n   Root hub and four ports
+                     n   Integrated physical-layer transceivers with over-current
+                         detection status on USB inputs
+                     n   Legacy keyboard and PS/2 mouse support
+
+
+
+
+                           AMD-756™ Peripheral Bus Controller                          9
+AMD-750™ Chipset Overview                                                     23016A—August 1999
+
+
+
+
+Plug-n-Play Support
+
+                            The AMD-756 controller supports plug-n-play with the
+                            following features:
+                            n   PCI interrupts steerable to any of three interrupt channels
+                            n   Microsoft Windows 98 and plug-n-play BIOS compliant
+                            n   Serial IRQ compliant
+
+
+Power Management
+
+                            The AMD-756 controller includes the following sophisticated
+                            power management features:
+                            n   Supports advanced configuration and power interface
+                                power management (ACPI 1.0 compliant)
+                            n   Supports legacy power management (APM 1.2 compliant)
+                            n   Supports soft-off and power-on suspend with hardware
+                                automatic wakeup
+                            n   Two general-purpose timers, one system-inactivity timer,
+                                and a 24-bit or 32-bit APCI-compliant timer
+                            n   Dedicated external modem-ring input pin for system
+                                wakeup
+                            n   Normal, doze, sleep, suspend, and conserve modes
+                            n   Eighteen multiplexed general-purpose I/O pins
+                            n   SMBus implementation for JEDEC-compatible DIMM
+                                identification and on-board device power/thermal control
+                            n   Primary and secondary interrupt differentiation for
+                                individual channels
+                            n   Clock throttling control
+                            n   Multiple internal and external SMI# sources for flexible
+                                power management
+
+
+
+
+10                                AMD-756™ Peripheral Bus Controller
+

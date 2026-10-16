@@ -38,6 +38,13 @@ File keys used below (all under `library/Chipsets/` unless noted):
 | 206 | Reference parts and specs/82C206_Integrated_Peripheral_Controller_199608.txt |
 | VIPER | Pentium/Viper_Express+_BIOS_Programming_Guide_199701.txt |
 | EISA | Reference parts and specs/eisabook.txt |
+| VIPM | Pentium/82C556M_82C557M_82C558M_Viper-M_Preliminary_Data_Book_199504.txt (OCR of a scan) |
+| FIRE | Pentium/82C700_Firestar_Single-Chip_Notebook_Solution_199702.txt |
+| 1533 | Pentium/M1533_PCI_to_ISA_Bus_Bridge_v1.56_199811.txt |
+| 1535, 1535D | P6/M1535_South_Bridge_Product_Brief.txt, P6/M1535D+_South_Bridge_Product_Brief.txt |
+| 756 | Athlon/AMD-756_Peripheral_Bus_Controller_22548B_199908.txt |
+| 766, 768 | Athlon/AMD-766_Peripheral_Bus_Controller_23167B_200103.txt, Athlon/AMD-768_Peripheral_Bus_Controller_24467B_200110.txt |
+| UMC | 486/UM8881_UM8886_HB4_Reverse_Engineered_20260216.txt |
 
 ## 1. Per-channel fast DMA timing
 
@@ -69,6 +76,14 @@ File keys used below (all under `library/Chipsets/` unless noted):
 | OPTi 82C686 ISP (EISA) | not PCI | EISA Type A/B/C per EISA spec (40Bh/4D6h) | per EISA spec | - | 486/82C681_...:3304, 5175-5180 |
 | OPTi 82C578 (Viper Xpress+) | 1045:C568 as PCIDV1 (VIPER:204, 260) | Not documented in this BIOS guide | - | - | VIPER (no DMA timing text) |
 | Intel 82344 (386) | not PCI | Mentions "DMA wait state, clock, and -MEMR timing programmability"; register not in this excerpt | - | - | 386/240843-001_82344_199010.txt:79-82 |
+| ALi M1533 | 10B9:1533, rev 00h (1533:1688, 1731) | Yes, same DCEM as M1523B and M1543C; 40Bh is write only | I/O 40Bh/4D6h: b5:4 11 = Type F, else compatible; b3:2, b7:6 reserved | 00 | 1533:5862-5881, 7118 |
+| ALi M1535, M1535D, M1535D+ | not in the briefs (Infer: 10B9:1533, the M1533's successor) | Not stated: the briefs list an "enhanced DMA controller" and distributed DMA, no register map | - | - | 1535:16-19, 91, 114-118; 1535D:85-99 |
+| OPTi 82C558M (Viper-M) | 1045:C558 (VIPM: table 5-50, data book page 167, PDF page 185) | Yes, Type F "ISA compatible timing for fast DMA slave devices", 3 ISA clocks in the repeated part | I/O 40Bh/4D6h: b5:4 00 compatible, 11 Type F; b7:6 and b3:2 reserved, must be 0; b1:0 channel | not given | VIPM: section 4.16 (data book page 119, PDF 137), tables 5-76 and 5-79 (page 183, PDF 201) |
+| OPTi 82C556/557/558 (Viper, desktop), Viper-N | (no data book found; the Viper-N notebook book is listed on Datasheet Archive) | Infer: as the Viper-M | - | - | - |
+| OPTi 82C700 FireStar | 1045:C701 (FIRE:19383-19385) | Yes, Type F "on a channel-by-channel basis", through "the EISA register scheme"; for ISA devices IOR# 2 and IOW# 1 ISA clock | I/O 40Bh/4D6h: b5:4 11 Type F (00, 01, 10 compatible), b1:0 channel, the rest not implemented | xx | FIRE:10424-10458 |
+| AMD-756 (Athlon, AMD-750) | 1022:7408 fn 0 (756:9963) | Yes, per channel: "DMA cycles occur with zero wait states, and the DMA clock is set equal to BCLK" | cfg 45h, the VIA layout: b7 ISA master/DMA line buffer, b6..b4 ch 7..5, b3..b0 ch 3..0 | 00h | 756:5082-5112, 10152; DMA controllers "capable of running at BCLK" 756:4781 |
+| AMD-766, AMD-768 (AMD-760) | - | No ISA DMA: the 766's "partial ISA bus" is 8 bits wide for the flash BIOS; the DMA controller serves LPC | - | - | 766:169-171; 768:978, 1387 |
+| UMC UM8886 | (reverse-engineered sheet only) | Unknown: ports 40Bh and 4D6h exist but are listed as unidentified | - | - | UMC:115 |
 
 ### 1a. PIIX family register 76h: what the documents say
 
@@ -235,6 +250,16 @@ Candidates, ranked by confidence (all Infer about safety; registers are Doc):
 6. Not recommended at runtime: global DMA clock bits (82C206-family idx 01h b0, SiS 47h b0,
    M1487 29h b3, VIA 41h b3, VT82C496G Rx10 b6). They change floppy DMA too and the non-PCI
    ones have no ID to detect (22h/23h is also Cyrix CPU configuration space; Infer).
+
+Added 17 Oct 2026 (the platform-dma branch takes these into its table, docs/platform-dma.md):
+7. AMD-756 1022:7408 (fn 0): config 45h, the VIA layout and method (756:5082-5112).
+8. OPTi 82C558M Viper-M 1045:C558 and FireStar 1045:C701: the ALi method, `30h | (c & 3)` at
+   40Bh or 4D6h, restore `00h | (c & 3)` (VIPM 4.16 and tables 5-76/5-79; FIRE:10424-10458).
+   The desktop Viper's 82C558 likely shares the ID and the register (Infer: no data book found).
+9. ALi M1535: covered by the 10B9:1533 row without a register map (Infer, accepted by the fork's
+   owner on 17 Oct: "someone else can tell us if it's broken later"). The M1533 (rev 00h) and the
+   M1543C (rev C3h) are documented; a revision check could split them if a report comes in.
+10. AMD-766 and AMD-768: no ISA DMA (LPC only), nothing to tune.
 
 Not candidates: PIIX4 internals beyond 76h (fixed SYSCLK), 82380AB MISA, 82371MX MPIIX,
 82379AB, SiS 5595, SiS 630, OPTi Viper 82C578 (no DMA timing in the guide).

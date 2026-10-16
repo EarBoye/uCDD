@@ -1,0 +1,2764 @@
+   UMC UM8881/6 HB4 Super Energy Star Green chipset
+                                       Reverse Engineered
+
+
+
+
+                                             2026-02-16
+
+
+Contents
+Contributors                                                                                          2
+
+Introduction                                                                                          2
+   TODOs . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .      2
+        Resources . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .     3
+   Chipset markings . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .     3
+        Suffix and revision analysis . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .    7
+        Serial code analysis . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .    8
+   Existing PCI devices . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .     8
+   Chipset address ranges . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .     8
+
+Host Bridge (HB) UM8881-F                                                                              9
+  HB revisions . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .       9
+  HB pin assignment . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .       10
+      HB schematic symbol . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .         10
+      HB pin list overview . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .      11
+      HB pin description . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .      12
+  HB registers . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .      16
+
+ISA Bridge Controller (IBC) UM8886-F/AF/BF/N                                                          21
+   IBC suffixes . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .   21
+   IBC revisions . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .    22
+   IBC pin assignment . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .     22
+        IBC schematic symbol . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .      22
+        IBC UM8886-BF pin list overview . . . . . . . . . . . . . . . . . . . . . . . . . . . .       25
+        IBC UM8886-BF pin description . . . . . . . . . . . . . . . . . . . . . . . . . . . . .       26
+        IBC UM8886-N pin list overview . . . . . . . . . . . . . . . . . . . . . . . . . . . . .      31
+        IBC UM8886-N pin description . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .      31
+   IBC registers . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .    36
+   IBC IDE controller (only AF/BF/N chip variants) . . . . . . . . . . . . . . . . . . . . . . . .    39
+        IBC UM8886-AF IDE controller . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .      39
+              IBC UM8886-AF IDE config registers . . . . . . . . . . . . . . . . . . . . . . .        39
+        IBC UM8886-BF/N IDE PCI controller . . . . . . . . . . . . . . . . . . . . . . . . . . .      40
+              IBC UM8886-BF/N IDE config registers . . . . . . . . . . . . . . . . . . . . . .        40
+
+Super I/O (SIO) UM82C863-F, UM8663-AF/BF                                                              41
+  SIO types and variants . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .      42
+  SIO pin assignment . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .      43
+       SIO schematic symbols . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .        43
+       SIO UM82C863-F pin list overview . . . . . . . . . . . . . . . . . . . . . . . . . . . .       44
+       SIO UM82C863-F pin description . . . . . . . . . . . . . . . . . . . . . . . . . . . . .       44
+
+
+
+                                                   1
+        SIO UM8663-AF pin list overview . . . . . . . . . . . . . . . . . . . . . . . . . . . .       47
+        SIO UM8663-AF pin description . . . . . . . . . . . . . . . . . . . . . . . . . . . . .       47
+   SIO registers . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .    49
+
+UM8667 I/O coupler                                                                                    51
+  UM8667 I/O coupler predecessor . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .        51
+  UM8667 I/O coupler pin assignment . . . . . . . . . . . . . . . . . . . . . . . . . . . . .         51
+     UM8667 I/O coupler schematic symbols . . . . . . . . . . . . . . . . . . . . . . . . .           52
+     UM8667 I/O coupler pin list overview . . . . . . . . . . . . . . . . . . . . . . . . . .         52
+     UM8667 I/O coupler pin description . . . . . . . . . . . . . . . . . . . . . . . . . . .         52
+  UM8667 I/O coupler registers . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .      54
+
+Code snippets                                                                                         54
+  Fill RAM shadow segment E and F       . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .   54
+
+
+Contributors
+Created by: pc2005 (@vogons or @retroweb discord)
+Additional data directly contributed by: mkarcher (@vogons), jakethompson1 (@vogons), Landau
+(@retroweb), computerguy096 (@retroweb), Battler (@vogons)
+Thanks to: Vogons and TheRetroWeb community
+
+
+Introduction
+UMC didn’t make “UM8881 HB4 Super Energy Star Green” technical reference manual public, so I
+made my own to be able to add support into the Coreboot/SeaBIOS project. Pinouts were obtained
+painstakingly by measuring pin-by-pin on two boards:
+  • A-Trend ATC-1415 with a dead southbridge and NiCd damage
+       – UM8881F 9536 ETA + UM8886BF 9545 DYS
+       – 2x SIMM slots, single bank of up to 512 kiB L2 cache, no mouse, no VLB
+  • Biostar MB-8433UUD-A, a Coreboot/SeaBIOS target
+       – UM8881F 9552 ETS + UM8886BF 9602 DYS
+       – 4x SIMM slots, limited dual bank L2 cache, mouse, no VLB
+Therefore most of the information in this document is specific to these two motherboards. Other
+motherboards may have a different pin mapping or use functionality not located on these two boards
+(especially VESA local bus).
+Further the register set was checked only on MB-8433UUD-A motherboard with Am5x86-133 CPU.
+The functionality of some registers are too hard to decide (especially PM settings). If the chipset
+designed some registers to have multiple functionality (not stateless), the finding it out would be
+almost impossible.
+So take this datasheet as always incomplete and speculative.
+
+
+TODOs
+Further research would be appreciated:
+  • Do different chipset revisions on the same board type behave differently?
+  • Does your cache/TAG address routing match the datasheet?
+  • Missing routing information for boards with 4x PCI slots (IDSEL pin, INTx routing) and routing on
+    motherboards with VLB.
+  • The partial schematics of turbo button connection (or full schematics :-D)
+  • The meaning of SB.38 PTEST pin
+
+
+                                                   2
+  • NB.170 pin should be routed to T/R (direction) pin of quad 74F245 buffers. Exact placing is yet
+    not know (between DRAM and cache/chipset/CPU, between DRAM/cache and chipset/CPU, …).
+    Also it is yet not know where /OE pin of 74F245 buffers is connected to.
+  • DRAM refresh setting registers seems to be limited compared to other 486 chipsets (RAS before
+    CAS, multiple timing speeds).
+  • What are I/O ports: 0x40b, 0x4d6, 0x481, 0x482, 0x483, 0x487 (32bit EISA DMA?), 0xc04, 0xc05
+  • Can entire system (not only CPU) reset be generated via the software?
+  • PCI register space dumps for other revisions.
+  • SIO: Gameport pinout, pin mux support? (POST on LPT, FDC on LPT, A:/B: swap)
+  • SIO: What is C1.20 IDE existence bit? How does it behave?
+  • SIO: UM8663-BF registers/pinout and newer models
+
+Resources
+
+The MAIN github repository for UMC chipset. All new releases of the datasheet will be distributed
+here.
+The MAIN Vogons discussion UMC8881/8886 Datasheet. New releases should be announced here.
+The MAIN UM8881 thread on the Retro Web discord. New releases may be announced here if I don’t
+forget to do that:-D.
+Service manual for MiTAC notebooks, models: 5023, 5024 and 5026 or vogons thread.
+DRAM pinout and naming used from wikipedia SIMM.
+ISA bus pinout and naming used from wikipedia ISA.
+PCI bus pinout and naming used from wikipedia Peripheral Component Interconnect.
+486 pinout from 486-/PODP-Pinout and Differences. NOTICE error: A13 and A16 are switched around.
+Vogons discussion about UM8881 revisions.
+MSDOS PCI configuration register dumper tool Ralf Brown’s PCI bus device identifier.
+Linux’s pciutils compiled for MSDOS.
+Patents which mention “UMC Super Energy Star Green File, UM8881F/8886F”: 5802555 and 5737765.
+UMC IDE/EIDE controller discussion thread.
+Pinouts for UMC SIO and I/O coupler discussion thread.
+Discussion about adding PS/2 mouse support.
+The Retro Web pages for UM82C863F SIO, UM82C865F I/O coupler (both have an independently
+researched pinouts), UM8663 Improved SIO, UM8667 Improved I/O coupler, UM8881F HostBridge
+UM8886F IBC w/o IDE, UM8886AF IBC /w ISA IDE and UM8886BF IBC /w PCI IDE.
+
+
+Chipset markings
+The usual marking pattern of UMC chips looks like this:
+
+
+
+
+                                                 3
+                          UMC
+                          Device
+                          Suffix
+UM 8886 BF
+                          Revision
+9542 - FXO
+                          Date code
+1234567
+                          Serial?
+The chip functionality (pinouts, register set) depends on both suffix and revision markings. However
+the basic functionality seems to be the same.
+A database from HB and IBC photos existing on the internet shows following combinations of these
+chips and the dependency on the date of manufacture.
+NOTICE entries marked “?” were too blurred to be readable.
+
+HB      HB                 IBC      IBC     IBC
+date-   revi-   HB         suf-     date-   revi-   IBC
+code    sion    serial     fix      code    sion    serial   Motherboard
+9512    BCS     R21614     AF       9514    AYS     R221E6   Aquarius Systems/BCOM MB-4DUPC
+9611    ETT     137030     ??                                U-Board ST1A rev:B
+??                         AF       9510    AYS     R113E6   Soyo SY-027B2 / SY-027B5
+9541    BTA     131510     AF       9527    BYA     R417B0   Shuttle HOT-433
+9524    BTA     128910     AF       9544    FYO     MA03B0   QDI P4U880A/IO
+9523    BCS     M42926     AF       9544    FYS     MA05C5   QDI P4U880A/IO
+9521    BCA     N42649     AF       9521    AYS     M411D6   Protech PM486PU
+9511    BCT     R20613     AF       9511    AYS     R205SA   PowerTech MB468
+9535    ETA     133570     AF       9523    AYO     N429B6   Pine Technology PT-432A
+9528    BTA     129620     AF       9523    AYA     N421F1   Pine Technology PT-431A
+9548    ETS     134990     BF       9611    FXS     704050   PCPartner UMC Lite 486
+9518    BCA     N30618     AF       9517    AYS     R314F1   PCPartner UMC Lite 486
+95??    BTS     ??         AF       9515    AYA?    ??       PCPartner M486UPI
+9606    ETS     134880     BF       9611    FXS     704050   PCChips M921
+9535    ETO     133660     AF       9450    AYS     RA2548   PCChips M921
+9524    BTO     128630     AF       9540    BYS     R525E6   PCChips M921
+9540    BTO     131280     AF       9540    BYS     R603A6   PCChips M921
+9524    DYA     R42526     AF       9540    FYA     N904E0   MiTAC/Trigon PL4600C
+9519    DYS     R40460     AF       9525    AYS     N508B6   MiTAC/Trigon PH4500AU
+9524    BTA     124300     AF       9525    AYS     N516J6   Gigabyte GA-486AM
+9523    BCS     N42644     AF       9522    BYS     R423T6   Gigabyte GA-486AM
+9520    BCO     R30703     AF       9519    AYS     N409D0   Gigabyte GA-486AM
+9512    BCS     R11746     AF       9513    AYS     R222A7   Chicony CH-880C
+9514    ??      N22820     AF       9517    AYS     R329A6   Biostar MB-84xx-U
+9515    BCA     N30513     AF       9514    AYA     R226F6   Biostar MB-8425UUC-A
+9511    BCO     R20730     AF       9512    AYS     R215C6   Biostar MB-8425UUC
+9620    ETT     13536B     BF       9618    FXS     KM3Z58   U-Board JK-042E
+9631    EYA     R62913     BF       9633    FXA     KM4U53   U-Board JK-042E
+9611    ETT     137030     ??                                U-Board JK-042E
+9546    ETS     134640     BF       9547    DYS     RA26B5   A-Trend ATC-1415
+9519    BCT     N32406     AF       9524    AYA     N428D0   A-Trend ATC-1415
+9546    ETS     134350     BF       9547    DYS     RA25F0   A-Trend ATC-1415
+9536    ETA     133680     BF       9545    DYS     R702B5   A-Trend ATC-1415
+
+
+                                                    4
+HB      HB               IBC    IBC     IBC
+date-   revi-   HB       suf-   date-   revi-   IBC
+code    sion    serial   fix    code    sion    serial   Motherboard
+9631    EYS     R62921   BF     9625    FXA     KM4M62   Biostar MB-8425UUD-A
+9634    EYT     R63009   BF     9634    FXS     RM5366   Biostar MB-8425UUD-A
+9540    ETA     134740   BF     9545    DYS     R630B0   Biostar MB-8425UUD-A
+9552    ETS     134630   BF     9602    DYS     RC02J0   Biostar MB-8425UUD-A
+9609    ETO     136550   BF     9602    DYS     RB29C5   ECS UP8812 AIO
+9645    EYS     MA0508   BF     9645    FXO     KM5T65   Ford Lian 9885AW
+9506    BCS     RC2031   AF     9516    AYS     R320C1   MECER CORPORATION B885
+9507    BCA     RC2708   ??                              MG PCI/ISA-UD 486 GRN
+9549    BTA     130770   BF     9552    DYS     RB01E0   PCChips M915i
+9524    BTS     129180   AF     9524    AYA     N511B6   PCChips M915i
+9621    EYT     R42558   BF     9619    CYA     M322N0   PCChips M919 v1.x
+9621    EYT     R42436   BF     9617    FXT     ZM3452   PCChips M919 VER 3.3B/F
+9630    ETA     R62704   BF     9622    FXS     KM3Z62   PCChips M919 VER 3.4B/F
+9623    EYT     R42841   BF     9622    FXT     KM4958   PCChips M919 VER 3.4B/F
+9621    EYT     R42436   BF     9619    FXA     704060   PCChips M919 VER 3.4B/F
+9642    EYT     M92205   BF     9641    FXA     KM5J73   Pine Technology PT-432B
+9507    BCA     RC2033   AF     9509    AYS     RC24B6   Shuttle HOT-433 (Ver. 4.0)
+9603    ETS     136560   BF     9602    DYS     RB15D0   Shuttle HOT-433 (Ver. 4.0)
+9548    ETS     135830   BF     9604    DYS     SB29A5   Shuttle HOT-433 (Ver. 4.0)
+9640    EYO     R80728   BF     9641    FXA     KM5Y53   Shuttle HOT-433 (Ver. 4.0)
+9514    BCA     N30349   AF     9514    AYS     R301D1   Shuttle HOT-433 (REV. 1)
+9623    EYT     R51027   BF     9636    FXA     RM5666   Sowah Research SR-M401-A
+9540    ETA     134740   ??                              Sowah Research SR-M401-A
+9651    EYA     MB1231   BF     9652    FXS     MMBM69   Sunnylab SYL8884PCI-EIC
+9606    ETS     134880   BF     9611    FXS     704050   Trang Bow/Trangg Bow TB-486-OB
+9614    ETT     ??       BF     9615    FXT     KM3453   Trang Bow/Trangg Bow TB-486-OB
+9622    EYT     R50934   AF?    9544    FYT     R911A0   Trang Bow/Trangg Bow TB-486-OB
+9441    BA      R90519   F      9444    AS      R91328   ECS UM8810P-AIO
+9444    BS      R91443   F      9445    BS      R93046   PowerTech MB467
+9429    BS      R62582   F      9432    AS      R70166   QDI MP4-P4U880GRN V2
+9511    BCT     R20613   F      9513    EYS     R11345   QDI MP4-P4U885G
+9525    EYS     R62???   F      9527    EYS     ??       Siemens Nixdorf System Board D882
+9506    BCA     RC0620   F      9453    BS      RA0650   TK TK8880F/2066
+9512    BCT     N21917   F      9513    EYS     R11345   TK TK8880F/2066A2
+9636    EYT     R80720   F      9638    EYT     Z61550   AST Advantage! 575
+9437    BA      R73013   F      9437    AA      R80235   Chaintech 4UPB
+9435    BS      R72240   F      9437    AA      R80234   DataExpert EXP8046
+9446    BCS     RA0844   F      9448    BS      RA2944   ECS UM8810P-AIO (rev 1.x)
+9525    BTT     129700   F      9529    EYO     N61265   ECS UM8810P-AIO (rev 2.x)
+9451    BCS     RA0433   F      9450    BS      RA3034   ECS UM8810P-AIO (rev 2.x)
+9435    BS      R72336   F      9437    AA      R80540   Gigabyte GA-486IM
+9448    BCA     RA2749   F      9445    BS      R92941   Gigabyte GA-486IM
+9441    BS      R82721   F      9432    AS      R70569   Gigabyte GA-486IM
+9449    BCS     RA0631   F      9448    BS      RA1344   Gigabyte GA-486IM
+9435    BS      R72636   F      9437    AS      R73138   Gigabyte GA-486IM
+9603    ETS     136100   BF     9552    DYS     RB15E0   Shuttle HOT-433 (Ver. 4.0)
+9524    BTS     124020   AF     9544    FYT     MA03B5   QDI P4U880A/IO
+9528    EYS     R52816   F      9526    EYS     N51484   Siemens Nixdorf System Board D882
+9514    BCA     N22726   F      9513    EYS     RC0549   QDI MP4-P4U885G
+9520    BCO     N30946   F      9520    EYS     R40554   QDI MP4-P4U885G
+9519    BCS     N32215   AF     9519    AYS     N405M6   Pine Technology PT-431A
+9620    EYS     R41235   BF     9618    FXA     RM3153   PCChips M919
+9444    BS      R91445   F      9445    BS      R92841   PowerTech MB467
+
+
+                                                5
+HB      HB               IBC    IBC     IBC
+date-   revi-   HB       suf-   date-   revi-   IBC
+code    sion    serial   fix    code    sion    serial    Motherboard
+9544    ETA     133820   BF      9607   DYS     RB28D0    Sunnylab SYL8884PCI-EIC
+9646    EYT     MA1815   BF      9651   FXS     MMBN60    PCChips M919
+9540    ETA     133760   BF      9540   DYS     R618F6    Biostar MB-8433UUD-A
+9512    BCT     N21918   AF      9516   AYS     R311M6    Shuttle HOT-433 (Ver. 1-3)
+9434    BS      R72239   F       9434   AS      R70367    ECS UM8810P-AIO (rev 1.x)
+9448    BCA     RA1747   F       9452   BS      RA2449    ECS UM8810P-AIO (rev 1.x)
+9448    BCA     ?A0845   F       9448   BS      SA2347    ECS UM8810P-AIO (rev 1.x)
+9508    BCS     R10338   ??                               ECS UM8810P-AIO
+9535    ETA     133570   BF      9539   DYS     R607K6    Biostar MB-8425UUD-A
+9606    ETS     135370   BF      9611   FXS     615040    Biostar MB-8425UUD-A
+9435    BS      R72240   F       9438   AS      R80424    ECS UM8810P-AIO (rev 1.x)
+9548    ETS     136680   BF      9552   DYS     RB16E0    Biostar MB-8425UUD-A
+9519    BCS     N30514   F       9519   EYS     R40159    ECS UM8810P-AIO (rev 2.x)
+9552    ETS     134250   BF      9552   DYS     RB16E0    Octek HIPPO 15
+9514    BCS     N30111   AF      9513   AYS     R222B1    Shuttle HOT-433 (REV. 1)
+9645    EYA     MA0508   BF      9643   FXA     KM5E68 PCChips M919 VER 3.4B/F
+9642    EYT     M92201   BF      9641   FXA     KM5J71    PCChips M919
+9620    EYS     R41235   ??sticker
+                                 96??   ??      RM??      PCChips M919
+9640    EYO     R80728   BF      9639   FXT     KM5R57 Shuttle HOT-433 (Ver. 4.0)
+9447    BCS     RA0434   F       9445   BS      RA0152    DataExpert EXP8046
+9615    ETA     13686B   BF      9615   CYS     Z306E5    PCChips M919 VER 3.2
+9435    BS      ???      ???     9435   AS      ???       PCChips M915 V1.3, chipset
+                                                          rebranded
+9651    EYA     MB1330   BF      9652   FXS     MMBN53 PCChips M919 VER 3.4B/F
+9629    EYA     R51712   BF      9625   FXA     KM4960 PCChips M919 VER 3.4B/F
+9512    BCS     R21614   AF      9512   AYT     R213B6    PowerTech MB468
+9550    BTT     132210   BF      9549   DYS     RA25E0    PCChips/Hsin Tech M921
+9544    BTA     132460   AF      9540   BYS     R530D5    Gigabyte GA-486AM
+9614    ETA     134770   ??sticker
+                                 ??     ??      ZM3152(?) PCChips/Hsin Tech M921
+9517    BTS     123820   F       9519   EYS     R40552    ECS UM8810P-AIO (rev 2.x)
+9516    BTO     125100   AF      9517   AYS     R321E6    Gigabyte GA-486AM
+9437    BA      R72812   F ??    ??     ??      ??        Gigabyte GA-486IM
+                         blurry
+9516    BTO     124320   ??      ??     ??      ??        Gigabyte GA-486AM
+                         blurry
+9434    BS      R72239   F       9433   AS      R63068    Gigabyte GA-486IM
+9602    ETS     133670   ??sticker
+                                 ??     ??      ??        Sowah Research SR-M401-A
+9524    BTA     128490   AF      9525   BYS     R419E1    Gigabyte GA-486AM
+9435    BS      R72241   F       9442   AS      R91326    ECS UM8810P-AIO
+9642    EYT     M92507   BF      9643   FXT     MM5Q58    PC Chips M919
+9614    ETA     134900   BF      9616   FXS     ZM3152    PC Chips M919
+9622    EYA     R42843   F       9617   EYS     MB0827    AST Advantage! 575
+9546    ETS     134750   BF      9546   DYS     R618G1    Biostar MB-8433UUD-A rev 2
+9633    EYT     R63012   BF      9634   FXS     RM5366    Biostar MB-8433UUD-A rev 3
+9523    BCT     N42462   AF      9523   AYA     N426A0    Shuttle HOT-433
+9437    BA      R73012   F       9437   AS      R73137    ECS UM8810P-AIO
+9523    BCT     N42647   AF      9523   AYA     N426A0    Shuttle HOT-433
+9514    BCS     N30112   AF      9514   AYA     R302D1    Shuttle HOT-433
+9511    BCT     R20613   AF      9517   AYS     R328N6    Shuttle HOT-433
+9523    BCT     N42462   AF      9520   AYS     R404M0    Shuttle HOT-433
+9520    BCS     N32216   F       9520   EYS     R40649    TK TK8880F/2066A2
+9714    EYS     EC0521   BF      9652   FXS     MMBN57    PC Chips M919 (youngest NB!, MAME)
+9650    EYS     MB1227   BF      9649   FXA     MMB575    PCChips M921
+
+
+                                                6
+HB       HB                 IBC    IBC      IBC
+date-    revi-   HB         suf-   date-    revi-   IBC
+code     sion    serial     fix    code     sion    serial     Motherboard
+9506     BCA     RC0619     F       9510    EYS     RC0344     QDI MP4-P4U885G
+9514     BCS     N30620     AF      9515    AYS     R311N1     Gigabyte GA486AM/S
+9523     BCT     N43037     AF      9520    BYS     R331C0     Gigabyte GA486AM/S
+9634     EYT     R62916     BF      9633    FXA     KM4U53     PC Chips M919
+9636     EYT     ??0725     BF      9640    FXA     KM5E69     PC Chips M919
+9622     EYS     R42559     BF      9618    FXS     M33640     PC Chips M919
+9618     ETA     136078     BF      9611    FXS     630040     PC Chips M919
+9610     ETO     136090     BF      9615    CYA     Z303A0     PC Chips M919
+9618     ETA     13566B     BF      9616    CYT     M320G5     PC Chips M919
+9622     EYT     R42641     BF      9622    FXA     KM4161     PC Chips M919
+9514     BCS     N22816     AF      9516    AYS     R314G1     Biostar MB-8425UUC-A Ver:3.1
+9541     BTA     131510     AF      9536    AYS     N428S1     Shuttle HOT-433
+9524     BTT     128410     AF      9536    AYS     N428C6     Shuttle HOT-433 (REV. 1)
+9636     EYT     R80614     BF      9636    FXA     KM5Y54     ? Biostar MB-8425UUD-A
+9633     EYT     R62706     BF      9631    FXO     KM5Y52     Biostar MB-8425UUD-A
+???      ???     ???445     ???     ???     ???     ???        QDI MP4-P4U885G
+9623     EYS     R51132     BF      9625    FXT     KM5368     Biostar MB-8433UUD-A rev 3
+9611     ETS     133940     BF      9615    FXS     RM3151     Biostar MB-8433UUD-A rev 2
+9504     BTS     E12100     AF      9534    AYA     N522C6     PCChips M921
+9519     BCS     N30514     AF      9520    AYT     N413G1     PCPartner UMC Lite 486
+9540     ETA     135500     ??sticker
+                                    ?       ?       ?          Sowah Research SR-M401-A
+9523     BCT     N42646     F       9523    EYS     N42552     ECS UM8810P-AIO (rev 2.x)
+9520     BCS     R40837     F       9442    AS      R90514     Chicony CH-881A REV 1.0
+9521     BTA     124910     AF      9520    AYO     N33041     PCChips/Hsin Tech M915i
+9524     BCO     N42643     AF      9540    BYS     R604B0     PCChips/Hsin Tech M921 (486)
+9523     BCS     N42849     AF      9524    AYA     N511C5     TriGem SanJose
+9518     BCS     N30701     AF      9519    AYS     N403L6     Shuttle HOT-433
+???      BT?     ???        A?      ???     AY?     ???        PCChips/Hsin Tech M915i, sanded
+                                                               markings (Bits und Bolts)
+9514     BCA     N22726     AF     9521     AYA     N415B6     Shuttle HOT-433 (REV. 1)
+9525     BTT     129700     AF     9520     AYO     N412J5     ADI F4DXP-UC5D-I
+
+
+Suffix and revision analysis
+
+Some chips may have sanded markings and they may be simply labeled as: “1/BT” and “6A/AY”. It
+is likely an equivalent of UM8881F-BTx and UM8886AF-AYx respectively, although the third letter of
+revision is uncertain (usually BTO, BTS and AYA, AYS, AYT respectively).
+The omission of the third letter could point to a hypothesis the last letter doesn’t have any meaningful
+value on the board design (no HW nor SW differences). Or it could just lead to a laziness :-D.
+On the other hand, the first weeks of manufacture of the HB have genuinely two letter revision codes,
+so it could be amount of manufactured chips (ex. more assembly lines).
+The oldest HB seems to be from 9429 (BS or BA), after 9444 the 3-letter revision code appears (BCx,
+BTx). There was no Cxx code and only like two occurrences of Dxx code. The first occurrence of Exx
+code is from 9525 (Bxx revision was going in parallel). No Fxx ever appeared, so the development
+probably ended up with Exx revision. The main production of the HB probably ended in the last week
+of 1996 (last found datecode 9651). But during the exhaustive search a single datecode 9714 for
+revision EYS was found on PC-Chips board. It could be a custom batch or just selling accumulated
+parts. Interestingly there are revisions which are later in the alphabet.
+The IBC has different part number suffixes (F, AF, BF and N). These have both SW and HW differences.
+The oldest IBC which was found is F (suffix) from 9432. The first revisions were also two letters (AA,
+
+
+                                                    7
+AS). Since 9445 there are occurrences of F suffix with BS revision. The first AF suffix occurred in
+week 9450 with revision AYS. The F suffix is then manufactured in parallel with a revision EYS. The AF
+continues with revisions AYA, BYA and FYx until 9544. The first BF suffix appeared in 9539 with DYS
+revision. This was developed into FXS revision in 9611. Until the end of the general manufacturing
+in 9652 the revisions CYx and other FXx have appeared. The last suffix F occurred in 9638 with EYT
+revision.
+No IBC with suffix N was stored in the database as these seems to be combined mostly with pentium
+generation HB.
+A special case of 1997 date code was found thanks to Bits und Bolts in “Socket 3 Nightmare: New
+Old Stock, But Then I Bricked It!” video, there are 5x IBC chips of the latest date code even found.
+The markings are “UM8886BF 9724-FXT MM5G17”. The serial codes were the same.
+
+Serial code analysis
+
+The “serial” code (the last line of the chip marking) is almost always different. However there were
+few chips with the same value.
+Two HBs with the same “serial” code have other values same, with exception of “MA0508” (EYS vs
+EYA, these could be mistake from photos). The IBC follows the same rule.
+There are chips with the same datecode, suffix and revision, which have nearly the same serial code.
+On the other hand, most of chips with the similar datecode have the serial code with high differences.
+There is a correlation between first 3 letters and datecode.
+Taking all this into the account, the “serial” code may be a different way to encode suffix, revision,
+date, production line a/or a batch.
+
+
+Existing PCI devices
+Following PCI devices exist, according to the linux database:
+
+                                VID    Vendor name
+                                1060   United Microelectronics [UMC]
+
+
+
+                                        DID    Device name
+                                        0001   UM82C881
+                                        0002   UM82C886
+                                        0881   UM8881
+                                        0886   UM8886F
+                                        1001   UM886A
+                                        673a   UM8886BF
+                                        886a   UM8886A
+                                        8881   UM8881F
+                                        8886   UM8886F
+                                        888a   UM8886A
+                                        e881   UM8881N
+                                        e886   UM8886N
+                                        e88a   UM8886N
+
+
+Chipset address ranges
+Memory map:
+
+
+
+                                                  8
+Start           End             Usage
+000c0000        000cffff        Segment C, ROM/ISA/RAM shadow, cacheable/writeable
+000d0000        000dffff        Segment D, ROM/ISA/RAM shadow, cacheable/writeable
+000e0000        000effff        Segment E, ROM/ISA/RAM shadow, cacheable/writeable
+000f0000        000fffff        Segment F, ROM/ISA/RAM shadow, cacheable/writeable
+fffc0000        fffcffff        Segment C, ROM/ISA, read only
+fffd0000        fffdffff        Segment D, ROM/ISA, read only
+fffe0000        fffeffff        Segment E, ROM/ISA, read only
+ffff0000        ffffffff        Segment F, ROM/ISA, read only
+
+
+
+Host Bridge (HB) UM8881-F
+The Host Bridge is a PCI based 486 chipset. It integrates:
+  • 486 front side bus
+  • DRAM controller
+  • Up to L2 cache 1 MiB (dual bank/interleaved) or 512 kiB (single bank), write-back or write-
+    through
+  • Tag RAM
+  • PCI busmaster
+  • VESA Local bus support
+  • Power management functions
+No IDE controller is implemented in the HB. All communication with IBC and rest of the system is
+done via PCI bus.
+
+
+HB revisions
+The HB comes in multiple revisions. EDO seems to be supported only from PCI revision 4 and higher.
+Manual for Pine Technology PT-432B refers to the EDO capable HB as UM8881F/E, manual for Shuttle
+HOT-433 as UMC8881F-Exx.
+The PCI revision can be also check via software. The 32-bit register 0x8 in PCI configuration space
+contains Revision ID field which shows the revision value.
+NOTICE No HBs with values other than 4 were tested. This datasheet refers to HB PCI revision 4 in
+all documentation.
+You can see the value if you execute pciutils’s lspci:
+00:10.0 Host bridge [0600]: United Microelectronics [UMC] UM8881F [1060:8881] (rev 04)
+Or if you execute PCICFG.EXE in MSDOS:
+PCI bus 00 device 10 function 00: Header Type 'non-bridge' (single-func)
+Vendor: 1060    United Microelectronics (UMC)
+Device: 8881    UM8881 HB4 486 PCI Chipset
+Class:    06    bridge                  Revision:  04
+Other revisions may or may not have other HB registers readable/writable.
+
+
+
+
+                                                  9
+HB pin assignment
+HB schematic symbol
+
+
+
+
+                      10
+HB pin list overview
+
+  1          GND        53      CRW0#    105             GND   157 CAS2_SLOT1#
+  2           CLK       54      CRW1#    106            AD26   158 CAS3_SLOT1#
+  3       SMIACT#       55      CRW2#    107            AD25   159 CAS0_SLOT2#
+  4         HITM#       56      CRW3#    108            AD24   160 CAS1_SLOT2#
+  5       CACHE#        57     CRCSA#    109          CBE3#    161 CAS2_SLOT2#
+  6          PA31       58     CRCSB#    110            AD23   162 CAS3_SLOT2#
+  7          PA30       59         CA0   111            AD22   163 RAS02_SLOT1#
+  8          PA29       60        GND    112            AD21   164           GND
+  9          PA28       61      VCC5V    113    AD20_IDSEL3    165        VCC5V
+ 10        VCC5V        62       CA1_0   114         VCC5V     166 RAS13_SLOT1#
+ 11          PA27       63        PD31   115    AD19_IDSEL2    167 RAS02_SLOT2#
+ 12          PA26       64        PD30   116            AD18   168 RAS13_SLOT2#
+ 13          PA25       65        PD29   117            AD17   169         MWE#
+ 14          PA24       66        PD28   118            AD16   170         MRE#
+ 15          GND        67        PD27   119             GND   171           MA0
+ 16          PA23       68        PD26   120          CBE2#    172           MA1
+ 17          PA22       69        PD25   121        FRAME#     173           MA2
+ 18          PA21       70        PD24   122           IRDY#   174           MA3
+ 19          PA20       71        PD23   123          TRDY#    175           MA4
+ 20          PA19       72        PD22   124       DEVSEL#     176           MA5
+ 21          PA18       73        PD21   125          STOP#    177           MA6
+ 22          PA17       74        PD20   126          LOCK#    178           MA7
+ 23          PA16       75        PD19   127         SERR#     179           MA8
+ 24          PA15       76        PD18   128             PAR   180           MA9
+ 25          PA14       77        PD17   129          CBE1#    181         MA10
+ 26          GND        78        GND    130             GND   182         MA11
+ 27          PA13       79        PD16   131            AD15   183           GND
+ 28          PA12       80        PD15   132            AD14   184        BOFF#
+ 29          PA11       81        PD14   133            AD13   185        PHOLD
+ 30          PA10       82        PD13   134    AD12_IDSEL1    186        EADS#
+ 31           PA9       83        PD12   135            AD11   187         KEN#
+ 32           PA8       84        PD11   136            AD10   188         RDY#
+ 33           PA7       85        PD10   137             AD9   189        BRDY#
+ 34           PA6       86         PD9   138             AD8   190   DP3/LGNT1#
+ 35           PA5       87         PD8   139          CBE0#    191   DP2/LGNT2#
+ 36           PA4       88         PD7   140             AD7   192   DP1/LREQ1#
+ 37           PA3       89         PD6   141             AD6   193   DP0/LREQ2#
+ 38          GND        90         PD5   142             GND   194        PBE3#
+ 39           PA2       91         PD4   143         PCICLK    195        PBE2#
+ 40           TA7       92         PD3   144        RESET#     196        PBE1#
+ 41           TA6       93         PD2   145            GNT#   197        PBE0#
+ 42           TA5       94         PD1   146             AD5   198          PWR
+ 43        VCC5V        95         PD0   147         VCC5V     199          PMIO
+ 44           TA4       96        GND    148             AD4   200           GND
+ 45           TA3       97      VCC5V    149             AD3   201        VCC5V
+ 46           TA2       98   REFRESH#    150             AD2   202        LRDY#
+ 47           TA1       99      TURBO    151             AD1   203        LDEV#
+ 48           TA0      100        AD31   152             AD0   204           PDC
+ 49        TRWR#       101        AD30   153            REQ#   205         PPCD
+ 50       CROEA#       102        AD29   154   CAS0_SLOT1#     206       PLOCK#
+ 51       CROEB#       103        AD28   155   CAS1_SLOT1#     207        PHLDA
+ 52          GND       104        AD27   156             GND   208         ADS#
+
+                                         11
+HB pin description
+
+Pins were traced on A-Trend ATC-1415 board, so part’s references are for this board.
+
+Pin   Name                 Direction      Type         Description
+1     GND                  power_in       line         Ground
+2     CLK                  input          clock        Chipset clock, via 10R + buffer to UM8886
+                                                       pin 51
+3     SMIACT#              input          input_low    Jumper J27, (also near J21 BREQ)
+4     HITM#                input          input_low    multiple jumpers
+5     CACHE#               input          input_low    J12.1 (via J12.2 to CPU), connected to J13.2
+                                                       (via J13.1 to J26.2)
+6     PA31                 tri_state      line         CPU address 31
+7     PA30                 tri_state      line         CPU address 30
+8     PA29                 tri_state      line         CPU address 29
+9     PA28                 tri_state      line         CPU address 28
+10    VCC5V                power_in       line         Power supply +5V
+11    PA27                 tri_state      line         CPU address 27
+12    PA26                 tri_state      line         CPU address 26
+13    PA25                 tri_state      line         CPU address 25
+14    PA24                 tri_state      line         CPU address 24
+15    GND                  power_in       line         Ground
+16    PA23                 tri_state      line         CPU address 23
+17    PA22                 tri_state      line         CPU address 22
+18    PA21                 tri_state      line         CPU address 21
+19    PA20                 tri_state      line         CPU address 20
+20    PA19                 tri_state      line         CPU/cache/tag address 19/17/15? TODO
+                                                       does 1MiB interleaved cache use pin for TAG
+                                                       address?
+21    PA18                 tri_state      line         CPU/cache/tag address 18/16/14, cache pin
+                                                       A16, tag pin A13/CE2 (via 512k 1-2 J1 jumper
+                                                       - closer to U1)
+22    PA17                 tri_state      line         CPU/cache/tag address 17/15/13, cache pin
+                                                       A15, tag pin A14/NC (via 256k 3-4 J1 jumper)
+23    PA16                 tri_state      line         CPU/cache/tag address 16/14/12, cache pin
+                                                       A14, tag pin A11
+24    PA15                 tri_state      line         CPU/cache/tag address 15/13/11, cache pin
+                                                       A13, tag pin A10
+25    PA14                 tri_state      line         CPU/cache/tag address 14/12/10, cache pin
+                                                       A2, tag pin A2
+26    GND                  power_in       line         Ground
+27    PA13                 tri_state      line         CPU/cache/tag address 13/11/9, cache pin
+                                                       A3, tag pin A3
+28    PA12                 tri_state      line         CPU/cache/tag address 12/10/8, cache pin
+                                                       A4, tag pin A4
+29    PA11                 tri_state      line         CPU/cache/tag address 11/9/7, cache pin A5,
+                                                       tag pin A5
+30    PA10                 tri_state      line         CPU/cache/tag address 10/8/6, cache pin A6,
+                                                       tag pin A6
+31    PA9                  tri_state      line         CPU/cache/tag address 9/7/5, cache pin A7,
+                                                       tag pin A7
+32    PA8                  tri_state      line         CPU/cache/tag address 8/6/4, cache pin A12,
+                                                       tag pin A12
+33    PA7                  tri_state      line         CPU/cache/tag address 7/5/3, cache pin A0,
+                                                       tag pin A0
+
+
+
+                                                  12
+Pin   Name     Direction       Type        Description
+34    PA6      tri_state       line       CPU/cache/tag address 6/4/2, cache pin A1,
+                                          tag pin A1
+35    PA5      tri_state       line       CPU/cache/tag address 5/3/1, cache pin A8,
+                                          tag pin A8
+36    PA4      tri_state       line       CPU/cache/tag address 4/2/0, cache pin A9,
+                                          tag pin A9
+37    PA3      tri_state       line       CPU address 3
+38    GND      power_in        line       Ground
+39    PA2      tri_state       line       CPU address 2
+40    TA7      bidirectional   line       Tag address, to tag data pin 7 (permutated?)
+41    TA6      bidirectional   line       Tag address, to tag data pin 6 (permutated?)
+42    TA5      bidirectional   line       Tag address, to tag data pin 5 (permutated?)
+43    VCC5V    power_in        line       Power supply +5V
+44    TA4      bidirectional   line       Tag address, to tag data pin 4 (permutated?)
+45    TA3      bidirectional   line       Tag address, to tag data pin 3 (permutated?)
+46    TA2      bidirectional   line       Tag address, to tag data pin 2 (permutated?)
+47    TA1      bidirectional   line       Tag address, to tag data pin 1 (permutated?),
+                                          bootstrap J5.2 via 2k2 to GND or VCC5V
+48    TA0      bidirectional   line       Tag address, to tag data pin 0 (permutated?),
+                                          bootstrap J4.2 via 2k2 to GND or VCC5V
+49    TRWR#    output          output_low Cache tag write enable
+50    CROEA#   output          output_low Cache output enable for bank A (or a single
+                                          bank), via 33R
+51    CROEB#   output          output_low Cache output enable for bank B, possibly
+                                          also via 33R (reported by mkarcher)
+52    GND      power_in        line       Ground
+53    CRW0#    output          output_low Cache write enable [7:0], to U5 SRAM
+54    CRW1#    output          output_low Cache write enable [15:7], to U4 SRAM
+55    CRW2#    output          output_low Cache write enable [23:16], to U3 SRAM
+56    CRW3#    output          output_low Cache write enable [32:24], to U2 SRAM
+57    CRCSA#   output          output_low Cache chip select for bank A (or a single
+                                          bank), via 33R
+58    CRCSB#   output          output_low Cache chip select for bank B, possibly also
+                                          via 33R (reported by mkarcher)
+59    CA0      output          line       Cache address 0 (single or first interleaved),
+                                          pin A11
+60    GND      power_in        line       Ground
+61    VCC5V    power_in        line       Power supply +5V
+62    CA1_0    output          line       Cache address 1 (single bank), address 0
+                                          (second interleaved), pin A10
+63    PD31     tri_state       line       CPU (host) data 31
+64    PD30     tri_state       line       CPU data 30
+65    PD29     tri_state       line       CPU data 29
+66    PD28     tri_state       line       CPU data 28
+67    PD27     tri_state       line       CPU data 27
+68    PD26     tri_state       line       CPU data 26
+69    PD25     tri_state       line       CPU data 25
+70    PD24     tri_state       line       CPU data 24
+71    PD23     tri_state       line       CPU data 23
+72    PD22     tri_state       line       CPU data 22
+73    PD21     tri_state       line       CPU data 21
+74    PD20     tri_state       line       CPU data 20
+75    PD19     tri_state       line       CPU data 19
+76    PD18     tri_state       line       CPU data 18
+77    PD17     tri_state       line       CPU data 17
+
+
+                                      13
+Pin   Name          Direction     Type        Description
+78    GND           power_in      line        Ground
+79    PD16          tri_state     line        CPU data 16
+80    PD15          tri_state     line        CPU data 15
+81    PD14          tri_state     line        CPU data 14
+82    PD13          tri_state     line        CPU data 13
+83    PD12          tri_state     line        CPU data 12
+84    PD11          tri_state     line        CPU data 11
+85    PD10          tri_state     line        CPU data 10
+86    PD9           tri_state     line        CPU data 9
+87    PD8           tri_state     line        CPU data 8
+88    PD7           tri_state     line        CPU data 7
+89    PD6           tri_state     line        CPU data 6
+90    PD5           tri_state     line        CPU data 5
+91    PD4           tri_state     line        CPU data 4
+92    PD3           tri_state     line        CPU data 3
+93    PD2           tri_state     line        CPU data 2
+94    PD1           tri_state     line        CPU data 1
+95    PD0           tri_state     line        CPU data 0
+96    GND           power_in      line        Ground
+97    VCC5V         power_in      line        Power supply +5V
+98    REFRESH#      input         input_low   DRAM refresh, shared with ISA /REFRESH, via
+                                              R22 (470R) to +5V, via R23 (33R) to UM8886
+                                              p145, via C7 to GND
+99    TURBO         output        line        TODO, via R38 (10k) to +5V, to U18.2
+                                              (AND.I1), AND.I2 to UM8886 pin 54
+                                              (SMI2/LB2/KBCI), AND.Q via R88 to turbo LED
+100   AD31          tri_state      line       PCI Address/Data 31
+101   AD30          tri_state      line       PCI Address/Data 30
+102   AD29          tri_state      line       PCI Address/Data 29
+103   AD28          tri_state      line       PCI Address/Data 28
+104   AD27          tri_state      line       PCI Address/Data 27
+105   GND           power_in       line       Ground
+106   AD26          tri_state      line       PCI Address/Data 26
+107   AD25          tri_state      line       PCI Address/Data 25
+108   AD24          tri_state      line       PCI Address/Data 24
+109   CBE3#         tri_state      inverted   PCI command/byte enable 3
+110   AD23          tri_state      line       PCI Address/Data 23
+111   AD22          tri_state      line       PCI Address/Data 22
+112   AD21          tri_state      line       PCI Address/Data 21
+113   AD20_IDSEL3   tri_state      line       PCI Address/Data 20, IDSEL slot 3
+114   VCC5V         power_in       line       Power supply +5V
+115   AD19_IDSEL2   tri_state      line       PCI Address/Data 19, IDSEL slot 2
+116   AD18          tri_state      line       PCI Address/Data 18
+117   AD17          tri_state      line       PCI Address/Data 17
+118   AD16          tri_state      line       PCI Address/Data 16
+119   GND           power_in       line       Ground
+120   CBE2#         tri_state      inverted   PCI command/byte enable 2
+121   FRAME#        tri_state      inverted   PCI frame signal
+122   IRDY#         tri_state      inverted   PCI initiator ready, via R17 (33R)
+123   TRDY#         tri_state      inverted   PCI target ready, via R18 (33R)
+124   DEVSEL#       tri_state      inverted   PCI target selected
+125   STOP#         tri_state      inverted   PCI target halt request
+126   LOCK#         tri_state      inverted   PCI locked transaction
+127   SERR#         open_collector inverted   PCI system error
+128   PAR           tri_state      line       PCI parity
+
+
+                                         14
+Pin   Name          Direction   Type        Description
+129   CBE1#         tri_state   inverted   PCI command/byte enable 1
+130   GND           power_in    line       Ground
+131   AD15          tri_state   line       PCI Address/Data 15
+132   AD14          tri_state   line       PCI Address/Data 14
+133   AD13          tri_state   line       PCI Address/Data 13
+134   AD12_IDSEL1   tri_state   line       PCI Address/Data 12, IDSEL slot 1
+135   AD11          tri_state   line       PCI Address/Data 11
+136   AD10          tri_state   line       PCI Address/Data 10
+137   AD9           tri_state   line       PCI Address/Data 9
+138   AD8           tri_state   line       PCI Address/Data 8
+139   CBE0#         tri_state   inverted   PCI command/byte enable 0
+140   AD7           tri_state   line       PCI Address/Data 7
+141   AD6           tri_state   line       PCI Address/Data 6
+142   GND           power_in    line       Ground
+143   PCICLK        input       clock      PCI clock input driven via 10R and buffer
+                                           from UM8886 pin 53
+144 RESET#          input       input_low PCI bus + main reset, via inverter (U10.2)
+                                           from ISA RESET and UM8886 pin 157
+145 GNT#            input       input_low CPU gets granted PCI bus, driven from
+                                           UM8886 pin 121
+146   AD5           tri_state   line       PCI Address/Data 5
+147   VCC5V         power_in    line       Power supply +5V
+148   AD4           tri_state   line       PCI Address/Data 4
+149   AD3           tri_state   line       PCI Address/Data 3
+150   AD2           tri_state   line       PCI Address/Data 2
+151   AD1           tri_state   line       PCI Address/Data 1
+152   AD0           tri_state   line       PCI Address/Data 0
+153   REQ#          output      output_low CPU requests PCI bus, sent to UM8886 pin
+                                           124
+154 CAS0_SLOT1#     output      output_low DRAM column address strobe 0, SIMM slot 1
+                                           (possible permutations)
+155 CAS1_SLOT1#     output      output_low DRAM column address strobe 1, SIMM slot 1
+                                           (possible permutations)
+156 GND             power_in    line       Ground
+157 CAS2_SLOT1#     output      output_low DRAM column address strobe 2, SIMM slot 1
+                                           (possible permutations)
+158 CAS3_SLOT1#     output      output_low DRAM column address strobe 3, SIMM slot 1
+                                           (possible permutations)
+159 CAS0_SLOT2#     output      output_low DRAM column address strobe 0, SIMM slot 2
+                                           (possible permutations)
+160 CAS1_SLOT2#     output      output_low DRAM column address strobe 1, SIMM slot 2
+                                           (possible permutations)
+161 CAS2_SLOT2#     output      output_low DRAM column address strobe 2, SIMM slot 2
+                                           (possible permutations)
+162 CAS3_SLOT2#     output      output_low DRAM column address strobe 3, SIMM slot 2
+                                           (possible permutations)
+163 RAS02_SLOT1#    output      output_low DRAM row address strobe 0/2, via buffer to
+                                           SIMM slot 1 (possible permutations)
+164 GND             power_in    line       Ground
+165 VCC5V           power_in    line       Power supply +5V
+166 RAS13_SLOT1#    output      output_low DRAM row address strobe 1/3, via buffer to
+                                           SIMM slot 1 (possible permutations)
+167 RAS02_SLOT2#    output      output_low DRAM row address strobe 0/2, via buffer to
+                                           SIMM slot 2 (possible permutations)
+
+
+
+                                       15
+Pin   Name                  Direction       Type        Description
+168 RAS13_SLOT2#            output          output_low DRAM row address strobe 1/3, via buffer to
+                                                       SIMM slot 2 (possible permutations)
+169 MWE#                    output          output_low DRAM write enable, via buffer and 10R to all
+                                                       SIMM slots
+170 MRE#                    output          output_low Via 10R to 4x F245 pin T/R, optional buffer
+                                                       for DRAM data, (dual bank cache MB-4DUPC),
+                                                       TODO more tests
+171   MA0                   output          line       DRAM column/row address 0, via buffer
+172   MA1                   output          line       DRAM column/row address 1, via buffer
+173   MA2                   output          line       DRAM column/row address 2, via buffer
+174   MA3                   output          line       DRAM column/row address 3, via buffer
+175   MA4                   output          line       DRAM column/row address 4, via buffer
+176   MA5                   output          line       DRAM column/row address 5, via buffer
+177   MA6                   output          line       DRAM column/row address 6, via buffer
+178   MA7                   output          line       DRAM column/row address 7, via buffer
+179   MA8                   output          line       DRAM column/row address 8, via buffer
+180   MA9                   output          line       DRAM column/row address 9, via buffer
+181   MA10                  output          line       DRAM column/row address 10, via buffer
+182   MA11                  output          line       DRAM column/row address 11, via 10R
+183   GND                   power_in        line       Ground
+184   BOFF#                 output          output_low CPU backoff from bus
+185   PHOLD                 output          line       CPU bus hold, pin E15
+186   EADS#                 output          output_low CPU external address strobe
+187   KEN#                  output          output_low CPU cache enable
+188   RDY#                  output          output_low CPU non-burst ready, pin F16
+189   BRDY#                 output          output_low CPU burst ready, pin H15
+190   DP3/LGNT1#            bidirectional   line       CPU data parity 3, VLB local grant 1 (output)
+191   DP2/LGNT2#            bidirectional   line       CPU data parity 2, VLB local grant 2 (output)
+192   DP1/LREQ1#            bidirectional   line       CPU data parity 1, VLB local request 1 (input)
+193   DP0/LREQ2#            bidirectional   line       CPU data parity 0, VLB local request 2 (input)
+194   PBE3#                 input           input_low CPU byte enable 3
+195   PBE2#                 input           input_low CPU byte enable 2
+196   PBE1#                 input           input_low CPU byte enable 1
+197   PBE0#                 input           input_low CPU byte enable 0
+198   PWR                   input           line       CPU write/read bus cycle, goes to jumpers
+                                                       (J15 INV, J17)
+199   PMIO                  input           line       CPU memory/IO bus cycle
+200   GND                   power_in        line       Ground
+201   VCC5V                 power_in        line       Power supply +5V
+202   LRDY#                 input           input_low VLB target ready, unimplemented with a pull
+                                                       up via 4k7 (RP12) to VCC5V
+203 LDEV#                   input           input_low VLB device cycle, unimplemented with a pull
+                                                       up via 4k7 (R52) to VCC5V, (boards use 10k
+                                                       too)
+204   PDC                   input           line       CPU data/control bus cycle, pin M15
+205   PPCD                  input           line       Page cache disable, pin J17
+206   PLOCK#                input           input_low CPU bus lock, pin N15
+207   PHLDA                 input           line       CPU hold acknowledge, pin P15
+208   ADS#                  input           input_low CPU address status
+
+
+HB registers
+Register values (almost) after the reset:
+50: 00 00 01 00 | 00 40 ff 0f | ff 0f 00 00 | 00 0f 00 ff
+
+
+                                                   16
+60: 00 00 00
+Register description:
+40 to 4F
+           Not implemented (each returns 0x00 after writing 0xff)
+
+50.80   L2 cache enable
+        not sure if really enable (redundancy with size=none)
+        May have sequential behavior
+50.40   L2 cache mode (WT/WB)
+50.30   Cache read burst (3-2-2-2/3-1-1-1/2-2-2-2/2-1-1-1)
+        0: 3-2-2-2
+        1: 3-1-1-1
+        2: 2-2-2-2
+        3: 2-1-1-1
+50.08   Two banks of cache
+50.07   L2 cache size (none/64K/128K/256K/512K/1024K/resvd/resvd)
+        6-7 could be 2MiB
+        TODO how the size and bankiness relates
+        L2 cache must be made coherent with RAM, code cannot be run from cacheable region
+            safe region is most likely ffff0000
+        L1 invd will trigger L2 cache
+
+51.C0   Read wait state (3/2/1/0)
+        0: 3 states
+        1: 2 states
+        2: 1 state
+        3: 0 states
+51.30   Write wait state (3/2/1/0)
+        0: 3 states
+        1: 2 states
+        2: 1 state
+        3: 0 states
+51.08   UNKNOWN, resource lock enable
+51.04   A0000-BFFFF(?) PCI write merge
+        possible:
+        0: vl bus
+        1: pci
+51.02   Set after memory test, cleared for L1WB
+        possible L1 WB policy
+        0: WB
+        1: WT
+51.01   Tag allocation (7Tag+1Dirty/8Tag+0Dirty)
+
+52.80   CPU to PCI Post Write
+        0: 1 WS
+        1: 0 WS
+52.70   Upper region total capacity
+        Is enabled only if lower region is enabled
+        Set capacity must be always lower or the same as lower region or excess capacity will be reduced to
+        Both banks in the region must have the same original capacity (or one bank with reduced or one bank
+        If one bank is disabled, it must be re-sorted from larger to smaller (0)
+        Upper bank could theoretically be configured as non-matching and useable if the non-implemented par
+
+           0: region disabled
+           1/2/3/4/5/6/7 same as 52.07
+
+
+
+                                                 17
+52.08   Assign banks to lower and upper region
+        0: lower region will define capacity for banks 0 and 1
+            upper region will define capacity for banks 2 and 3
+        1: lower region will define capacity for banks 2 and 3
+            upper region will define capacity for banks 0 and 1
+52.07   Lower region total capacity, physical memory address [0] to [L]
+        sets capacity for a pair of banks (= SIMM slots)
+        lower region _must_ have a larger capacity than upper region (use 52.08 if banks 2/3 are larger) -
+        Lower region will always limit upper region to this capacity
+
+        0: Both regions disabled (entire RAM inaccessible)
+        1: 2 MiB
+            ?? most likely 1x 9 cols, 10 rows, 61.30 = 00 (ignored)
+        2: 4 MiB, 1M addresses
+            1x 10 cols, 10 rows, 61.30 = 00
+        3: 8 MiB, 2M addresses
+            1x 10 cols, 11 rows, 61.30 = 00
+            2x 10 cols, 10 rows, 61.30 = 00
+        4: 16 MiB, 4M addresses
+            1x 11 cols, 11 rows, 61.30 = 00
+            2x 10 cols, 11 rows, 61.30 = 00
+            1x 10 cols, 12 rows, 61.30 = 30
+        5: 32 MiB
+            2x 11 cols, 11 rows, 61.30 = 00
+            2x 10 cols, 12 rows, 61.30 = 30
+        6: 64 MiB
+            NOTICE most likely too: 1x 12 cols, 12 rows, asymmetric
+            4x 10 cols, 12 rows, 61.30 = 30
+            4x 11 cols, 11 rows, 61.30 = 00
+        7: 128 MiB
+            NOTICE 4x 12 cols, 12 cols would make 256MiB for pair
+
+        rest DRAMs untested (no samples)
+        TODO how does older chipset revisions works here (probably no asymmetric support)
+
+        (incomplete) extrapolated map [address -> pin] 1x single sided bank
+        2-20 static for any mode (exact mapping unknown, likely linear)
+        non 4k/symmetric
+            next address bit is at new col or row as capacity increases
+        4k/12 rows
+            next address bits first in "rows" and then in "cols"
+
+        pin     col     row
+        --------------------
+        MA0     2       11
+        MA1     3       12
+        MA2     4       13
+        MA3     5       14
+        MA4     6       15
+        MA5     7       16
+        MA6     8       17
+        MA7     9       18
+        MA8     10      19
+        MA9     A       20
+        MA10    C       B
+        MA11    E       D
+
+
+
+                                              18
+        RxC[as] A    B    C    D    E
+        10x10   21   NC   NC   NC   NC
+        10x11   21   22   NC   NC   NC
+        11x11   21   22   23   NC   NC
+        10x12as 23   21   24   NC   NC
+        12x12as 23   21   24   22   25
+
+        === 1x 32MiB: 10 cols, 12 rows, 2 sides, EDO ===
+        52.07 = 05
+        61.30 = 30
+        === 1x 16MiB: 11 cols, 11 rows, 1 side, FPM ===
+        52.07 = 04
+        61.30 = 00
+        === 1x 16MiB: 11 cols, 11 rows, 1 side, EDO ===
+        52.07 = 04
+        61.30 = 00
+        === 1x 8MiB: 10 cols, 11 rows, 1 side, EDO ===
+        52.07 = 03
+        53.02 = 00
+        61.30 = 00
+        === 2x 8MiB: 10 cols, 11 rows, 1 side, EDO ===
+        52.07 = 04
+        53.02 = 01
+        61.30 = 00
+
+53.80   CPU to PCI Burst Write
+53.40   Burst copy back option
+53.20   swap bank 2/3 (= only bank 3 is used)
+53.10   swap bank 0/1 (= only bank 1 is used)
+53.08   Upper region sides
+        0: single sided
+        1: double sided
+53.04   Upper region number of banks
+        0: 1 bank occupied
+        1: 2 banks occupied
+53.02   Lower region sides
+        0: single sided
+        1: double sided
+53.01   Lower region number of banks
+        0: 1 bank occupied
+        1: 2 banks occupied
+
+54.80   DC000-DFFFF shadow read enable
+54.40   D8000-DBFFF shadow read enable
+54.20   D4000-D7FFF shadow read enable
+54.10   D0000-D3FFF shadow read enable
+54.08   CC000-CFFFF shadow read enable
+54.04   C8000-CBFFF shadow read enable
+54.02   C0000-C7FFF shadow read enable
+54.01   E0000-EFFFF shadow read enable
+
+55.80   Global shadow read enable (AND with 54 bits)
+        F0000-FFFFF shadow read enable
+        0: reads from ROM, writes to RAM (unless readonly)
+        1: reads from RAM, writes to RAM (unless readonly)
+
+
+
+                                                19
+        L2 cache should be initialized before
+55.40   Global shadow write protect
+        0: RAM will be always overwritten even if not shadowed
+55.20   System BIOS cacheable
+        only if shadow is enabled and write protection disabled
+55.10   UNKNOWN, cleared in boot block (probably before flash)
+55.08   UNKNOWN, cleared in boot block (probably before flash)
+55.04   UNKNOWN, cleared in boot block (probably before flash)
+55.02   UNKNOWN, cleared in boot block (probably before flash)
+55.01   Video BIOS cacheable (TODO which addresses)
+
+56.FF   Memory hole base (in 64K blocks)
+
+57.80   Memory hole enabled/disabled
+57.70   Memory hole size (64k/128k/256k/1M/2M/4M/8M/off)
+        Can be used to "disable" caching (hole 0-2MiB)
+57.0F   UNKNOWN
+
+58.FF   0F if system BIOS cacheable
+
+59.FF   00 if system BIOS cacheable
+59.40   freezes linux if set
+
+5A.80   UNKNOWN, crashes kernel
+5A.40   Force L2 cache hit
+        even if L2 is disabled (50.80)
+        but not if RAM is disabled (probably needs computed cacheable range)
+5A.20   UNKNOWN, setting seems to not affect L2
+5A.10   Enable memory parity
+5A.08   UNKNOWN, set to 1 if L2 cache disabled in BIOS (no effect on OS)
+5A.04   UNKNOWN, set to 1 if L2 cache disabled in BIOS (no effect on OS)
+5A.02   Some kind of deturbo
+        could be always cache miss?
+        all levels of memory seems to be slowed
+        only if .08/04/01 is set
+5A.01   Cleared during processor clock measurement
+
+5B.FF   UNKNOWN, returns 0x2c on a booted linux, cannot be changed, but could be status
+
+5C.FF   SMRAM base A27..A20
+
+5D.80   Early Cache Write mode
+5D.40   UNKNOWN
+5D.20   UNKNOWN
+5D.10   Slow Refresh
+5D.0F   SMRAM base A31..A28, set to 0 in linux
+        TODO enable PM in BIOS
+
+5E.FF   UNKNOWN, writeable, set to 0x00 in linux
+
+5F.FF   UNKNOWN, writeable, set to 0xff in linux
+
+60.80   UNKNOWN
+60.40   UNKNOWN
+60.20   Set when enabling classic AMD SMRAM
+60.10   UNKNOWN
+
+
+
+                                                 20
+60.08   UNKNOWN
+60.04   UNKNOWN
+60.02   Disable memory(?) parity
+60.01   Open SMRAM space
+
+61.C0   EDO mode? (no/resvd/resvd/yes)
+61.20   Upper region asymmetric DRAM addressing
+        Support for 12 columns (MA11)
+        TODO document all modes (no 12x12 DRAM to test)
+61.10   Lower region asymmetric DRAM addressing
+        Support for 12 columns (MA11)
+61.08   EDO speed (4-2-2-2/3-1-1-1)
+61.04   UNKNOWN
+61.02   Cyrix L1WB mode
+61.01   UNKNOWN
+
+62.FC   not implemented (cannot be set)
+62.02   Burst mode (interleaved/linear)
+        setting on am5x86 cause a crash
+62.01   Set on early boot for revision "E"
+
+63 to FF
+           Not implemented (return 0x00 after writing 0xff)
+
+
+ISA Bridge Controller (IBC) UM8886-F/AF/BF/N
+The ISA Bridge Controller integrates most of the system’s glue logic and bridges PCI bus to ISA bus.
+It’s features includes:
+  • PCI arbiter for HB and regular PCI slots
+  • ISA bus
+  • PS/2 keyboard controller, optionally PS/2 mouse
+  • Minor CPU control signals
+  • IDE controller (only in AF/BF/N variants)
+  • Interface to RTC chip
+  • Up to 512 kiB flashable ROM BIOS
+  • IBM PC compatible chipset (PIT, PIC, DMA, PPI) logic
+  • Power management logic
+  • RESET logic
+  • Clock distribution
+
+
+IBC suffixes
+The IBC comes in 4 confirmed different variants marked with F/AF/BF/N suffixes.
+It is highly probable F vs AF/BF will differ in pinout as F doesn’t implement any IDE controller. No
+same motherboard models with F/AF variability were found.
+Parts suffixed by AF and BF seems to be almost fully compatible without a huge board redesign.
+Boards A-Trend ATC-1415, PCChips/Hsin Tech M921 (486) and PCPartner UMC Lite 486 seem to vary
+between both variants. There may be some invisible changes on PCB though.
+BF vs N variant definitely changes some pins functionality including power supply pins. N variant
+seems to have crammed support for devices on notebooks (ex. encoded DMA requests, docking
+and PC card signals and differently located PS/2 controllers). On ATC-1415 board with BF variant the
+keyboard clock is connected to UM8886BF pin 57 but schematics for UM8886-N has this pin labeled as
+PGP1/LDEV#/GA20, the keyboard data on BF leads to pin 56, which is called PGP0(RC#*) on variant
+
+
+                                                 21
+N. UM8886N can have the keyboard input on pin 54, which is labeled “SMI2#/LB2#/KBCI”. Also as
+Pentium boards can use 66 MHz FSB, some parts of this variant will be clocked at this speed.
+AF variant was found on a pentium board. It seems UM8886 is universal enough to be used as a
+generic PCI/ISA bridge.
+IDE is implemented only in AF/BF/N suffixed chips. The boards with F chip often use CMD640 or other
+IDE controller solutions.
+From the software point of view all variants differs. The AF has configuration registers for IDE located
+at I/O port 0x108. The BF IDE controller uses a PCI config space. Also the BF variant can remap the pin
+usage for PS/2 mouse (shared with ISA bus address signals). The N variant was not tested (no HW).
+But from the schematics it is built as an evolution from BF variant. It also needs to have additional
+configuration registers for notebook specific designs.
+
+
+IBC revisions
+As for revisions, no exact problems were reported, but it is generally recommended to have as latest
+revision as possible :-).
+It is possible i8042 controller in UM8886BF 9602 DYS doesn’t support 0xd3 command (= write byte to
+the second PS/2 port output buffer). This will fail autodetection in linux kernel. It is possible BIOS
+fixes this by emulating the command in an SMM handler. The UM8886BF 9602 DYS PCI arbiter supports
+PCI bus masters behind PCI (and even PCIe) bridge cascade, but older parts may have bugs in its PCI
+implementation (other 486 chipsets introduce multiple bus deadlocks if used with PCI bridges). IDE
+support (especially higher speeds) may have bugs too.
+
+
+IBC pin assignment
+IBC schematic symbol
+
+No F nor AF variants pinouts were traced. N variant pinout was researched from Mitac schematics.
+
+
+
+
+                                                  22
+23
+24
+IBC UM8886-BF pin list overview
+
+  1                GND     53 PCICLKO    105          VCC    157       RSTDRV
+  2               SD15     54  TURBO?    106       IDSEL     158          IRQ9
+  3            MEMW#       55 KEYLOCK    107     CBE3#       159           SD7
+  4            MEMR#       56 KB_DATA    108        AD24     160           SD6
+  5         MEMCS16#       57  KB_CLK    109        AD25     161           SD5
+  6           IOCS16#      58 ROMCS#     110        AD26     162           SD4
+  7              IRQ10     59     SPKR   111        AD27     163           SD3
+  8              IRQ11     60    INTD#   112        AD28     164           SD2
+  9              IRQ12     61    INTC#   113        AD29     165           SD1
+ 10              IRQ14     62    INTB#   114        AD30     166           SD0
+ 11              IRQ15     63    INTA#   115        AD31     167     IOCHRDY#
+ 12                GND     64      AD0   116         GND     168           AEN
+ 13            DACK0#      65      AD1   117     GNT0#       169     SA19/LA19
+ 14            DACK5#      66      AD2   118     GNT1#       170          GND
+ 15            DACK6#      67      GND   119     GNT2#       171          GND
+ 16            DACK7#      68      GND   120     GNT3#       172     SA18/LA18
+ 17             DREQ0      69      AD3   121 CPUGNT#         173     SA17/LA17
+ 18             DREQ1      70      AD4   122           ???   174          SA16
+ 19             DREQ2      71      AD5   123          VCC    175          SA15
+ 20             DREQ3      72      AD6   124 CPUREQ#         176          SA14
+ 21             DREQ5      73      AD7   125     REQ0#       177          SA13
+ 22             DREQ6      74   CBE0#    126     REQ1#       178          SA12
+ 23             DREQ7      75      AD8   127     REQ2#       179          SA11
+ 24             RSTIN#     76      AD9   128     REQ3#       180          SA10
+ 25             FERR#      77  PCICLKI   129      CLKIN      181           SA9
+ 26                VCC     78      VCC   130          VCC    182           VCC
+ 27                VCC     79     AD10   131          VCC    183           SA8
+ 28            IGNNE#      80     AD11   132          EOP    184           SA7
+ 29          CPURSTO       81     AD12   133        BCLK     185           SA6
+ 30                 NMI    82     AD13   134 IDEHDEN#        186           SA5
+ 31              A20M#     83     AD14   135  MASTER#        187           SA4
+ 32               SMI#     84     AD15   136  IOCHCK#        188           SA3
+ 33 STCK#/CYRIXSUSP#       85   CBE1#    137        0WS#     189           SA2
+ 34                 ???    86      PAR   138   SMEMR#        190           SA1
+ 35    EXTSMI1#_EPMI       87   SERR#    139  SMEMW#         191           SA0
+ 36     IDE17X#/PGP3#      88   LOCK#    140         GND     192        SBHE#
+ 37               INTR     89   STOP#    141      IORD#      193          LA23
+ 38            PTEST#      90      GND   142     IOWR#       194          GND
+ 39                GND     91 DEVSEL#    143    DACK3#       195          LA22
+ 40  XDEN/PGP2#/AS01       92   TRDY#    144    DACK1#       196          LA21
+ 41  XDIR/PGP3#/TCWR       93    IRDY#   145 REFRESH#        197          LA20
+ 42             RTCAS      94  FRAME#    146    DACK2#       198          LA19
+ 43           RTCWR#       95   CBE2#    147        BALE     199 LA18/MS_DATA
+ 44           RTCRD#       96     AD16   148          OSC    200  LA17/MS_CLK
+ 45      IDE1FX#_AS0#      97     AD17   149       IRQ8#     201           SD8
+ 46      IDE3FX#_AS1#      98     AD18   150         IRQ7    202           SD9
+ 47                 ???    99     AD19   151         IRQ6    203         SD10
+ 48                 ???   100     AD20   152         IRQ5    204         SD11
+ 49     IDE37X#/PGP2#     101     AD21   153         IRQ4    205         SD12
+ 50           SMIACT#     102     AD22   154         IRQ3    206         SD13
+ 51             HCLKO     103     AD23   155       ?IRQ1     207         SD14
+ 52                GND    104      GND   156         GND     208           VCC
+
+                                         25
+IBC UM8886-BF pin description
+
+Pins were traced on A-Trend ATC-1415 board and partially on Biostar MB-8433UUD-A board. The
+references to circuit parts should be attributed to the respective board.
+Data bus for BIOS and address/data bus for RTC on ATC-1415 are buffered via 74F245 and then they
+are connected to ISA data pins. BIOS/RTC cycle is distinguished from ISA cycle by DIR and /OE pins
+of the buffer. Buffer 74F245 direction pin 1 is driven from UM8886-BF pin 41 XDIR. 74F245’s output
+enable pin 19 is driven from UM8886-BF pin 40 XDEN.
+The IBC creates only control signals of the IDE interface, the data signals are shared with the ISA bus
+(via 74F245 buffers). The IDE bus cycle (primary or secondary) is distinguished from an ISA bus cycle
+with /OE and DIR pins of F245 buffers.
+
+Pin   Name                  Direction       Type        Description
+1     GND                   power_in        line       Ground
+2     SD15                  tri_state       line       ISA data 15
+3     MEMW#                 tri_state       inverted   ISA memory write (pin C10)
+4     MEMR#                 tri_state       inverted   ISA memory read (pin C9)
+5     MEMCS16#              tri_state       inverted   ISA 16bit memory chip select
+6     IOCS16#               input           input_low ISA 16bit I/O chip select
+7     IRQ10                 input           line       ISA interrupt 10
+8     IRQ11                 input           line       ISA interrupt 11
+9     IRQ12                 input           line       ISA interrupt 12
+10    IRQ14                 input           line       ISA interrupt 14
+11    IRQ15                 input           line       ISA interrupt 15
+12    GND                   power_in        line       Ground
+13    DACK0#                output          output_low ISA DMA acknowledge 0
+14    DACK5#                output          output_low ISA DMA acknowledge 5
+15    DACK6#                output          output_low ISA DMA acknowledge 6
+16    DACK7#                output          output_low ISA DMA acknowledge 7
+17    DREQ0                 input           line       ISA DMA request 0
+18    DREQ1                 input           line       ISA DMA request 1
+19    DREQ2                 input           line       ISA DMA request 2
+20    DREQ3                 input           line       ISA DMA request 3
+21    DREQ5                 input           line       ISA DMA request 5
+22    DREQ6                 input           line       ISA DMA request 6
+23    DREQ7                 input           line       ISA DMA request 7
+24    RSTIN#                input           input_low ?Reset input from power good circuitry, R89
+                                                       on ATC-1415
+25    FERR#                 input           input_low FPU error
+26    VCC                   power_in        line       Power supply +5V (possibly 3.3V optionally)
+27    VCC                   power_in        line       Power supply +5V
+28    IGNNE#                output          output_low Ignore FPU error
+29    CPURSTO               output          line       CPU reset (486 pin C10 SRST)
+30    NMI                   output          line       Nonmaskable interrupt to CPU
+31    A20M#                 output          output_low Mask CPU address 20
+32    SMI#                  bidirectional   inverted   System management interrupt, output
+                                                       request, input SMM status (486 pin B10 SMI)
+33    STCK#/CYRIXSUSP# output               output_low CPU stop clock / ?Cyrix suspend (486 pin
+                                                       G15 STPCLK)
+34    ???                   ???                        ???
+35    EXTSMI1#_EPMI         input           input_low External SMI 1 (PMU switch on ATC-1415)
+36    IDE17X#/PGP3#         output          output_low IDE 17Xh chip select (secondary) /
+                                                       Programmable output pin 3
+37    INTR                  output          line       Maskable CPU interrupt (486 pin A16 INTR)
+
+
+
+                                                   26
+Pin   Name              Direction     Type        Description
+38    PTEST#            ???                       via R89 to pin 24 (RSTIN), PTEST on revision
+                                                  N
+39    GND               power_in       line       Ground
+40    XDEN/PGP2#/AS01   output         output_low XD bus (8bit ISA) data buffer enable (BIOS
+                                                  74F245 nOE) / Programmable output pin 3 /
+                                                  ???
+41    XDIR/PGP3#/TCWR   output         line       XD bus (8bit ISA) data buffer direction (BIOS
+                                                  74F245 DIR) / Programmable output pin 2 /
+                                                  RTC 4K RAM R/W signal
+42    RTCAS             output         line       RTC address latch
+43    RTCWR#            output         output_low RTC write (RTC chip pin 14 R/W on ATC-1415)
+44    RTCRD#            output         output_low RTC read (RTC chip pin 17 DS on ATC-1415)
+45    IDE1FX#_AS0#      output         output_low IDE 1FXh chip select (primary)
+46    IDE3FX#_AS1#      output         output_low IDE 3FXh chip select (primary)
+47    ???               ?output                   ?? (ATC-1415 open jumper to RTC chip pin 18
+                                                  nRESET)
+48    ???               ???                       ???
+49    IDE37X#/PGP2#     output         output_low IDE 37Xh chip select (secondary) /
+                                                  Programmable output pin 2
+50    SMIACT#           input          input_low System management interrupt acknowledge
+                                                  from CPU (486 pin C12 SMIACT)
+51    HCLKO             output         clock      Global clock output to CPU and other parts of
+                                                  the chipset (on ATC-1415 via F244 buffers)
+52    GND               power_in       line       Ground
+53    PCICLKO           output         clock      Global clock output to the PCI subsystem
+54    TURBO?            open_collector line       ATC-1415: turbo switch AND gate, pullup
+55    KEYLOCK           input          line       Keylock switch
+56    KB_DATA           tri_state      line       AT keyboard data (input and output seems to
+                                                  be integrated in a single pin)
+57    KB_CLK            tri_state      line       AT keyboard clock (input and output seems
+                                                  to be integrated in a single pin)
+58    ROMCS#            output         output_low ROM chip select (keyboard controller chip
+                                                  select uncertain)
+59    SPKR              output         line       Speaker output
+60    INTD#             input          input_low PCI interrupt D
+61    INTC#             input          input_low PCI interrupt C
+62    INTB#             input          input_low PCI interrupt B
+63    INTA#             input          input_low PCI interrupt A
+64    AD0               tri_state      line       PCI Address/Data 0
+65    AD1               tri_state      line       PCI Address/Data 1
+66    AD2               tri_state      line       PCI Address/Data 2
+67    GND               power_in       line       Ground
+68    GND               power_in       line       Ground
+69    AD3               tri_state      line       PCI Address/Data 3
+70    AD4               tri_state      line       PCI Address/Data 4
+71    AD5               tri_state      line       PCI Address/Data 5
+72    AD6               tri_state      line       PCI Address/Data 6
+73    AD7               tri_state      line       PCI Address/Data 7
+74    CBE0#             tri_state      inverted   PCI command/byte enable 0
+75    AD8               tri_state      line       PCI Address/Data 8
+76    AD9               tri_state      line       PCI Address/Data 9
+77    PCICLKI           input          clock      PCI clock input (positive edge)
+78    VCC               power_in       line       Power supply +5V
+79    AD10              tri_state      line       PCI Address/Data 10
+80    AD11              tri_state      line       PCI Address/Data 11
+
+
+                                             27
+Pin   Name      Direction   Type        Description
+81    AD12      tri_state   line       PCI Address/Data 12
+82    AD13      tri_state   line       PCI Address/Data 13
+83    AD14      tri_state   line       PCI Address/Data 14
+84    AD15      tri_state   line       PCI Address/Data 15
+85    CBE1#     tri_state   inverted   PCI command/byte enable 1
+86    PAR       tri_state   line       PCI parity bit
+87    SERR#     input       inverted   PCI system error, will generate NMI
+88    LOCK#     input       inverted   PCI lock signal
+89    STOP#     tri_state   inverted   PCI stop signal
+90    GND       power_in    line       Ground
+91    DEVSEL#   tri_state   inverted   PCI device select
+92    TRDY#     tri_state   inverted   PCI target ready
+93    IRDY#     tri_state   inverted   PCI Initiator ready
+94    FRAME#    tri_state   inverted   PCI frame signal
+95    CBE2#     tri_state   inverted   PCI command/byte enable 2
+96    AD16      tri_state   line       PCI Address/Data 16
+97    AD17      tri_state   line       PCI Address/Data 17
+98    AD18      tri_state   line       PCI Address/Data 18
+99    AD19      tri_state   line       PCI Address/Data 19
+100   AD20      tri_state   line       PCI Address/Data 20
+101   AD21      tri_state   line       PCI Address/Data 21
+102   AD22      tri_state   line       PCI Address/Data 22
+103   AD23      tri_state   line       PCI Address/Data 23
+104   GND       power_in    line       Ground
+105   VCC       power_in    line       Power supply +5V
+106   IDSEL     input       line       PCI ID select from northbridge, connects to
+                                       AD18
+107   CBE3#     tri_state   inverted   PCI command/byte enable 3
+108   AD24      tri_state   line       PCI Address/Data 24
+109   AD25      tri_state   line       PCI Address/Data 25
+110   AD26      tri_state   line       PCI Address/Data 26
+111   AD27      tri_state   line       PCI Address/Data 27
+112   AD28      tri_state   line       PCI Address/Data 28
+113   AD29      tri_state   line       PCI Address/Data 29
+114   AD30      tri_state   line       PCI Address/Data 30
+115   AD31      tri_state   line       PCI Address/Data 31
+116   GND       power_in    line       Ground
+117   GNT0#     output      output_low PCI grant to master 0 (ATC-1415 PCI1 slot)
+118   GNT1#     output      output_low PCI grant to master 1 (ATC-1415 PCI2 slot)
+119   GNT2#     output      output_low PCI grant to master 2 (ATC-1415 PCI3 slot)
+120   GNT3#     output      output_low PCI grant to master 3 (ATC-1415 just Vcc
+                                       pullup)
+121 CPUGNT#     output      output_low PCI CPU grant (connects to p145 NB)
+122 ???         ???                    ???
+123 VCC         power_in    line       Power supply +5V (seems to be valid Vcc,
+                                       including caps)
+124 CPUREQ#     input       input_low PCI request from CPU (connects to p153 NB)
+125 REQ0#       input       input_low PCI request from master 0 (ATC-1415 PCI1
+                                       slot)
+126 REQ1#       input       input_low PCI request from master 1 (ATC-1415 PCI2
+                                       slot)
+127 REQ2#       input       input_low PCI request from master 2 (ATC-1415 PCI3
+                                       slot)
+128 REQ3#       input       input_low PCI request from master 3 (ATC-1415 just
+                                       Vcc pullup)
+
+
+                                   28
+Pin   Name        Direction       Type         Description
+129 CLKIN         input           clock      Main posedge clock input from generator
+                                             (VT8235N pin 8 on ATC-1415)
+130   VCC         power_in        line       Power supply +5V
+131   VCC         power_in        line       Power supply +5V
+132   EOP         bidir           line       End of DMA process
+133   BCLK        output          clock      ISA SYSCLK
+134   IDEHDEN#    output          output_low IDE cycle enable (for ISA/IDE buffer)
+                                             (ATC-1415 /OE F245 buffer)
+135   MASTER#     input           input_low ISA 16bit master drives bus
+136   IOCHCK#     input           input_low ISA I/O channel check (will generate NMI)
+137   0WS#        input           input_low Zero wait states request from ISA
+138   SMEMR#      output          output_low ISA system memory read (B12)
+139   SMEMW#      output          output_low ISA system memory write (B11)
+140   GND         power_in        line       Ground
+141   IORD#       output          output_low ISA I/O read (+ ATC-1415 U13 pin 4 to both
+                                             IDE p25)
+142 IOWR#         output          output_low ISA I/O write (+ ATC-1415 U13 pin 2 to both
+                                             IDE p23)
+143 DACK3#        output          output_low ISA DMA acknowledge 3
+144 DACK1#        output          output_low ISA DMA acknowledge 1
+145 REFRESH#      bidir           inverted   I/O refresh control, can work as ISA refresh
+                                             output
+146 DACK2#        output          output_low ISA DMA acknowledge 2
+147 BALE          output          line       ISA bus address latch enable
+148 OSC           input           clock      Oscilator 14.318 MHz input (ATC-1415 via
+                                             22R to U17 clock generator pin 4, other
+                                             branch via 22R to ISA OSC)
+149   IRQ8#       input           input_low RTC interrupt
+150   IRQ7        input           line       ISA interrupt 7
+151   IRQ6        input           line       ISA interrupt 6
+152   IRQ5        input           line       ISA interrupt 5
+153   IRQ4        input           line       ISA interrupt 4
+154   IRQ3        input           line       ISA interrupt 3
+155   ?IRQ1       input           line       ?ISA interrupt 1 (TODO ATC-1415 seems to
+                                             be not connected)
+156 GND           power_in        line       Ground
+157 RSTDRV        output          line       Reset to rest of the system (including ISA,
+                                             excluding CPU)
+158   IRQ9        input           line       ISA interrupt 9 (ATC-1415 ISA B4)
+159   SD7         tri_state       line       ISA data 7
+160   SD6         tri_state       line       ISA data 6
+161   SD5         tri_state       line       ISA data 5
+162   SD4         tri_state       line       ISA data 4
+163   SD3         tri_state       line       ISA data 3
+164   SD2         tri_state       line       ISA data 2
+165   SD1         tri_state       line       ISA data 1
+166   SD0         tri_state       line       ISA data 0
+167   IOCHRDY#    bidirectional   inverted   ISA bus I/O channel ready (device insert wait
+                                             states)
+168   AEN         output          line       ISA address enable (DMA controls the bus)
+169   SA19/LA19   tri_state       line       ISA address 19 / ISA latchable address 19
+170   GND         power_in        line       Ground
+171   GND         power_in        line       Ground
+172   SA18/LA18   tri_state       line       ISA address 18 / ISA latchable address 18
+                                             (on biostar)
+
+
+                                          29
+Pin   Name           Direction   Type        Description
+173 SA17/LA17        tri_state   line        ISA address 17 / ISA latchable address 17
+                                             (on biostar)
+174   SA16           tri_state   line        ISA address 16
+175   SA15           tri_state   line        ISA address 15
+176   SA14           tri_state   line        ISA address 14
+177   SA13           tri_state   line        ISA address 13
+178   SA12           tri_state   line        ISA address 12
+179   SA11           tri_state   line        ISA address 11
+180   SA10           tri_state   line        ISA address 10
+181   SA9            tri_state   line        ISA address 9
+182   VCC            power_in    line        Power supply +5V
+183   SA8            tri_state   line        ISA address 8
+184   SA7            tri_state   line        ISA address 7
+185   SA6            tri_state   line        ISA address 6
+186   SA5            tri_state   line        ISA address 5
+187   SA4            tri_state   line        ISA address 4
+188   SA3            tri_state   line        ISA address 3
+189   SA2            tri_state   line        ISA address 2
+190   SA1            tri_state   line        ISA address 1
+191   SA0            tri_state   line        ISA address 0
+192   SBHE#          tri_state   line        ISA high byte [15:8] enable
+193   LA23           tri_state   line        ISA latchable address 23
+194   GND            power_in    line        Ground
+195   LA22           tri_state   line        ISA latchable address 22
+196   LA21           tri_state   line        ISA latchable address 21
+197   LA20           tri_state   line        ISA latchable address 20
+198   LA19           tri_state   line        ISA latchable address 19 (ATC-1415) /
+                                             (RN17.4 biostar, SA19 is used instead)
+199   LA18/MS_DATA   tri_state   line        ISA latchable address 18 / Mouse data
+200   LA17/MS_CLK    tri_state   line        ISA latchable address 17 / Mouse clock
+201   SD8            tri_state   line        ISA data 8
+202   SD9            tri_state   line        ISA data 9
+203   SD10           tri_state   line        ISA data 10
+204   SD11           tri_state   line        ISA data 11
+205   SD12           tri_state   line        ISA data 12
+206   SD13           tri_state   line        ISA data 13
+207   SD14           tri_state   line        ISA data 14
+208   VCC            power_in    line        Power supply +5V
+
+
+
+
+                                        30
+IBC UM8886-N pin list overview
+  1                     GND     53          PCICLKO    105                        VCC   157   RSTDRV
+  2                    SD15     54 SMI2#/LB2#/KBCLKI   106                      IDSEL   158      IRQ9
+  3                 MEMW#       55            KBCLK    107                     CBE3#    159       SD7
+  4                  MEMR#      56         PGP0_RC#    108                       AD24   160       SD6
+  5              MEMCS16#       57 PGP1/LDEV#/GA20     109                       AD25   161       SD5
+  6                IOCS16#      58   ROMCS#_KBCS#      110                       AD26   162       SD4
+  7                   IRQ10     59              SPKR   111                       AD27   163       SD3
+  8                   IRQ11     60             INTD#   112                       AD28   164       SD2
+  9                   IRQ12     61             INTC#   113                       AD29   165       SD1
+ 10                   IRQ14     62             INTB#   114                       AD30   166       SD0
+ 11                   IRQ15     63             INTA#   115                       AD31   167 IOCHRDY#
+ 12                     GND     64               AD0   116                        GND   168       AEN
+ 13        DACK0#/MDACK2#       65               AD1   117           GNT0#/NCLKDC#      169     SA19
+ 14         DACK5#/ENBUF#       66               AD2   118                    GNT1#     170      GND
+ 15     DACK6#/UNDOCKGNT        67               GND   119             GNT2#/SUSP#      171      GND
+ 16  DACK7#/DKDACKA#/SCLK       68               GND   120           GNT3#/NCLKDC#      172     SA18
+ 17  DREQ0/MDRQ2/MUXSEL2        69               AD3   121                  CPUGNT#     173     SA17
+ 18  DREQ1/MDRQ1/MUXSEL1        70               AD4   122     PWRLATCH2_MEMREQ         174     SA16
+ 19           DREQ2/MUXIN       71               AD5   123            X32K_MEMACK       175     SA15
+ 20  DREQ3/MDRQ0/MUXSEL0        72               AD6   124                  CPUREQ#     176     SA14
+ 21        DREQ5/DSPWROK        73               AD7   125         REQ0#/COVERSW#       177     SA13
+ 22              DREQ6/CD#      74             CBE0#   126                    REQ1#     178     SA12
+ 23 DREQ7/DK_REQA#/SDATA1       75               AD8   127 REQ2#/891BUSY#/DK_REQB#      179     SA11
+ 24                  RSTIN#     76               AD9   128         REQ3#/COVERSW#       180     SA10
+ 25                  FERR#      77           PCICLKI   129                     CLKIN    181       SA9
+ 26                  VCC3V      78               VCC   130                        VCC   182       VCC
+ 27                     VCC     79              AD10   131                        VCC   183       SA8
+ 28                 IGNNE#      80              AD11   132                        EOP   184       SA7
+ 29               CPURSTO       81              AD12   133                       BCLK   185       SA6
+ 30                     NMI     82              AD13   134                 IDEHDEN#     186       SA5
+ 31                   A20M#     83              AD14   135                  MASTER#     187       SA4
+ 32                    SMI#     84              AD15   136         IOCHCK#/CLKRUN#      188       SA3
+ 33      STCK#/CYRIXSUSP#       85             CBE1#   137                0WS#/ACIN     189       SA2
+ 34             PWRLATCH1       86               PAR   138                   SMEMR#     190       SA1
+ 35          EXTSMI1#_EPMI      87            SERR#    139                  SMEMW#      191       SA0
+ 36          IDE17X#/PGP3#      88            LOCK#    140                        GND   192    SBHE#
+ 37                    INTR     89            STOP#    141                     IORD#    193      LA23
+ 38                 PTEST#      90               GND   142                    IOWR#     194      GND
+ 39                     GND     91          DEVSEL#    143          DACK3#/MDACK0#      195      LA22
+ 40        XDEN/PGP2#/AS01      92            TRDY#    144          DACK1#/MDACK1#      196      LA21
+ 41       XDIR/PGP3#/TCWR       93             IRDY#   145                REFRESH#      197      LA20
+ 42                  RTCAS      94           FRAME#    146             DACK2#/CD1#      198      LA19
+ 43                RTCWR#       95             CBE2#   147                       BALE   199      LA18
+ 44                 RTCRD#      96              AD16   148                        OSC   200      LA17
+ 45           IDE1FX#_AS0#      97              AD17   149                      IRQ8#   201       SD8
+ 46           IDE3FX#_AS1#      98              AD18   150                       IRQ7   202       SD9
+ 47            ONOFF#/ACIN      99              AD19   151                       IRQ6   203     SD10
+ 48               LB1#/LB2#    100              AD20   152                       IRQ5   204     SD11
+ 49          IDE37X#/PGP2#     101              AD21   153                       IRQ4   205     SD12
+ 50                SMIACT#     102              AD22   154                       IRQ3   206     SD13
+ 51                  HCLKO     103              AD23   155                       IRQ1   207     SD14
+ 52                     GND    104               GND   156                        GND   208       VCC
+
+
+IBC UM8886-N pin description
+
+No pin tracing was done for this IBC variant.
+
+
+
+
+                                                 31
+Pin   Name             Direction       Type        Description
+1     GND              power_in        line       Ground
+2     SD15             tri_state       line       ISA data 15
+3     MEMW#            tri_state       inverted   ISA memory write
+4     MEMR#            tri_state       inverted   ISA memory read
+5     MEMCS16#         tri_state       inverted   ISA 16bit memory chip select
+6     IOCS16#          input           input_low  ISA 16bit I/O chip select
+7     IRQ10            input           line       ISA interrupt 10
+8     IRQ11            input           line       ISA interrupt 11
+9     IRQ12            input           line       ISA interrupt 12
+10    IRQ14            input           line       ISA interrupt 14
+11    IRQ15            input           line       ISA interrupt 15
+12    GND              power_in        line       Ground
+13    DACK0#/MDACK2#   bidir           inverted   ISA DMA acknowledge 0 / PNP,dock,expand
+                                                  mode?
+14    DACK5#/ENBUF#    bidir           inverted   ISA DMA acknowledge 5 / Output enable
+                                                  docking signal buffers
+15    DACK6#/UNDOCKGNTbidir            inverted   ISA DMA acknowledge 6 / Undocking granted
+16    DACK7#/DKDACKA#/SCLK
+                      output           inverted   ISA DMA acknowledge 7 / Dock DMA
+                                                  acknowledge / ?Serial clock
+17    DREQ0/MDRQ2/MUXSEL2
+                      input            line       ISA DMA request 0 / PNP-dock DMA request
+                                                  bit 2 / External DMA multiplexer select bit 2
+18    DREQ1/MDRQ1/MUXSEL1
+                      input            line       ISA DMA request 1 / PNP-dock DMA request
+                                                  bit 1 / External DMA multiplexer select bit 1
+19    DREQ2/MUXIN      input           line       ISA DMA request 2 (PNP-dock DMA from
+                                                  floppy) / Input from external DMA multiplexer
+                                                  output
+20    DREQ3/MDRQ0/MUXSEL0
+                      input            line       ISA DMA request 3 / PNP-dock DMA request
+                                                  bit 0 / External DMA multiplexer select bit 0
+21    DREQ5/DSPWROK    input           line       ISA DMA request 5 / Docking station power
+                                                  OK
+22    DREQ6/CD#        input           line       ISA DMA request 6 / Dock-on or card
+                                                  detected
+23    DREQ7/DK_REQA#/SDATA1
+                       input           line       ISA DMA request 7 / PCI bus request from
+                                                  docking station / ???
+24    RSTIN#           input           input_low Reset input from power good circuitry
+25    FERR#            input           input_low FPU error
+26    VCC3V            power_in        line       Power supply +3.3V
+27    VCC              power_in        line       Power supply +5V
+28    IGNNE#           output          output_low Ignore FPU error
+29    CPURSTO          output          line       CPU reset
+30    NMI              output          line       Nonmaskable interrupt to CPU
+31    A20M#            output          output_low Mask CPU address 20
+32    SMI#             bidirectional   inverted   System management interrupt, output
+                                                  request, input SMM status
+33    STCK#/CYRIXSUSP# output          output_low CPU stop clock / ?Cyrix suspend
+34    PWRLATCH1        output          line       Latch signal to generate PM signals
+                                                  (C6,C7/SUSP,C8,C9,CLKSEL[2:0]) from ISA
+                                                  data
+35    EXTSMI1#_EPMI    input           input_low External SMI 1
+36    IDE17X#/PGP3#    output          output_low IDE 17Xh chip select / Programmable output
+                                                  pin 3
+37    INTR             output          line       Maskable CPU interrupt
+38    PTEST#           input           input_low Test pin, pull high?
+39    GND              power_in        line       Ground
+
+
+
+                                              32
+Pin   Name              Direction       Type        Description
+40    XDEN/PGP2#/AS01   output          output_low XD bus (8bit ISA) data buffer enable /
+                                                   Programmable output pin 3 / ???
+41    XDIR/PGP3#/TCWR   output          line       XD bus (8bit ISA) data buffer direction /
+                                                   Programmable output pin 2 / RTC 4K RAM
+                                                   R/W signal
+42    RTCAS             output          line       RTC address latch
+43    RTCWR#            output          output_low RTC write
+44    RTCRD#            output          output_low RTC read
+45    IDE1FX#_AS0#      output          output_low IDE 1FXh chip select
+46    IDE3FX#_AS1#      output          output_low IDE 3FXh chip select
+47    ONOFF#/ACIN       input           input_low On/Off switch / AC in (detection?)
+48    LB1#/LB2#         input           input_low Low battery 1 / Low battery 2
+49    IDE37X#/PGP2#     output          output_low IDE 37Xh chip select / Programmable output
+                                                   pin 2
+50    SMIACT#           input           input_low System management interrupt acknowledge
+                                                   from CPU
+51    HCLKO             output          clock      Global clock output to CPU and other parts of
+                                                   the chipset (50/60/66 MHz)
+52    GND               power_in        line       Ground
+53    PCICLKO           output          clock      Global clock output to the PCI subsystem
+54    SMI2#/LB2#/KBCLKI input           input_low External SMI 2 / Low battery 2 / Keyboard
+                                                   clock (input?)
+55    KBCLK             output          line       Keyboard clock (?output to 8042)
+56    PGP0_RC#          bidirectional   line       Reset input from 8042, programmable
+                                                   input/output pin 0
+57    PGP1/LDEV#/GA20   bidirectional   inverted   Programmable input/ouput pin 1 / VLB local
+                                                   device / A20 gate from 8042
+58    ROMCS#_KBCS#      output          output_low ROM chip select for memory cycles,
+                                                   keyboard controller chip select for I/O port
+                                                   cycles
+59    SPKR              output          line       Speaker output
+60    INTD#             input           input_low PCI interrupt D
+61    INTC#             input           input_low PCI interrupt C
+62    INTB#             input           input_low PCI interrupt B
+63    INTA#             input           input_low PCI interrupt A
+64    AD0               tri_state       line       PCI Address/Data 0
+65    AD1               tri_state       line       PCI Address/Data 1
+66    AD2               tri_state       line       PCI Address/Data 2
+67    GND               power_in        line       Ground
+68    GND               power_in        line       Ground
+69    AD3               tri_state       line       PCI Address/Data 3
+70    AD4               tri_state       line       PCI Address/Data 4
+71    AD5               tri_state       line       PCI Address/Data 5
+72    AD6               tri_state       line       PCI Address/Data 6
+73    AD7               tri_state       line       PCI Address/Data 7
+74    CBE0#             tri_state       inverted   PCI command/byte enable 0
+75    AD8               tri_state       line       PCI Address/Data 8
+76    AD9               tri_state       line       PCI Address/Data 9
+77    PCICLKI           input           clock      PCI clock input
+78    VCC               power_in        line       Power supply +5V
+79    AD10              tri_state       line       PCI Address/Data 10
+80    AD11              tri_state       line       PCI Address/Data 11
+81    AD12              tri_state       line       PCI Address/Data 12
+82    AD13              tri_state       line       PCI Address/Data 13
+83    AD14              tri_state       line       PCI Address/Data 14
+
+
+                                               33
+Pin   Name            Direction   Type        Description
+84    AD15            tri_state   line       PCI Address/Data 15
+85    CBE1#           tri_state   inverted   PCI command/byte enable 1
+86    PAR             tri_state   line       PCI parity bit
+87    SERR#           input       inverted   PCI system error, will generate NMI
+88    LOCK#           input       inverted   PCI lock signal
+89    STOP#           tri_state   inverted   PCI stop signal
+90    GND             power_in    line       Ground
+91    DEVSEL#         tri_state   inverted   PCI device select
+92    TRDY#           tri_state   inverted   PCI target ready
+93    IRDY#           tri_state   inverted   PCI Initiator ready
+94    FRAME#          tri_state   inverted   PCI frame signal
+95    CBE2#           tri_state   inverted   PCI command/byte enable 2
+96    AD16            tri_state   line       PCI Address/Data 16
+97    AD17            tri_state   line       PCI Address/Data 17
+98    AD18            tri_state   line       PCI Address/Data 18
+99    AD19            tri_state   line       PCI Address/Data 19
+100   AD20            tri_state   line       PCI Address/Data 20
+101   AD21            tri_state   line       PCI Address/Data 21
+102   AD22            tri_state   line       PCI Address/Data 22
+103   AD23            tri_state   line       PCI Address/Data 23
+104   GND             power_in    line       Ground
+105   VCC             power_in    line       Power supply +5V
+106   IDSEL           input       line       PCI ID select from northbridge, connects to
+                                             AD18
+107   CBE3#           tri_state   inverted   PCI command/byte enable 3
+108   AD24            tri_state   line       PCI Address/Data 24
+109   AD25            tri_state   line       PCI Address/Data 25
+110   AD26            tri_state   line       PCI Address/Data 26
+111   AD27            tri_state   line       PCI Address/Data 27
+112   AD28            tri_state   line       PCI Address/Data 28
+113   AD29            tri_state   line       PCI Address/Data 29
+114   AD30            tri_state   line       PCI Address/Data 30
+115   AD31            tri_state   line       PCI Address/Data 31
+116   GND             power_in    line       Ground
+117   GNT0#/NCLKDC#   output      output_low PCI grant to master 0 / CPU clock will be D.C.
+118   GNT1#           output      output_low PCI grant to master 1
+119   GNT2#/SUSP#     output      output_low PCI grant to master 2 / Suspend request to
+                                             CPU / Dock DMA acknowledge B / Serial data
+                                             3 to dock
+120 GNT3#/NCLKDC#   output        output_low PCI grant to master 3 / CPU clock will be D.C.
+121 CPUGNT#         output        output_low PCI CPU grant
+122 PWRLATCH2_MEMREQoutput        line       Latch signal to generate PM signals (C0-C5,
+                                             C8, CKGENPD) from ISA data
+123 X32K_MEMACK       input       line       RTC 32768 Hz clock
+124 CPUREQ#           input       input_low PCI request from CPU
+125 REQ0#/COVERSW#    input       input_low PCI request from master 0 / LCD cover has
+                                             been closed
+126 REQ1#            input        input_low PCI request from master 1
+127 REQ2#/891BUSY#/DK_REQB#
+                     input        input_low PCI request from master 2 / ??? / Dock
+                                             request
+128 REQ3#/COVERSW#    input       input_low PCI request from master 3 / LCD cover has
+                                             been closed
+129 CLKIN             input       clock      Main clock input from generator
+                                             (50/60/66/etc. MHz), ?generates FSB/PCI
+                                             from this
+
+
+                                         34
+Pin   Name              Direction       Type        Description
+130   VCC               power_in        line       Power supply +5V
+131   VCC               power_in        line       Power supply +5V
+132   EOP               bidirectional   line       End of DMA process
+133   BCLK              output          clock      ISA SYSCLK
+134   IDEHDEN#          output          output_low IDE cycle enable (for ISA/IDE buffer)
+135   MASTER#           input           input_low ISA 16bit master drives bus
+136   IOCHCK#/CLKRUN#   input           input_low ISA I/O channel check (will generate NMI) /
+                                                   reserved
+137 0WS#/ACIN           input           input_low Zero wait states request from ISA / ? AC
+                                                   plugged in?
+138   SMEMR#            output          output_low ISA system memory read (B12)
+139   SMEMW#            output          output_low ISA system memory write (B11)
+140   GND               power_in        line       Ground
+141   IORD#             output          output_low ISA I/O read
+142   IOWR#             output          output_low ISA I/O write
+143   DACK3#/MDACK0#    output          output_low ISA DMA acknowledge 3 / PNP-dock DACK
+144   DACK1#/MDACK1#    output          output_low ISA DMA acknowledge 1 / PNP-dock DACK
+145   REFRESH#          bidir           inverted   I/O refresh control, can work as ISA refresh
+                                                   output
+146   DACK2#/CD1#       bidir           inverted   ISA DMA acknowledge 2 / card detect 1
+147   BALE              output          line       ISA bus address latch enable
+148   OSC               input           clock      Oscilator 14.318 MHz input
+149   IRQ8#             input           input_low RTC interrupt
+150   IRQ7              input           line       ISA interrupt 7
+151   IRQ6              input           line       ISA interrupt 6
+152   IRQ5              input           line       ISA interrupt 5
+153   IRQ4              input           line       ISA interrupt 4
+154   IRQ3              input           line       ISA interrupt 3
+155   IRQ1              input           line       ISA interrupt 1
+156   GND               power_in        line       Ground
+157   RSTDRV            output          line       Reset to rest of the system (excluding CPU)
+158   IRQ9              input           line       ISA interrupt 9
+159   SD7               tri_state       line       ISA data 7
+160   SD6               tri_state       line       ISA data 6
+161   SD5               tri_state       line       ISA data 5
+162   SD4               tri_state       line       ISA data 4
+163   SD3               tri_state       line       ISA data 3
+164   SD2               tri_state       line       ISA data 2
+165   SD1               tri_state       line       ISA data 1
+166   SD0               tri_state       line       ISA data 0
+167   IOCHRDY#          bidirectional   inverted   ISA bus I/O channel ready (device insert wait
+                                                   states)
+168   AEN               output          line       ISA address enable (DMA controls the bus)
+169   SA19              tri_state       line       ISA address 19
+170   GND               power_in        line       Ground
+171   GND               power_in        line       Ground
+172   SA18              tri_state       line       ISA address 18
+173   SA17              tri_state       line       ISA address 17
+174   SA16              tri_state       line       ISA address 16
+175   SA15              tri_state       line       ISA address 15
+176   SA14              tri_state       line       ISA address 14
+177   SA13              tri_state       line       ISA address 13
+178   SA12              tri_state       line       ISA address 12
+179   SA11              tri_state       line       ISA address 11
+180   SA10              tri_state       line       ISA address 10
+
+
+                                               35
+Pin     Name               Direction     Type        Description
+181     SA9                tri_state     line        ISA address 9
+182     VCC                power_in      line        Power supply +5V
+183     SA8                tri_state     line        ISA address 8
+184     SA7                tri_state     line        ISA address 7
+185     SA6                tri_state     line        ISA address 6
+186     SA5                tri_state     line        ISA address 5
+187     SA4                tri_state     line        ISA address 4
+188     SA3                tri_state     line        ISA address 3
+189     SA2                tri_state     line        ISA address 2
+190     SA1                tri_state     line        ISA address 1
+191     SA0                tri_state     line        ISA address 0
+192     SBHE#              tri_state     line        ISA high byte [15:8] enable
+193     LA23               tri_state     line        ISA latchable address 23
+194     GND                power_in      line        Ground
+195     LA22               tri_state     line        ISA latchable address 22
+196     LA21               tri_state     line        ISA latchable address 21
+197     LA20               tri_state     line        ISA latchable address 20
+198     LA19               tri_state     line        ISA latchable address 19
+199     LA18               tri_state     line        ISA latchable address 18
+200     LA17               tri_state     line        ISA latchable address 17
+201     SD8                tri_state     line        ISA data 8
+202     SD9                tri_state     line        ISA data 9
+203     SD10               tri_state     line        ISA data 10
+204     SD11               tri_state     line        ISA data 11
+205     SD12               tri_state     line        ISA data 12
+206     SD13               tri_state     line        ISA data 13
+207     SD14               tri_state     line        ISA data 14
+208     VCC                power_in      line        Power supply +5V
+
+
+IBC registers
+Register power-on values (UM8886-BF variant):
+40: 01 04 08 9a | bc 00 10 30 | 00 00 00 00 | 00 00 00 00
+50: 00 02 00 00 | 00 00 00 00 | 00 00 00 00 | 00 00 00 00
+rest is zeroed
+Register description:
+40.10    Set on B2 revision, but cleared if no PS/2 mouse
+40.04    PCI posted memory write
+40.03    IBC (ISA bridge controller) devsel decoding (medium/slow/fast/resvd?)
+40.02    if set (0x14->0x16), linux freezes
+
+41.40    Disable parity check (maybe PCI SERR#?)
+41.20    Set during UM8886BF FIFO mode and restored to prior state afterward
+41.04    PCI bus park option 0=enabled (alt "Enhance PCI performance")
+
+43.F0    INTA target IRQ
+43.0F    INTB target IRQ
+         NOTICE resulting IRQ may collide if incorrectly shared (PS/2 mouse + PCI)
+         probably level vs edge triggered
+
+44.F0    INTC target IRQ
+44.0F    INTD target IRQ
+
+
+
+                                                36
+45.04   Set on B2 revision
+45.01   Set on B2 revision, but cleared if no PS/2 mouse
+
+46.80   PM IRQ (10/15)
+46.40   PM interrupt method (SMI/IRQ)
+46.10   Preempt PCI master option
+46.08   INTD enabled
+46.04   INTC enabled
+46.02   INTB enabled
+46.01   INTA enabled
+
+47.40   Enable flash writes (0=enabled, 1=disabled). Relation with 57.4 unknown
+47.08   INTD level triggered
+47.04   INTC level triggered
+47.02   INTB level triggered
+47.01   INTA level triggered
+
+48-4F   UNKNOWN Doesn't retain written value
+
+50.80   Set if PCI video BIOS is installed
+        ??? is set even with ISA VGA
+50.01   Set by bootblock after filling segment E and F
+
+51.FE   Size of RAM in units of 4M (rounded down, exception: 4M if rounding down results in 0M)
+51.01   Set by bootblock after filling segment E and F
+
+56.80   UNKNOWN
+56.60   Cleared by boot block, under some circumstances set by video card setup
+56.0C   KBD clock (7MHz/by4/by3/by2)
+56.03   ISA clock (by3/by4/by2/resvd?)
+
+57.80   Enable segment C decode to ROM
+        Will alias to segment E on 128kB flash
+        Visible at FFFC0000
+        Causes a bus conflict if ISA decodes too
+57.40   Enable segment D decode to ROM
+        Will alias to segment F on 128kB flash
+        Visible at FFFD0000
+        Causes a bus conflict if ISA decodes too
+57.20   Enable segment E decode to ROM
+        Visible at FFFE0000
+        NOTICE segment F is always on
+57.10   Set on B2 revision
+57.08   Keyboard Emulation
+57.04   Some bit used for flash write protection (Guessed: GPO, but seems wrong)
+        8886AF/8886BF (Shuttle HOT433 and Biostar UUD8433)
+            Set = Protected, Clear = Writeable
+        8886F (Gigabyte GA486IM)
+            Clear = Protected, Set = Writeable
+57.03   IO recovery time (2BLCK/4BCLK/8BCLK/12BCLK)
+
+58-6F   UNKNOWN Doesn't retain written value
+
+70.80   Monitor PCI4 master activity
+70.40   Monitor PCI3 master activity
+70.20   Monitor PCI2 master activity
+
+
+
+                                               37
+70.0F   Green Timer minutes (0.5/1/2/4/8/16/32/64/128/256/512/rsvd/rsvd/rsvd/disable/0.25)
+
+71.80   Monitor PCI1 master activity
+71.40   Monitor LPT access
+71.20   Monitor COM access
+71.10   Monitor ISA DMA master access
+71.08   Monitor IDE access
+71.04   Monitor Floppy access
+71.02   Monitor Graphics card access
+
+72.80   Monitor extra region A9
+72.7E   Monitor extra region mask (1=don't care for A0..A5) Really A0?
+72.01   Monitor VL slave access
+
+73.FF   Monitor extra region A8-A1
+
+74.01   Monitor ISA shared memory access (A0000-D0000)
+
+76.40   Set in flash-related code
+76.30   SMI interface mode (Intel/Cyrix classic/?/AMD classic)
+76.08   Will be set by non-PCI VGA access? Cleared and probed in write-merge setup code
+76.04   Cleared by APM init
+76.02   Set by APM CPU idle, cleared by APM init
+
+77-7F   UNKNOWN Doesn't retain written value
+
+80.FF   unknown, accessible
+
+81.FF   unknown, accessible
+
+82.03   Set on B2 revision to 3
+
+83.80   1: overloads system with spurious / irq 7
+83.40   unknown, accessible, may freeze linux
+83.7F   unknown
+
+84-8F   UNKNOWN Doesn't retain written value
+
+90.80   Wake-Up on IRQ7
+90.40   Wake-Up on IRQ6
+90.20   Wake-Up on IRQ5
+90.10   Wake-Up on IRQ4
+90.08   Wake-Up on IRQ3
+90.04   maybe IRQ2 or gap (some IRQ are unusable)
+90.02   maybe IRQ1 or gap (some IRQ are unusable)
+90.01   maybe IRQ0 or gap (some IRQ are unusable)
+
+91.80   Wake-Up on IRQ15
+91.40   Wake-Up on IRQ14
+91.20   maybe IRQ13 or gap (some IRQ are unusable)
+91.10   Wake-Up on IRQ12
+91.08   Wake-Up on IRQ11
+91.04   Wake-Up on IRQ10
+91.02   Wake-Up on IRQ9
+91.01   Wake-Up on IRQ8
+
+
+
+
+                                               38
+A0      Set to 0 by Boot Block
+        Set to 34 by APM init (SMI mask?, 1 = enable)
+
+A1      UNKNOWN
+A1.20   if set, freezes linux until keyboard event o_O
+A1.10   if set, freezes linux
+
+A2.80   SMM event 7
+A2.40   SMM event 6
+A2.20   SMM event 5
+A2.10   SMM event 4
+A2.08   SMM event 3
+A2.04   SMM event 2
+A2.02   SMM event 1
+A2.01   SMM event 0
+
+A4.18   .18: crash?
+A4.03   CPU-to-PCI (2:1/1:1/3:2/resvd?)
+
+A7.FF   unknown, seems to be set at random
+        observed values 8f ef
+        affected by IDE? 0->8 after disk access
+        8f - ISA GPU, 0f - PCI GPU
+
+A8.FF   Set to 0x28 on Biostar UUD8433
+
+
+IBC IDE controller (only AF/BF/N chip variants)
+There is a difference between AF and BF/N variants. The UM8886-AF IDE is just an ISA controller,
+whereas UM8886-BF or UM8886-N have IDE designed as an integrated PCI device. Both have some
+proprietary configuration settings.
+Using the integrated IDE will block the usage of both the ISA and PCI buses (instead of a dedicated
+PCI IDE card), however the chipset is probably too simple to support any concurrent buses operations
+anyway.
+It seems I/O ports are aliased at 0x400 granularity (0x1f0, 0x5f0, 0x9f0, …) over the entire I/O port
+space (excluding decoded PCI BARs).
+
+IBC UM8886-AF IDE controller
+
+The UM8886-AF FIFO is 8 bytes in size.
+The presumably same IDE controller design was also sold as a discrete UM8673-F chip on a PCI card
+but configuration set by jumpers, as discussed at UMC IDE/EIDE controller datasheets.
+
+IBC UM8886-AF IDE config registers         IBC has a register window located at I/O port 0x108.
+108     Index register
+109     Read/write data register
+Access needs to be unlocked by writing an unlock sequence. This sequence consists of writing a
+value 0x4a followed by 0x6c to index port. After that you can write following register indexes to index
+register and write/read data to/from the data register.
+Access can then be locked again by writing a value of 0x34 to the index register.
+B0.80   Enable primary IDE channel
+B0.40   Enable secondary IDE channel
+
+
+                                                  39
+B2.F0   Something for primary master (0=fast, 4=slow)
+B2.0F   Something for primary slave
+
+B3.F0   Something for secondary master
+B3.0F   Something for secondary slave
+
+B4.F0   Another thing for primary master (3=fast, 12=slow)
+
+B5.0F   Another thing for primary slave
+
+B6.F0   Another thing for secondary master
+B6.0F   Another thing for secondary slave
+
+B7.F0   Third thing for primary master (2=fast, 12=slow)
+B7.0F   Third thing for primary slave
+
+B8.F0   Third thing for secondary master
+B8.0F   Third thing for secondary slave
+
+IBC UM8886-BF/N IDE PCI controller
+
+The UM8886-BF FIFO is 60 bytes in size. The controller doesn’t check sector size, multiple sector
+transfers, ATA vs. ATAPI commands, etc. so it has to be told when data transmission direction changes
+or finishes. A custom (nonstandard) IRQ 14/15 handler must check it and set the configuration from
+filling to draining mode at the correct moment (and do it for each transfer). This means only a
+specialised driver can use FIFO.
+The UM8886-BF bus master does not support hardware scatter-gather, limiting its utility in a multi-
+tasking OS as the driver has to watch 16-bit register 0x58 count down to zero before loading next
+physical address.
+There are also alignment restrictions leading to an unaligned head/tail that gets accessed in FIFO PIO
+or plain PIO mode when doing a bus master read.
+
+IBC UM8886-BF/N IDE config registers
+40.40   Set when FIFO is being accessed using bus mastering, clear otherwise
+40.20   Set when FIFO is being accessed using PIO, clear otherwise
+40.10   Set when FIFO is filling, clear when draining or disabled
+40.08   Set when secondary interface owns FIFO, clear for primary or FIFO disabled
+
+41.80   Enable primary channel
+41.40   Enable secondary channel
+41.0F   Unknown, set to 0D if north bridge is UM8881N/UM8891N or 09 otherwise
+41.04   Cleared above PCI33
+
+42.FF   Set to 33 on boot if north bridge is NexGen/UM8881N/UM8891N or 30 otherwise
+
+43.C0   Timing A, primary master
+        0: PIO3, PIO4 (fastest)
+        1: PIO2
+        2: PIO1
+        3: PIO0 (slowest)
+        other drives has the same table
+43.30   Timing A, primary slave
+43.0C   Timing A, secondary master
+
+
+                                                 40
+43.03   Timing A, secondary slave
+
+44.F0   Timing B, primary master
+        2: PIO4 (fastest)
+        3: PIO3
+        4: PIO2
+        5: PIO1
+        6: PIO0 (slowest)
+        other drives has the same table
+44.0F   Timing B, primary slave
+
+45.F0   Timing B, secondary master
+45.0F   Timing B, secondary slave
+
+46.F0   Timing C, primary master
+        0: PIO4 (fastest)
+        1: PIO3
+        5: PIO2
+        8: PIO1
+        b: PIO0 (slowest)
+        other drives has the same table
+46.0F   Timing C, primary slave
+
+47.F0   Timing C, secondary master
+47.0F   Timing C, secondary slave
+
+48-4B   UNKNOWN, writeable, only 0x55555555 observed
+        could be some timing base?
+4C-4D   UNKNOWN, writeable, only 0x8888 observed
+        could be some timing base?
+4E-4F   UNKNOWN, writeable, only 0xAAAA observed
+        could be some timing base?
+
+50-53   UNKNOWN, writeable, only 0 observed
+
+54-57   Bus mastering physical memory address
+
+58-59   Bus mastering number of DWORDs remaining to transfer
+
+5A-FF   unimplemented (write 0xff, returns 0x00)
+
+
+Super I/O (SIO) UM82C863-F, UM8663-AF/BF
+These are a wide UMC family of ISA SuperIO chips. The features varies with entire family. Usage
+spans between ISA/VLB I/O cards and 486 to Pentium motherboards. The descendants seems to be
+used in P6 generation machines too. Possible features are:
+  • Floppy drive controller
+  • Parallel port, optionally with ECP
+  • Two UART controllers, optionally with FIFO and IrDA
+  • Gameport decoder
+  • IDE control signals decoder
+  • Integrates a crystal oscillator 24 MHz (or can use an external source)
+Compared with other SIOs, these are very limited in functionality and have only 2-5 configuration
+registers. The functionality can be pin strapped at power-on.
+
+
+                                                41
+No official documentation is available.
+
+
+SIO types and variants
+There are at least two UM8663 variants with AF and BF suffixes. The direct predecessor of UM8663
+seems to be UM82C863-F. There is a register description in INTERLOGIC INDUSTRIES ASC486 VER. C
+manual, which can be used to extrapolate the functionality to UM8663. The manual was found after
+disassembling the BIOS to discover UM8663 registers :-D.
+The manual for PT-627 specifies multiple versions, which each uses a different SIO:
+  • PT-627A
+      – UM8672/UM82C863/UM8667
+      – EIDE + Standard I/O function
+  • PT-627B
+      – UM8672/UM8663/UM8667
+      – EIDE + FIFO UARTs + ECP/EPP/SPP
+  • PT-627C
+      – UM8672/UM8668/UM8667
+      – EIDE + FIFO UARTs + ECP/EPP/SPP + 2.88M FDD
+  • PT-627D
+      – UM8672/UM8662/UM8667
+      – EIDE + FIFO UARTs + standard LPT
+It seems UM8668 is a further improved version. The UM8662 chip seems to have worse functionality
+than UM8663-AF/BF.
+The motherboard PCChips/Hsin Tech M530 seems to use UM8663-BF or UM8670-F chips. With PCB
+routing around SIO practically the same. The UM8670-F will be most likely more modern design.
+Some 486 boards carry UM8669-F, for which the relation with UM8663 is completely unknown.
+The UM8663-AF and UM8663-BF may have a limited interchangeability. For example photos of Sowah
+Research SR-M401-A, PCChips/Hsin Tech M919 VER 3.2 and PCChips/Hsin Tech M507 can use both.
+UM8663-AF/BF and UM82C863-F is not easily interchangeable. The oscillator input and output seems
+to be switched in the packages.
+
+
+
+
+                                                42
+SIO pin assignment
+SIO schematic symbols
+
+
+
+
+                        43
+SIO UM82C863-F pin list overview
+
+  1                ???   31 ISA_RESETDRV       51                 coupler?    81            FDC_DRVSA
+  2            ISA_A0    32 LPT_STROBE#        52                 coupler?    82            FDC_DRVSB
+  3            ISA_A1    33      LPT_AFD#      53                 coupler?    83          FDC_MOTEA#
+  4            ISA_A2    34   LPT_ERROR#       54                    VCC      84          FDC_DENSEL
+  5            ISA_A3    35      LPT_INIT#     55                 coupler?    85                    GND
+  6            ISA_A4    36     LPT_SLIN#      56                 coupler?    86 EN_IDE_CN/IDE_CS3FX#
+  7            ISA_A5    37           GND      57         EN_LPT/coupler?     87            IDE_CS1FX#
+  8            ISA_A6    38        LPT_D0      58       EN_COMB/coupler?      88              IDE_DEN#
+  9            ISA_A7    39        LPT_D1      59 SEL_COMB_BASE/coupler?      89                IDE_RST
+ 10            ISA_A8    40        LPT_D2      60                    GND      90                     ???
+ 11            ISA_A9    41        LPT_D3      61 SEL_COMA_BASE/coupler?      91                    VCC
+ 12               VCC    42        LPT_D4      62       EN_COMA/coupler?      92        SEL_LPT_BASE
+ 13         ISA_IRQ3     43        LPT_D5      63      EN_IDE_HD/coupler?     93                 EN_JOY
+ 14         ISA_IRQ4     44        LPT_D6      64                 coupler?    94                 EN_FDC
+ 15         ISA_IRQ6     45        LPT_D7      65                 coupler?    95           ISA_IOCS16#
+ 16         ISA_IRQ7     46           GND      66                 coupler?    96                    GND
+ 17        ISA_IOW#      47      LPT_ACK#      67                 coupler?    97                 ISA_T/C
+ 18         ISA_IOR#     48     LPT_BUSY       68                 coupler?    98       ISA_DACK_FDC#
+ 19 ISA_DRQ_FLOPPY       49        LPT_PE      69          FDC_DSKCHG#        99                  CLK_IN
+ 20          ISA_AEN     50      LPT_SLCT      70           FDC_RDATA#       100              XTAL_OUT
+ 21            ISA_D0                          71              FDC_WPT#
+ 22            ISA_D1                          72             FDC_TRK0#
+ 23            ISA_D2                          73            FDC_INDEX#
+ 24            ISA_D3                          74            FDC_HDSEL#
+ 25              GND                           75           FDC_WGATE#
+ 26            ISA_D4                          76                    GND
+ 27            ISA_D5                          77            FDC_WDATA
+ 28            ISA_D6                          78             FDC_STEP#
+ 29            ISA_D7                          79               FDC_DIR#
+ 30               VCC                          80           FDC_MOTEB#
+
+
+SIO UM82C863-F pin description
+
+Pins were traced on PT-606 ISA card, so part’s references are for this board.
+
+Pin   Name                  Direction        Type        Description
+1     ???                   unspecified      line        Not connected on PT-606
+2     ISA_A0                input            line        ISA address 0
+3     ISA_A1                input            line        ISA address 1
+4     ISA_A2                input            line        ISA address 2
+5     ISA_A3                input            line        ISA address 3
+6     ISA_A4                input            line        ISA address 4
+7     ISA_A5                input            line        ISA address 5
+8     ISA_A6                input            line        ISA address 6
+9     ISA_A7                input            line        ISA address 7
+10    ISA_A8                input            line        ISA address 8
+11    ISA_A9                input            line        ISA address 9
+12    VCC                   power_in         line        Power supply +5V
+13    ISA_IRQ3              output           line        Interrupt request 3 (COM2)
+14    ISA_IRQ4              output           line        Interrupt request 4 (COM1)
+15    ISA_IRQ6              output           line        Interrupt request 6 (FDC)
+16    ISA_IRQ7              output           line        Interrupt request 7 (LPT)
+17    ISA_IOW#              input            input_low   ISA I/O write
+18    ISA_IOR#              input            input_low   ISA I/O read
+19    ISA_DRQ_FLOPPY        output           line        DMA request 2 (FDC)
+20    ISA_AEN               input            line        ISA address enable
+
+
+                                                    44
+Pin   Name               Direction       Type        Description
+21    ISA_D0             tri_state       line       ISA D0
+22    ISA_D1             tri_state       line       ISA D1
+23    ISA_D2             tri_state       line       ISA D2
+24    ISA_D3             tri_state       line       ISA D3
+25    GND                power_in        line       Ground
+26    ISA_D4             tri_state       line       ISA D4
+27    ISA_D5             tri_state       line       ISA D5
+28    ISA_D6             tri_state       line       ISA D6
+29    ISA_D7             tri_state       line       ISA D7
+30    VCC                power_in        line       Power supply +5V?
+31    ISA_RESETDRV       input           line       ISA reset
+32    LPT_STROBE#        output          output_low LPT strobe
+33    LPT_AFD#           output          output_low LPT autofeed
+34    LPT_ERROR#         input           input_low LPT error
+35    LPT_INIT#          output          output_low LPT init
+36    LPT_SLIN#          output          output_low LPT select printer
+37    GND                power_in        line       Ground
+38    LPT_D0             bidirectional   line       LPT data 0
+39    LPT_D1             bidirectional   line       LPT data 1
+40    LPT_D2             bidirectional   line       LPT data 2
+41    LPT_D3             bidirectional   line       LPT data 3
+42    LPT_D4             bidirectional   line       LPT data 4
+43    LPT_D5             bidirectional   line       LPT data 5
+44    LPT_D6             bidirectional   line       LPT data 6
+45    LPT_D7             bidirectional   line       LPT data 7
+46    GND                power_in        line       Ground
+47    LPT_ACK#           input           input_low LPT acknowledge
+48    LPT_BUSY           input           line       LPT is busy
+49    LPT_PE             input           line       LPT paper error
+50    LPT_SLCT           input           line       LPT printer is selected
+51    coupler?           ???             line       UM82C865F.61
+52    coupler?           ???             line       UM82C865F.60
+53    coupler?           ???             line       UM82C865F.59
+54    VCC                power_in        line       Supply +5V
+55    coupler?           ???             line       UM82C865F.58
+56    coupler?           ???             line       UM82C865F.57
+57    EN_LPT/coupler?    ???             line       Enable LPT strap + signal to UM82C865F.56
+58    EN_COMB/coupler?   ???             line       Enable COM port B strap + signal to
+                                                    UM82C865F.55
+59    SEL_COMB_BASE/coupler?
+                       ???               line       Select COM port B as COM2/4 strap + signal
+                                                    to UM82C865F.54
+60    GND              power_in          line       Ground
+61    SEL_COMA_BASE/coupler?
+                       ???               line       Select COM port A as COM1/3 strap + signal
+                                                    to UM82C865F.53
+62    EN_COMA/coupler?   ???             line       Enable COM port A strap + signal to
+                                                    UM82C865F.52
+63    EN_IDE_HD/coupler? ???             line       Enable IDE harddrive strap (?) + signal to
+                                                    UM82C865F.51
+64    coupler?           ???             line       signal to UM82C865F.50
+65    coupler?           ???             line       signal to UM82C865F.48
+66    coupler?           ???             line       signal to UM82C865F.47
+67    coupler?           ???             line       signal to UM82C865F.46
+68    coupler?           ???             line       signal to UM82C865F.45
+69    FDC_DSKCHG#        input           input_low FDC disk change
+70    FDC_RDATA#         input           input_low FDC read data
+
+
+                                                45
+Pin   Name               Direction     Type        Description
+71  FDC_WPT#          input          input_low FDC write protect
+72  FDC_TRK0#         input          input_low FDC track 0
+73  FDC_INDEX#        input          input_low FDC index
+74  FDC_HDSEL#        open_collector output_low FDC head select
+75  FDC_WGATE#        open_collector output_low FDC write gate
+76  GND               power_in       line       Ground
+77  FDC_WDATA         open_collector line       FDC write data
+78  FDC_STEP#         open_collector output_low FDC head step/seek
+79  FDC_DIR#          open_collector output_low FDC seek direction
+80  FDC_MOTEB#        open_collector output_low FDC motor B enable
+81  FDC_DRVSA         open_collector output_low FDC drive select A
+82  FDC_DRVSB         open_collector output_low FDC drive select B
+83  FDC_MOTEA#        open_collector output_low FDC motor A enable
+84  FDC_DENSEL        open_collector output_low FDC density select
+85  GND               power_in       line       Ground
+86  EN_IDE_CN/IDE_CS3FX#
+                      output         output_low Enable IDE controller strap(?) + IDE chip
+                                                select 3Fxh
+87  IDE_CS1FX#        output         output_low IDE chip select 1Fxh
+88  IDE_DEN#          ???            line       ??? pull up to Vcc on PT-606
+89  IDE_RST           output         line       IDE reset
+90  ???               ???            line       Not connected on PT-606
+91  VCC               power_in       line       Supply +5V
+92  SEL_LPT_BASE      input          line       Choose LPT1/LPT2 base strap
+93  EN_JOY            input          line       Gameport enable strap
+94  EN_FDC            input          line       Floppy controller enable strap
+95  ISA_IOCS16#       input          input_low ISA I/O CS16
+96  GND               power_in       line       Ground?
+97  ISA_T/C           output         line       ISA T/C (end of DMA transfer)
+98  ISA_DACK_FDC#     input          input_low ISA DMA acknowledge (FDC, 2)
+99  CLK_IN            input          clock      clock in from UM82C865F.64 or xtal in
+100 XTAL_OUT          output         line       PT-606: N/C, ACE C MEGA-VL: xtal/clock out?
+
+
+
+
+                                              46
+SIO UM8663-AF pin list overview
+
+     1 ISA_DACK_LPT_ALT#        31 ISA_RESETDRV       51         coupler?    81      FDC_DRVSA
+     2               ISA_A0     32 LPT_STROBE#        52         coupler?    82      FDC_DRVSB
+     3               ISA_A1     33      LPT_AFD#      53         coupler?    83    FDC_MOTEA#
+     4               ISA_A2     34   LPT_ERROR#       54            VCC      84     FDC_DENSEL
+     5               ISA_A3     35      LPT_INIT#     55         coupler?    85             GND
+     6               ISA_A4     36     LPT_SLIN#      56         coupler?    86              ???
+     7               ISA_A5     37       ISA_IRQ5     57         coupler?    87              ???
+     8               ISA_A6     38         LPT_D0     58         coupler?    88              ???
+     9               ISA_A7     39         LPT_D1     59         coupler?    89              ???
+    10               ISA_A8     40         LPT_D2     60  ISA_DRQ_LPT        90    ISA_IOCHRDY
+    11               ISA_A9     41         LPT_D3     61         coupler?    91             VCC
+    12      ISA_DACK_LPT#       42         LPT_D4     62         coupler?    92              ???
+    13            ISA_IRQ3      43         LPT_D5     63         coupler?    93              ???
+    14            ISA_IRQ4      44         LPT_D6     64         coupler?    94              ???
+    15            ISA_IRQ6      45         LPT_D7     65         coupler?    95              ???
+    16            ISA_IRQ7      46           GND      66         coupler?    96         ISA_A10
+    17           ISA_IOW#       47      LPT_ACK#      67         coupler?    97          ISA_T/C
+    18            ISA_IOR#      48     LPT_BUSY       68         coupler?    98 ISA_DACK_FDC#
+    19    ISA_DRQ_FLOPPY        49         LPT_PE     69 FDC_DSKCHG#         99       XTAL_OUT
+    20             ISA_AEN      50      LPT_SLCT      70   FDC_RDATA#       100           CLK_IN
+    21               ISA_D0                           71      FDC_WPT#
+    22               ISA_D1                           72     FDC_TRK0#
+    23               ISA_D2                           73    FDC_INDEX#
+    24               ISA_D3                           74   FDC_HDSEL#
+    25                 GND                            75  FDC_WGATE#
+    26               ISA_D4                           76            GND
+    27               ISA_D5                           77    FDC_WDATA
+    28               ISA_D6                           78     FDC_STEP#
+    29               ISA_D7                           79       FDC_DIR#
+    30   ISA_DRQ_LPT_ALT                              80  FDC_MOTEB#
+
+
+SIO UM8663-AF pin description
+
+Pins were traced on Biostar motherboard and combined with UM82C863-F description.
+It is highly likely the IDE signals use the same pins as UM82C863-F. There was no HW to trace that
+from.
+Interesting fact: power supplies are routed through a diodes.
+
+Pin    Name                   Direction   Type        Description
+1      ISA_DACK_LPT_ALT# input            input_low   DMA acknowledge (1/3) for LPT2? (via R38
+                                                      on biostar)
+2      ISA_A0                 input       line        ISA address 0
+3      ISA_A1                 input       line        ISA address 1
+4      ISA_A2                 input       line        ISA address 2
+5      ISA_A3                 input       line        ISA address 3
+6      ISA_A4                 input       line        ISA address 4
+7      ISA_A5                 input       line        ISA address 5
+8      ISA_A6                 input       line        ISA address 6
+9      ISA_A7                 input       line        ISA address 7
+10     ISA_A8                 input       line        ISA address 8
+
+
+
+                                                 47
+Pin   Name              Direction       Type        Description
+11    ISA_A9            input           line       ISA address 9
+12    ISA_DACK_LPT#     input           input_low  DMA acknowledge (1/3) for LPT
+13    ISA_IRQ3          output          line       Interrupt request 3 (COM2)
+14    ISA_IRQ4          output          line       Interrupt request 4 (COM1)
+15    ISA_IRQ6          output          line       Interrupt request 6 (FDC)
+16    ISA_IRQ7          output          line       Interrupt request 7 (LPT1)
+17    ISA_IOW#          input           input_low  ISA I/O write
+18    ISA_IOR#          input           input_low  ISA I/O read
+19    ISA_DRQ_FLOPPY    output          line       DMA request 2 (FDC)
+20    ISA_AEN           input           line       ISA address enable
+21    ISA_D0            tri_state       line       ISA D0
+22    ISA_D1            tri_state       line       ISA D1
+23    ISA_D2            tri_state       line       ISA D2
+24    ISA_D3            tri_state       line       ISA D3
+25    GND               power_in        line       Ground
+26    ISA_D4            tri_state       line       ISA D4
+27    ISA_D5            tri_state       line       ISA D5
+28    ISA_D6            tri_state       line       ISA D6
+29    ISA_D7            tri_state       line       ISA D7
+30    ISA_DRQ_LPT_ALT   output          line       DMA request 1 (if configured as LPT2?,
+                                                   biostar: trace under RTC)
+31    ISA_RESETDRV      input           line       ISA reset
+32    LPT_STROBE#       output          output_low LPT strobe
+33    LPT_AFD#          output          output_low LPT autofeed
+34    LPT_ERROR#        input           input_low LPT error
+35    LPT_INIT#         output          output_low LPT init
+36    LPT_SLIN#         output          output_low LPT select printer
+37    ISA_IRQ5          output          line       Interrupt request 5 (if configured as LPT2?,
+                                                   biostar: trace under ROM)
+38    LPT_D0            bidirectional   line       LPT data 0
+39    LPT_D1            bidirectional   line       LPT data 1
+40    LPT_D2            bidirectional   line       LPT data 2
+41    LPT_D3            bidirectional   line       LPT data 3
+42    LPT_D4            bidirectional   line       LPT data 4
+43    LPT_D5            bidirectional   line       LPT data 5
+44    LPT_D6            bidirectional   line       LPT data 6
+45    LPT_D7            bidirectional   line       LPT data 7
+46    GND               power_in        line       Ground
+47    LPT_ACK#          input           input_low LPT acknowledge
+48    LPT_BUSY          input           line       LPT is busy
+49    LPT_PE            input           line       LPT paper error
+50    LPT_SLCT          input           line       LPT printer is selected
+51    coupler?          ???             line       um8667.24
+52    coupler?          ???             line       um8667.23
+53    coupler?          ???             line       um8667.22
+54    VCC               power_in        line       via diode to +5V
+55    coupler?          ???             line       um8667.21
+56    coupler?          ???             line       um8667.20
+57    coupler?          ???             line       um8667.18
+58    coupler?          ???             line       um8667.17
+59    coupler?          ???             line       um8667.16
+60    ISA_DRQ_LPT       output          line       DMA request (1/3) for LPT
+61    coupler?          ???             line       um8667.15
+62    coupler?          ???             line       um8667.14
+63    coupler?          ???             line       um8667.13
+
+
+                                               48
+Pin   Name                Direction      Type        Description
+64    coupler?            ???            line       um8667.12
+65    coupler?            ???            line       um8667.11
+66    coupler?            ???            line       um8667.10
+67    coupler?            ???            line       um8667.9
+68    coupler?            ???            line       um8667.8
+69    FDC_DSKCHG#         input          input_low FDC disk change
+70    FDC_RDATA#          input          input_low FDC read data
+71    FDC_WPT#            input          input_low FDC write protect
+72    FDC_TRK0#           input          input_low FDC track 0
+73    FDC_INDEX#          input          input_low FDC index
+74    FDC_HDSEL#          open_collector output_low FDC head select
+75    FDC_WGATE#          open_collector output_low FDC write gate
+76    GND                 power_in       line       Ground
+77    FDC_WDATA           open_collector line       FDC write data
+78    FDC_STEP#           open_collector output_low FDC head step/seek
+79    FDC_DIR#            open_collector output_low FDC seek direction
+80    FDC_MOTEB#          open_collector output_low FDC motor B enable
+81    FDC_DRVSA           open_collector output_low FDC drive select A
+82    FDC_DRVSB           open_collector output_low FDC drive select B
+83    FDC_MOTEA#          open_collector output_low FDC motor A enable
+84    FDC_DENSEL          open_collector output_low FDC density select
+85    GND                 power_in       line       Ground
+86    ???                 ???            line       ???
+87    ???                 ???            line       ???
+88    ???                 ???            line       ???
+89    ???                 ???            line       ???
+90    ISA_IOCHRDY         output         line       ISA I/O CHRDY
+91    VCC                 power_in       line       via diode to +5V
+92    ???                 ???                       ???
+93    ???                 ???                       ???
+94    ???                 ???                       ???
+95    ???                 ???                       ???
+96    ISA_A10             input          line       ISA address 10
+97    ISA_T/C             output         line       ISA T/C
+98    ISA_DACK_FDC#       input          input_low ISA DMA acknowledge (FDC, 2)
+99    XTAL_OUT            output?        line       Xtal, most likely output
+100   CLK_IN              input          clock      Clock in (biostar: via 33R to UM9515 pin 5)
+
+
+SIO registers
+The following access was found in BIOS for UM8663-AF variant:
+108     Index register
+109     Read/write data register
+Similar to the IBC, the SuperIO access needs to be unlocked first. This is done by writing 0xaa to
+the index port. Re-locking can be done by writing the value of 0x55. It seems any access must be
+wrapped inside the lock/unlock sequence.
+According to the manual the UM82C863-F implements CR0 and CR1 registers. The UM8663-AF has
+an additional register CR2 and the UM8663-BF (untested) probably CR3 and CR4. UM8663-BF variant
+probably supports IrDA on the serial port.
+There are ISA I/O cards with UM82C863-F or UM8663-AF, where the configuration is set by jumpers.
+This means SIOs mounted on motherboards are using this mechanism too, most likely in a form of
+
+
+
+                                                49
+preset pullup resistors. The pin value will be most likely sampled during the power-on and written
+into CRx registers, where it can be later changed via BIOS code.
+Implemented registers and its power-on values:
+
+                   Register   UM82C863-F     UM8663-AF (Biostar)    UM8663-BF
+                   CR0        Untested       0x2f                   Untested
+                   CR1        Untested       0x9f                   Untested
+                   CR2        N/A            0x81                   Untested
+                   CR3        N/A            N/A                    Untested
+                   CR4        N/A            N/A                    Untested
+
+
+I/O base access of controllers is limited by the amount of used address signals. Which means there
+is an address aliasing at higher addresses (excluding PCI I/O space). The aliasing was checked for
+the LPT.
+It seems BIOS access following configuration registers (CRx):
+C0.80   UNKNOWN, some kind of status bit on UM8663-AF ?
+        Reserved on UM82C863-F
+C0.40   UNKNOWN, writeable to 1 on UM8663-AF
+        Reserved on UM82C863-F
+C0.20   Gameport enable
+C0.10   IDE enable
+C0.08   LPT enable
+C0.04   COMB enable
+C0.02   COMA enable
+C0.01   FDC enable
+
+C1.C0   LPT mode on UM8663-AF
+        10: SPP
+        01: EPP
+        11: ECP
+        00: disabled
+  .40   LPT mode on UM82C863-F
+        0: PS/2 compatible LPT (bidirectional?)
+        1: AT mode compatible LPT
+  .80   Test mode on UM82C863-F
+        0: Test mode
+        1: Normal mode
+C1.20   UNTESTED, IDE existence?, defaults to 0
+        0: already IDE in the system
+        1: no IDE in the system
+        NOTICE may have a different function on UM8663-AF
+        TODO
+             what is the meaning of this???
+             maybe a complete IDE disable? (but already in C0.10)
+C1.10   UNTESTED, IDE base
+        0: 170 secondary
+        1: 1f0 primary
+C1.08   LPT base
+        0: 278 LPT2
+        1: 378 LPT1
+C1.04   COMB base
+        0: 2e8 COM4
+        1: 2f8 COM2
+
+
+                                                 50
+C1.02   COMA base
+        0: 3e8 COM3
+        1: 3f8 COM1
+C1.01   FDC base
+        0: 370 secondary
+        1: 3f0 primary
+
+C2.80   Probably chip sleep, COM A/B, LPT, FDC become inoperative if cleared
+        Set during FDC init
+C2.40   UNKNOWN
+C2.20   setting to 1 disables FDC
+C2.10   UNKNOWN
+C2.08   UNKNOWN
+C2.04   Floppy 3-mode
+        0: Disable
+        1: Enable
+C2.02   UNKNOWN
+C2.01   UNKNOWN
+        Set during FDC init
+
+C3.FF   UNKNOWN, only UM8663-BF
+        Additional LPT settings (probably IRQ, DMA)
+        Additional COMA, COMB settings
+
+C4.E0   UNKNOWN, only UM8663-BF
+C4.10   UNTESTED UM8663-BF Serial port IR duplex mode
+C4.0C   UNTESTED UM8663-BF Serial port used for IR
+C4.03   UNTESTED UM8663-BF Serial port mode (Normal/HPSIR/ASKIR)
+
+
+UM8667 I/O coupler
+UM8667 is a complementary chip for UMC Super I/Os. It provides necessary level shifters and analog
+processing. Integrated functionality:
+  • Dual UART <-> RS232 level shifters for all signals
+  • Single gameport interface with A/D sampling (556 like) with output to a partial ISA interface
+
+
+UM8667 I/O coupler predecessor
+SIOs UM82C863F/UM8663 can be coupled with UM8667 or its predecessor UM82C865F. Both should
+have the same features, but UM82C865F includes a 24 MHz crystal oscillator so it can generate 24
+MHz for SIO. It may be possible it has a support for dual joystick gameport. No further research has
+be made.
+
+
+UM8667 I/O coupler pin assignment
+As UM8667 implements a partial ISA bus (to access gameport controller), but it doesn’t have ISA
+address. There needs to be at least IOR and IOW signals (or some equivalent) from SIO so I/O coupler
+can know when to read/write data (if gameport is enabled). Pins 5 and 6 are the candidates, but
+that’s just a speculation (no HW to test on).
+The TTL signals between RS232 level shifter and to/from SIO were not identified. It would require a
+RS232 voltage level injector/monitor to observe them (too much work :-D).
+
+
+
+
+                                                51
+UM8667 I/O coupler schematic symbols
+
+
+
+
+UM8667 I/O coupler pin list overview
+
+  1 JOY_BTN2#      25  RESET
+  2     JOY_Y      26  ISA_D0
+  3     JOY_X      27  ISA_D1
+  4 JOY_BTN1#      28  ISA_D4
+  5        ???     29  ISA_D5
+  6        ???     30  VCC5V
+  7     VCC5V      31 VCC12V
+  8        ???     32     RI_B
+  9        ???     33   CTS_B
+ 10        ???     34   RTS_B
+ 11        ???     35  DSR_B
+ 12        ???     36   DTR_B
+ 13        ???     37   TXD_B
+ 14        ???     38  RXD_B
+ 15        ???     39    CD_B
+ 16        ???     40     RI_A
+ 17        ???     41   CTS_A
+ 18        ???     42 VCC-12V
+ 19       GND      43   RTS_A
+ 20        ???     44  DSR_A
+ 21        ???     45   DTR_A
+ 22        ???     46   TXD_A
+ 23        ???     47  RXD_A
+ 24        ???     48    CD_A
+
+
+UM8667 I/O coupler pin description
+
+Pins were traced on Biostar motherboard with help of PT-606 I/O ISA card, the descriptions may
+reference them.
+
+
+
+
+                                             52
+Pin   Name        Direction   Type        Description
+1     JOY_BTN2#   input       input_low   Joystick button 2 (biostar to +5V)
+2     JOY_Y       input       line        Joystick analog axis Y
+3     JOY_X       input       line        Joystick analog axis X
+4     JOY_BTN1#   input       input_low   Joystick button 1 (biostar to +5V)
+5     ???         ???                     ??? (biostar to +5V), possibly joystick
+                                          control?
+6     ???         ???                     ??? (biostar to +5V), possibly joystick
+                                          control?
+7     VCC5V       power_in    line        +5V supply
+8     ???         ???                     to um8663af.68
+9     ???         ???                     to um8663af.67
+10    ???         ???                     to um8663af.66
+11    ???         ???                     to um8663af.65
+12    ???         ???                     to um8663af.64
+13    ???         ???                     to um8663af.63
+14    ???         ???                     to um8663af.62
+15    ???         ???                     to um8663af.61
+16    ???         ???                     to um8663af.59
+17    ???         ???                     to um8663af.58
+18    ???         ???                     to um8663af.57
+19    GND         power_in    line        Ground
+20    ???         ???                     to um8663af.56
+21    ???         ???                     to um8663af.55
+22    ???         ???                     to um8663af.53
+23    ???         ???                     to um8663af.52
+24    ???         ???                     to um8663af.51
+25    RESET       input       line        reset
+26    ISA_D0      tri_state   line        ?ISA D0, possibly joystick
+27    ISA_D1      tri_state   line        ?ISA D1, possibly joystick
+28    ISA_D4      tri_state   line        ?ISA D4, possibly joystick
+29    ISA_D5      tri_state   line        ?ISA D5, possibly joystick
+30    VCC5V       power_in    line        +5V supply
+31    VCC12V      power_in    line        +12V via diode
+32    RI_B        input       inverted    Port B Ring Indicator (RS232 pin 9)
+33    CTS_B       input       inverted    Port B Clear To Send (RS232 pin 8)
+34    RTS_B       output      inverted    Port B Request To Send (RS232 pin 7)
+35    DSR_B       input       inverted    Port B Data Set Ready (RS232 pin 6)
+36    DTR_B       output      inverted    Port B Data Terminal Ready (RS232 pin 4)
+37    TXD_B       output      inverted    Port B TX data (RS232 pin 3)
+38    RXD_B       input       inverted    Port B RX data (RS232 pin 2)
+39    CD_B        input       inverted    Port B carrier detect (RS232 pin 1)
+40    RI_A        input       inverted    Port A Ring Indicator (RS232 pin 9)
+41    CTS_A       input       inverted    Port A Clear To Send (RS232 pin 8)
+42    VCC-12V     power_in    line        -12V via diode
+43    RTS_A       output      inverted    Port A Request To Send (RS232 pin 7)
+44    DSR_A       input       inverted    Port A Data Set Ready (RS232 pin 6)
+45    DTR_A       output      inverted    Port A Data Terminal Ready (RS232 pin 4)
+46    TXD_A       output      inverted    Port A TX data (RS232 pin 3)
+47    RXD_A       input       inverted    Port A RX data (RS232 pin 2)
+48    CD_A        input       inverted    Port A carrier detect (RS232 pin 1)
+
+
+
+
+                                     53
+UM8667 I/O coupler registers
+There is only a single gameport register, but its I/O port 0x201 is decoded from SIO. UM8667 imple-
+ments only ISA data bits 0, 1, 4 and 5, which corresponds to buttons and analog axes of the first
+joystick. The write to I/O port 0x201 should restart the conversion.
+
+
+Code snippets
+Fill RAM shadow segment E and F
+HB 55.C0 = 00 Unlock F0000-FFFFF
+... fill data ...
+HB 54.01 = 1    E0000-EFFFF shadow read enable
+IBC 51.01 = 1   Set after filling E/F
+IBC 50.01 = 1   Set after filling E/F
+HB 55.C0 = C0 Lock F0000-FFFFF
+
+
+
+
+                                                 54
+

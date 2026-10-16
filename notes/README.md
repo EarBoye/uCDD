@@ -80,3 +80,10 @@ giving Type F), and the SiS 5597, 5598 and 5582 (config 71h, with a revision
 check against the 5595 that shares the ID). The PIIX supports Type F only
 for DMA reads from memory, which is playback; capture on that channel must
 not run with it set.
+
+Added 17 Oct 2026 from the new documents (chipsets.md section 1 and the end
+of section 4): the AMD-756 (Athlon, AMD-750) has the VIA register at config
+45h; the OPTi Viper-M (82C558M) and FireStar (82C700) have Type F in the
+same DMA extended mode registers as ALi; the AMD-766 and AMD-768 have no ISA
+DMA at all; the UMC UM8886's 40Bh and 4D6h are unidentified; the ALi M1535
+has only product briefs.

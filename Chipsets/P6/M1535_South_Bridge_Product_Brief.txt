@@ -1,0 +1,298 @@
+                                                                                                                                                       M1535
+                                                                                                                                       South Bridge
+
+
+                                                                                                                                                   Product Brief
+
+Introduction
+
+
+The M1535 provides the highest integration south bridge solution between PCI bus and Peripheral buses
+for personal computer systems. It includes audio, high-speed modem, Super I/O and Fast IR integrated
+i n t o o n e c h i p t o c o m p l e m e n t a n y o n e o f A L i’s N o r t h B r i d g e s o l u t i o n s n a m e l y M 1 5 4 1 , M 1 6 2 1 a n d M 1 6 3 1 .
+
+
+The M1535 is PCI spec. 2.2 compliant. It provides steerable PCI Interrupts for PCI device Plug-and-Play,
+it has up to 8 PCI interrupts routing, it has level to edge trigger transfer. It has enhanced DMA controller.
+It provides 14 interrupt channels as Interrupt Controller. It provides 8254 Compatible timers for system
+timer, Refresh Request, Speaker Output use. It has 7 DMA channels that can be arbitrarily programmed
+as distributed channels.   It provides 1 PC/PCI DMA channel interface.      It supports serialized IRQ in
+quiet/continuous mode. It supports Plug-and-Play.                               It has built-in PS2 Keyboard and mouse controller.                            It
+provides hot plugging events detection.
+
+
+The M1535 also provides the best power management solution. The M1535 integrates ACPI support,
+deep green function, 2-channel Ultra DMA-33/66 IDE bus master controller, 4-port USB controller, S M B u s
+controller, Super I/O, audio system and software modem into one 27mmx27mm BGA (Ball Grid Array)
+chip. Please see attached pages for details.
+
+
+Furthermore, the M1535 is designed to meet the requirements of desktop, mobile PCs.
+
+
+
+
+                                                                        CPU
+
+
+
+
+                                    CRT                              North                                    DRAM
+                                                                     Bridge
+
+
+                                                                          PCI
+
+                  HDD
+                                      UDMA 33/66 2-channel
+                                        IDE bus master                M1535                                                KB/       Mouse
+
+                  CD-ROM                                               BGA
+                                                                                                                              USB
+
+                                Flash ROM                                                                  GPIOs
+                                                                                          SIO
+                                                         SMBus           AC CODEC
+
+
+
+
+Document Number: 1535PB01.doc                                                                                                                       Page 1
+Acer Labs: 11F, no. 45 Tung Hsing Road, Taipei 110, Taiwan, R.O.C. Tel: 886-2-8768-2800 Fax: 886-2-8768-3030
+Homepage: www.ali.com.tw                                 --ALi Proprietary, Confidential, Preliminary--
+ALi                                                                                             M1535 : South Bridge
+
+
+
+                                                                     •    Full Support for Instantly Available PC
+
+M1535 (South Bridge) Features:                                            feature
+                                                                     •    CPU SMM Legacy Mode and SMI Feature
+n     Provides a High Integration Bridge (with                            Supported
+      Audio, HSP Modem, Super I/O & Fast IR)                         •    F u l l Su p p o r t f o r C l o c k C o n t r o l F u n c t i o n s o f
+      between PCI Bus and Peripheral Bus for                              both Pentium and Pentium II CPU s.
+      Notebook or Mobile Systems                                     •    Supports I/O Trap for I/O Restart Feature
+                                                                     •    PMU Operation States :
+n     PCI 3.3V/5V Tolerance Interface                                     1. G 0 S t a t e
+      •   Supports PCI Master and Slave Interface                             -- On
+      •   Supports PCI Master and Slave Initiated                            -- Standby M o d e
+          Termination                                                     2. G1 State (Suspend Mode 1)
+      •   Concurrent PCI Architecture                                          -- S1 State (Power On Suspend)
+      •   PCI spec. 2.2 Compliant                                             -- S3 State (Suspend To RAM)
+      •   PCI Power Management Interface spec. 1.1                             -- S4 State (Suspend To DISK)
+          Compliant                                                       3. G2 State (Suspend Mode 2)
+n     Provides Steerable PCI Interrupts for PCI                              -- S5 State (Soft-Off)
+
+      Device Plug-and-Play                                                4. G3 State (Mechanical-Off)
+
+      •   Up to 8 PCI Interrupts Routing                             •    APM State Detection and Control Logic
+
+      •   Level to Edge Trigger Transfer                                  Supported
+n     Enhanced DMA Controller                                        •    Global and Local Device Power Control
+
+      •   Provides 7 Programmable Channels, 4 for 8-                      Logic
+
+          bit Data Size, 3 for 16-bit Data Size                      •    10 Monitor T i m e r s : S t a n d b y / A P M A ~ D /
+
+      •    32-bit Addressability                                          Global-Display / HDD A~B/ SIO & Audio/
+n     Interrupt Controller                                                GPIO.
+
+      •    Provides 14 Interrupt Channels                            •    2 Low Battery timers supported.
+
+      •    Independent Programmable Level/Edge                       •    Provides System Activity and Display Activity
+
+          Triggered Channels                                              M o n i t o r i n g, i n c l u d i n g
+                                                                          -- Video
+n     Counter/Timers                                                      -- Audio
+                                                                          -- Hard Disk
+      •  Provides 8254 Compatible Timers for
+                                                                          -- Floppy Disk
+          System Timer, Refresh Request, Speaker
+          Output Use                                                      -- Serial Ports
+                                                                          -- Parallel Port
+                                                                          -- Keyboard
+n      Distributed DMA Supported
+                                                                          -- 4 Programmable I/O Group
+      •   7 DMA Channels can be Arbitrarily
+                                                                          -- 2 Programmable Memory Space
+          Programmed as Distributed Channels
+n      PC/PCI DMA Supported                                          •    Provides Hot Plugging Events Detection
+                                                                          -- Docking Insert
+      •   1 PC/PCI DMA Channel Interface Provided
+                                                                     •    Multiple External Wakeup Events of Standby
+n      Serialized IRQ Supported
+                                                                          Mode (G0)
+      •   Quiet/Continuous Mode
+                                                                          -- Power Button
+      •   Programmable (Default 21) IRQ/DATA
+                                                                          -- Sleep Button
+          Frames
+                                                                          -- Modem Ring
+      •   Programmable START Frame Pulse Width
+                                                                          -- RTC Alarm
+                                                                          -- DRQ2
+n     Plug-and-Play Supported
+                                                                     •    Resume Events detected Wake Up from
+      •   2 Programmable Chip Select
+                                                                          Suspend Mode (G1, G2)
+      •   2 Steerable Interrupt Request Lines
+                                                                          -- 9 r e s u m e e v e n t s s u p p o r t e d .
+n     Built-in Keyboard Controller
+                                                                          -- P o w e r B u t t o n
+      •   Built-in PS2/AT Keyboard and PS2 Mouse
+                                                                          -- Sleep Button
+          Controller
+                                                                          -- RTC Alarm
+n     Supports up to 512 KB ROM Size Decoding                             -- PCI PMEJ Signal
+                                                                          -- Modem Ring
+n     PMU Features
+                                                                          -- USB Events
+      •  Full Support for ACPI and OS Directed
+                                                                          - - A C’9 7
+          Power Management to meet system
+                                                                          -- H o t k e y K B D & M S
+          requirement of PC98/PC99
+
+
+
+
+Document Number: 1535PB01.doc                                                                                                             Page 2
+Acer Labs: 11F, no. 45 Tung Hsing Road, Taipei 110, Taiwan, R.O.C. Tel: 886-2-8768-2800 Fax: 886-2-8768-3030
+Homepage: www.ali.com.tw                                 --ALi Proprietary, Confidential, Preliminary--
+ALi                                                                                                              M1535 : South Bridge
+
+
+
+            -- IRQ1 & 12                                                               n   Super I/O Interface
+      •     CLKRUN# Function Supported for PCI                                             •  S u p p orts Windows Plug-and-Play
+            Mobile Design Guide Ver1.1                                                     •  Supports 2 Serial/ 1 Parallel/ FDC Functions
+      •     Thermal Alarm Supported                                                        •  Supports 16-bit Address Decoder
+      •     Clock Generator Control Logic Supported                                        •  2.88 MB (Formatted) Floppy Disk Controller
+            -- CPUCLK Stop Control                                                             -- Software Compatible with 82077 and
+            -- PCICLK Stop Control                                                               Supports 16-byte Data FIFOs
+•     L2 Cache Power Down Control Logic Supported                                              -- High Performance Internal Data Separator
+•     U p t o 2 5 R u n T i m e E v e n t s S u p p o r t e d( i n c l u d e d 8               -- Supports Standard 1 Mbps/ 500 Kbps/ 300
+       Extended Run Time Events).                                                                Kbps/ 250 Kbps Data Transfer Rate
+      •     Up to 12 G e n e r a l P u r p o s e I n p u t S i g n a l s , U p                 - - S u p p o r t s 3 m o d e s o f 3 . 5“ F D D ( 7 2 0 K B /
+            to 1 5 G e n e r a l P u r p o s e O u t p u t S i g n a l s a n d                   1.2MB/ 1.44MB)
+            up to 30 G e n e r a l P u r p o s e I n p u t / O u t p u t                       -- Swappable Drives A and B
+            Signals                                                                            -- Programmable 7-bit I/O Base Address
+      •     1 6 E x t e n d e d G e n er a l P u r p o s e I n p u t S i g n a l s ,       •   Various Mode Parallel Port
+            16 Extended General Purpose Output                                                 -- Supports ECP/ EPP / PS/2 / SPP and
+            Signals, and 8 Extended Run Time Events                                               1284 Compliance
+            supported.                                                                         -- Standard Mode
+      •     All Registers Readable/Restorable for Proper                                       -- Programmable 8-bit I/O Base Address
+            Resume from Suspend State                                                          -- Multiplexing of FDC Signals through
+
+      •     Hotkey for Power on Button Function through                                           Parallel Port Pins
+            Keyboard or Mouse                                                                  -- 12 IRQ Channel Options
+
+      •     Supports Power Loss Recovery                                                       -- 4 8-bit DMA Channel Options
+                                                                                               -- IBM PC/XT, PC/AT and PS/2 Compatible
+      •     Watch Dog Timer for
+                                                                                                  Bi-directional Parallel Port
+            -- Set a Bit in Register
+                                                                                               -- Enhanced Mode
+            -- Generate an SMI#/SCI/NMI/INIT
+                                                                                                 - Enhanced Parallel Port (EPP) Compatible
+            -- Generate System Reset
+                                                                                                 - EPP is Compatible with EPP1.9 (IEEE
+                                                                                                  1284 Compliant ), also supports EPP1.7 of
+n     Built-in PCI IDE Controller
+                                                                                                  Xircom Specification
+      •   Supports Ultra DMA Mode Transfers up to
+                                                                                               -- High Speed Mode
+            Mode 4 Timing (33/66 Mbps)
+                                                                                                 - Microsoft and Hewlett Packard Extended
+      •     Supports PIO Modes up to Mode 4 Timings,
+                                                                                                    Capabilities Port (ECP) Compatible
+            and Multiword DMA Mode 0,1,2 with
+                                                                                                 - IEEE 1284 Compatible ECP
+            Independent Timing of up to 4 Drives
+                                                                                                 - Includes Protection Circuit against
+      •     Integrated 16 x 32-bit Read Ahead & Posted
+                                                                                                    damage caused when printer is powered
+            Write Buffers for each channel (Total : 32
+                                                                                                    up, or operated at higher voltages
+            DWords)
+                                                                                           •   Serial Ports
+      •    Dedicated Pins of ATA Interface for each
+                                                                                               -- T h r e e H i g h P e r f o r m a n c e 1 6 4 5 0 / 1 6 5 5 0
+            Channel
+                                                                                                 Compatible UARTs with Send/Receive 16-
+      •     Supports Tri-state IDE Signals for Swap Bay
+                                                                                                 byte FIFOs
+      •     Supports Command Queue IDE                                                         -- Programmable Baud Rate Generator
+            enhancement                                                                        -- Wireless Communications
+                                                                                               -- Dedicated pins and COM Port for Infrared
+n     USB Interface                                                                              Transmission
+      •     One Root Hub with f o u r USB Ports Based                                          -- Supports IrDA 1.0 (SIR) and IrDA 1.1 (MIR
+            on O p e n H C I 1 . 0 a S p e c i f i c a t i o n                                   and FIR)
+      •     Supports FS (12Mbits/sec) and LS                                                   -- Supports Sharp-IR
+            (1.5Mbits/sec) Serial Transfer                                                     -- MIDI (Musical Instrument Digital Interface)
+      •     Supports Legacy Keyboard and Mouse                                                   Compatible
+            Software with USB-based Keyboard and                                               -- High Performance Power Management for
+            Mouse                                                                                FDC, UART and Parallel Port
+                                                                                               -- Option between Programmable 7-bit I/O
+n     SMBus Interface                                                                            Base Addresses, 12 IRQs, and 4 DMA
+      •  System Management Bus Interface Meets                                                   Channels for each Device
+            the V1.0 Specification
+      •     SMBALERT# Support
+            2
+      •    I C protocol Support
+n     Hotkey for Power on Button Function through
+      Keyboard
+
+
+Document Number: 1535PB01.doc                                                                                                                             Page 3
+Acer Labs: 11F, no. 45 Tung Hsing Road, Taipei 110, Taiwan, R.O.C. Tel: 886-2-8768-2800 Fax: 886-2-8768-3030
+Homepage: www.ali.com.tw                                 --ALi Proprietary, Confidential, Preliminary--
+ALi                                                                                            M1535 : South Bridge
+
+
+                                                                     •    16-voices DirectSound3D accelerator with
+n     Audio System                                                        IID, ITD and Doppler effect on 3D positional
+      •  Fully Plug-and-Play PCI controller and                           audio buffers
+          software                                                   •    DirectSound accelerator with volume, pan
+      •   PCI 2.2 compliant bus master optimized for                      and pitch shift control on streaming or static
+          multiple stream operation                                       buffers
+      •   On-chip per voice cache minimizes PCI                      •    D i r e c t I np u t s u p p o r t w i t h d i g i t a l e n h a n c e d
+          bandwidth                                                       game port enables an analog joystick to
+      •   Hardware multi-channel digital mixer                            emulate digital joystick performance using
+      •   32 voices polyphony wavetable synthesizer                       DirectInput driver. This eliminates up to 12%
+          supports all combinations of stereo/mono, 8-                    CPU overhead wasted on joystick polling.
+          /16-bits, and signed/unsigned samples.                     •    DirectX timer for video/audio synchronization
+      •   Per channel for wave table synthesis with                  •    Hardware digital volume control
+          envelop, pitch shift, tremolo and vibrato
+      •   DLS1-compliant Downloadable Samples                    n   Software Modem Interface
+          support                                                    •   The M1535 will provide the AC’97 2.1
+      •   DirectMusic with unlimited downloadable                         compliant digital controller interface for third
+          samples in system memory                                        p a r t i e s ( s u c h a s t h e A M C C o d e c ’s v e n d o r ) t o
+      •   Legacy game audio with SoundBlaster                             enable the software modem solution.
+          Pro/16 compatibility                                       •    4 separate telephony bus master channels.
+      •   Legacy game FM and wave table synthesis                         One for modem output, one for modem input,
+          supported                                                       one for handset input, and one for handset
+      •   MPU-401 compatible MIDI I/O with FIFO                           output.
+
+      •   AC97 2.1 support with full duplex,                         •    A C’9 7 2 . 1 M o d e m v a r i a b l e s a m p l e r a t e
+          independent sample rate converter for                           s u p p o r t f o r “ O n D e m a n d” s a m p l e t r a n s p o r t
+          recording and playback                                          scheme.
+
+      •   On-chip sample rate converter ensures all                  •    A C’9 7 2 . 1 G P I O p i n s t a t u s a n d c o n t r o l
+          internal operation at 48 KHz                                    support.
+
+      •   High precision internal 26 bit digital mixer               •    Power Management and wake-up event
+          with 20 bit digital audio output                                support
+
+      •   Microsoft WDM streaming architecture                       •    Caller ID string transmission via AC-link
+          compliant and “Re-routable endpoint”                            support
+          support
+      •   32-voices DirectSound channels                         n   352-pin (27mmx27mm) BGA Package
+
+
+
+
+Document Number: 1535PB01.doc                                                                                                               Page 4
+Acer Labs: 11F, no. 45 Tung Hsing Road, Taipei 110, Taiwan, R.O.C. Tel: 886-2-8768-2800 Fax: 886-2-8768-3030
+Homepage: www.ali.com.tw                                 --ALi Proprietary, Confidential, Preliminary--
+

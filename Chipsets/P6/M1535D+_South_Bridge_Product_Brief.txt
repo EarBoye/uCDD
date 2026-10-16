@@ -1,0 +1,240 @@
+                                                                                                       M1535D+
+                                                                                                 South Bridge
+
+                                                                                                          Product Brief
+
+
+                                                                                   For Multimedia Desktop PCs
+Introduction
+
+The M1535D+ provides the best desktop system solution. The M1535D+ integrates AC-Link Host Controller,
+Hardware SoundBlaster Pro/16 compatibility, Host Signal Processing (HSP) software modem solution, ACPI support,
+green function, 2-channel dedicated UDMA/ATA-100 IDE Master controller, 2 USB controllers, SMBus controller,
+PS/2 Keyboard/Mouse controller, the Super I/O (Floppy Disk Controller, 2 serial port/1 parallel port) support and Fast
+IR into one chip.
+The built-in I/O in M1535D+ is an advanced Super I/O controller containing all of the basic IBM PC, XT, AT
+peripherals. It incorporates three full function universal asynchronous receiver/ transmitters (UARTs), a flexible high
+performance internal data separator with send/receive 16 byte FIFOs. It is also suitable for notebook computers
+since it has Fast Infra Red for wireless communications with other devices. It can swap the floppy drives A & B. It
+supports SPP, PS/2, EPP and ECP parallel port. It also has a programmable baud rate generator. It has high
+performance power management for the FDC, UART and parallel port.
+The built-in audio in M1535D+ is an advanced PCI audio accelerator providing wave table synthesis, DirectMusic,
+DirectSound, and DirectSound3D for the high performance, cost-sensitive consumer market. It also supports full
+Sound Blaster compatibility and is fully PC’98/PC’99 compliant. The M1535D+ Audio, combined with a standard
+AC’97/AC’98 Codec, provides better than CD quality audio with sound-to-noise ratio of > 90 db, up to 48 KHz sample
+rate, full duplex audio with independent playback and recording sample rate, 6-channel mixer and optional 3D
+surround sound enhanced output. In the legacy DOS game environment, the M1535D+ audio accelerator provides
+SoundBlaster Pro/16 compatibility, OPL2 and OPL3 emulation, and 1 to 8 MB of general MIDI music through the
+MPU 401 compatible interface. With built-in support of the legacy mode analog game port, the M1535D+ audio can
+replace all the functions of a wave table based legacy audio ISA card. In addition, the M1535D+ supports consumer
+audio digital interface (SPDIF) to connect external digital audio equipment.
+The M1535D+ will provide the AC’97 2.1 compliant digital controller interface for third parties (such as the AMC
+Codec’s vendor) to enable the software modem solution. The M1535D+ provides 4 separate telephony bus master
+channels. One for modem output, one for modem input, one for handset input, and one for handset output. The
+M1535D+ supports the Modem on-demand variable sample rate transfer, power management, wake-up, and caller ID
+string transmission.
+The M1535D+ will support the security feature such as the platform firmware protection. The M1535D+ also provides
+the ability to meet the Legacy-Free and Legacy Reduction specification of PC2001.
+
+                                                              CPU
+
+
+                                     CRT
+                                                             North
+                                                                                          DRAM
+                                                             Bridge
+
+                                                                  PCI
+
+
+                                                           M1535D+                                  USB
+                  HDD             UDMA/ATA 100 Dual
+                                 Channel IDE bus master      352-BGA                         KB/Mouse
+
+                  CD-ROM                                                                       GPIOs
+                                                                                    SIO
+                        LPC device         Flash ROM      SMBus         AC CODEC
+
+
+
+
+Document Number: 1535PBdp1.doc                                                                                 Page 1
+Acer Labs: 11F, no. 45 Tung Hsing Road, Taipei 110, Taiwan, R.O.C. Tel: 886-2-8768-2800 Fax: 886-2-8768-3030
+Homepage: www.ali.com.tw                                  --ALi Proprietary, Confidential, Preliminary--
+ALi                                                                                 M1535D+ : South Bridge
+
+
+                                                                           PMU Operation States :
+Features                                                                   1. G0 State
+n Provides a High Integration Bridge (with                                    -- On
+    Audio, HSP Modem, Super I/O & Fast IR)                                    -- Standby Mode
+    between the PCI Bus and Peripheral Bus for                             2. G1 State (Suspend Mode 1)
+    both Desktop and Notebook Systems                                         -- S1 State (Power On Suspend)
+    PCI 3.3V/5V Tolerance Interface                                           -- S3 State (Suspend To RAM)
+        Supports PCI Master and Slave Interface                               -- S4 State (Suspend To DISK)
+    • Supports PCI Master and Slave Initiated                              3. G2 State (Suspend Mode 2)
+        Termination                                                           -- S5 State (Soft-Off)
+    • Concurrent PCI Architecture                                          4. G3 State (Mechanical-Off)
+         PCI spec. 2.2 Compliant                                           APM State Detection and Control Logic
+         PCI Power Management Interface spec. 1.1                          Supported
+         Compliant                                                         Global and Local Device Power Control
+    Provides Steerable PCI Interrupts for PCI                              Logic
+    Device Plug-and-Play                                                   10 Monitor Timers : Standby/ APMA~D/
+         Up to 8 PCI Interrupts Routing                                    Global-Display/ HDD A~B/ SIO & Audio/
+         Level to Edge Trigger Transfer                                    GPIO.
+    Enhanced DMA Controller                                                2 Low Battery timers supported.
+         Provides 7 Programmable Channels, 4 for 8-                        Provides System Activity and Display Activity
+         bit Data Size, 3 for 16-bit Data Size                             Monitoring, including
+         32-bit Addressability                                             -- Video
+    Interrupt Controller                                                   -- Audio
+         Provides 14 Interrupt Channels                                    -- Hard Disk
+         Independent Programmable Level/Edge                               -- Floppy Disk
+         Triggered Channels                                                -- Serial Ports
+    Counter/Timers                                                         -- Parallel Port
+         Provides 8254 Compatible Timers for                               -- Keyboard
+         System Timer, Refresh Request, Speaker                            -- 4 Programmable I/O Groups
+         Output Use                                                        -- 2 Programmable Memory Spaces
+     Distributed DMA Supported                                             Provides Hot Plugging Event Detection
+         7 DMA Channels can be Arbitrarily                                 -- Docking Insert
+         Programmed as Distributed Channels                                Multiple External Wakeup Events of Standby
+     PC/PCI DMA Supported                                                  Mode (G0)
+    •    1 PC/PCI DMA Channel Interface Provided                           -- Power Button
+     Serialized IRQ Supported                                              -- Sleep Button
+         Quiet/Continuous Mode                                             -- Modem Ring
+         Programmable (Default 21) IRQ/DATA                                -- RTC Alarm
+         Frames                                                            -- DRQ2
+         Programmable START Frame Pulse Width                              Resume Events Detected Wake Up from
+     Low Pin Count (LPC) Host Controller                                   Suspend Mode (G1, G2)
+        Provides Low Pin Count Host Controller                             -- 9 resume events supported.
+        based on Low Pin Count Interface Spec. 1.0                         -- Power Button
+    Plug-and-Play Supported                                                -- Sleep Button
+         2 Programmable Chip Select lines                                  -- RTC Alarm
+         2 Steerable Interrupt Request lines                               -- PCI PMEJ Signal
+    Built-in Keyboard Controller                                           -- Modem Ring
+         Built-in PS2/AT Keyboard and PS2 Mouse                            -- USB Events
+         Controller                                                        -- AC’97
+n Supports up to 512 KB ROM Size Decoding                                 -- Hotkey KBD & MS
+    PMU Features                                                          -- IRQ1 & 12
+         Full Support for ACPI and OS Directed                             CLKRUN# Function Supported for PCI
+         Power Management to meet system                                   Mobile Design Guide Ver. 1.1
+         requirement of PC98/PC99                                          Thermal Alarm Supported
+         Full Support for Instantly Available PC                           Clock Generator Control Logic Supported
+         feature
+         CPU SMM Legacy Mode and SMI Feature
+         Supported
+         Full Support for Clock Control Functions of
+         both Pentium and Pentium II CPUs.
+         Supports I/O Trap for I/O Restart Feature
+
+Document Number: 1535PBdp1.doc                                                                                  Page 2
+Acer Labs: 11F, no. 45 Tung Hsing Road, Taipei 110, Taiwan, R.O.C. Tel: 886-2-8768-2800 Fax: 886-2-8768-3030
+Homepage: www.ali.com.tw                                  --ALi Proprietary, Confidential, Preliminary--
+ALi                                                                                 M1535D+ : South Bridge
+
+          -- CPUCLK Stop Control                                     Super I/O Interface
+          -- PCICLK Stop Control                                        Supports Windows Plug-and-Play
+      L2 Cache Power Down Control Logic Supported                       Supports 2 Serial/ 1 Parallel/ FDC Functions
+      Up to 25 Run Time Events Supported (included 8                    Supports 16-bit Address Decoder
+       Extended Run Time Events).                                    •  Automatic media sense support
+          Up to 12 General Purpose Input Signals, up                    2.88 MB (Formatted) Floppy Disk Controller
+          to 15 General Purpose Output Signals and                      -- Software Compatible with 82077 and
+          up to 30 General Purpose Input/Output                           Supports 16-byte Data FIFOs
+          Signals                                                       -- High Performance Internal Data Separator
+          16 Extended General Purpose Input Signals,                    -- Supports Standard 1 Mbps/ 500 Kbps/ 300
+          16 Extended General Purpose Output                              Kbps/ 250 Kbps Data Transfer Rate
+          Signals , and 8 Extended Run Time Events                      -- Supports 3 modes of 3.5“ FDD (720KB/
+          supported.                                                      1.2MB/ 1.44MB)
+          All Registers Readable/Restorable for Proper                  -- Swappable Drives A and B
+          Resume from Suspend State                                     -- Programmable 7-bit I/O Base Address
+          Hotkey for Power on Button Function through                   Various Mode Parallel Port
+          Keyboard or Mouse
+          Supports Power Loss Recovery                                    -- Standard Mode
+          Watch Dog Timer for                                             -- Programmable 8-bit I/O Base Address
+          -- Setting a Bit in Register                                    -- Multiplexing of FDC Signals through
+          -- Generating an SMIJ/SCI/NMI/INIT                                  Parallel Port Pins
+          -- Generating System Reset                                      -- 12 IRQ Channel Options
+                                                                          -- 4 8-bit DMA Channel Options
+     Built-in PCI IDE Controller                                          -- IBM PC/XT, PC/AT and PS/2 Compatible
+         Supports Ultra DMA Mode Transfers up to                              Bi-    directional Parallel Port
+         Mode 5 Timing (100 Mbytes/sec)                                   -- Enhanced Mode
+         Supports PIO Modes up to Mode 4 Timings,                          - Enhanced Parallel Port (EPP) Compatible
+         and Multiword DMA Mode 0,1,2 with                                 - EPP is compatible with EPP1.9 (IEEE
+         Independent Timing of up to 4 Drives                                 1284 Compliant ), also supports EPP1.7 of
+         Integrated 48 x 16-bit Read Ahead & Posted                           Xircom Specification
+         Write Buffers for each channel (Total : 48                       -- High Speed Mode
+         DWords)                                                            - Microsoft and Hewlett Packard Extended
+     • Dedicated ATA Interface signals for each                                 Capabilities Port (ECP) Compatible
+         channel                                                            - IEEE 1284 Compatible ECP
+         Supports Tri-state IDE Signals for Swap Bay                         - Includes Protection Circuit against
+    Supports Command Queue IDE enhancement                                      damage caused when printer is powered
+                                                                                up, or operated at higher voltages
+      USB Interface                                                       Serial Ports
+      •  Up to six (6) USB ports with two (2) USB                         -- Three High Performance 16450/16550
+         host controllers based on the OpenHCI 1.0a                          Compatible UARTs with Send/Receive 16-
+         Specification                                                       byte FIFOs
+      •  Supports FS (12Mbits/sec) and LS                                 -- Programmable Baud Rate Generator
+         (1.5Mbits/sec) Serial Transfer                                   -- Wireless Communications
+      •  Supports Legacy Keyboard and Mouse                               -- Dedicated signals and COM Port for
+         Software with USB-based Keyboard and                                Infrared Transmission
+         Mouse                                                            -- Supports IrDA 1.0 (SIR) and IrDA 1.1 (MIR
+                                                                             and FIR)
+n     SMBus Interface                                                     -- Supports Sharp-IR
+         System Management Bus Interface meets                            -- MIDI (Musical Instrument Digital Interface)
+         the V1.0 Specification                                              Compatible
+      SMBALERT# Support                                                   -- High Performance Power Management for
+                                                                             FDC, UART and Parallel Port
+                                                                          -- Option between Programmable 7-bit I/O
+                                                                             Base Addresses, 12 IRQs, and 4 DMA
+                                                                             Channels for each device
+
+
+
+
+Document Number: 1535PBdp1.doc                                                                                 Page 3
+Acer Labs: 11F, no. 45 Tung Hsing Road, Taipei 110, Taiwan, R.O.C. Tel: 886-2-8768-2800 Fax: 886-2-8768-3030
+Homepage: www.ali.com.tw                                  --ALi Proprietary, Confidential, Preliminary--
+ALi                                                                                 M1535D+ : South Bridge
+
+                                                                     •    DirectSound accelerator with volume, pan
+      Audio System                                                        and pitch shift control on streaming or static
+      •  Fully Plug-and-Play PCI controller and                           buffers
+         software                                                    •    DirectInput support with digital enhanced
+      •  PCI 2.2 compliant bus master optimized for                       game port enables an analog joystick to
+         multiple stream operation.                                       emulate digital joystick performance using
+      •  On-chip per voice cache to minimize PCI                          DirectInput driver. This eliminates up to 12%
+         bandwidth use                                                    CPU overhead wasted on joystick polling.
+      •  Hardware multi-channel digital mixer                        •    DirectX timer for video/audio synchronization
+      •  32 voices polyphony wavetable synthesizer                   •    Hardware digital volume control
+         supports all combinations of stereo/mono, 8-                •   Supports Consumer SPDIF Output
+         /16-bit, and signed/unsigned samples.                       •   Supports Consumer SPDIF Input
+      •  Per channel for wave table synthesis with
+         envelop, pitch shift, tremolo and vibrato                   Software Modem Interface
+      •  DLS1-compliant Downloadable Sample                          •   The M1535+ provides the AC’97 2.1
+         support                                                         compliant digital controller interface for third
+      •  DirectMusic with unlimited downloadable                         parties (such as the AMC Codec’s vendor) to
+         samples in system memory                                        enable the software modem solution.
+      •  Legacy game audio with SoundBlaster                         •   4 separate telephony bus master channels.
+         Pro/16 compatibility                                            One for modem output, one for modem input,
+      •  Legacy game FM and wave table synthesis                         one for handset input, and one for handset
+         supported                                                       output.
+      •  MPU-401 compatible MIDI I/O with FIFO                       •   AC’97 2.1 Modem variable sample rate
+      •  AC97 2.1 support with full duplex,                              support for “On Demand” sample transport
+         independent sample rate converter for                           scheme.
+         recording and playback                                      •   AC’97 2.1 GPIO signal status and control
+      •  High precision internal 26-bit digital mixer                    support.
+         with 20-bit digital audio output                            •   Power Management and wake-up event
+      •  Microsoft WDM streaming architecture                            support
+         compliant and “Re-routable endpoint”                        •   Caller ID string transmission via AC-link
+         support                                                         support
+      •  32-voice DirectSound channels                               352-pin (27mmx27mm) BGA Package
+      •  16-voice DirectSound3D accelerator with IID,
+         ITD and Doppler effect on 3D positional
+         audio buffer
+
+
+
+
+Document Number: 1535PBdp1.doc                                                                                  Page 4
+Acer Labs: 11F, no. 45 Tung Hsing Road, Taipei 110, Taiwan, R.O.C. Tel: 886-2-8768-2800 Fax: 886-2-8768-3030
+Homepage: www.ali.com.tw                                  --ALi Proprietary, Confidential, Preliminary--
+

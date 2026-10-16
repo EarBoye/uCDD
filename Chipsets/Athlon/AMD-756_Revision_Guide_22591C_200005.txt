@@ -1,0 +1,574 @@
+                               Preliminary Information
+
+
+
+
+                         Version Created May 11, 2000
+
+
+
+
+          AMD-756
+                                                         TM
+
+
+
+
+Peripheral Bus Controller
+
+          Revision Guide
+
+
+
+
+ Publication # 22591  Rev: C
+ Issue Date: May 2000
+                            © 2000 Advanced Micro Devices, Inc. All rights reserved.
+
+               The contents of this document are provided in connection with Advanced
+               Micro Devices, Inc. (“AMD”) products. AMD makes no representations or
+               warranties with respect to the accuracy or completeness of the contents of
+               this publication and reserves the right to make changes to specifications and
+               product descriptions at any time without notice. No license, whether express,
+               implied, arising by estoppel or otherwise, to any intellectual property rights
+               is granted by this publication. Except as set forth in AMD’s Standard Terms
+               and Conditions of Sale, AMD assumes no liability whatsoever, and disclaims
+               any express or implied warranty, relating to its products including, but not
+               limited to, the implied warranty of merchantability, fitness for a particular
+               purpose, or infringement of any intellectual property right.
+
+               The AMD products described herein may contain design defects or errors
+               (“Product Errata”) that causes the AMD products to deviate from published
+               specifications. Currently characterized Product Errata may be available upon
+               request.
+
+               AMD’s products are not designed, intended, authorized or warranted for use
+               as components in systems intended for surgical implant into the body, or in
+               other applications intended to support or sustain life, or in any other applica-
+               tion in which the failure of AMD’s product could create a situation where per-
+               sonal injury, death, or severe property or environmental damage may occur.
+               AMD reserves the right to discontinue or make changes to its products at any
+               time without notice.
+
+
+
+
+Trademarks
+AMD, the AMD logo, and combinations thereof, AMD Athlon, AMD-751, and AMD-756 are trademarks of
+Advanced Micro Devices, Inc.
+
+Microsoft, Windows, and Windows NT are registered trademarks of Microsoft Corporation.
+
+Other product names used in this publication are for identification purposes only and may be trademarks of
+their respective companies.
+                                       Preliminary Information
+22591C/0—May 2000                                      AMD-756™ Peripheral Bus Controller Revision Guide
+
+
+
+
+                           AMD-756™
+                    Peripheral Bus Controller
+                         Revision Guide
+
+
+The purpose of the AMD-756™ Peripheral Bus Controller Revision Guide is to communicate updated
+product information on the AMD-756 peripheral bus controller to designers of computer systems and
+software developers. This guide consists of three major sections:
+■   Product Marking Identification: This section, which starts on page 2, provides product types,
+    product revisions, OPNs (Ordering Part Numbers), and product marking information.
+■   Product Errata: This section, which starts on page 3, provides a detailed description of product
+    errata, including potential effects on system operation and suggested workarounds. An errata is
+    defined as a deviation from the product’s specification. A product errata may cause the behavior of
+    the AMD-756 peripheral bus controller to deviate from the published specifications.
+■   Product Enhancements: This section, which starts on page 11, provides a description of product
+    enhancements.
+■   Revision Determination: This section starts on page 12.
+■   Technical and Documentation Support: This section, which starts on page 13, provides a listing of
+    available technical support resources. It also lists corrections, modifications, and clarifications to
+    listed documents.
+
+Revision Guide Policy
+Occasionally, AMD identifies deviations from or changes to the specification of the AMD-756
+peripheral bus controller. These changes are documented in the AMD-756™ Peripheral Bus Controller
+Revision Guide as errata. Descriptions are written to assist system and software designers in using the
+AMD-756 controller, and corrections to AMD’s documentation on the AMD-756 controller are included.
+This release documents currently characterized product errata.
+
+
+
+
+                                                                                                        1
+                                                     Preliminary Information
+AMD-756™ Peripheral Bus Controller Revision Guide                                                                         22591C/0—May 2000
+
+
+
+
+1                 Product Marking Identification
+
+
+
+
+    Family/Core
+                                                                                                                  Case Temperature
+     AMD-756                                                                                                       C = Commercial
+                                                   AMD-756TM                                                       Temperature range
+                                                   AMD-756AC
+                                                   B Date Code
+                                                   c AMD 1998
+                                                                                                                   Package Type
+    Product Revision
+                                                                                                                    A = Plastic Ball Grid Array
+
+
+
+
+Table 1.          Valid Ordering Part Number (OPN) Combinations
+        OPN                  Package Type              Operating Voltage              Case Temperature
+       AMD-756                272-pin BGA                 3.0 V–3.6 V                       70°C
+Notes:
+         Valid combinations are configurations that are planned to be supported in volume for this device.
+         Consult the local AMD sales office to confirm availability of specific valid combinations and to check
+         on newly released combinations.
+
+
+
+
+2
+                                            Preliminary Information
+22591C/0—May 2000                                           AMD-756™ Peripheral Bus Controller Revision Guide
+
+
+
+2             Product Errata
+
+This section documents AMD-756 peripheral bus controller product errata. The errata are divided into
+categories to assist referencing particular errata. A unique tracking number for each errata has been
+assigned within this document for user convenience in tracking the errata within specific revision
+levels. Table 2 cross-references the revisions of the AMD-756 peripheral bus controller to each errata
+number. An “X” indicates that the errata applies to the stepping. The absence of an “X” indicates that
+the errata does not apply to the stepping.
+Note:   There can be missing errata numbers. Errata that have been resolved from early revisions of the
+        controller have been deleted, and errata that have been reconsidered may have been deleted or
+        renumbered.
+
+Table 2.      Cross-Reference of Product Revision to Errata
+                                                                                    Revision
+                           Errata Number and Description                            Number
+                                                                                    D2    D4
+                                           IDE Controller
+1 Obsolete Single-Word DMA Mode Not Supported                                        X
+                                           USB Controller
+4 USB Controller Will Occasionally Not Enumerate Slow-Speed Devices                  X
+10 USB Devices Occasionally Will not Wake System While in Suspend Mode               X     X
+11 USB Register Documentation Error                                                  X     X
+12 USB Register Documentation Clarification                                          X     X
+                                                   PCI
+6 PCI Revision Documentation                                                         X     X
+7 PCI Input Hold Time Violation                                                      X     X
+8 PCI Target Abort Decode Error                                                      X
+13 PCI Bus Parking While a Cycle is Taking Place                                     X     X
+14 Target-Driven PCI Data Bus After PCI Turnaround Cycle                             X     X
+15 PCI Special Cycles Being Delayed                                                  X     X
+                                               SM Bus
+9 System Management (SM) Bus-Busy Bit not Set Immediately                            X
+
+
+
+
+                                                                                                           3
+                                           Preliminary Information
+AMD-756™ Peripheral Bus Controller Revision Guide                                        22591C/0—May 2000
+
+
+
+
+                 IDE Controller
+
+1                Obsolete Single-Word DMA Mode Not Supported
+Products Affected. D2
+
+Normal Specified Operation. For a very limited number of old IDE devices, single-word DMA mode is
+supported. This mode is not allowed within the current ATA specification.
+
+Variance. The AMD-756 peripheral bus controller does not support the obsolete single-word DMA mode.
+
+Potential Effect on System. System hang.
+
+Suggested Workaround. UDMA-capable devices are not affected. Use the AMD-supplied EIDE driver with
+Windows® 95, Windows 98, and Windows NT® 4.0. BIOS vendors have been notified that the DMA-
+capable bit in the Bus Mastering Status Register of the IDE controller must be set to 0 for any hard drive
+whose highest performance transfer mode is multi-word DMA.
+
+Resolution Status. Fixed in Revision D4.
+
+
+
+
+4
+                                          Preliminary Information
+22591C/0—May 2000                                       AMD-756™ Peripheral Bus Controller Revision Guide
+
+
+
+                 USB Controller
+
+4                USB Controller Will Occasionally Not Enumerate Slow-Speed Devices
+Products Affected. D2
+
+Normal Specified Operation. Whenever a USB device is initialized, it should be detected by the USB host
+controller in the AMD-756 peripheral bus controller.
+
+Non-conformance. When the AMD-756 peripheral bus controller is performing USB-initiated PCI
+master cycles and a USB device is initialized, it may not be detected correctly. During this time, data
+corruption occurs in USB status registers located at offset locations 34h and above. This behavior only
+exists for low-speed devices. This behavior is seen in the following two cases:
+■   Slow-speed devices are occasionally not detected at boot time.
+■   Slow-speed devices are occasionally not detected when hot plugged.
+
+Potential Effect on System. USB devices are occasionally not detected by the host controller.
+
+Suggested Workaround.
+■   Update the BIOS according to the BIOS supplier’s directions. If BIOS update is unavailable, restart
+    the machine to reinitialize USB detection.
+■   Install a new Microsoft® USB driver openhci.sys. The Microsoft Knowledge Base number for the
+    Microsoft Driver that reduces the failure rate for the AMD-756 USB enumeration issue to a
+    minimal level is Q241134.
+
+    The Microsoft description of the driver fix is available at the following URL:
+
+    http://support.microsoft.com/support/kb/articles/q241/1/34.ASP
+
+■   If this driver is unavailable, unplugging and reconnecting the USB devices or rebooting allows the
+    correct USB device enumeration.
+
+For more information, see the AMD-756 Peripheral Bus Controller USB Initialization Application Note,
+order number 90017.
+
+Resolution Status. Fixed in Revision D4
+
+
+
+
+                                                                                                          5
+                                        Preliminary Information
+AMD-756™ Peripheral Bus Controller Revision Guide                                         22591C/0—May 2000
+
+
+
+
+10               USB Devices Occasionally Will not Wake System While in Suspend Mode
+Products Affected. D2, D4
+
+Normal Specified Operation. Whenever a USB device is disconnected from the system it should be
+detected by the USB host controller in the AMD-756 peripheral bus controller.
+
+Non-conformance. When the platform is placed into low-power standby mode the AMD-756 peripheral bus
+controller should always detect the removal of a USB device and awake the system to full-on mode.
+Occasionally when a USB device is removed from the platform, USB signal bounce is not debounced
+correctly in the AMD-756. This results in the following registers not being updated correctly.
+■    USB status registers located at offset locations 54, 58, 5C, and 60, bit 0, CurrentConnectStatus will
+     show the device connected.
+■    USB status registers located at offset locations 54, 58, 5C, and 60, bit 16, ConnectStatusChange will
+     show no connect/disconnect event.
+
+Potential Effect on System. Removal of USB devices may not wake system from standby mode.
+
+Suggested Workaround. The following methods will return the system to full-on mode.
+■    Use power button to wake the system and place in full-on mode.
+■    Connect the USB device to a different USB port.
+
+Resolution Status. No fix planned.
+
+
+11               USB Register Documentation Error
+Products Affected. All
+
+Documentation Errata. On page 282 of the AMD-756 peripheral bus controller data sheet (order number
+22548B), the access types for bit 9 (low-speed device attached) and bit 8 (port power status) of the HcRH
+port 1 status register are incorrectly defined. Both bits should be defined as read-only.
+
+Potential Effect on System. None, the AMD-756 peripheral bus controller does not support external USB
+power switching.
+
+Suggested Workaround. None.
+
+Resolution Status. No fix planned.
+
+
+12               USB Register Documentation Clarification
+Products Affected. All
+
+Documentation Clarification. On page 283 of the AMD-756 peripheral bus controller data sheet (order
+number 22548B), bit 1 (PES) and bit 0 (CCS) of the HcRH port 1 status register are defined as RWC.
+These two bits work together to allow setting and clearing of the PortEnableStatus bit (PES). Writing a
+1b to bit 1 (PES) sets PortEnableStatus. Writing a 1b to bit 0 (CCS) clears PortEnableStatus. Writing a
+0b to either of these bits has no effect. Reading bit 0 returns CCS. Reading bit 1 returns PES.
+
+Resolution Status. No fix planned.
+
+
+
+
+6
+                                          Preliminary Information
+22591C/0—May 2000                                           AMD-756™ Peripheral Bus Controller Revision Guide
+
+
+
+PCI
+
+6                PCI Revision Documentation
+Products Affected. All
+
+Normal Specified Operation. BIOS checks PCI revision ID register for function 0 at offset 8 to determine
+version of silicon.
+
+Non-conformance. Previous metal-only updates to the AMD-756 peripheral bus controller have resulted in
+not updating the function 0 ID register. The revision ID updates have been performed in function 1 and
+function 3 configuration spaces.
+
+Table 3 shows the AMD-756 peripheral bus controller revision version values. The column titled
+Sequence shows the progressive linear increments of the AMD-756 peripheral bus controller. All
+functions added in a previous sequence are included in the next sequence.
+
+Table 3.       AMD-756™ Peripheral Bus Controller Revision IDs
+    Sequence   Revision    Function 1 Offset 8 Function 3 Offset 8
+       1            D1               3                  1
+
+       2            D2               3                  3
+
+       3            D3               6                  3
+
+       4            D4               7                  3
+
+       5       Reserved              8                  3
+
+       6       Reserved              9                  3
+
+Potential Effect on System. None.
+
+Suggested Workaround. BIOS algorithm needs to check function 1 and function 3 for proper device ID.
+
+Resolution Status. No fix is planned.
+
+
+7                PCI Input Hold Time Violation
+Products Affected. All
+
+Normal Specified Operation. Hold time for PCI inputs is specified as 0 ns in PCI 2.2 specification.
+
+Non-conformance. The AMD-756 peripheral bus controller PCI input hold time is specified at 1 ns.
+
+Potential Effect on System. None, because all PCI products hold data at their inputs for at least 2 ns.
+
+Suggested Workaround. None.
+
+Resolution Status. No fix planned.
+
+
+
+
+                                                                                                           7
+                                           Preliminary Information
+AMD-756™ Peripheral Bus Controller Revision Guide                                         22591C/0—May 2000
+
+
+
+
+8                PCI Target Abort Decode Error
+Products Affected. D2
+
+Normal Specified Operation. PCI devices may terminate a transfer with a target abort cycle.
+
+Non-conformance. The AMD-756 peripheral bus controller does not detect target abort cycles correctly and
+will subtractively decode such cycles. This results in the AMD-756 controller asserting DEVSEL# for an
+extended period of time. The target abort cycle is a catastrophic device failure and should not occur in
+the majority of existing PCI devices.
+
+Potential Effect on System. System locking with Windows NT® server version 4.0 and Windows 2000.
+
+Suggested Workaround. Obtain BIOS or driver updates from the manufacturer of any PCI device that
+performs target aborts to eliminate this behavior. Contact your AMD representative for further
+information.
+
+Resolution Status. Fixed in Revision D4.
+
+
+13               PCI Bus Parking While a Cycle is Taking Place
+Products Affected. All
+
+Normal Specified Operation. The AMD-756 peripheral bus controller must not drive PCI C/BE# lines while
+entering PCI bus park mode.
+
+Non-conformance. If the Northbridge parks the PCI bus on the AMD-756 peripheral bus controller while
+the Northbridge is executing a PCI cycle, the AMD-756 will drive the C/BE# lines for one PCI clock.
+
+Potential Effect on System. None. The AMD Northbridge should always park on itself (default).
+
+Suggested Workaround. None.
+
+Resolution Status. No fix planned.
+
+
+14               Target-Driven PCI Data Bus After PCI Turnaround Cycle
+Products Affected. All
+
+Normal Specified Operation. The target of a PCI read cycle drives the PCI data bus after the turnaround
+cycle has completed. This is to limit the amount of time that the PCI address and data bus floats.
+
+Non-conformance. When the AMD-756 peripheral bus controller is a target for a PCI read cycle, the
+AMD-756 does not drive the PCI data bus until it is ready to supply the data.
+
+Potential Effect on System. None.
+
+Suggested Workaround. None.
+
+Resolution Status. No fix planned.
+
+
+
+
+8
+                                       Preliminary Information
+22591C/0—May 2000                                     AMD-756™ Peripheral Bus Controller Revision Guide
+
+
+
+15               PCI Special Cycles Being Delayed
+Products Affected. All
+
+Normal Specified Operation. Whenever a PCI special cycle is directed to the AMD-756 peripheral bus
+controller, the data phase can be delayed by 16 PCI clocks after assertion of FRAME# control signal.
+
+Non-conformance. When a PCI special cycle is directed to the AMD-756 the data phase must be valid by
+the third PCI clock after the assertion of FRAME# control signal. If the PCI data is delayed longer than
+three PCI clocks past assertion of FRAME#, the AMD-756 will respond improperly.
+
+Potential Effect on System. None. The AMD-751 system controller (NorthBridge) always presents valid data
+for PCI special cycle two PCI clocks after assertion of FRAME#.
+
+Suggested Workaround. None.
+
+Resolution Status. No fix planned.
+
+
+
+
+                                                                                                       9
+                                           Preliminary Information
+AMD-756™ Peripheral Bus Controller Revision Guide                                        22591C/0—May 2000
+
+
+
+
+SM Bus
+
+9               System Management (SM) Bus-Busy Bit not Set Immediately
+Products Affected. D2
+
+Normal Specified Operation. The AMD-756 peripheral bus controller should set the busy bit located at
+function 3 offset PME0: SMBus Global Status Register bit [SMB_BSY] immediately after the start
+command is issued by software setting the host start bit.
+
+Non-conformance. The AMD-756 peripheral bus controller sets the busy bit PME0[SMB_BSY] only after
+software sets the host start bit and the SM bus cycle has started.
+
+The SMBus host start bit is located at function 3 offset PME2: SMBus Global Control Register bit
+[HOSTST].
+
+Potential Effect on System. If a new address is written between the time the start command is written and
+the time the SM bus cycle begins, some SM bus cycles may be redirected to another address.
+
+Suggested Workaround. Software can read and check for non-zero status of the following bits to guarantee
+cycle completion before starting a new cycle. See the System Management Busy Bit Application Note for
+more information.
+
+Function 3 offset PME0: SMBus Global Status Register
+
+PME0[TO_STS]            Time out error status
+PME0[HCYC_STS]          Host cycle complete status
+PME0[PERR_STS]          Protocol error status
+PME0[COL_STS]           Host collision status
+
+Resolution Status. Fixed in Revision D4.
+
+
+
+
+10
+                                      Preliminary Information
+22591C/0—May 2000                                    AMD-756™ Peripheral Bus Controller Revision Guide
+
+
+
+3             Product Enhancements
+
+Revision D4 Enhancements
+
+Century Byte Implementation on the AMD-756™ Peripheral Bus Controller, Revision D4
+The AMD-756 peripheral bus controller revision D4 supports the following new features, which can be
+used for century byte patch:
+■   Port 70h was previously write-only but the content can now be read from C3A5C[15:8].
+    C3A5C[15:8] bits store the last value written to port 70h, including the NMI enable.
+■   An SMI can be generated when the century byte CMOS 7Fh rolls over.
+■   C3A5C[7] = Century byte rollover SMI enable bit. Once this bit is set, SMI is generated when
+    Status bit PM28[13] is set.
+■   PM28[13] = Century byte rollover Status bit. This bit is set when CMOS 7Fh rolls over.
+
+The AMD-756 peripheral bus controller revision D4 has the ability to generate an SMI when the
+century byte rollover occurs. This can be used to update the CMOS century locations. In revision D4,
+the century byte rollover SMI enable was added at register C3A5C[NCSMI_EN]. When a century
+change occurs, the register PM28[NEWCEN_STS] is set and the century field at RTC CMOS offset 7Fh
+increments.
+
+The ability to read the last byte written to port 70h was added to C3A5C[RTCADDR], so that this state
+can be restored to port 70h after the century byte SMI routine finishes updating RTC CMOS 32h. The
+Rollover SMI Patch is described in the “Century Byte Diagnostics” section of the AMD-756™ Peripheral
+Bus Controller Century Byte Programming Application Note, order number 90001. This method takes
+advantage of the new D4 features.
+
+
+
+
+                                                                                                   11
+                                      Preliminary Information
+AMD-756™ Peripheral Bus Controller Revision Guide                               22591C/0—May 2000
+
+
+
+
+4            Revision Determination
+
+Refer to errata number 6 PCI Revision Documentation on page 7 for details regarding the AMD-756
+peripheral bus controller revision identification.
+
+
+
+
+12
+                                       Preliminary Information
+22591C/0—May 2000                                     AMD-756™ Peripheral Bus Controller Revision Guide
+
+
+
+5              Technical and Documentation Support
+
+5.1              Documentation Support
+The following documents provide additional information regarding the operation of the AMD-756
+peripheral bus controller:
+■     AMD-751™ System Controller Data Sheet (order# 21910)
+■     AMD-756™ Peripheral Bus Controller Data Sheet (order# 22548)
+■     AMD Athlon™ System Bus Specification (order# 21902)
+■     AMD Athlon™ Processor BIOS, Software, and Debug Tools Developers Guide (order# 21656)
+■     AMD Athlon™ Processor Data Sheet (order# 21016)
+
+For the latest updates, refer to www.amd.com and download the appropriate files. For documents
+under NDA, please contact your local sales representative for updates.
+
+
+
+
+                                                                                                    13
+

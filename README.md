@@ -39,6 +39,28 @@ documents kept are the ones that bear on that:
 - **Ralf Brown's Interrupt List**: release 61, its interrupt, port, CMOS,
   memory and MSR lists. The viewers and tools from the zips are left out.
 
+## Added 17 October 2026
+
+Found for the platform fast DMA work (uCDD docs/platform-dma.md). The
+`references` release the paragraph above names is no longer on the fork
+(only its tag is), so these PDFs are kept here beside their text. The Viper-M
+book is a scan with no text layer: its text is Tesseract OCR at 300 dpi,
+one form feed a page, so check a register table against the PDF.
+
+| File | Source |
+|---|---|
+| Chipsets/Athlon/AMD-756_Peripheral_Bus_Controller_22548B_199908 | [The Retro Web](https://theretroweb.com/chip/documentation/014-00142-0-amd-756-64e7d9ee7067e716162188.pdf) |
+| Chipsets/Athlon/AMD-756_Revision_Guide_22591C_200005 | [The Retro Web](https://theretroweb.com/chip/documentation/22591-64e7d8590ed64465091296.pdf) |
+| Chipsets/Athlon/AMD-750_Chipset_Overview_23016A_199908 | [Datasheet Archive](https://datasheet.datasheetarchive.com/originals/distributors/Datasheets-1/DSA-5236.pdf) |
+| Chipsets/Athlon/AMD-766_Peripheral_Bus_Controller_23167B_200103 | [Datasheet Archive](https://datasheet.datasheetarchive.com/originals/distributors/Datasheets-1/DSA-3430.pdf) |
+| Chipsets/Athlon/AMD-768_Peripheral_Bus_Controller_24467B_200110 | [o3one.org](http://www.o3one.org/hwdocs/amd_chipset/amd_768_24467.pdf) |
+| Chipsets/Pentium/82C700_Firestar_Single-Chip_Notebook_Solution_199702 | [bitsavers](https://www.bitsavers.org/components/opti/dataSheets/82C700_Firestar_Single-Chip_Notebook_Solution_199702.pdf); OPTi's own FireStar ACPI edition is [pd015_10.pdf](http://www.opti-inc.com/ftp_file/pd015_10.pdf) |
+| Chipsets/Pentium/82C556M_82C557M_82C558M_Viper-M_Preliminary_Data_Book_199504 | [The Retro Web](https://theretroweb.com/chipset/documentation/optiviperm-6455103be0209487111887-64557edc702b7863333286.pdf) (no data book found for the desktop Viper 82C556/557/558) |
+| Chipsets/Pentium/M1533_PCI_to_ISA_Bus_Bridge_v1.56_199811 | [The Retro Web](https://theretroweb.com/chip/documentation/1533ds156-644fcae05e871456058266.pdf) |
+| Chipsets/P6/M1535_South_Bridge_Product_Brief | [The Retro Web](https://theretroweb.com/chip/documentation/m1535dm-web-6454b1719884a427856813.pdf) (a 4-page brief; no full M1535 data sheet found) |
+| Chipsets/P6/M1535D+_South_Bridge_Product_Brief | [The Retro Web](https://theretroweb.com/chip/documentation/1535pbdp1-663b952451301009019133.pdf) |
+| Chipsets/486/UM8881_UM8886_HB4_Reverse_Engineered_20260216 | [The Retro Web](https://theretroweb.com/chip/documentation/umc-chipset-2026-02-16-69b1cf47a753d286286159.pdf), from the [VOGONS thread](https://www.vogons.org/viewtopic.php?t=68829) (UMC never published one) |
+
 ## Left out of the text set
 
 Three PDFs have no text layer and were discarded: the UMC UM82C380 series,
