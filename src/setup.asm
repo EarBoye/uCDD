@@ -72,14 +72,10 @@ start:
     cmp al, LOAD_OK
     je install_settings
 .menu:
-    ; The Detected column shows what the PCI scan finds and which ISA bridge
-    ; the machine has. The driver scans for itself at install.
+    ; The Detected column shows what the PCI scan finds and the platform
+    ; for fast DMA (platform.asm). The driver scans for itself at install.
     call disk_scan
-    mov word [chipset_device], 0
-    call fast_dma_scan
-    jc .scanned
-    mov [chipset_device], cx
-.scanned:
+    call platform_describe
     call main_menu
     jc .cancel
     cmp byte [handoff], 0
@@ -455,18 +451,7 @@ main_draw:
     mov si, other_irq_label
     call put_text
     mov dx, 1228h
-    mov si, chipset_none_text
-    mov ax, [chipset_device]
-    test ax, ax
-    jz .chipset
-    mov si, chipset_piix3_text
-    cmp ax, 7000h
-    je .chipset
-    mov si, chipset_piix4_text
-    cmp ax, 7110h
-    je .chipset
-    mov si, chipset_piix_text
-.chipset:
+    mov si, platform_text
     call put_text
     call disk_draw
     ; The help line of a tick box says why it is greyed.
@@ -722,21 +707,122 @@ fastdma_tick:
     tick config_fast_dma,fastdma_available
 always_tick:
     tick config_audio_always,always_available
-; CF set when the machine has no Intel PIIX bridge.
+; CF set when the platform offers no fast DMA, or its BIOS has it off.
 fastdma_available:
-    cmp word [chipset_device], 0
-    je .no
-    clc
+    cmp byte [platform_usable], 1
     ret
-.no:
-    stc
+
+; The Detected column's platform line (platform_text) and platform_usable:
+; "<chipset>: <timing>", or why there is none.
+platform_describe:
+    pusha
+    push es
+    push ds
+    pop es
+    mov di, platform_text
+    mov byte [platform_usable], 0
+    movzx bx, byte [platform_row]
+    cmp bl, 0ffh
+    je .unknown
+    shl bx, 1
+    mov si, [platform_names+bx]
+    call .copy
+    mov si, platform_separator
+    call .copy
+    movzx bx, byte [platform_method]
+    shl bx, 1
+    mov si, [platform_timings+bx-2]
+    ; SiS: Type-F only while the BIOS has 70h bit 7 set (fast_dma_sis71).
+    cmp byte [platform_method], PLATFORM_SIS71
+    jne .usable
+    mov bx, [platform_bridge]
+    push di
+    mov di, 70h
+    call pci_read_byte
+    pop di
+    jc .off
+    test cl, 80h
+    jnz .usable
+.off:
+    mov si, platform_off_text
+    jmp .last
+.usable:
+    mov byte [platform_usable], 1
+    jmp .last
+.unknown:
+    ; A PCI-to-ISA bridge the table lacks, named by its IDs.
+    mov si, platform_none_text
+    cmp word [platform_bridge_vendor], 0
+    je .last
+    mov si, platform_bridge_text
+    call .copy
+    mov ax, [platform_bridge_vendor]
+    call .hex4
+    mov al, ':'
+    stosb
+    mov ax, [platform_bridge_device]
+    call .hex4
+    mov si, platform_unknown_text
+.last:
+    call .copy
+    mov byte [di], 0
+    pop es
+    popa
+    ret
+.copy:
+    lodsb
+    test al, al
+    jz .copied
+    stosb
+    jmp .copy
+.copied:
+    ret
+.hex4:
+    mov cx, 4
+.digit:
+    rol ax, 4
+    mov bx, ax
+    and bx, 15
+    mov bl, [hex_digits+bx]
+    mov [di], bl
+    inc di
+    loop .digit
     ret
 ; CF set when the physical card cannot act as the virtual one (the driver's
 ; own rule, audio/pairing.asm).
 always_available:
     jmp card_pairing
 %include "audio/pairing.asm"
-chipset_device dw 0
+platform_usable db 0
+platform_text times 40 db 0
+; Names by platform table row (platform.asm), then the EISA row.
+platform_names dw .piix, .piix3, .piix4, .sio, .m1523, .m1533, .vt586, .vt596
+    dw .vt686, .vt8231, .sis5597, .amd756, .viper, .firestar, .eisa
+.piix db 'Intel PIIX',0
+.piix3 db 'Intel PIIX3',0
+.piix4 db 'Intel PIIX4',0
+.sio db 'Intel 82378 SIO',0
+.m1523 db 'ALi M1523',0
+.m1533 db 'ALi M1533/35/43',0
+.vt586 db 'VIA VT82C586',0
+.vt596 db 'VIA VT82C596',0
+.vt686 db 'VIA VT82C686',0
+.vt8231 db 'VIA VT8231',0
+.sis5597 db 'SiS 5597/5598',0
+.amd756 db 'AMD-756',0
+.viper db 'OPTi Viper',0
+.firestar db 'OPTi FireStar',0
+.eisa db 'EISA',0
+; What each method gives, by method number.
+platform_timings dw .type_f, .type_f, .type_a, .clock, .type_f
+.type_f db 'Type F',0
+.type_a db 'Type A',0
+.clock db 'fast DMA clock',0
+platform_separator db ': ',0
+platform_off_text db 'off in BIOS',0
+platform_bridge_text db 'Bridge ',0
+platform_unknown_text db ': none known',0
+platform_none_text db 'No fast DMA known',0
 port_choice:
     choice sb_base,2,port_list,text_hex3,0
 irq_choice:
@@ -797,16 +883,12 @@ output_label db 'Output',0
 stepaside_text db 'With no CD audio disc, uCDD steps aside if the cards are compatible.',0
 options_label db 'Options',0
 detected_label db 'Detected',0
-fastdma_label db 'Use Type F DMA (Intel PIIX)',0
+fastdma_label db 'Enable platform fast DMA',0
 always_label db 'uCDD driver always on',0
 pci_irq_label db 'PCI disk card IRQ',0
 other_irq_label db 'Other disk card IRQ',0
-chipset_none_text db 'No Intel PIIX detected',0
-chipset_piix_text db 'Chipset: Intel PIIX',0
-chipset_piix3_text db 'Chipset: Intel PIIX3',0
-chipset_piix4_text db 'Chipset: Intel PIIX4',0
-fastdma_help db 'Faster sound card DMA on Intel 430FX, HX, VX, TX and 440 boards.',0
-fastdma_grey db 'Needs an Intel PIIX chipset: 430FX, HX, VX, TX or 440 boards.',0
+fastdma_help db 'Faster sound card DMA, as the chipset allows. Untick if sound breaks.',0
+fastdma_grey db 'No fast DMA on this chipset, or its BIOS has it off.',0
 always_help db 'Ticked: uCDD stays on even without a CD audio disc.',0
 always_grey db 'Needs a virtual card the physical one can act as, same settings.',0
 sb16_name db 'Sound Blaster 16',0

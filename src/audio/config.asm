@@ -52,10 +52,11 @@ config_disk_irq db 0
 ; can stand in for the virtual one (audio/standby.asm). Version 3 added the
 ; byte; a version 2 file reads as 0.
 config_audio_always db 0
-; 1 asks for Type F ISA DMA timing on the output channel while the driver
-; is engaged, on an Intel PIIX, PIIX3 or PIIX4 bridge found at install
-; (audio/standby.asm); nothing happens on another chipset. Version 4
-; added the byte; older files read as 0.
+; 1 asks for the platform's fast DMA timing on the output channel while the
+; driver is engaged (docs/platform-dma.md, audio/standby.asm), on a chipset
+; the install's scan finds in its table (platform.asm); nothing happens on
+; another. Version 4 added the byte (then for the Intel PIIX family alone);
+; older files read as 0.
 config_fast_dma db 0
 config_size_check equ 1 / (($-config_data) = CONFIG_SIZE)
 ; Not in UCDD.CFG. UCDD -install scans the PCI BIOS (disk_scan.asm) and sets

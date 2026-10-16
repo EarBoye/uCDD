@@ -7,6 +7,7 @@
 ; directly, or the program never continues. The driver does this for IRQ 14,
 ; IRQ 15, the IRQs found here at installation, and the IRQ set by hand in the
 ; Disk row of UCDDSET. UCDDSET runs the scan too, to show what it finds.
+; The same walk finds the platform for the fast DMA option (platform.asm).
 
 ; Find PCI mass storage controllers (class 01h) and the IRQs that the BIOS
 ; gave them. A machine without a PCI BIOS has none to find. A controller with
@@ -17,6 +18,9 @@ disk_scan:
     mov [disk_found], ax
     mov [disk_unknown], al
     mov [disk_pci], al
+    mov [platform_method], al
+    mov [platform_bridge_vendor], ax
+    mov byte [platform_row], 0ffh
     ; SET UCDDPCI=OFF skips the scan, for a PCI BIOS that fails under the
     ; memory manager.
     call disk_scan_allowed
@@ -34,10 +38,10 @@ disk_scan:
     mov ss, [cs:disk_old_stack+2]
     mov sp, [cs:disk_old_stack]
     sti
-    ret
+    jmp platform_eisa
 .off:
     mov byte [disk_pci], 2
-    ret
+    jmp platform_eisa
 
 disk_scan_pci:
     pushad
@@ -68,6 +72,7 @@ disk_scan_pci:
     mov [disk_header], cl
 .function:
     call disk_function
+    call platform_function
     ; Bit 7 of the header type marks a device with more than one function.
     test byte [disk_header], 80h
     jz .next_device
@@ -139,46 +144,7 @@ disk_function:
 .done:
     ret
 
-; The ISA bridge that takes Type F DMA timing: an Intel PIIX (122Eh), PIIX3
-; (7000h) or PIIX4 (7110h), function 0. Return AX = bus and device and CX =
-; the device ID, or CF set. The PCI BIOS presence was checked by
-; disk_scan_pci.
-fast_dma_scan:
-    push bx
-    push dx
-    push si
-    cmp byte [disk_pci], 0
-    je .none
-    mov si, fast_dma_devices
-.device:
-    mov cx, [si]
-    jcxz .none
-    push si
-    mov dx, 8086h
-    xor si, si
-    mov ax, 0b102h
-    int 1ah
-    pop si
-    jc .next
-    test ah, ah
-    jnz .next
-    test bl, 7
-    jnz .next
-    mov ax, bx
-    mov cx, [si]
-    clc
-    jmp .done
-.next:
-    add si, 2
-    jmp .device
-.none:
-    stc
-.done:
-    pop si
-    pop dx
-    pop bx
-    ret
-fast_dma_devices dw 7000h,122eh,7110h,0
+%include "platform.asm"
 
 ; BH bus, BL device and function, DI register. Return CL, or CF set.
 pci_read_byte:
