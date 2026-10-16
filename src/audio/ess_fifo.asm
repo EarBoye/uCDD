@@ -572,6 +572,8 @@ ess_dac_frame:
     pop es
     ret
 .adpcm:
+    cmp byte [ess_adpcm], 4
+    jae .espcm
     ; One decoded 8-bit sample a frame; a byte from the FIFO when the last
     ; one's codes are used up. A reference byte sets the level and plays
     ; nothing. With the FIFO empty the level holds.
@@ -598,6 +600,37 @@ ess_dac_frame:
 .code:
     call ess_adpcm_decode
     mov [es:di], al
+    pop es
+    ret
+.espcm:
+    ; ESPCM (card.asm ess_cmd_espcm): a block of 19 samples takes 10 bytes
+    ; (kind 4) or 8 (kind 5) from the FIFO, played as silence.
+    mov byte [es:di], 80h
+    cmp byte [ess_adpcm_left], 0
+    jne .espcm_sample
+    mov ecx, 10
+    cmp byte [ess_adpcm], 4
+    je .espcm_block
+    mov cl, 8
+.espcm_block:
+    mov eax, [ess_d]
+    sub eax, [ess_q]
+    jz .adpcm_hold
+    cmp eax, ecx
+    jae .espcm_take
+    mov ecx, eax
+.espcm_take:
+    add [ess_q], ecx
+    mov dword [ess_idle], 0
+    mov byte [ess_adpcm_left], 19
+.espcm_sample:
+    dec byte [ess_adpcm_left]
+    pop es
+    ret
+.adpcm_hold:
+    cmp byte [ess_dma_on], 0
+    jne .done
+    inc dword [ess_idle]
     pop es
     ret
 .adpcm_empty:

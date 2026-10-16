@@ -381,6 +381,31 @@ Assumed for every model until measured on the others [inference].
   is of compressed bytes, and its last byte entering the FIFO ends the
   block as for 8-bit PCM.
 
+### 7.4 ESPCM (64h-67h, 6Ah, 6Bh; 6Eh/6Fh record) [sheet, emu]
+
+- The sheet: ESS's own compression, "a variety of proprietary compression
+  techniques", DMA only, the first block's first byte a reference byte;
+  64h/65h 4.3-bit, 66h/67h 3.4-bit, 6Ah/6Bh 2.5-bit to the DAC, 6Eh/6Fh
+  4.3-bit from the ADC (E68:2444-2452, Table 10).
+- No document gives the decoding. Two works by one author (Kagamiin, not
+  independent of each other):
+  - github.com/Kagamiin/espcm (GPL-3.0): an encoder and decoder for ESPCM
+    .aud files, espcm4 4.21, espcm3 3.37, espcm1 1.26 bits a sample.
+  - 86Box's DSP plays 64h/65h (ESPCM_4), 66h/67h (ESPCM_3), 6Ch/6Dh
+    (ESPCM_1) and records 6Eh/6Fh, in blocks of 19 samples from 10, 8 and
+    3 bytes; its tables are "part software reverse engineering, part
+    guesswork/extrapolation" (its own comment). 6Ah/6Bh are not handled.
+- Disagreements recorded: the sheet's 6Ah/6Bh against 86Box's 6Ch/6Dh for
+  the third kind, and the sheet's "2.5-bit" against 1.26 bits.
+- 86Box's chip, timed (ESPCM script, 16 Oct): 64h 19 samples in 10 bytes,
+  66h 19 in 8, 6Ch 19 in 3, 6Ah nothing [emu]. The ES1868F is to be timed
+  with the same script.
+- The virtual card takes the packing only: 64h-67h play as silence at 19
+  samples per 10 or 8 bytes, so the DMA, the block's interrupt and the
+  game's timing are the chip's; 6Ah/6Bh (and 6Ch/6Dh) wait for the chip.
+  Decoding the audio from tables called guesswork, at 2.5 KB the driver
+  segment does not have, is not done [design decision].
+
 ## 8. Extended mode
 
 ### 8.1 Extension registers (Table 16, E68:3381-3560; ES1869 detail
@@ -600,6 +625,12 @@ of the user's volume, as on every other virtual card.
 
 ## 11. FM and MPU-401
 
+- References for the physical ESFM (not modelled by the card): "ESFM
+  Demystified" (github.com/jwt27/esfm, register map, native mode by OPL3
+  register 105h bit 7, back to OPL3 mode by any write to the reset port)
+  and ESFMu (github.com/Kagamiin/ESFMu, LGPL-2.1, an emulator built on
+  it).
+
 - Not the virtual card's: the physical chip's own ESFM/OPL3 at 2x0h-2x3h,
   2x8h-2x9h, 388h-38Bh, and its MPU-401.
 - Mixer 26h/36h (FM level) is the virtual card's, applied to the physical
@@ -671,7 +702,7 @@ with the chip, so the chip decides and the row says so.
 | Serial mode (mixer 42h-4Eh) | Stored and read back; no effect |
 | Power management (2x7h, CEh/CFh, C1h, FDh) | 2x7h bit 5 passed to the physical FM reset; the others stored; FDh ignored |
 | ADPCM (74h-77h, 7Ah, 7Bh) | Implemented (section 7.3) |
-| ESPCM (64h-67h, 6Ah, 6Bh, 6Eh, 6Fh) | Not documented anywhere we have: the arguments are taken, nothing plays, no interrupt |
+| ESPCM (64h-67h, 6Ah, 6Bh, 6Eh, 6Fh) | 64h-67h: silence at the measured packing, with the interrupt (section 7.4); 6Ah/6Bh, 6Eh/6Fh: arguments taken, nothing plays |
 | 16-bit compatibility (11h, 15h, 1Dh) | Implemented: they are ES1868 commands |
 
 ## 15a. Test scripts
@@ -908,9 +939,9 @@ Still departing, recorded:
 - 2xEh bit 6 with a reply waiting: open (question 13).
 - Mixer 0Eh writes do not restart the 8-bit stereo pairing (the ES1888's
   sheet; silent elsewhere). Pairs start at each block.
-- ESPCM transfers take their arguments and play nothing, and raise no
-  interrupt: ESS's own compression, documented nowhere we have. ADPCM was
-  in this list; it is now implemented (section 7.3).
+- ESPCM plays silence at the chip's packing for 64h-67h (section 7.4);
+  6Ah/6Bh still play nothing and raise no interrupt until the chip is
+  timed. ADPCM was in this list; it is now implemented (section 7.3).
 - SB MIDI (38h, the 34h/35h UART) is not sent out; on the chip it goes to
   the MIDI port (section 11 covers only the MPU-401).
 - No reconstruction filter: the chip's switched-capacitor filter follows

@@ -416,6 +416,10 @@ ess_commands:
     cmd 40h, 1, ES_ALL, ess_cmd_40
     cmd 41h, 1, ES_ALL, ess_cmd_41
     cmd 48h, 2, ES_ALL, ess_cmd_48
+    cmd 64h, 2, ES_ALL, ess_cmd_espcm
+    cmd 65h, 2, ES_ALL, ess_cmd_espcm
+    cmd 66h, 2, ES_ALL, ess_cmd_espcm
+    cmd 67h, 2, ES_ALL, ess_cmd_espcm
     cmd 74h, 2, ES_ALL, ess_cmd_adpcm
     cmd 75h, 2, ES_ALL, ess_cmd_adpcm
     cmd 76h, 2, ES_ALL, ess_cmd_adpcm
@@ -447,8 +451,8 @@ ess_commands:
     db 0ffh
 ; Commands that only take their argument bytes: recording, ESPCM
 ; (SPEC 15), MIDI output, the filter clock (the mixer's own), resume,
-; power-down (not modelled). ESPCM is ESS's own compression, documented
-; nowhere we have: its transfers take their arguments and play nothing.
+; power-down (not modelled). ESPCM 6Ah/6Bh (the sheet's 2.5-bit) take
+; their arguments and play nothing until the chip's timing is measured.
 ; Command, argument bytes, models.
 ess_quiet_commands:
     db 24h, 2, ES_ALL
@@ -457,10 +461,6 @@ ess_quiet_commands:
     db 2dh, 0, ES_ALL
     db 38h, 1, ES_ALL
     db 42h, 1, ES_ALL
-    db 64h, 2, ES_ALL
-    db 65h, 2, ES_ALL
-    db 66h, 2, ES_ALL
-    db 67h, 2, ES_ALL
     db 6ah, 2, ES_ALL
     db 6bh, 2, ES_ALL
     db 6eh, 2, ES_ALL
@@ -576,6 +576,22 @@ ess_cmd_adpcm:
     mov byte [ess_adpcm_ref_pending], 1
     mov byte [ess_adpcm_level], 0
 .start:
+    xor bl, bl
+    mov ax, [ess_args]
+    jmp ess_compat_counted
+
+; ESPCM 64h/65h (4.3-bit) and 66h/67h (3.4-bit): ESS's own compression,
+; documented nowhere we have. 86Box decodes it from tables its author calls
+; part guesswork; its packing, 19 samples in 10 or 8 bytes, agrees with the
+; author's encoder and is all the card takes from it [emu]: the block plays
+; at that rate as silence, so its DMA and its interrupt keep the chip's
+; time and a game does not wait for ever (SPEC 15).
+ess_cmd_espcm:
+    mov al, [ess_command]
+    and al, 2                              ; 0 64h/65h, 2 66h/67h
+    shr al, 1
+    add al, 4                              ; kinds 4 and 5
+    mov [ess_adpcm_next], al
     xor bl, bl
     mov ax, [ess_args]
     jmp ess_compat_counted
