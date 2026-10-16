@@ -346,6 +346,41 @@ Assumed for every model until measured on the others [inference].
   interrupt falls (block entering the 64-byte FIFO, or played) is not
   stated: to be measured (section 16).
 
+### 7.3 ADPCM (74h-77h, 7Ah, 7Bh) [sheet, emu]
+
+- The sheet: compressed DAC transfers by DMA only; "the first block of a
+  multiple-block transfer uses a different command than subsequent blocks.
+  The first byte of the first block is called the reference byte"
+  (E68:2444-2452). ADPCM is the kind "supported by many other sound cards",
+  so Creative's. The codes: 74h/75h 4-bit, 76h/77h 2.6-bit, 7Ah/7Bh 2-bit
+  (Creative uses 16h/17h for 2-bit), the odd ones with the reference byte.
+  No auto-initialised ADPCM in the ESS tables (Creative has 7Dh, 7Fh, 1Fh).
+- The decoding is in no document we have (Creative's guides describe it
+  only in outline). The emulators decide (rule 1): DOSBox-X and 86Box carry
+  the same tables, which reduce to one rule [emu]:
+  - a code is a sign bit (its top bit) and a magnitude m (the rest);
+  - the level moves by ((2m+1) x F) / 2, F the step's factor, and
+    saturates at 0 and 255;
+  - the step rises a level when m reaches the raise threshold and the step
+    is below the top, and falls a level when m = 0;
+  - 4-bit: F 1, 2, 4, 8, raise at m >= 5; 2.6-bit: F 1, 2, 4, 8, 10,
+    raise at m = 3; 2-bit: F 1, 2, 4, 8, 16, 32, raise at m = 1;
+  - codes are taken from a byte's top bits first: 4-bit two, 2-bit four,
+    2.6-bit three (the third is the byte's low two bits, doubled);
+  - the reference byte is the starting level and plays nothing; the step
+    returns to its smallest. Without it, level and step carry on from the
+    previous block.
+- The multimedia wiki ("Creative 8 bits ADPCM", self-described as
+  unverified) gives a different rule: m shifted left by the step, steps 0-3
+  only. It disagrees with both emulators; recorded, not followed.
+- 86Box's chip (an ES1688 on its SB DSP) plays 75h and 77h with the
+  waveform the virtual card produces, sample for sample (16 Oct, the ADPCM
+  script); it does not implement 7Ah/7Bh. The ES1868F is to be heard or
+  recorded.
+- The rate is the timer's, per decoded sample; mono only; the block count
+  is of compressed bytes, and its last byte entering the FIFO ends the
+  block as for 8-bit PCM.
+
 ## 8. Extended mode
 
 ### 8.1 Extension registers (Table 16, E68:3381-3560; ES1869 detail
@@ -635,7 +670,8 @@ with the chip, so the chip decides and the row says so.
 | Programmed I/O (2xFh) | Writes discarded, reads 00h; no half-empty interrupt |
 | Serial mode (mixer 42h-4Eh) | Stored and read back; no effect |
 | Power management (2x7h, CEh/CFh, C1h, FDh) | 2x7h bit 5 passed to the physical FM reset; the others stored; FDh ignored |
-| ESPCM, ADPCM (64h-7Bh) | To be decided: implement (the decoders are documented elsewhere) or refuse |
+| ADPCM (74h-77h, 7Ah, 7Bh) | Implemented (section 7.3) |
+| ESPCM (64h-67h, 6Ah, 6Bh, 6Eh, 6Fh) | Not documented anywhere we have: the arguments are taken, nothing plays, no interrupt |
 | 16-bit compatibility (11h, 15h, 1Dh) | Implemented: they are ES1868 commands |
 
 ## 15a. Test scripts
@@ -872,10 +908,9 @@ Still departing, recorded:
 - 2xEh bit 6 with a reply waiting: open (question 13).
 - Mixer 0Eh writes do not restart the 8-bit stereo pairing (the ES1888's
   sheet; silent elsewhere). Pairs start at each block.
-- ESPCM and ADPCM transfers (64h-7Bh) take their arguments and play
-  nothing, and raise no interrupt: a game using them would wait for ever
-  (section 15, "to be decided"). This is why the JEMM boot exists for
-  ADPCM games.
+- ESPCM transfers take their arguments and play nothing, and raise no
+  interrupt: ESS's own compression, documented nowhere we have. ADPCM was
+  in this list; it is now implemented (section 7.3).
 - SB MIDI (38h, the 34h/35h UART) is not sent out; on the chip it goes to
   the MIDI port (section 11 covers only the MPU-401).
 - No reconstruction filter: the chip's switched-capacitor filter follows

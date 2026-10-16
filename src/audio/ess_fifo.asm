@@ -56,6 +56,7 @@ ess_fifo_start:
     cmp dword [game_physical], 0
     jne .refuse
 %endif
+    mov byte [ess_adpcm_left], 0
     xor eax, eax
     mov [ess_k], eax
     mov [ess_k0], eax
@@ -535,6 +536,8 @@ ess_dac_frame:
     shl eax, cl
     and eax, ESS_DAC_BYTES-1
     mov di, ax
+    cmp byte [ess_adpcm], 0
+    jne .adpcm
     mov eax, [ess_d]
     sub eax, [ess_q]
     cmp eax, edx
@@ -568,6 +571,43 @@ ess_dac_frame:
     add dword [ess_q], 2
     pop es
     ret
+.adpcm:
+    ; One decoded 8-bit sample a frame; a byte from the FIFO when the last
+    ; one's codes are used up. A reference byte sets the level and plays
+    ; nothing. With the FIFO empty the level holds.
+    cmp byte [ess_adpcm_left], 0
+    jne .code
+    mov eax, [ess_d]
+    cmp eax, [ess_q]
+    je .adpcm_empty
+    mov dword [ess_idle], 0
+    mov bx, [ess_q]
+    and bx, ESS_FIFO_BYTES-1
+    mov al, [es:ESS_FIFO_OFFSET+bx]
+    inc dword [ess_q]
+    cmp byte [ess_adpcm_ref_pending], 0
+    je .adpcm_byte
+    mov byte [ess_adpcm_ref_pending], 0
+    mov [ess_adpcm_ref], al
+    jmp .adpcm
+.adpcm_byte:
+    mov [ess_adpcm_byte], al
+    mov al, [ess_adpcm]                    ; codes a byte: 2, 3, 4
+    inc al
+    mov [ess_adpcm_left], al
+.code:
+    call ess_adpcm_decode
+    mov [es:di], al
+    pop es
+    ret
+.adpcm_empty:
+    mov al, [ess_adpcm_ref]
+    mov [es:di], al
+    cmp byte [ess_dma_on], 0
+    jne .done
+    inc dword [ess_idle]
+    pop es
+    ret
 .empty:
     mov ecx, edx
     xor bx, bx
@@ -584,6 +624,83 @@ ess_dac_frame:
 .done:
     pop es
     ret
+
+; The next ADPCM code of ess_adpcm_byte, decoded: AL=the new level, an
+; unsigned 8-bit sample. Creative's ADPCM, as DOSBox-X and 86Box decode it
+; (the same tables in both) [emu]: a code is a sign and a magnitude m; the
+; level moves by (2m+1) times the step's factor, halved, and saturates at 0
+; and 255; the step goes up a level for the largest magnitudes and down for
+; m = 0. The tables reduce to that rule, so they are not stored. BX, CX, DX
+; changed.
+ess_adpcm_decode:
+    push si
+    movzx si, byte [ess_adpcm]
+    imul si, si, ADPCM_KIND
+    add si, ess_adpcm_kinds-ADPCM_KIND
+    ; The code: the byte's top bits, the rest shifted up for the next one.
+    mov al, [ess_adpcm_byte]
+    mov cl, [si+ADPCM_WIDTH]
+    mov ch, al
+    shl ch, cl
+    mov [ess_adpcm_byte], ch
+    neg cl
+    add cl, 8
+    shr al, cl
+    dec byte [ess_adpcm_left]
+    mov ch, al                             ; the code
+    and al, [si+ADPCM_MAGNITUDE]
+    mov cl, al                             ; m
+    movzx bx, byte [ess_adpcm_level]
+    mov dl, [si+ADPCM_FACTORS+bx]
+    add al, al
+    inc al
+    mul dl
+    shr ax, 1                              ; the delta
+    movzx dx, byte [ess_adpcm_ref]
+    test ch, [si+ADPCM_SIGN]
+    jz .up
+    sub dx, ax
+    jns .level
+    xor dx, dx
+    jmp .level
+.up:
+    add dx, ax
+    cmp dx, 0ffh
+    jbe .level
+    mov dx, 0ffh
+.level:
+    mov [ess_adpcm_ref], dl
+    cmp cl, [si+ADPCM_RAISE]
+    jb .not_raised
+    cmp bl, [si+ADPCM_TOP]
+    jae .step_done
+    inc byte [ess_adpcm_level]
+    jmp .step_done
+.not_raised:
+    test cl, cl
+    jnz .step_done
+    test bl, bl
+    jz .step_done
+    dec byte [ess_adpcm_level]
+.step_done:
+    mov al, dl
+    pop si
+    ret
+
+; The three kinds: code width, sign bit, magnitude mask, the smallest
+; magnitude that raises the step, the top level, and each level's factor
+; (twice the step). Reduced from the emulators' tables [emu].
+ADPCM_WIDTH equ 0
+ADPCM_SIGN equ 1
+ADPCM_MAGNITUDE equ 2
+ADPCM_RAISE equ 3
+ADPCM_TOP equ 4
+ADPCM_FACTORS equ 5
+ADPCM_KIND equ 11
+ess_adpcm_kinds:
+    db 4, 8, 7, 5, 3, 1, 2, 4, 8, 0, 0      ; 4-bit (74h/75h)
+    db 3, 4, 3, 3, 4, 1, 2, 4, 8, 10, 0     ; 2.6-bit (76h/77h)
+    db 2, 2, 1, 1, 5, 1, 2, 4, 8, 16, 32    ; 2-bit (7Ah/7Bh)
 
 ; The 8237's position and terminal count from the bytes the DMA has moved,
 ; for the reads after the stream (the trap's idle count).

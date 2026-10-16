@@ -4,15 +4,15 @@
 ; scratch buffer, put the driver's state back, run the general loop for
 ; real, then compare the samples and a sum over the whole resident image.
 ; Sound always comes from the general loop. Counters are read from memory
-; (signature MIXVERI2: the loop counters are words; MIXVERIF builds had
-; doublewords).
+; (signature MIXVERI3: the loop counters are words, 24 a source; MIXVERI2
+; had 32 a source, MIXVERIF doublewords).
 
 VERIFY_STACK_LOW equ irq_stack_top-1024
 VERIFY_OUT_PARAS equ 48h         ; one half of output, 1024 bytes at most
 VERIFY_SUM equ 1024              ; in the scratch segment, after the output
 
 verify_block:
-    db 'MIXVERI2'
+    db 'MIXVERI3'
 verify_calls dd 0           ; halves that reached the general loop's entry
 verify_eligible dd 0        ; of those, halves mix_run could take
 verify_checked dd 0
@@ -21,7 +21,7 @@ verify_bad_state dd 0
 verify_skipped dd 0         ; eligible, not on the interrupt stack
 verify_unchecked dd 0       ; eligible, no memory for the check
 verify_first times 32 db 0  ; first difference: see verify_compare
-verify_loops times 512 dw 0 ; checked halves by source, middle and store
+verify_loops times 384 dw 0 ; checked halves: 24 a source (6 middles x 4 stores)
 verify_reasons times 16 dd 0 ; halves left to the general loop, by cause
 verify_seg dw 0             ; output and sum
 verify_high dw 0            ; image above the stack
@@ -301,7 +301,7 @@ verify_compare:
     jmp .leave
 .source_found:
     shr bx, 1
-    shl bx, 5
+    imul bx, bx, 24
     mov ax, [mix_run_next]
     cmp ax, mix_run_clip
     jne .not_clip

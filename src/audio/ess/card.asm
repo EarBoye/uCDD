@@ -270,6 +270,12 @@ ess_software_reset:
     mov byte [ess_gain], 8
     mov byte [ess_midi], 0
     mov byte [ess_powered_down], 0
+    mov byte [ess_adpcm], 0
+    mov byte [ess_adpcm_next], 0
+    mov byte [ess_adpcm_ref_pending], 0
+    mov byte [ess_adpcm_left], 0
+    mov byte [ess_adpcm_level], 0
+    mov byte [ess_adpcm_ref], 80h
     mov byte [sb_id_value], 0aah           ; E2h's running byte (SPEC 7.1)
     mov byte [sb_id_phase], 0
     mov byte [ess_args_left], 0
@@ -410,6 +416,12 @@ ess_commands:
     cmd 40h, 1, ES_ALL, ess_cmd_40
     cmd 41h, 1, ES_ALL, ess_cmd_41
     cmd 48h, 2, ES_ALL, ess_cmd_48
+    cmd 74h, 2, ES_ALL, ess_cmd_adpcm
+    cmd 75h, 2, ES_ALL, ess_cmd_adpcm
+    cmd 76h, 2, ES_ALL, ess_cmd_adpcm
+    cmd 77h, 2, ES_ALL, ess_cmd_adpcm
+    cmd 7ah, 2, ES_ALL, ess_cmd_adpcm
+    cmd 7bh, 2, ES_ALL, ess_cmd_adpcm
     cmd 80h, 2, ES_ALL, ess_cmd_80
     cmd 90h, 0, ES_ALL, ess_cmd_1c
     cmd 91h, 0, ES_ALL, ess_cmd_91
@@ -433,9 +445,11 @@ ess_commands:
     cmd 0f2h, 0, ES_NOT1878, ess_cmd_f2
     cmd 0fdh, 0, ES_NOT1878, ess_cmd_fd
     db 0ffh
-; Commands that only take their argument bytes: recording, ESPCM and ADPCM
+; Commands that only take their argument bytes: recording, ESPCM
 ; (SPEC 15), MIDI output, the filter clock (the mixer's own), resume,
-; power-down (not modelled). Command, argument bytes, models.
+; power-down (not modelled). ESPCM is ESS's own compression, documented
+; nowhere we have: its transfers take their arguments and play nothing.
+; Command, argument bytes, models.
 ess_quiet_commands:
     db 24h, 2, ES_ALL
     db 25h, 2, ES_ALL
@@ -451,12 +465,6 @@ ess_quiet_commands:
     db 6bh, 2, ES_ALL
     db 6eh, 2, ES_ALL
     db 6fh, 2, ES_ALL
-    db 74h, 2, ES_ALL
-    db 75h, 2, ES_ALL
-    db 76h, 2, ES_ALL
-    db 77h, 2, ES_ALL
-    db 7ah, 2, ES_ALL
-    db 7bh, 2, ES_ALL
     db 98h, 0, ES_ALL
     db 99h, 0, ES_ALL
     db 0c1h, 0, ES_ALL
@@ -544,6 +552,33 @@ ess_compat_auto:
     movzx eax, word [ess_block48]
     mov bh, 1
     jmp ess_compat_start
+
+; ADPCM DMA to the DAC (Table 10): 74h/75h 4-bit, 76h/77h 2.6-bit, 7Ah/7Bh
+; 2-bit, the odd codes with a reference byte (the block's first byte, the
+; starting level; the step back to its smallest). A block of compressed
+; bytes, mono, at the timer's rate per decoded sample. The sheet calls it
+; the ADPCM "supported by many other sound cards": Creative's, whose
+; decoding the emulators give (ess_fifo.asm ess_adpcm_decode) [sheet,
+; emu].
+ess_cmd_adpcm:
+    mov al, [ess_command]
+    mov ah, al
+    sub al, 74h
+    shr al, 1                              ; 0, 1, or 3 for 7Ah/7Bh
+    cmp al, 3
+    jne .kind
+    dec al
+.kind:
+    inc al                                 ; 1 4-bit, 2 2.6-bit, 3 2-bit
+    mov [ess_adpcm_next], al
+    test ah, 1
+    jz .start
+    mov byte [ess_adpcm_ref_pending], 1
+    mov byte [ess_adpcm_level], 0
+.start:
+    xor bl, bl
+    mov ax, [ess_args]
+    jmp ess_compat_counted
 
 ; 80h: a silence of the count plus one samples at the timer's rate, then the
 ; processor interrupt (Table 10).
@@ -787,6 +822,7 @@ ess_extended_start:
     shr ch, 2
     and ch, 1
     mov byte [ess_compat], 0
+    mov byte [ess_adpcm], 0
     jmp ess_stream_start
 .refused:
     ret
@@ -823,6 +859,9 @@ ess_compat_start:
     mov edx, eax
     mov ch, bh
     xor cl, cl
+    mov al, [ess_adpcm_next]               ; ADPCM for this block, or 0
+    mov [ess_adpcm], al
+    mov byte [ess_adpcm_next], 0
     mov al, bl
     xor bl, bl
     test al, al
@@ -831,6 +870,8 @@ ess_compat_start:
     inc cl
 .eight:
     mov eax, [ess_compat_rate]
+    cmp byte [ess_adpcm], 0
+    jne .mono                              ; ADPCM is mono
     test byte [ess_mixer+0eh], 2
     jz .mono
     shr eax, 1
@@ -1351,6 +1392,16 @@ ess_reply_head db 0
 ess_reply_count db 0
 ess_reply_last db 0aah
 ess_args times 2 db 0
+; ADPCM (ess_cmd_adpcm): the kind of the stream (0 none, 1 4-bit, 2 2.6-bit,
+; 3 2-bit), the next block's, the decoder's level and step, a reference
+; byte still to come.
+ess_adpcm db 0
+ess_adpcm_next db 0
+ess_adpcm_ref db 80h
+ess_adpcm_level db 0
+ess_adpcm_ref_pending db 0
+ess_adpcm_byte db 0
+ess_adpcm_left db 0
 ; 2x6h bits 7:5 (ess_reset_read), 2x7h, FDh.
 ess_activity db 0e0h
 ess_power db 0
