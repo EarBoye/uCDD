@@ -117,11 +117,7 @@ audio_activate:
     mov word [audio_error_text], internal_host_message
     call own_host_install
     jc .cleanup
-    call cd_half_promote
-    call cd_work_promote
-%ifdef ESS_FIFO_MODEL
-    call ess_dac_promote
-%endif
+    call buffers_promote
     mov al, [guest_irq]
     cmp [sb_irq], al
     jne .dos_vector_ready
@@ -220,8 +216,11 @@ cd_buffer_promote:
     mov bx, 1
     int 21h
     jc .discard
+    ; High only, last fit: at the top of upper memory, so the free space the
+    ; install code leaves behind joins the free memory after it (a 19 KB
+    ; hole otherwise, 86Box, 16 Oct 2026).
     mov ax, 5801h
-    mov bx, 40h
+    mov bx, 42h
     int 21h
     jc .restore_umb_discard
     pop bx
@@ -255,6 +254,53 @@ cd_buffer_promote:
 .discard:
     pop bx
     ret
+
+; The CPU-only buffers to upper memory, the lowest first, stopping at the
+; first that does not fit there. Each one moved then joins the free memory
+; below it; one moved from between two that stay would be left as a hole
+; (3 KB below COMMAND.COM before this order, 86Box, 16 Oct 2026).
+buffers_promote:
+    mov byte [promote_done], 0
+.next:
+    mov dx, 0a000h                         ; only conventional ones move
+    xor di, di
+    mov si, promote_table
+    mov cl, 1
+.scan:
+    cmp word [si], 0
+    je .scanned
+    test [promote_done], cl
+    jnz .skip
+    mov bx, [si]
+    mov ax, [bx]                           ; the buffer's segment
+    test ax, ax
+    jz .skip
+    cmp ax, dx
+    jae .skip
+    mov dx, ax
+    mov di, si
+    mov ch, cl
+.skip:
+    add si, 4
+    shl cl, 1
+    jmp .scan
+.scanned:
+    test di, di
+    jz .done
+    or [promote_done], ch
+    call [di+2]
+    jnc .next
+.done:
+    ret
+; Each buffer: its segment variable and its promotion.
+promote_table:
+    dw cd_half_segment, cd_half_promote
+    dw cd_work_segment, cd_work_promote
+%ifdef ESS_FIFO_MODEL
+    dw ess_dac_segment, ess_dac_promote
+%endif
+    dw 0
+promote_done db 0
 
 %ifdef ESS_FIFO_MODEL
 ; The virtual ESS's DAC ring: only the CPU reads and writes it, so upper

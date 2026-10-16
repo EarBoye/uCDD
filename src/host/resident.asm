@@ -327,8 +327,11 @@ host_storage_allocate:
     mov bx, 1
     int 21h
     jc .plain
+    ; High only, last fit: the top of upper memory, so the install code's
+    ; space, freed when the driver stays resident, joins the free memory
+    ; after it instead of being left as a hole.
     mov ax, 5801h
-    mov bx, 40h
+    mov bx, 42h
     int 21h
     jc .restore_plain
     call host_pair_allocate
@@ -399,14 +402,29 @@ host_storage_allocate:
     stc
     ret
 
+; The gateway first: it must end on a page boundary, so it may be shrunk
+; after allocation, and the stack, allocated next with the same strategy,
+; can then take the space that frees when it is big enough (in upper memory,
+; last fit, that space is otherwise left between the two).
 host_pair_allocate:
-    call host_stack_allocate
-    jc .bad
     call host_gateway_allocate
+    jc .bad
+    call host_stack_allocate
     jnc .done
-    call host_stack_release
+    call host_gateway_release
 .bad:
     stc
+.done:
+    ret
+
+host_gateway_release:
+    mov ax, [host_gateway_segment]
+    test ax, ax
+    jz .done
+    mov es, ax
+    mov ah, 49h
+    int 21h
+    mov word [host_gateway_segment], 0
 .done:
     ret
 
