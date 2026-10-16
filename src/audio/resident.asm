@@ -14,7 +14,11 @@
 ; The virtual ESS AudioDrive (audio/ess/card.asm), which needs the model.
 %define ESS_CARD
 %endif
+; The virtual WSS codec. The verify-mix test build leaves it out to fit its
+; segment: the mixer paths it checks are the Sound Blaster and ESS ones.
+%ifndef VERIFY_MIX
 %define WSS_INPUT 1
+%endif
 %include "audio/layout.inc"
 
 qpi dd 0

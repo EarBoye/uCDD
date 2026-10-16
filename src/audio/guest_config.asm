@@ -11,9 +11,11 @@ guest_configure:
     mov [guest_dma8], ax
     mov al, [virtual_dma16]
     mov [guest_dma16], ax
+%ifdef WSS_INPUT
     ; A game can still select another IRQ in the WSS board register.
     mov al, [virtual_wss_irq]
     mov [wss_guest_irq], ax
+%endif
     movzx edi, byte [config_game_volume]
     cmp di, 100
     je .levels
@@ -21,9 +23,11 @@ guest_configure:
     mov si, sb_pcm_gain
     mov cx, 2
     call guest_scale
+%ifdef WSS_INPUT
     mov si, wss_attenuation
     mov cx, 64
     call guest_scale
+%endif
 .levels:
     call cd_gain_update
     call guest_ports_init

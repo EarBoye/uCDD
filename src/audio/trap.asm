@@ -2065,4 +2065,8 @@ sb_id_phase db 0
 %endif
 %ifdef WSS_INPUT
 %include "audio/wss_state.inc"
+%else
+; The host's pointer to the WSS interrupt to deliver (resident_host_init):
+; none in a build without the virtual codec.
+wss_irq_event dw 0
 %endif
