@@ -37,9 +37,9 @@
 PORT_MIXER_LABEL:
 %endif
     trap_range 224h,4
-    trap_range 22ah,1
-    trap_range 22ch,1
-    trap_range 22eh,2
+    ; 2xBh and 2xDh too: the cards before the SB16 read them as 2xAh and
+    ; 2xCh (trap.asm, port_callback).
+    trap_range 22ah,6
 %ifdef WSS_INPUT
     trap_range 530h,8
 %endif

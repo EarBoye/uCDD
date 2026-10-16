@@ -29,8 +29,9 @@ guest_configure:
     call guest_scale
 %endif
 .levels:
-    call cd_gain_update
     call guest_ports_init
+    call virtual_mixer_install
+    call cd_gain_update
     ret
 
 ; SI dword table, CX count, EDI percent, EBX 100.
@@ -86,20 +87,24 @@ guest_ports_init:
     mov al, [guest_irq]
     or al, 60h
     mov [guest_eoi], al
-    mov al, 2
-    cmp byte [guest_irq], 5
-    je .mixer_irq
-    mov al, 4
-.mixer_irq:
-    mov [virtual_mixer+80h], al
-    mov cl, [guest_dma8]
-    mov al, 1
-    shl al, cl
-    mov cl, [guest_dma16]
-    mov ah, 1
-    shl ah, cl
-    or al, ah
-    mov [virtual_mixer+81h], al
+    ret
+
+; The virtual mixer at install (audio/sb_mixer.asm): the reset values with
+; every level at its top, as the card's own setup program leaves it, and CD
+; audio at 0 dB. The SB 2.0 has no mixer and its gains stay at 0 dB.
+virtual_mixer_install:
+    call virtual_mixer_reset
+    mov eax, 0f8f8f8f8h
+    mov [virtual_mixer+30h], eax
+    mov [virtual_mixer+34h], eax
+    cmp byte [virtual_model], 1
+    ja .done
+    mov al, 0ffh
+    mov [virtual_mixer+4], al
+    mov [virtual_mixer+22h], al
+    mov [virtual_mixer+26h], al
+    mov [virtual_mixer+28h], al
+.done:
     ret
 
 ; AX is a default trap port. Return the selected guest port.

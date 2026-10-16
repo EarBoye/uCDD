@@ -1122,6 +1122,15 @@ resident_io:
     mov edi, edx
     sub edi, esi
     jz .index
+    ; The reads below are the SB16's (model 0). The SB Pro's and the SB
+    ; 2.0's mixer, their 2xEh values and their 2xFh, an alias of 2xEh, are
+    ; the driver's (audio/sb_mixer.asm, trap .status).
+    mov esi, [ebp+resident_fast+24]
+    test esi, esi
+    jz .sb16
+    cmp byte [esi], 0
+    jne .callback
+.sb16:
     cmp edi, 1
     je .data
     cmp edi, 0ah
@@ -1144,22 +1153,12 @@ resident_io:
     clc
     ret
 .data:
+    ; The CT1745's registers read as the driver's image of them holds them
+    ; (FFh where the chip has none).
     test ch, ch
     jnz .callback
     mov esi, [ebp+resident_fast]
     movzx edi, byte [esi]
-    cmp edi, 0fh
-    je .data_reserved
-    ; 40h is the ESS identification sequence, which the driver keeps, and
-    ; 30h to 3Fh are the virtual ESS's own registers, which the driver keeps
-    ; apart from the gains stored at those numbers (trap .mixer_stored).
-    cmp edi, 40h
-    je .callback
-    cmp edi, 30h
-    jb .data_fast
-    cmp edi, 3fh
-    jbe .callback
-.data_fast:
     cmp edi, 82h
     jne .data_register
     mov esi, [ebp+resident_fast+4]
@@ -1168,6 +1167,8 @@ resident_io:
     ; driver reads (irq.asm, virtual_mpu_refresh).
     test al, 4
     jnz .callback
+    ; Bit 5: the DSP 4.05's revision (audio/sb_mixer.asm).
+    or al, 20h
     clc
     ret
 .data_register:
@@ -1175,21 +1176,10 @@ resident_io:
     mov al, [edi]
     clc
     ret
-.data_reserved:
-    mov al, 0ffh
-    clc
-    ret
 .status:
-    ; 22Eh read: the 8-bit acknowledge, bit 7 set while a reply waits. The
-    ; virtual ESS (model 4) answers from its status register: the driver's.
+    ; 22Eh read: the 8-bit acknowledge, bit 7 set while a reply waits.
     test ch, ch
     jnz .callback
-    mov esi, [ebp+resident_fast+24]
-    test esi, esi
-    jz .status_sb
-    cmp byte [esi], 4
-    je .callback
-.status_sb:
     mov esi, [ebp+resident_fast+4]
     and byte [esi], 0feh
     mov esi, [ebp+resident_fast+8]

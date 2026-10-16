@@ -96,6 +96,8 @@ virtual_irq_tick:
     mov byte [si+3], 1
 .single_done:
     mov byte [sb_finished], 1
+    ; 91h leaves high-speed mode at the end of its block (SBG:1349-1350).
+    mov byte [sb_highspeed], 0
     pop eax
     mov eax, [game_block_bytes]
     jmp .byte_position

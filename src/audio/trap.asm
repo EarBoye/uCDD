@@ -305,6 +305,16 @@ port_callback:
     cmp byte [virtual_model], 4
     je ess_port
 %endif
+    ; The cards before the SB16 decode the DSP's ports without bit 0: 2x7h
+    ; is 2x6h, 2xBh 2xAh, 2xDh 2xCh and 2xFh 2xEh. The mixer's two ports
+    ; are apart. (DOSBox-X, confirmed on an SB 2.0 and an SB Pro; 86Box.)
+    cmp byte [virtual_model], 0
+    je .not_sb_port
+    cmp dl, 24h
+    je .not_sb_port
+    cmp dl, 25h
+    je .not_sb_port
+    and dl, 0feh
 .not_sb_port:
     jmp .dispatch
 .dma_port:
@@ -322,10 +332,15 @@ port_callback:
     je .reset
     cmp dx, 22ch
     je .command
+    ; 2xAh, 2xEh and 2xFh are read only; 2x7h, 2xBh and 2xDh are nothing on
+    ; the SB16 (the cards before it read them as their aliases, above).
     cmp dx, 22ah
-    je .done
+    jb .not_dsp_write
+    cmp dx, 22fh
+    jbe .done
+.not_dsp_write:
     cmp dx, 227h
-    je .done                               ; nothing there on a Creative card
+    je .done
     cmp dx, 224h
     je .mixer_index
     cmp dx, 225h
@@ -376,6 +391,20 @@ port_callback:
     mov byte [arguments], 0
     jmp .unsupported
 .reset:
+    ; A 1 stops the DSP and holds it in reset; the 0 that follows ends the
+    ; reset, and AAh is ready (SBG:881-896). A 0 alone does nothing.
+    test al, 1
+    jnz .reset_hold
+    cmp byte [sb_reset_held], 0
+    je .done
+    mov byte [sb_reset_held], 0
+    mov word [reply], 0aah
+    mov byte [reply_count], 1
+    jmp .done
+.reset_hold:
+    mov byte [sb_reset_held], 1
+    mov byte [sb_highspeed], 0
+    mov byte [sb_midi_uart], 0
     mov byte [sb_id_value], 0aah
     mov byte [sb_id_phase], 0
     mov byte [sb_dac_enabled], 0
@@ -389,8 +418,7 @@ port_callback:
     mov byte [sb_exit_pending], 0
     mov byte [sb_single], 0
     mov byte [sb_input], 0
-    mov byte [sb_speaker], 1
-    mov byte [sb_speaker_flag], 1
+    ; The speaker stays as it was (DOSBox-X, 86Box; the guide is silent).
     mov byte [sb_filter_legacy], 0
     mov byte [game_active], 0
     mov byte [game_start_pending], 0
@@ -400,8 +428,7 @@ port_callback:
     call virtual_irq_reset
 %endif
     inc word [virtual_resets]
-    mov word [reply], 0aah
-    mov byte [reply_count], 1
+    mov byte [reply_count], 0
     mov word [reply_pointer], 0
     mov byte [arguments], 0
     jmp .done
@@ -409,114 +436,8 @@ port_callback:
     mov [virtual_mixer_index], al
     jmp .done
 .mixer_data:
-    movzx bx, byte [virtual_mixer_index]
-    cmp bl, 0fh
-    je .done
-    cmp bl, 80h
-    je .done
-    cmp bl, 81h
-    je .done
-    test bl, bl
-    jz .mixer_reset
-.mixer_store:
-    mov [virtual_mixer+bx], al
-    cmp bl, 0eh
-    jne .mixer_volume
-    and al, 20h
-    mov [sb_filter_bypass], al
+    call virtual_mixer_write
     jmp .done
-.mixer_volume:
-    ; 14h is the ESS's full-width twin of 04h, on every model. The ESS's
-    ; other twins (32h master, 36h FM, 38h CD) are routed above.
-    cmp bl, 14h
-    je .voice_pair
-    cmp bl, 22h
-    je .master_pair
-    cmp bl, 28h
-    je .cd_pair
-    cmp bl, 26h
-    je .fm_pair
-    cmp bl, 4
-    jne .volume16
-.voice_pair:
-    mov bx, 32h
-    jmp .volume_pair
-.master_pair:
-    mov bx, 30h
-    jmp .volume_pair
-.cd_pair:
-    mov bx, 36h
-    jmp .volume_pair
-.fm_pair:
-    mov bx, 34h
-.volume_pair:
-    mov ah, al
-    and al, 0f0h
-    or al, 8
-    mov [virtual_mixer+bx], al
-    shl ah, 4
-    or ah, 8
-    mov [virtual_mixer+bx+1], ah
-    jmp .volume_update
-.volume16:
-    cmp bl, 30h
-    jb .done
-    cmp bl, 37h
-    ja .done
-    and bl, 0feh
-    mov al, [virtual_mixer+bx]
-    and al, 0f0h
-    mov ah, [virtual_mixer+bx+1]
-    shr ah, 4
-    or al, ah
-    cmp bl, 30h
-    jne .cd_view
-    mov [virtual_mixer+22h], al
-    jmp .volume_update
-.cd_view:
-    cmp bl, 36h
-    jne .fm_view
-    mov [virtual_mixer+28h], al
-    jmp .volume_update
-.fm_view:
-    cmp bl, 34h
-    jne .voice_view
-    mov [virtual_mixer+26h], al
-    jmp .volume_update
-.voice_view:
-    mov [virtual_mixer+4], al
-.volume_update:
-%ifdef MOUNTED_AUDIO
-    call cd_gain_update
-%endif
-%ifdef RESIDENT_AUDIO
-    call fm_update
-%endif
-.voice_gain:
-    call sb_pcm_update
-    jmp .done
-.mixer_reset:
-    ; Register 00h restores the SB16 defaults.
-    push cs
-    pop es
-    mov di, virtual_mixer
-    mov cx, 40h
-    xor eax, eax
-    cld
-    rep stosw
-    mov [sb_filter_bypass], al
-    mov al, 0cch
-    mov [virtual_mixer+4], al
-    mov [virtual_mixer+22h], al
-    mov [virtual_mixer+26h], al
-    mov [virtual_mixer+28h], al
-    mov eax, 0c0c0c0c0h
-    mov [virtual_mixer+30h], eax
-    mov [virtual_mixer+34h], ax
-    mov [virtual_mixer+36h], ax
-    mov dword [virtual_mixer+3ch], 0b151fh
-    mov dword [virtual_mixer+44h], 80808080h
-    jmp .volume_update
 .flip_reset:
     mov byte [si+DMA_FLIP], 0
     call dma_shared_write
@@ -693,6 +614,16 @@ port_callback:
     xor byte [si+DMA_FLIP], 1
     jmp .done
 .command:
+    ; A DSP held in reset takes nothing. In high-speed mode the DSP 2.01 and
+    ; 3.xx "will not accept any other commands" (SBG:1346-1347): only a
+    ; reset ends it.
+    cmp byte [sb_reset_held], 0
+    jne .done
+    cmp byte [sb_highspeed], 0
+    jne .done
+    ; In the SB-MIDI UART modes every write is MIDI data (SBG:2820-2832).
+    cmp byte [sb_midi_uart], 0
+    jne .midi_byte
     cmp byte [arguments], 0
     jne .argument
     ; The DSP sends a string reply one byte at a time and waits for each
@@ -701,94 +632,103 @@ port_callback:
     ; dropped here; the chip would hold it in its mailbox.
     cmp word [reply_pointer], 0
     jne .done
-    mov [dsp_command], al
-.common_command:
-    cmp al, 10h
-    je .time_constant
+    ; Before the SB16, 41h to 47h are 40h (DOSBox-X: an SB Pro demo
+    ; depends on it). On the SB16 41h and 42h set the rate (SBG:3573).
+    cmp byte [virtual_model], 0
+    je .model_command
     cmp al, 41h
-    je .rate
-    cmp al, 42h
-    je .input_rate
-    cmp al, 40h
-    je .time_constant
-    cmp al, 48h
-    je .rate
-    cmp al, 14h
-    je .rate
-    cmp al, 24h
-    je .rate
-    cmp al, 1ch
-    je .legacy_start
-    cmp al, 90h
-    je .legacy_start
-    cmp al, 91h
-    je .legacy_start
-    cmp al, 0c6h
-    je .play
-    cmp al, 0c4h
-    je .play
-    cmp al, 0c0h
-    je .play
-    cmp al, 0c2h
-    je .play
-    cmp al, 0b0h
-    je .play
-    cmp al, 0b2h
-    je .play
-    cmp al, 0b6h
-    je .play
-    cmp al, 0b4h
-    je .play
-    cmp al, 0d0h
-    je .pause8
-    cmp al, 0d5h
-    je .pause16
-    cmp al, 0dah
-    je .exit8
-    cmp al, 0d9h
-    je .exit16
-    cmp al, 0d4h
-    je .resume8
-    cmp al, 0d6h
-    je .resume16
-    cmp al, 0d3h
-    je .speaker_off
-    cmp al, 0d1h
-    je .speaker_on
-    cmp al, 0d8h
-    je .speaker_status
-    cmp al, 0e0h
-    je .time_constant
-    cmp al, 0e4h
-    je .time_constant
-    cmp al, 0e2h
-    je .time_constant
-    cmp al, 0e8h
-    je .test_read
-    cmp al, 0f2h
-    je .force_irq
-%ifdef VIRTUAL_IRQ
-    cmp al, 80h
-    je .rate
-%endif
-    ; Input modes of the SB Pro: nothing to set up for output.
-    cmp al, 0a0h
-    je .done
-    cmp al, 0a8h
-    je .done
-    cmp al, 20h
-    je .direct_input
-    cmp al, 0f8h
-    je .zero_reply
-    cmp al, 0f3h
-    je .force_irq16
-    cmp al, 0e3h
-    je .copyright
-    cmp al, 0e1h
-    jne .command_unsupported
+    jb .model_command
+    cmp al, 47h
+    ja .model_command
+    mov al, 40h
+.model_command:
+    mov [dsp_command], al
+    mov byte [arguments_got], 0
+    ; Bxh and Cxh: the SB16's 16-bit and 8-bit transfers, a mode byte and a
+    ; length (SBG:3837-3894). Bit 3 input, bit 2 auto-init, bit 1 the
+    ; FIFO (no difference here), bit 0 not used.
+    mov ah, al
+    and ah, 0f0h
+    cmp ah, 0b0h
+    je .sb16_transfer
+    cmp ah, 0c0h
+    jne .table
+.sb16_transfer:
+    cmp byte [virtual_model], 0
+    jne .table
+    mov word [dsp_handler], .play
+    mov byte [arguments], 3
+    jmp .done
+.table:
+    ; The command table: command, argument bytes, models, handler.
+    mov si, sb_commands
+.find:
+    cmp byte [si], 0ffh
+    je .command_unsupported
+    cmp [si], al
+    je .found
+    add si, 5
+    jmp .find
+.found:
+    ; Not a command of this model: like an unknown one, it takes no
+    ; argument and does nothing (DOSBox-X's tables by model).
+    mov ah, [si+2]
+    mov cl, [virtual_model]
+    shr ah, cl
+    test ah, 1
+    jz .command_unsupported
+    mov ax, [si+3]
+    mov [dsp_handler], ax
+    mov al, [si+1]
+    mov [arguments], al
+    test al, al
+    jnz .done
+    jmp [dsp_handler]
+.argument:
+    movzx bx, byte [arguments_got]
+    mov [dsp_args+bx], al
+    inc byte [arguments_got]
+    dec byte [arguments]
+    jnz .done
+    jmp [dsp_handler]
+.midi_byte:
+    call sb_midi_out
+    jmp .done
+; 38h: one byte of MIDI output (SBG:3537-3548).
+.midi_out:
+    mov al, [dsp_args]
+    call sb_midi_out
+    jmp .done
+; 34h-37h: the UART modes, which only a reset ends (SBG:3461-3532). MIDI
+; input is the physical card's: nothing arrives here.
+.midi_uart:
+    mov byte [sb_midi_uart], 1
+    jmp .done
+; 30h, 31h: MIDI input by polling or interrupt (SBG:3426-3456): no input.
+; Commands that only take their argument bytes go here too.
+.ignore:
+    jmp .done
+.version:
     mov ax, [virtual_dsp_version]
     mov [reply], ax
     mov byte [reply_count], 2
+    jmp .done
+.direct_dac:
+    mov al, [dsp_args]
+    call sb_dac_write
+    jmp .done
+.identify:
+    mov al, [dsp_args]
+    call sb_identify
+    jc .command_unsupported
+    jmp .done
+.invert:
+    mov al, [dsp_args]
+    not al
+    jmp .one_reply
+.test_write:
+    mov al, [dsp_args]
+    mov [sb_test_register], al
     jmp .done
 .copyright:
     ; E3h: the DSP 4.xx firmware sends its copyright notice with the zero
@@ -964,96 +904,12 @@ port_callback:
     mov byte [sb_paused], 1
     mov byte [game_active], 0
     jmp .done
-.input_rate:
-    ; The SB16 uses one sample rate for output and input.
-    mov byte [dsp_command], 41h
+; 41h, 42h: the rate, high byte first (SBG:3573-3599); one rate for output
+; and input.
 .rate:
-    mov byte [arguments], 2
-    jmp .done
-.play:
-    ; Both FIFO modes use the same PCM conversion and block interrupts.
-    or byte [dsp_command], 2
-    mov byte [arguments], 3
-    jmp .done
-.time_constant:
-    mov byte [arguments], 1
-    jmp .done
-.legacy_start:
-    mov ax, [legacy_block]
-.legacy_format:
-    push ax
-    mov byte [pending_frame_shift], 0
-    mov byte [pending_format], 0
-    cmp byte [dsp_command], 24h
-    je .legacy_mono
-    test ax, ax
-    jz .legacy_mono
-    mov ax, [legacy_rate]
-    test byte [virtual_mixer+0eh], 2
-    jz .legacy_rate
-    mov byte [pending_frame_shift], 1
-    shr ax, 1
-    jmp .legacy_rate
-.legacy_mono:
-    mov ax, [legacy_rate]
-.legacy_rate:
-    mov [game_rate], ax
-    movzx eax, ax
-    shl eax, 16
-    xor edx, edx
-    mov ecx, OUTPUT_RATE
-    div ecx
-    mov [game_step], eax
-    pop ax
-    jmp .validate_start
-.argument:
-    cmp byte [dsp_command], 10h
-    jne .normal_argument
-    call sb_dac_write
-    jmp .argument_done
-.normal_argument:
-    cmp byte [dsp_command], 0e2h
-    jne .invert_argument
-    call sb_identify
-    jc .command_unsupported
-    jmp .argument_done
-.invert_argument:
-    cmp byte [dsp_command], 0e0h
-    jne .test_argument
-    not al
-    mov [reply], al
-    mov byte [reply_count], 1
-    jmp .argument_done
-.test_argument:
-    cmp byte [dsp_command], 0e4h
-    jne .pcm_argument
-    mov [sb_test_register], al
-    jmp .argument_done
-.pcm_argument:
-    ; Only the virtual ESS leaves 42h here (.input_or_ess): its one byte
-    ; is the filter clock.
-    cmp byte [dsp_command], 42h
-    je .argument_done
-    cmp byte [dsp_command], 14h
-    je .length
-%ifdef VIRTUAL_IRQ
-    cmp byte [dsp_command], 80h
-    je .silence
-%endif
-    cmp byte [dsp_command], 24h
-    je .length
-    cmp byte [dsp_command], 40h
-    je .set_time_constant
-    cmp byte [dsp_command], 48h
-    je .legacy_length
-    cmp byte [dsp_command], 41h
-    jne .play_argument
-    cmp byte [arguments], 2
-    jne .rate_low
-    mov [rate_pending+1], al
-    jmp .argument_done
-.rate_low:
-    mov [rate_pending], al
+    mov ah, [dsp_args]
+    mov al, [dsp_args+1]
+    mov [rate_pending], ax
 .set_rate:
     ; The rate is checked before it replaces game_rate, which divides later.
     cmp word [rate_pending], 4000
@@ -1070,7 +926,7 @@ port_callback:
     mov ax, [legacy_pending]
     jmp .legacy_rate_store
 .rate_command:
-    test byte [virtual_mixer+0eh], 2
+    test byte [sb_pro_stereo], 2
     jz .legacy_rate_store
     cmp ax, 32768
     jae .legacy_rate_store
@@ -1083,19 +939,77 @@ port_callback:
     mov ecx, OUTPUT_RATE
     div ecx
     mov [game_step], eax
-    jmp .argument_done
-.play_argument:
-    cmp byte [arguments], 3
-    jne .length
+    jmp .done
+; 40h: the time constant (SBG:3553-3568).
+.time_constant:
+    movzx ecx, byte [dsp_args]
+    neg ecx
+    add ecx, 256
+    mov eax, 1000000
+    xor edx, edx
+    div ecx
+    cmp eax, 65535
+    ja .command_unsupported
+    mov [legacy_pending], ax
+    test byte [sb_pro_stereo], 2
+    jz .time_mono
+    shr ax, 1
+.time_mono:
+    mov [rate_pending], ax
+    jmp .set_rate
+; 48h: the block size for auto-init and high speed (SBG:3604-3616).
+.block_size:
+    mov ax, [dsp_args]
+    mov [legacy_block], ax
+    jmp .done
+; 14h, 24h: an 8-bit single-cycle block, the length from the command.
+.single8:
+    mov ax, [dsp_args]
+    jmp .legacy_format
+; 1Ch, 90h, 91h: the length from 48h.
+.legacy_start:
+    mov ax, [legacy_block]
+.legacy_format:
+    push ax
     mov byte [pending_frame_shift], 0
     mov byte [pending_format], 0
-    cmp byte [dsp_command], 0b2h
-    je .format16
-    cmp byte [dsp_command], 0b6h
-    jne .mono_mode
-.format16:
+    cmp byte [dsp_command], 24h
+    je .legacy_mono
+    test ax, ax
+    jz .legacy_mono
+    mov ax, [legacy_rate]
+    test byte [sb_pro_stereo], 2
+    jz .legacy_rate
+    mov byte [pending_frame_shift], 1
+    shr ax, 1
+    jmp .legacy_rate
+.legacy_mono:
+    mov ax, [legacy_rate]
+.legacy_rate:
+    mov [game_rate], ax
+    movzx eax, ax
+    shl eax, 16
+    xor edx, edx
+    mov ecx, OUTPUT_RATE
+    div ecx
+    mov [game_step], eax
+    pop ax
+    jmp .validate_start
+; Bxh, Cxh on the SB16: the mode byte, then the length.
+.play:
+    ; Input (bit 3) is not played yet: the arguments are taken.
+    test byte [dsp_command], 8
+    jnz .done
+    ; Both FIFO modes use the same PCM conversion and block interrupts.
+    or byte [dsp_command], 2
+    and byte [dsp_command], 0f6h
+    mov byte [pending_frame_shift], 0
+    mov byte [pending_format], 0
+    mov al, [dsp_args]
     test al, 0cfh
     jnz .command_unsupported
+    test byte [dsp_command], 10h
+    jz .mono_mode
     cmp al, 30h
     je .stereo16
     test al, 10h
@@ -1106,49 +1020,26 @@ port_callback:
     jnz .stereo16
     or byte [pending_format], 1
     mov byte [pending_frame_shift], 1
-    jmp .argument_done
+    jmp .play_length
 .stereo16:
     mov byte [pending_frame_shift], 2
-    jmp .argument_done
+    jmp .play_length
 .mono_mode:
-    test al, 0cfh
-    jnz .command_unsupported
     test al, 10h
     jz .unsigned8
     or byte [pending_format], 4
 .unsigned8:
     test al, 20h
-    jz .argument_done
+    jz .play_length
     mov byte [pending_frame_shift], 1
-    jmp .argument_done
-.set_time_constant:
-    movzx ecx, al
-    neg ecx
-    add ecx, 256
-    mov eax, 1000000
-    xor edx, edx
-    div ecx
-    cmp eax, 65535
-    ja .command_unsupported
-    mov [legacy_pending], ax
-    test byte [virtual_mixer+0eh], 2
-    jz .time_mono
-    shr ax, 1
-.time_mono:
-    mov [rate_pending], ax
-    jmp .set_rate
+.play_length:
+    mov ax, [dsp_args+1]
+    jmp .validate_start
 %ifdef VIRTUAL_IRQ
+; 80h: no output for the given number of samples less one at the current
+; rate, then the 8-bit interrupt. Signalled from the output interrupt.
 .silence:
-    ; 80h: no output for the given number of samples less one at the current
-    ; rate, then the 8-bit interrupt. Signalled from the output interrupt.
-    cmp byte [arguments], 2
-    jne .silence_length
-    mov [block_low], al
-    jmp .argument_done
-.silence_length:
-    mov ah, al
-    mov al, [block_low]
-    movzx eax, ax
+    movzx eax, word [dsp_args]
     inc eax
     imul eax, OUTPUT_RATE
     movzx ecx, word [game_rate]
@@ -1162,29 +1053,8 @@ port_callback:
     add eax, ecx
     mov [sb_silence_end], eax
     mov byte [sb_silence], 1
-    jmp .argument_done
+    jmp .done
 %endif
-.legacy_length:
-    cmp byte [arguments], 2
-    jne .legacy_high
-    mov [legacy_block], al
-    jmp .argument_done
-.legacy_high:
-    mov [legacy_block+1], al
-    jmp .argument_done
-.length:
-    cmp byte [arguments], 2
-    jne .start
-    mov [block_low], al
-    jmp .argument_done
-.start:
-    mov ah, al
-    mov al, [block_low]
-    cmp byte [dsp_command], 24h
-    je .legacy_format
-    cmp byte [dsp_command], 14h
-    jne .validate_start
-    jmp .legacy_format
 .validate_start:
     mov byte [sb_finished], 0
     mov byte [sb_exit_pending], 0
@@ -1466,10 +1336,12 @@ port_callback:
     jae .filter_clear
     cmp byte [sb_input], 0
     jne .filter_clear
-    ; The switchable 3.2 kHz output filter belongs to the SB and SB Pro. The
-    ; SB16's output filter follows the sample rate, for legacy commands too.
-    cmp byte [virtual_dsp_version], 4
-    jae .filter_clear
+    ; The switchable 3.2 kHz output filter is the SB Pro's mixer's (SBG:
+    ; 2385-2388). The SB 2.0 has none: its DAC output is not filtered
+    ; (DOSBox-X, from a CT1350B). The SB16's filter follows the sample rate,
+    ; for legacy commands too.
+    cmp byte [virtual_model], 1
+    jne .filter_clear
     mov byte [sb_filter_legacy], 1
     ; A block that follows a filtered block is the same output stream. Keep the
     ; filter state: the response to the last block has not ended.
@@ -1487,6 +1359,16 @@ port_callback:
 %ifdef VIRTUAL_IRQ
     call virtual_irq_reset
 %endif
+    ; 90h and 91h on the SB 2.0 and the SB Pro: high-speed mode, which takes
+    ; no command until a reset, or until 91h's block ends (SBG:1346-1351).
+    cmp byte [virtual_model], 0
+    je .speed_ready
+    mov al, [dsp_command]
+    and al, 0feh
+    cmp al, 90h
+    jne .speed_ready
+    mov byte [sb_highspeed], 1
+.speed_ready:
     mov bl, [game_active]
     mov byte [game_active], 1
     inc word [virtual_starts]
@@ -1520,7 +1402,6 @@ port_callback:
     cmp byte [dsp_command], 91h
     je .done
 .argument_done:
-    dec byte [arguments]
     jmp .done
 %ifdef WSS_INPUT
 %include "audio/wss_input.inc"
@@ -1546,6 +1427,13 @@ port_callback:
     je .reply
     cmp dx, 225h
     je .mixer_read
+    cmp dx, 224h
+    je .index_read
+    ; 2xBh and 2xDh on the SB16 (the others alias them, above).
+    cmp dx, 22bh
+    je .reset_read
+    cmp dx, 22dh
+    je .reset_read
     cmp dx, 3
     je .dma_read
     cmp dx, 2
@@ -1601,25 +1489,44 @@ port_callback:
     shl ah, cl
     or al, ah
     jmp .result
+.index_read:
+    ; 2x4h is write only (SBG:2221). The SB Pro reads back the index
+    ; (DOSBox-X, 86Box); the SB16 reads FFh (86Box; DOSBox-X reads the
+    ; index: the CT2290 decides) and the SB 2.0 has nothing there.
+    mov al, 0ffh
+    cmp byte [virtual_model], 1
+    jne .result
+    mov al, [virtual_mixer_index]
+    jmp .result
 .reset_read:
     mov al, 0ffh
     jmp .result
 .ready:
-    ; Only bit 7 is defined; a card reads the other bits as set. Busy while
-    ; a string reply waits to be read.
-    mov al, 7fh
+    ; Only bit 7 is defined (SBG:940-943). The other bits read 7Fh on the
+    ; SB16 and 2Ah before it (DOSBox-X, "observed on SB 2.0"; 86Box). Busy
+    ; in reset, in high-speed mode, and while a string reply waits to be
+    ; read.
+    cmp byte [sb_reset_held], 0
+    jne .reset_read
+    call dsp_status_base
+    cmp byte [sb_highspeed], 0
+    jne .busy
     cmp word [reply_pointer], 0
     je .result
+.busy:
     or al, 80h
     jmp .result
 .status:
 %ifdef VIRTUAL_IRQ
     and byte [virtual_dsp_irq], 0feh
 %endif
-    mov al, 7fh
+    ; Bit 7: a reply waits (SBG:924-926); the other bits as at 2xCh.
+    call dsp_status_base
+    cmp byte [sb_reset_held], 0
+    jne .result
     cmp byte [reply_count], 0
     je .result
-    mov al, 0ffh
+    or al, 80h
     jmp .result
 .status16:
 %ifdef VIRTUAL_IRQ
@@ -1628,9 +1535,16 @@ port_callback:
     mov al, 0ffh
     jmp .result
 .reply:
-    mov al, [reply]
+    ; With nothing waiting the port reads its last byte again (DOSBox-X,
+    ; from a demo that depends on it; 86Box).
+    mov al, [reply_last]
     cmp byte [reply_count], 0
     je .result
+    call .reply_byte
+    mov [reply_last], al
+    jmp .result
+.reply_byte:
+    mov al, [reply]
     ; A string reply (reply_pointer set) reads from memory; the others from
     ; the reply word, low byte first.
     mov bx, [reply_pointer]
@@ -1639,29 +1553,16 @@ port_callback:
     mov al, [bx]
     inc word [reply_pointer]
     dec byte [reply_count]
-    jnz .result
+    jnz .reply_done
     mov word [reply_pointer], 0
-    jmp .result
+.reply_done:
+    ret
 .reply_word:
     shr word [reply], 8
     dec byte [reply_count]
-    jmp .result
+    ret
 .mixer_read:
-    movzx bx, byte [virtual_mixer_index]
-    ; Reserved on the SB16. Writable storage here causes false mixer detection.
-    cmp bx, 0fh
-    mov al, 0ffh
-    je .result
-%ifdef VIRTUAL_IRQ
-    cmp bx, 82h
-    jne .mixer_value
-    call virtual_mpu_refresh
-    mov al, [virtual_dsp_irq]
-    jmp .result
-.mixer_value:
-%endif
-
-    mov al, [virtual_mixer+bx]
+    call virtual_mixer_read
     jmp .result
 .dma_read:
     cmp byte [si+DMA_FLIP], 0
@@ -1895,6 +1796,138 @@ sb_identify:
     ret
 .masks db 96h,0a5h,69h,5ah
 
+; AL=a byte of SB-MIDI output (38h, or a write in UART mode). It goes out of
+; the physical card's MIDI port through its DSP's 38h where that DSP takes
+; commands while the driver plays: the SB16 and the SB 2.0, not the SB Pro
+; in high-speed mode. Elsewhere it is dropped. Every register is kept.
+sb_midi_out:
+    pushad
+    cmp byte [sound_card], 0
+    je .physical
+    cmp byte [sound_card], 3
+    jne .done
+.physical:
+    mov ah, al
+    mov al, 38h
+    call .write
+    jc .done
+    mov al, ah
+    call .write
+.done:
+    popad
+    ret
+; AL to the physical DSP once its write buffer is free, within about 2 ms;
+; CF set when it was not. Not dsp_write, which treats a timeout as a dead
+; card and stops the output.
+.write:
+    push ax
+    mov dx, [sb_base]
+    add dx, 0ch
+    mov cx, 2000
+.wait:
+    call physical_read
+    test al, 80h
+    jz .ready
+    loop .wait
+    pop ax
+    stc
+    ret
+.ready:
+    pop ax
+    call physical_write
+    clc
+    ret
+
+; The virtual Sound Blasters' commands by model (vsb/SPEC.md section 5):
+; command, argument bytes, models, handler. A command missing here, or not
+; of the presented model, takes no argument and does nothing. Bxh and Cxh
+; are the SB16's alone (port_callback .sb16_transfer). The commands that
+; only take their arguments (.ignore) are not played yet: ADPCM, input
+; beyond 24h, the ASP's and the 8051's.
+SB_16 equ 1
+SB_PRO equ 2
+SB_20 equ 8
+SB_ALL equ SB_16 | SB_PRO | SB_20
+%macro dsp 4
+    db %1, %2, %3
+    dw port_callback.%4
+%endmacro
+sb_commands:
+    dsp 04h, 1, SB_16, ignore
+    dsp 05h, 2, SB_16, ignore
+    dsp 08h, 1, SB_16, ignore
+    dsp 0eh, 2, SB_16, ignore
+    dsp 0fh, 1, SB_16, ignore
+    dsp 10h, 1, SB_ALL, direct_dac
+    dsp 14h, 2, SB_ALL, single8
+    dsp 16h, 2, SB_ALL, ignore
+    dsp 17h, 2, SB_ALL, ignore
+    dsp 1ch, 0, SB_ALL, legacy_start
+    dsp 1fh, 0, SB_ALL, ignore
+    dsp 20h, 0, SB_ALL, direct_input
+    dsp 24h, 2, SB_ALL, single8
+    dsp 2ch, 0, SB_ALL, ignore
+    dsp 30h, 0, SB_ALL, ignore
+    dsp 31h, 0, SB_ALL, ignore
+    dsp 34h, 0, SB_ALL, midi_uart
+    dsp 35h, 0, SB_ALL, midi_uart
+    dsp 36h, 0, SB_ALL, midi_uart
+    dsp 37h, 0, SB_ALL, midi_uart
+    dsp 38h, 1, SB_ALL, midi_out
+    dsp 40h, 1, SB_ALL, time_constant
+    dsp 41h, 2, SB_16, rate
+    dsp 42h, 2, SB_16, rate
+    dsp 45h, 0, SB_16, ignore
+    dsp 47h, 0, SB_16, ignore
+    dsp 48h, 2, SB_ALL, block_size
+    dsp 74h, 2, SB_ALL, ignore
+    dsp 75h, 2, SB_ALL, ignore
+    dsp 76h, 2, SB_ALL, ignore
+    dsp 77h, 2, SB_ALL, ignore
+    dsp 7dh, 0, SB_ALL, ignore
+    dsp 7fh, 0, SB_ALL, ignore
+%ifdef VIRTUAL_IRQ
+    dsp 80h, 2, SB_ALL, silence
+%endif
+    dsp 90h, 0, SB_ALL, legacy_start
+    dsp 91h, 0, SB_ALL, legacy_start
+    dsp 98h, 0, SB_ALL, ignore
+    dsp 99h, 0, SB_ALL, ignore
+    dsp 0a0h, 0, SB_PRO, ignore
+    dsp 0a8h, 0, SB_PRO, ignore
+    dsp 0d0h, 0, SB_ALL, pause8
+    dsp 0d1h, 0, SB_ALL, speaker_on
+    dsp 0d3h, 0, SB_ALL, speaker_off
+    dsp 0d4h, 0, SB_ALL, resume8
+    dsp 0d5h, 0, SB_16, pause16
+    dsp 0d6h, 0, SB_16, resume16
+    dsp 0d8h, 0, SB_ALL, speaker_status
+    dsp 0d9h, 0, SB_16, exit16
+    dsp 0dah, 0, SB_ALL, exit8
+    dsp 0e0h, 1, SB_ALL, invert
+    dsp 0e1h, 0, SB_ALL, version
+    dsp 0e2h, 1, SB_ALL, identify
+    dsp 0e3h, 0, SB_16, copyright
+    dsp 0e4h, 1, SB_ALL, test_write
+    dsp 0e8h, 0, SB_ALL, test_read
+    dsp 0f2h, 0, SB_ALL, force_irq
+    dsp 0f3h, 0, SB_16, force_irq16
+    dsp 0f8h, 0, SB_ALL, zero_reply
+    dsp 0f9h, 1, SB_16, ignore
+    dsp 0fah, 2, SB_16, ignore
+    db 0ffh
+%unmacro dsp 4
+
+; AL=2xCh's and 2xEh's value with bit 7 clear: 7Fh on the SB16, 2Ah on the
+; cards before it (port_callback .ready, .status).
+dsp_status_base:
+    mov al, 7fh
+    cmp byte [virtual_model], 0
+    je .done
+    mov al, 2ah
+.done:
+    ret
+
 dma_unowned_write:
 %ifdef RESIDENT_AUDIO
     cmp byte [sb_running], 0
@@ -2030,18 +2063,13 @@ virtual_resets dw 0
 virtual_starts dw 0
 virtual_mixer_index db 0
 %include "audio/mixer.asm"
+%include "audio/sb_mixer.asm"
+; The register image (audio/sb_mixer.asm): set at install, FFh where the
+; chip has nothing; the gains at 30h-37h start at 0 dB.
 virtual_mixer:
-    times 4 db 0
-    db 0ffh
-    times 22h-5 db 0
-    db 0ffh
-    times 26h-23h db 0
-    db 0ffh
-    db 0
-    db 0ffh
-    times 30h-29h db 0
+    times 30h db 0ffh
     times 8 db 0f8h
-    times 256-38h db 0
+    times 256-38h db 0ffh
 dma8 db 0,1,0,0
     dw 0,0,0
     dd 0
@@ -2051,7 +2079,12 @@ dma16 db 0,1,0,0
     dd 0
     db 59h
 dsp_command db 0
+; Argument bytes still to come, and those taken so far into dsp_args.
 arguments db 0
+arguments_got db 0
+dsp_args times 3 db 0
+; The handler the command runs once its arguments are in (sb_commands).
+dsp_handler dw 0
 rate_pending dw 0
 legacy_pending dw 0
 block_low db 0
@@ -2059,6 +2092,14 @@ legacy_block dw 0
 legacy_rate dw 22050
 reply dw 0
 reply_count db 0
+; The last byte read from 2xAh, which it reads again with nothing waiting.
+reply_last db 0aah
+; Set between a reset's 1 and its 0.
+sb_reset_held db 0
+; Set while a high-speed transfer (90h, 91h) runs on the SB 2.0 or SB Pro.
+sb_highspeed db 0
+; Set in the SB-MIDI UART modes (34h-37h).
+sb_midi_uart db 0
 sb_id_value db 0aah
 sb_id_phase db 0
 %ifdef RESIDENT_AUDIO
