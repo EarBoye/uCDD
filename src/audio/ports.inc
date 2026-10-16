@@ -36,7 +36,7 @@
 %ifdef PORT_MIXER_LABEL
 PORT_MIXER_LABEL:
 %endif
-    trap_range 224h,3
+    trap_range 224h,4
     trap_range 22ah,1
     trap_range 22ch,1
     trap_range 22eh,2

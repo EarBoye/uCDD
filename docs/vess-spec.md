@@ -201,8 +201,9 @@ ES1868F [hw]:
 - 01h at an extended block interrupt (09h once the FIFO has drained below
   half).
 - 1Ch at an F2h interrupt.
-- A read of 2xEh returns bits 6:0 of 2xCh with bit 7 the data-available
-  flag, and clears bits 0 and 2.
+- A read of 2xEh returns the low bits of 2xCh with bit 7 the data-available
+  flag, and clears bits 0 and 2. Every measured read had no reply waiting,
+  so whether bit 6 also shows the flag is open (question 13).
 
 ### 5.4 Commands in compatibility mode during DMA (E68:2480-2512) [sheet]
 
@@ -262,8 +263,8 @@ ES1868F [hw]:
 | 41h | 1 W | Time constant: rate = 1.5 MHz / (256 - X), X <= 222 |
 | 42h | 1 W | Filter clock: 7.16 MHz / (256 - X), roll-off 1:82 (40h/41h set it automatically) |
 | 48h | 2 W | Block size - 1 for auto-init and high speed |
-| 64h-6Fh | 2 W | ESPCM transfers (with and without reference byte) |
-| 74h-7Bh | 2 W | ADPCM transfers (4, 2.6, 2-bit; with and without reference byte) |
+| 64h-67h, 6Ah, 6Bh, 6Eh, 6Fh | 2 W | ESPCM transfers (with and without reference byte); 6Eh/6Fh the ADC |
+| 74h-77h, 7Ah, 7Bh | 2 W | ADPCM transfers (4, 2.6, 2-bit; with and without reference byte) |
 | 80h | 2 W | Silence period, samples - 1 |
 | 90h | | Auto-init 8-bit DMA DAC, count from 48h |
 | 91h | | 8-bit DMA DAC, count from 48h |
@@ -681,6 +682,14 @@ trap-based card's limit.
     full while it refills; the TIMES fill timelines and EXT on the chip
     should show how. The model is left as the sheet reads until then.
 
+13. 2xEh with a reply waiting: is bit 6 set as well as bit 7? The model
+    and the card give bits 5:0 and bit 7 (QUIRKS script).
+14. Changes while an extended stream runs: B8h bit 2 cleared (sheet: the
+    DMA stops after the current block), A4h/A5h (sheet: reload at each
+    overflow), A1h (not latched anywhere in the sheet: taken at once). The
+    model and the card follow the sheet; the QUIRKS script times them on
+    the chip.
+
 ## 17. Where the current uCDD virtual ESS departs from this document
 
 From the v0.2 pass, against ess-registers 8c2fe40 [sheet unless noted]:
@@ -822,3 +831,58 @@ trim. Only the ES1869 sheet documents it (not the 1868, 1878, 1887 or
 1888 sheets); Linux names the ES1879 as having it too [driver]. Not used
 yet; worth doing when an ES1869 can be tested (86Box's ESS models start
 at the ES1688, so emulation cannot confirm it).
+
+## 20. The gauntlet of 16 Oct: the clean card against this document
+
+The new card (ess-clean, audio/ess/card.asm and ess_fifo.asm) read section
+by section against sections 2-15 and the sheets. [sheet unless noted]
+
+Matched: identification (2), ports 2x4h/2x5h/2xAh/2xCh/2xEh (3), reset and
+its effects (4), the command interface and status bits (5), the modes (6),
+every command of Table 10 by model (7.1, the codes exactly as the table),
+data formats and the right-first 8-bit stereo (7.2), the extension
+registers, sample rate formula, clock trim and the B2h DRQ gate (8), the
+FIFO, counter and interrupt timing (8.4), interrupts (9), the mixer with its
+twins, master emulation, reset values and level law (10).
+
+Fixed in the card (and the model where it differed):
+1. B8h bit 2 cleared while auto-initialised DMA runs now stops it after the
+   current block (8.2 step 8). The model already did.
+2. A4h/A5h are reloaded at every counter overflow, so a new block length
+   takes effect from the next block (8.4). Card and model.
+3. A1h (and the BAh trim) written while a stream runs changes its rate at
+   once; the DAC clock and the mixer's read position are rebased so the
+   stream carries on. The model already did.
+4. B1h/B2h bits 3:2 are writable selects where the sheet says so: B1h on
+   the ES1878, 1887, 1888; B2h on the 1887 and 1888 (8.1a). The model
+   wrongly let the ES1878's B2h be written; fixed.
+5. 2x6h reads the sheet's bits: 7:5 activity (set by the read, cleared by
+   activity; bit 7 the physical chip's own, since FM and the MPU-401 are
+   physical), bit 3 set unless powered down by FDh, bit 2 MIDI mode
+   (section 3). Card and model; the model gained the MIDI modes.
+6. 2x7h is now trapped. Untrapped, a program's write reached the physical
+   chip, whose power-down request could stop the card uCDD plays through.
+   It is stored and read back; bit 5 (FM reset) goes to the physical chip
+   (section 15). On the Creative models it reads FFh and takes no write.
+7. 2xFh (programmed I/O) discards writes and reads 00h, as section 15
+   says; it fell through to the trap's "unsupported" path.
+8. 2x4h reads bits 5:1 on a presented ES1888 (section 3).
+
+Still departing, recorded:
+- 2xEh bit 6 with a reply waiting: open (question 13).
+- Mixer 0Eh writes do not restart the 8-bit stereo pairing (the ES1888's
+  sheet; silent elsewhere). Pairs start at each block.
+- ESPCM and ADPCM transfers (64h-7Bh) take their arguments and play
+  nothing, and raise no interrupt: a game using them would wait for ever
+  (section 15, "to be decided"). This is why the JEMM boot exists for
+  ADPCM games.
+- SB MIDI (38h, the 34h/35h UART) is not sent out; on the chip it goes to
+  the MIDI port (section 11 covers only the MPU-401).
+- No reconstruction filter: the chip's switched-capacitor filter follows
+  A2h or 42h (a roll-off near 80-90% of half the rate); the card hands the
+  stream to the mixer unfiltered (layer D).
+- The busy flag, the fill rate by B9h type, recording, Audio 2 and
+  programmed I/O: as section 15.
+- The presented model comes from mixer 40h only; a physical ES1887 or
+  ES1888 is presented as an ES1868, and their mixer maps are not yet
+  extracted (section 18.1).

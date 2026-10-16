@@ -58,6 +58,7 @@ ess_fifo_start:
 %endif
     xor eax, eax
     mov [ess_k], eax
+    mov [ess_k0], eax
     mov [ess_q], eax
     mov [ess_d], eax
     mov [ess_seg_start], eax
@@ -211,6 +212,69 @@ ess_fifo_block:
 .ready:
     ret
 
+; A new rate while the stream plays (A1h or BAh written). EAX=Hz. The DAC
+; clock carries on from the frame it has reached; the mixer's read position
+; carries on from where the next half starts, at the new step. The frames
+; already in the ring (the output delay) play at the new step too.
+; DS=CS; all registers kept.
+ess_fifo_rate:
+    pushad
+    push eax
+    call ess_fifo_service
+    pop eax
+    mov [game_rate], ax
+    shl eax, 16
+    xor edx, edx
+    mov ecx, OUTPUT_RATE
+    div ecx
+    mov edi, eax                           ; the new step
+    ; The DAC: frame ess_k at this moment, then the new step.
+    mov eax, [ess_k]
+    mov [ess_k0], eax
+    call output_clock
+    mov [ess_t0], eax
+    mov [ess_step], edi
+    ; The mixer: its position at the next half's first frame becomes the
+    ; origin, counted from that frame.
+    mov ebx, [sb_dac_frame]
+    add ebx, PERIOD_FRAMES
+    cmp byte [game_start_pending], 0
+    jne .step
+    mov eax, ebx
+    sub eax, [game_started]
+    jbe .step                              ; nothing mixed yet: no rebase
+    mul dword [game_step]
+    add eax, [game_origin]
+    adc edx, 0
+    div dword [game_limit]
+    mov [game_origin], edx
+    mov [game_started], ebx
+.step:
+    mov [game_step], edi
+    ; The DMA's fill rate per DAC frame follows the rate.
+    mov eax, ESS_DMA_PER_MS*1000*256
+    xor edx, edx
+    movzx ecx, word [game_rate]
+    div ecx
+    mov [ess_credit_step], eax
+    popad
+    ret
+
+; B8h bit 2 changed while the DMA runs (SPEC 8.2 step 8). AL=1: auto-
+; initialise on past the current block; 0: the requests stop at its
+; overflow, as a normal-mode block's do. DS=CS.
+ess_fifo_kind:
+    mov [ess_auto], al
+    mov dword [ess_d_cap], 0ffffffffh
+    test al, al
+    jnz .done
+    push eax
+    mov eax, [ess_next_overflow]
+    mov [ess_d_cap], eax
+    pop eax
+.done:
+    ret
+
 ; D0h: the DMA pauses where it is; the DAC plays out the FIFO (data sheet,
 ; Table 10). D4h continues it, the counter and the block unchanged. Only a
 ; running DMA pauses.
@@ -294,6 +358,7 @@ ess_fifo_service:
 .elapsed:
     mul dword [ess_step]
     shrd eax, edx, 16
+    add eax, [ess_k0]
     mov [ess_k_target], eax
     mov byte [ess_raise], 0
 .frame:
@@ -394,6 +459,18 @@ ess_dma_frame:
     mov al, [ess_block_latch]
     or [ess_status_latch], al
     mov byte [ess_raise], 1
+    ; Extended Mode: the counter reloads from A4h/A5h at every overflow, so
+    ; a new block length takes effect from the next block (SPEC 8.4) [sheet].
+    cmp byte [ess_compat], 0
+    jne .next_block
+    movzx eax, word [ess_virtual_regs+0a4h-0a0h]
+    neg eax
+    and eax, 0ffffh
+    jnz .reload
+    mov eax, 10000h
+.reload:
+    mov [ess_block], eax
+.next_block:
     mov eax, [ess_block]
     add [ess_next_overflow], eax
     jmp .overflow
@@ -605,6 +682,8 @@ ess_step dd 0
 ; The output frames the mixer reads behind the DAC clock.
 ess_delay dd ESS_DELAY_FRAMES
 ess_k dd 0
+; The DAC frame at ess_t0 (a rate change rebases the clock there).
+ess_k0 dd 0
 ess_k_target dd 0
 ess_q dd 0
 ess_d dd 0

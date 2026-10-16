@@ -41,10 +41,14 @@ ess_port:
     je .data
     cmp dx, 226h
     je .reset
+    cmp dx, 227h
+    je .power
     cmp dx, 22ah
     je .ignore
     cmp dx, 22eh
     je .ignore
+    cmp dx, 22fh
+    je .ignore                             ; programmed I/O: SPEC 15
     jmp port_callback.dispatch
 .read:
     cmp dx, 22ch
@@ -59,8 +63,13 @@ ess_port:
     je .index_read
     cmp dx, 226h
     je .reset_read
+    cmp dx, 227h
+    je .power_read
+    cmp dx, 22fh
+    je .pio_read
     jmp port_callback.dispatch
 .command:
+    and byte [ess_activity], 0dfh          ; a 2xCh write: bit 5
     call ess_dsp_write
     jmp port_callback.done
 .index:
@@ -72,17 +81,24 @@ ess_port:
     call ess_mixer_write
     jmp port_callback.done
 .reset:
+    and byte [ess_activity], 0dfh          ; a 2x6h write: bit 5
     call ess_reset_port
 .ignore:
+    jmp port_callback.done
+.power:
+    call ess_power_write
     jmp port_callback.done
 .status:
     ; 2xCh: the FIFO and interrupt status (SPEC 5.3). Busy is not modelled:
     ; a trapped access takes longer than the chip's 5-7 us (DESIGN 5).
+    and byte [ess_activity], 0bfh          ; a 2xCh read: bit 6
     call ess_status
     jmp port_callback.result
 .acknowledge:
     ; 2xEh: bits 5:0 of the status, bit 7 a reply waiting; any read clears
-    ; the interrupt request (SPEC 5.2) [sheet, hw].
+    ; the interrupt request (SPEC 5.2) [sheet, hw]. Bit 6 with a reply
+    ; waiting is open (SPEC 16, the QUIRKS script).
+    and byte [ess_activity], 0bfh          ; a 2xEh read: bit 6
     call ess_status
     and al, 3fh
     cmp byte [ess_reply_count], 0
@@ -93,6 +109,7 @@ ess_port:
     and byte [virtual_dsp_irq], 0feh
     jmp port_callback.result
 .reply:
+    and byte [ess_activity], 0dfh          ; a 2xAh read: bit 5
     call ess_reply_get
     jmp port_callback.result
 .data_read:
@@ -100,11 +117,21 @@ ess_port:
     call ess_mixer_read
     jmp port_callback.result
 .index_read:
-    ; Readable on the ESS, unlike the SB Pro (SPEC 3).
+    ; Readable on the ESS, unlike the SB Pro (SPEC 3); the ES1888 gives
+    ; bits 5:1, bit 0 "MXD" unknown (open question 10) [sheet].
     mov al, [virtual_mixer_index]
+    test byte [ess_model_bit], ES1888
+    jz port_callback.result
+    and al, 3eh
     jmp port_callback.result
 .reset_read:
-    mov al, [ess_reset_bits]
+    call ess_reset_read
+    jmp port_callback.result
+.power_read:
+    mov al, [ess_power]
+    jmp port_callback.result
+.pio_read:
+    xor al, al                             ; programmed I/O: SPEC 15
     jmp port_callback.result
 
 ; ----------------------------------------------------------------------------
@@ -159,6 +186,65 @@ ess_reset_port:
 .done:
     ret
 
+; 2x6h read (SPEC 3) [sheet]: bits 7:5 activity, set by this read and
+; cleared by activity (7 FM or MPU-401, 6 reads of 2xCh/2xEh, 5 DMA and
+; writes of 2x6h/2xCh, reads of 2xAh); bit 3 clear when powered down (FDh);
+; bit 2 MIDI mode; bits 1:0 the reset bits. FM and the MPU-401 are the
+; physical chip's, so bit 7 is the physical chip's own when it is an ESS.
+ess_reset_read:
+    mov al, [ess_activity]
+    cmp byte [ess_dma_on], 0
+    je .dma_ready
+    and al, 0dfh                           ; the DMA moves bytes: bit 5
+.dma_ready:
+    cmp byte [ess_native], 0
+    je .fm_ready
+    push dx
+    mov bl, al
+    mov dx, [sb_base]
+    add dx, 6
+    call physical_read
+    pop dx
+    and al, 80h
+    and bl, 7fh
+    or al, bl
+.fm_ready:
+    and al, 0e0h
+    cmp byte [ess_powered_down], 0
+    jne .power_ready
+    or al, 8
+.power_ready:
+    cmp byte [ess_midi], 0
+    je .midi_ready
+    or al, 4
+.midi_ready:
+    or al, [ess_reset_bits]
+    mov byte [ess_activity], 0e0h
+    ret
+
+; 2x7h write (SPEC 3, 15): stored and read back; bit 5, the FM reset, goes
+; to the physical chip, whose FM it is. The power-down and suspend requests
+; are not acted on [design decision].
+ess_power_write:
+    mov ah, [ess_power]
+    mov [ess_power], al
+    xor ah, al
+    test ah, 20h
+    jz .done
+    cmp byte [ess_native], 0
+    je .done
+    push ax
+    mov dx, [sb_base]
+    add dx, 7
+    call physical_read
+    pop cx
+    and al, 0dfh
+    and cl, 20h
+    or al, cl
+    call physical_write
+.done:
+    ret
+
 ; What any reset does (SPEC 4.2); the mixer is left alone. Also called at
 ; install.
 ess_software_reset:
@@ -183,6 +269,7 @@ ess_software_reset:
     mov word [ess_block48], 2048
     mov byte [ess_gain], 8
     mov byte [ess_midi], 0
+    mov byte [ess_powered_down], 0
     mov byte [sb_id_value], 0aah           ; E2h's running byte (SPEC 7.1)
     mov byte [sb_id_phase], 0
     mov byte [ess_args_left], 0
@@ -344,6 +431,7 @@ ess_commands:
     cmd 0e2h, 1, ES_ALL, ess_cmd_e2
     cmd 0e7h, 0, ES_NOT1878, ess_cmd_e7
     cmd 0f2h, 0, ES_NOT1878, ess_cmd_f2
+    cmd 0fdh, 0, ES_NOT1878, ess_cmd_fd
     db 0ffh
 ; Commands that only take their argument bytes: recording, ESPCM and ADPCM
 ; (SPEC 15), MIDI output, the filter clock (the mixer's own), resume,
@@ -374,7 +462,6 @@ ess_quiet_commands:
     db 0c1h, 0, ES_ALL
     db 0d7h, 1, ES_488
     db 0dfh, 1, ES_488
-    db 0fdh, 0, ES_NOT1878
     db 0ffh
 
 ess_cmd_none:
@@ -549,6 +636,12 @@ ess_cmd_e7:
     mov al, [ess_physical_id+1]
     jmp ess_reply_put
 
+; FDh: forced power-down until a reset (Table 10). Only 2x6h bit 3 shows
+; it; the rest of the power-down is not modelled [design decision].
+ess_cmd_fd:
+    mov byte [ess_powered_down], 1
+    ret
+
 ess_cmd_f2:
 %ifdef VIRTUAL_IRQ
     jmp virtual_f2h
@@ -579,28 +672,77 @@ ess_register_write:
     je .b1
     cmp bl, 0b2h-0a0h
     jne .store
-    ; B2h bits 3:0 are read-only decodes on the ES1868 and ES1869.
+    ; B2h bits 3:0: read-only decodes on the ES1868, 1869 and 1878; bits
+    ; 3:2 a writable select on the 1887 and 1888 (SPEC 8.1a) [sheet].
+    test byte [ess_model_bit], ES1887 | ES1888
+    jnz .select
     and al, 0f0h
     jmp .low
 .b1:
-    ; B1h likewise, and bit 7 takes no write on the ES1868F [hw].
+    ; B1h: bit 7 takes no write (ES1868F) [hw]; bits 3:0 read-only on the
+    ; ES1868 and 1869, bits 3:2 a select on the 1878, 1887, 1888 [sheet].
+    and al, 7fh
+    test byte [ess_model_bit], ES1878 | ES1887 | ES1888
+    jnz .select
     and al, 70h
 .low:
     and ah, 0fh
     or al, ah
+    jmp .store
+.select:
+    ; The two-bit code in bits 3:2, repeated in bits 1:0 as the decode
+    ; reads (SPEC 8.3).
+    and al, 0fch
+    mov ah, al
+    shr ah, 2
+    and ah, 3
+    or al, ah
 .store:
     mov [ess_virtual_regs+bx], al
+    cmp bl, 0a1h-0a0h
+    je .rate
+    cmp bl, 0bah-0a0h
+    je .rate
     cmp bl, 0b8h-0a0h
     jne .done
     ; B8h: bit 0 starts and stops the transfer (SPEC 8.2).
+    mov cl, al
     mov ah, [ess_b8_running]
     and al, 1
     mov [ess_b8_running], al
     cmp al, ah
+    jne .transition
+    ; Running on: bit 2 cleared stops the DMA after the current block,
+    ; set it carries on (SPEC 8.2 step 8) [sheet].
+    test al, al
+    jz .done
+    cmp byte [ess_compat], 0
+    jne .done
+    shr cl, 2
+    and cl, 1
+    cmp cl, [ess_auto]
     je .done
+    mov al, cl
+    jmp ess_fifo_kind
+.transition:
     test al, al
     jz ess_fifo_stop_dma
     jmp ess_extended_start
+.rate:
+    ; A1h (or the trim) is the running stream's rate at once: the sheet
+    ; latches it nowhere (SPEC 8.1) [sheet; the model agrees].
+    cmp byte [ess_b8_running], 0
+    je .done
+    cmp byte [ess_compat], 0
+    jne .done
+    cmp byte [ess_fifo_on], 0
+    je .done
+    call ess_ext_rate
+    cmp eax, 4000
+    jb .done
+    cmp eax, 48000
+    ja .done
+    jmp ess_fifo_rate
 .done:
     ret
 
@@ -634,26 +776,7 @@ ess_extended_start:
     jz .format
     or bl, 4
 .format:
-    ; A1h: 397.7 kHz/(128-x) with bit 7 clear, 795.5 kHz/(256-x) with it
-    ; set (SPEC 8.1); the clock trim (BAh bit 6) slows it 0.25% [hw].
-    movzx esi, byte [ess_virtual_regs+0a1h-0a0h]
-    mov eax, 397700
-    test si, 80h
-    jz .divider
-    mov eax, 795500
-    sub si, 128
-.divider:
-    neg esi
-    add esi, 128
-    xor edx, edx
-    div esi
-    test byte [ess_virtual_regs+0bah-0a0h], 40h
-    jz .rate
-    imul eax, 399
-    xor edx, edx
-    mov esi, 400
-    div esi
-.rate:
+    call ess_ext_rate
     movzx edx, word [ess_virtual_regs+0a4h-0a0h]
     neg edx
     and edx, 0ffffh
@@ -666,6 +789,30 @@ ess_extended_start:
     mov byte [ess_compat], 0
     jmp ess_stream_start
 .refused:
+    ret
+
+; The Extended Mode sample rate (SPEC 8.1): A1h 397.7 kHz/(128-x) with bit
+; 7 clear, 795.5 kHz/(256-x) with it set; the clock trim (BAh bit 6) slows
+; it 0.25% [hw]. EAX=the rate in Hz; EDX, ESI changed.
+ess_ext_rate:
+    movzx esi, byte [ess_virtual_regs+0a1h-0a0h]
+    mov eax, 397700
+    test si, 80h
+    jz .divider
+    mov eax, 795500
+    sub si, 128
+.divider:
+    neg esi
+    add esi, 128
+    xor edx, edx
+    div esi
+    test byte [ess_virtual_regs+0bah-0a0h], 40h
+    jz .done
+    imul eax, 399
+    xor edx, edx
+    mov esi, 400
+    div esi
+.done:
     ret
 
 ; A compatibility-mode start. EAX=the block in bytes, BL=1 for 16-bit
@@ -1204,6 +1351,10 @@ ess_reply_head db 0
 ess_reply_count db 0
 ess_reply_last db 0aah
 ess_args times 2 db 0
+; 2x6h bits 7:5 (ess_reset_read), 2x7h, FDh.
+ess_activity db 0e0h
+ess_power db 0
+ess_powered_down db 0
 ess_args_got db 0
 ess_args_left db 0
 ess_command db 0

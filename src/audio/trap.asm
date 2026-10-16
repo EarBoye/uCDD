@@ -322,6 +322,8 @@ port_callback:
     je .command
     cmp dx, 22ah
     je .done
+    cmp dx, 227h
+    je .done                               ; nothing there on a Creative card
     cmp dx, 224h
     je .mixer_index
     cmp dx, 225h
@@ -1524,6 +1526,8 @@ port_callback:
 .read:
     cmp dx, 226h
     je .reset_read
+    cmp dx, 227h
+    je .reset_read                         ; the bus reads FFh
 %ifdef VIRTUAL_IRQ
     cmp dx, 20h
     je .pic_read
