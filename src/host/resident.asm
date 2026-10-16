@@ -1164,6 +1164,10 @@ resident_io:
     jne .data_register
     mov esi, [ebp+resident_fast+4]
     mov al, [esi]
+    ; Bit 2, the MPU-401's request, follows the physical card, which the
+    ; driver reads (irq.asm, virtual_mpu_refresh).
+    test al, 4
+    jnz .callback
     clc
     ret
 .data_register:

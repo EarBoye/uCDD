@@ -12,7 +12,7 @@ VERIFY_OUT_PARAS equ 48h         ; one half of output, 1024 bytes at most
 VERIFY_SUM equ 1024              ; in the scratch segment, after the output
 
 verify_block:
-    db 'MIXVERI3'
+    db 'MIXVERI4'
 verify_calls dd 0           ; halves that reached the general loop's entry
 verify_eligible dd 0        ; of those, halves mix_run could take
 verify_checked dd 0
@@ -21,7 +21,7 @@ verify_bad_state dd 0
 verify_skipped dd 0         ; eligible, not on the interrupt stack
 verify_unchecked dd 0       ; eligible, no memory for the check
 verify_first times 32 db 0  ; first difference: see verify_compare
-verify_loops times 384 dw 0 ; checked halves: 24 a source (6 middles x 4 stores)
+verify_loops times 384 db 0 ; checked halves: 24 a source (6 middles x 4 stores)
 verify_reasons times 16 dd 0 ; halves left to the general loop, by cause
 verify_seg dw 0             ; output and sum
 verify_high dw 0            ; image above the stack
@@ -334,8 +334,10 @@ verify_compare:
     je .counted_loop
     inc bx
 .counted_loop:
-    shl bx, 1
-    inc word [verify_loops+bx]
+    ; Which loops ran is what counts; a byte that stops at 255 says it.
+    inc byte [verify_loops+bx]
+    jnz .leave
+    dec byte [verify_loops+bx]
 .leave:
     pop fs
     pop es

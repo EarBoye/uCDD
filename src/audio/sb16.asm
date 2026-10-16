@@ -335,15 +335,42 @@ audio_irq:
     je .wss
     test byte [sound_card], 1
     jnz .pro
-    ; A reflected game IRQ must not advance the physical output buffer.
+    ; Mixer 82h names the card's sources on the line (Creative's Hardware
+    ; Programming Guide, "Sharing of Interrupts"): bit 1 the 16-bit DMA
+    ; that plays the output, bit 2 the MPU-401, bit 0 the 8-bit DMA and
+    ; SB-MIDI. A reflected game IRQ shows none of them and must not advance
+    ; the physical output buffer.
     mov dx, [sb_base]
     add dx, 4
     mov al, 82h
     call physical_write
     inc dx
     call physical_read
+%ifdef VIRTUAL_IRQ
+    test al, 4
+    jz .no_mpu
+    call sb16_mpu_irq
+.no_mpu:
+%endif
     test al, 2
+    jnz .output16
+    test al, 5
     jz .unowned
+    ; The MPU-401 alone: the game reads its byte at 330h, which ends the
+    ; request; nothing is mixed. The line is the card's, so the interrupt
+    ; ends here: the vector from before the driver is the BIOS's on most
+    ; machines, and its handler masks the IRQ it does not know, which
+    ; stopped the output (Settlers II with General MIDI, 16 Oct 2026).
+    test al, 1
+    jz .eoi
+    ; The 8-bit DMA's request: the driver plays no 8-bit DMA on the SB16 and
+    ; the game's DSP commands go to the virtual card, so it is a stray. The
+    ; 2xEh read acknowledges it.
+    mov dx, [sb_base]
+    add dx, 0eh
+    call physical_read
+    jmp .eoi
+.output16:
     mov dx, [sb_base]
     add dx, 0fh
     call physical_read
@@ -441,17 +468,24 @@ audio_irq:
 .refill_ready:
 %endif
 %endif
-; Joined from the mixing paths through .refill_ready and from .pro (the SB
-; Pro priming interrupt, nothing mixed). On both: the handler's stack as at
+; Joined from the mixing paths through .refill_ready, from .pro (the SB Pro
+; priming interrupt, nothing mixed) and from the SB16 check (the MPU-401 or
+; a stray 8-bit request, nothing mixed). On all: the handler's stack as at
 ; .acknowledged, DS=CS, the IRQ masked; AL and DX are free.
 .eoi:
     DRV_TSC_END pirq
+    ; A run from sb16_line_check has no interrupt in service to end, and
+    ; the game's interrupt waits for a trap exit or the next output one.
+    cmp byte [audio_irq_polled], 0
+    jne .polled
     mov al, 20h
     mov dx, 20h
     call physical_write
 %ifdef OWN_HOST
     call sb_real_irq
 %endif
+.polled:
+    mov byte [audio_irq_polled], 0
     cli
     call audio_irq_unmask
     mov byte [audio_irq_busy], 0
@@ -585,6 +619,94 @@ audio_irq_reflected:
     ret
 %endif
 
+%ifdef VIRTUAL_IRQ
+; The output's interrupt for sb16_line_check: the handler run as if the
+; card had interrupted, from code with interrupts off and DS=CS. The frame
+; is an interrupt's (flags, CS, IP), so the handler's IRET returns here.
+audio_irq_poll:
+    pushf
+    push cs
+    call .frame
+    ret
+.frame:
+    push ds
+    push ax
+    mov ax, cs
+    mov ds, ax
+    mov byte [audio_irq_polled], 1
+    jmp audio_irq.owned_irq
+
+; Called from audio_irq with AL=mixer 82h, which has bit 2 set: the
+; MPU-401's request on the SB16's line. AX is kept.
+;
+; On the virtual SB16 the request is the virtual card's too, as on the real
+; card, where the MPU-401 shares the line and 82h tells the game's handler
+; (virtual_mpu_refresh keeps the virtual bit as the card has it). The other
+; virtual models have no MPU-401 on their line: the game polls it.
+;
+; The real line stays high until the game reads 330h. An output interrupt
+; that comes meanwhile raises no edge at the 8259 and would be lost, so
+; sb16_line_check looks for one while sb16_line_held is set.
+sb16_mpu_irq:
+    push ax
+    mov byte [sb16_line_held], 1
+    cmp byte [virtual_model], 0
+    jne .done
+    mov al, 4
+    call virtual_dsp_raise_line
+.done:
+    pop ax
+    ret
+
+; From cd_timer and port_callback, with interrupts off and DS=CS. While the
+; MPU-401 may hold the SB16's line (sb16_line_held), an output request at the
+; card (82h bit 1) with no request and no service for it at the controller
+; is one whose edge was lost: run the output for it. Every register is kept.
+sb16_line_check:
+    cmp byte [sb16_line_held], 0
+    jne .held
+    ret
+.held:
+    pushad
+    cmp byte [audio_irq_busy], 0
+    jne .done
+    cmp byte [sb_running], 0
+    je .done
+    cmp byte [sound_card], 0
+    jne .done
+    mov dx, [sb_base]
+    add dx, 4
+    mov al, 82h
+    call physical_write
+    inc dx
+    call physical_read
+    test al, 4
+    jnz .mpu_waits
+    mov byte [sb16_line_held], 0
+.mpu_waits:
+    test al, 2
+    jz .done
+    ; The request (IRR) and service (ISR) registers, then the read register
+    ; the game selected back in place.
+    mov dx, 20h
+    mov al, 0ah
+    call physical_write
+    call physical_read
+    mov bl, al
+    mov al, 0bh
+    call physical_write
+    call physical_read
+    or bl, al
+    mov al, [physical_pic_read]
+    call physical_write
+    test bl, [physical_irq_bit]
+    jnz .done
+    call audio_irq_poll
+.done:
+    popad
+    ret
+%endif
+
 audio_irq_mask:
     mov dx, 21h
     call physical_read
@@ -607,6 +729,10 @@ audio_irq_unmask:
     ret
 
 audio_irq_old_mask db 0
+; Set while the MPU-401 may hold the SB16's line high (sb16_mpu_irq).
+sb16_line_held db 0
+; Set for a handler run from sb16_line_check (audio_irq_poll).
+audio_irq_polled db 0
 old_irq dd 0
 dma_pages db 8bh,89h,8ah
 dma_channel db 1

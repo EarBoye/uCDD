@@ -255,6 +255,8 @@ port_callback:
     inc dword [port_calls]
 %ifdef VIRTUAL_IRQ
     call f2h_service
+    ; An output interrupt lost behind the MPU-401's (sb16.asm).
+    call sb16_line_check
 %endif
 %ifdef ESS_FIFO_MODEL
     call ess_fifo_service
@@ -1653,6 +1655,7 @@ port_callback:
 %ifdef VIRTUAL_IRQ
     cmp bx, 82h
     jne .mixer_value
+    call virtual_mpu_refresh
     mov al, [virtual_dsp_irq]
     jmp .result
 .mixer_value:

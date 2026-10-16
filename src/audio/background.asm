@@ -16,6 +16,10 @@ cd_timer:
     push cs
     pop ds
     cli
+%ifdef VIRTUAL_IRQ
+    ; An output interrupt lost behind the MPU-401's (sb16.asm).
+    call sb16_line_check
+%endif
     cmp byte [busy], 0
     jne .done
     cmp byte [cd_bios_busy], 0

@@ -19,14 +19,18 @@ virtual_irq_init:
     ret
 
 virtual_irq_reset:
-    mov byte [virtual_dsp_irq], 0
+    ; The MPU-401's request (bit 2) is not the DSP's to clear.
+    and byte [virtual_dsp_irq], 4
+    jnz .mpu_held
     mov byte [virtual_pic_request], 0
+.mpu_held:
     mov byte [f2h_held], 0
     mov byte [f2h_seen], 0
     mov dword [virtual_block_seen], 0
     ret
 
 virtual_irq_tick:
+    call virtual_mpu_refresh
 %ifdef ESS_CARD
     ; The virtual ESS keeps its own time (audio/ess/card.asm, ess_fifo.asm).
     cmp byte [virtual_model], 4
@@ -141,9 +145,11 @@ virtual_irq_tick:
     or byte [ess_status_latch], 4
 .latch_ready:
 %endif
+    ; The block's bit joins the others at 82h. The line is already high
+    ; when another is set: no new edge, as on the card.
+    mov al, [game_irq_bit]
     cmp byte [virtual_dsp_irq], 0
     jne .signalled
-    mov al, [game_irq_bit]
     mov [virtual_dsp_irq], al
 .raise:
     mov byte [virtual_irq_stale], 0
@@ -152,6 +158,7 @@ virtual_irq_tick:
 .done:
     ret
 .signalled:
+    or [virtual_dsp_irq], al
     ; The interrupt was delivered and ended but never acknowledged (no 22Eh
     ; or 22Fh read): a handler that took it for a spurious one. A card holds
     ; its request until the acknowledge; raise it again after a whole period
@@ -197,6 +204,7 @@ virtual_dsp_raise:
 %endif
 ; The same without the ESS status bit: the model's DMA counter overflow.
 virtual_dsp_raise_line:
+    call virtual_mpu_refresh
     cmp byte [virtual_dsp_irq], 0
     jne .held
     or [virtual_dsp_irq], al
@@ -205,6 +213,31 @@ virtual_dsp_raise_line:
     ret
 .held:
     or [virtual_dsp_irq], al
+    ret
+
+; Bit 2 of virtual_dsp_irq is the MPU-401's request on the virtual SB16's
+; line (sb16.asm, sb16_mpu_irq). The game ends it by reading 330h, which the
+; driver does not see: the bit follows the physical card's 82h bit 2, read
+; whenever the virtual line or 82h is looked at. Every register is kept.
+virtual_mpu_refresh:
+    test byte [virtual_dsp_irq], 4
+    jnz .look
+    ret
+.look:
+    push ax
+    push dx
+    mov dx, [sb_base]
+    add dx, 4
+    mov al, 82h
+    call physical_write
+    inc dx
+    call physical_read
+    test al, 4
+    jnz .done
+    and byte [virtual_dsp_irq], 0fbh
+.done:
+    pop dx
+    pop ax
     ret
 
 ; F2h. The chip runs its commands in turn and raises each F2h's interrupt
