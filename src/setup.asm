@@ -635,12 +635,6 @@ sb_port_list:
 ; chip's, and a game set to it expects ESFM at the FM ports.
 virtual_model_list:
     mov si, virtual_model_values
-%ifdef VIRTUAL_ESS
-    cmp byte [sound_card], 4
-    jb .done
-    mov si, virtual_model_values_ess
-.done:
-%endif
     ret
 wss_port_list:
     mov si, wss_port_values
@@ -682,14 +676,16 @@ model_changed:
     mov ax, [si+1]
     mov [sb_base], ax
 .virtual:
+    ; Each build presents one family: the Sound Blasters, or with
+    ; --virtual-ess the ESS AudioDrive.
+%ifdef VIRTUAL_ESS
+    mov byte [virtual_model], 4
+%else
     cmp byte [virtual_model], 4
     jne .done
-%ifdef VIRTUAL_ESS
-    cmp byte [sound_card], 4
-    jae .done
-%endif
     mov byte [virtual_model], 1
 .done:
+%endif
     clc
     ret
 
@@ -766,10 +762,13 @@ wss_irq_choice:
 model_values db 6
     dw 0,1,3,2,4,5
 no_values db 0
+%ifdef VIRTUAL_ESS
+virtual_model_values db 1
+    dw 4
+%else
 virtual_model_values db 3
     dw 0,1,3
-virtual_model_values_ess db 4
-    dw 0,1,3,4
+%endif
 model_names dw sb16_name,pro_name,wss_name,sb_name,ess_name,ess_fast_name
 output_texts dw output_16,output_pro,output_16,output_sb,output_16,output_fast
 

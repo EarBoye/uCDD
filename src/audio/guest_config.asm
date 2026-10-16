@@ -3,14 +3,31 @@
 
 ; UCDDSET checked the virtual card and the volumes in config_data.
 guest_configure:
-%ifndef ESS_CARD
-    ; A build without the virtual ESS presents an SB Pro in its place.
+%ifdef ESS_CARD
+    ; The ESS build presents the virtual ESS AudioDrive, DSP 3.01 (UCDDSET
+    ; offers nothing else in it).
+    mov byte [virtual_model], 4
+    mov word [virtual_dsp_version], 0103h
+%else
+    ; The Sound Blaster build presents an SB Pro for a configuration made
+    ; for the virtual ESS.
     cmp byte [virtual_model], 4
     jne .model_ready
     mov byte [virtual_model], 1
     mov word [virtual_dsp_version], 0203h
 .model_ready:
 %endif
+    ; The DSP after power-on, as the firmware's cold start leaves it
+    ; (trap.asm, sb_cold_start): 10000 Hz, whose step the first transfer
+    ; works out, and the speaker off, on the SB16 only its flag.
+    cmp byte [virtual_model], 4
+    je .defaults_ready
+    mov word [game_rate], 10000
+    mov byte [sb_speaker_flag], 0
+    cmp byte [virtual_model], 0
+    je .defaults_ready
+    mov byte [sb_speaker], 0
+.defaults_ready:
     mov ax, [virtual_base]
     mov [guest_base], ax
     movzx ax, byte [virtual_irq]

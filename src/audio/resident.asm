@@ -18,6 +18,11 @@
 %define ESS_CARD
 %endif
 %endif
+; The virtual Sound Blasters (models 0, 1, 3): the build without the virtual
+; ESS. A build presents one family or the other.
+%ifndef ESS_CARD
+%define SB_CARDS
+%endif
 %define WSS_INPUT 1
 %include "audio/layout.inc"
 
@@ -58,7 +63,9 @@ audio_linked db 0
 %include "audio/mounted.asm"
 %include "audio/background.asm"
 %include "audio/irq.asm"
+%ifdef SB_CARDS
 %include "audio/sb_adpcm.asm"
+%endif
 %include "audio/ess_fifo.asm"
 %include "audio/ess/card.asm"
 %include "audio/sb_patch.asm"

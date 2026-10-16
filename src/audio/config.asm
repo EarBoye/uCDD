@@ -29,12 +29,21 @@ config_master_volume db 100
 config_volume_step db 10
 ; UCDDSET sets the physical mixer value for the selected card.
 master_register db 0f8h
-; 0 SB16, 1 SB Pro, 3 SB 1.5/2.0, as sound_card.
+; 0 SB16, 1 SB Pro, 3 SB 1.5/2.0, as sound_card; 4 the ESS AudioDrive, the
+; only one the ESS build (--virtual-ess) presents.
+%ifdef VIRTUAL_ESS
+virtual_model db 4
+%else
 virtual_model db 0
+%endif
 virtual_wss_base dw 530h
 virtual_wss_irq db 11
 ; UCDDSET sets the DSP version reply: minor in the high byte.
+%ifdef VIRTUAL_ESS
+virtual_dsp_version dw 0103h
+%else
 virtual_dsp_version dw 0504h
+%endif
 ; IRQ of a disk controller that the PCI scan does not find, or 0. The byte was
 ; padding, so every older UCDD.CFG reads as 0.
 config_disk_irq db 0

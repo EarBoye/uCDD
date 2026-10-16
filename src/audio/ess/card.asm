@@ -80,6 +80,13 @@ ess_port:
     movzx bx, byte [virtual_mixer_index]
     call ess_mixer_write
     jmp port_callback.done
+; A word written to 2x4h: the ISA bus writes the low byte there and the high
+; byte to 2x5h (port_callback .wide).
+.word:
+    mov [virtual_mixer_index], al
+    mov byte [ess_id_phase], 0
+    mov al, ah
+    jmp .data
 .reset:
     and byte [ess_activity], 0dfh          ; a 2x6h write: bit 5
     call ess_reset_port
@@ -666,16 +673,13 @@ ess_cmd_e1:
 ; ES1868F answers it as a Sound Blaster does: one byte written by DMA when the
 ; 8-bit channel is ready, else a reply [hw, 86Box]. Miles' ESS driver uses it
 ; to find the DMA channel. The driver's 8237 emulation does the work
-; (trap.asm sb_identify); its reply byte is moved to the ESS queue.
+; (trap.asm sb_identify); a reply byte goes to the ESS queue.
 ess_cmd_e2:
-    mov byte [reply_count], 0
     mov al, [ess_args]
     call sb_identify
     jc .done                               ; a stream is running: no answer
-    cmp byte [reply_count], 0
-    je .done
-    mov byte [reply_count], 0
-    mov al, [reply]
+    test ah, ah
+    jz .done
     jmp ess_reply_put
 .done:
     ret

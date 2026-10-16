@@ -328,6 +328,7 @@ port_callback:
     cmp dx, 21h
     je .pic_write
 %endif
+%ifdef SB_CARDS
     cmp dx, 226h
     je .reset
     cmp dx, 22ch
@@ -345,6 +346,7 @@ port_callback:
     je .mixer_index
     cmp dx, 225h
     je .mixer_data
+%endif
     cmp dx, 0ch
     je .flip_reset
     cmp dx, 0eh
@@ -375,9 +377,13 @@ port_callback:
     sub bx, [guest_base]
     cmp bx, 4
     jne .unsupported
+%ifdef ESS_CARD
+    jmp ess_port.word
+%else
     mov [virtual_mixer_index], al
     mov al, ah
     jmp .mixer_data
+%endif
 .unsupported:
 %ifdef MOUNTED_AUDIO
     mov byte [fault], 3
@@ -390,6 +396,7 @@ port_callback:
 .command_unsupported:
     mov byte [arguments], 0
     jmp .unsupported
+%ifdef SB_CARDS
 .reset:
     ; A 1 stops the DSP and holds it in reset; the 0 that follows ends the
     ; reset, and AAh is ready (SBG:881-896). A 0 alone does nothing.
@@ -398,16 +405,22 @@ port_callback:
     cmp byte [sb_reset_held], 0
     je .done
     mov byte [sb_reset_held], 0
-    mov word [reply], 0aah
-    mov byte [reply_count], 1
-    jmp .done
+    mov al, 0aah
+    jmp .one_reply
 .reset_hold:
     mov byte [sb_reset_held], 1
+    ; The reset returns the DSP to its default state (SBG:900-901), the
+    ; firmware's cold start; in high-speed and UART modes it only ends the
+    ; mode and the DSP's parameters stay (SBG:1352-1354, 2827-2829), the
+    ; firmware's warm start.
+    cmp byte [sb_warm], 0
+    jne .warm_reset
+    call sb_cold_start
+.warm_reset:
+    mov byte [sb_warm], 0
+    mov byte [sb_hung], 0
     mov byte [sb_highspeed], 0
     mov byte [sb_midi_uart], 0
-    mov byte [sb_input_stereo], 0
-    mov byte [sb_id_value], 0aah
-    mov byte [sb_id_phase], 0
     mov byte [sb_dac_enabled], 0
     mov byte [sb_tail_mode], 0
     mov byte [sb_tail_valid], 0
@@ -419,7 +432,7 @@ port_callback:
     mov byte [sb_exit_pending], 0
     mov byte [sb_single], 0
     mov byte [sb_input], 0
-    ; The speaker stays as it was (DOSBox-X, 86Box; the guide is silent).
+    mov byte [sb_queued], 0
     mov byte [sb_filter_legacy], 0
     mov byte [game_active], 0
     mov byte [game_start_pending], 0
@@ -430,6 +443,7 @@ port_callback:
 %endif
     inc word [virtual_resets]
     mov byte [reply_count], 0
+    mov byte [reply_head], 0
     mov word [reply_pointer], 0
     mov byte [arguments], 0
     jmp .done
@@ -439,6 +453,7 @@ port_callback:
 .mixer_data:
     call virtual_mixer_write
     jmp .done
+%endif
 .flip_reset:
     mov byte [si+DMA_FLIP], 0
     call dma_shared_write
@@ -614,6 +629,7 @@ port_callback:
     mov [si+bx], al
     xor byte [si+DMA_FLIP], 1
     jmp .done
+%ifdef SB_CARDS
 .command:
     ; A DSP held in reset takes nothing. In high-speed mode the DSP 2.01 and
     ; 3.xx "will not accept any other commands" (SBG:1346-1347): only a
@@ -622,7 +638,11 @@ port_callback:
     jne .done
     cmp byte [sb_highspeed], 0
     jne .done
-    ; In the SB-MIDI UART modes every write is MIDI data (SBG:2820-2832).
+    ; A halted DSP (sb_hung) takes nothing until a reset.
+    cmp byte [sb_hung], 0
+    jne .done
+    ; In the SB-MIDI UART modes every write is MIDI data (SBG:2820-2832);
+    ; in the MIDI input modes a write ends the mode and is dropped.
     cmp byte [sb_midi_uart], 0
     jne .midi_byte
     cmp byte [arguments], 0
@@ -633,10 +653,15 @@ port_callback:
     ; dropped here; the chip would hold it in its mailbox.
     cmp word [reply_pointer], 0
     jne .done
-    ; Before the SB16, 41h to 47h are 40h (DOSBox-X: an SB Pro demo
-    ; depends on it). On the SB16 41h and 42h set the rate (SBG:3573).
-    cmp byte [virtual_model], 0
-    je .model_command
+    ; FDh reads the command before it (the 4.05's command_reg).
+    mov ah, al
+    xchg ah, [sb_command_byte]
+    mov [sb_previous_command], ah
+    call sb_decode
+    ; On the SB 2.0, 41h to 47h are 40h (DOSBox-X: an SB Pro demo depends
+    ; on it; the SB Pro's 3.02 decodes them so, sb_decode).
+    cmp byte [virtual_model], 3
+    jne .model_command
     cmp al, 41h
     jb .model_command
     cmp al, 47h
@@ -667,17 +692,18 @@ port_callback:
     cmp byte [si], 0ffh
     je .command_unsupported
     cmp [si], al
-    je .found
-    add si, 5
-    jmp .find
-.found:
-    ; Not a command of this model: like an unknown one, it takes no
-    ; argument and does nothing (DOSBox-X's tables by model).
+    jne .next_command
+    ; A command of another model only: like an unknown one, it takes no
+    ; argument and does nothing (DOSBox-X's tables by model, the firmware).
     mov ah, [si+2]
     mov cl, [virtual_model]
     shr ah, cl
     test ah, 1
-    jz .command_unsupported
+    jnz .found
+.next_command:
+    add si, 5
+    jmp .find
+.found:
     mov ax, [si+3]
     mov [dsp_handler], ax
     mov al, [si+1]
@@ -693,7 +719,18 @@ port_callback:
     jnz .done
     jmp [dsp_handler]
 .midi_byte:
+    cmp byte [sb_midi_uart], 2
+    je .midi_input_end
     call sb_midi_out
+    jmp .done
+.midi_input_end:
+    mov byte [sb_midi_uart], 0
+    jmp .done
+; 30h-33h: MIDI input by polling or interrupt (SBG:3426-3456). No input
+; arrives here; the next write ends the mode and is dropped ("send the
+; command 31h again"; the 4.05 and 3.02 drop any byte).
+.midi_input:
+    mov byte [sb_midi_uart], 2
     jmp .done
 ; 38h: one byte of MIDI output (SBG:3537-3548).
 .midi_out:
@@ -704,21 +741,7 @@ port_callback:
 ; input is the physical card's: nothing arrives here.
 .midi_uart:
     mov byte [sb_midi_uart], 1
-    jmp .done
-; 45h, 47h: the SB16 continues an 8-bit or 16-bit auto-init transfer that a
-; DAh or D9h was to end; the guide is silent, DOSBox-X has them.
-.continue8:
-    cmp byte [game_irq_bit], 2
-    je .done
-    jmp .continue
-.continue16:
-    cmp byte [game_irq_bit], 2
-    jne .done
-.continue:
-    cmp byte [sb_single], 0
-    jne .done
-    mov byte [sb_exit_pending], 0
-    mov dword [game_exit_frame], 0
+    mov byte [sb_warm], 1
     jmp .done
 ; A0h, A8h: the SB Pro's input mode, mono or stereo (SBG:3806-3832).
 .input_mono:
@@ -727,15 +750,158 @@ port_callback:
 .input_stereo:
     mov byte [sb_input_stereo], 1
     jmp .done
-; 30h, 31h: MIDI input by polling or interrupt (SBG:3426-3456): no input.
-; Commands that only take their argument bytes go here too.
+; Commands that only take their argument bytes.
 .ignore:
     jmp .done
+; The SB16's commands for the CSP (the ASP), which the card may lack: reads
+; of the absent chip's ports give FFh (a ViBRA without one, DOSBox-X); the
+; 4.05 answers as follows [fw]. 01h, an upload: 00h at once, then the
+; length; the program, its checksum and its name after it are not taken.
+.csp_upload:
+    mov word [dsp_handler], .ignore
+    mov byte [arguments], 2
+    jmp .zero_reply
+; 03h, 08h, 0Fh: a read of the chip.
+.csp_read:
+    mov al, 0ffh
+    jmp .one_reply
+; 09h: the uploaded program's name, two bytes, none uploaded.
+.csp_name:
+    xor ax, ax
+    jmp .two_replies
+; 0Ah: the upload lock count (0), then a read of the chip.
+.csp_lock:
+    mov ax, 0ff00h
+    jmp .two_replies
+; The 4.05 after 0Bh's or 0Ch's length, waiting for the chip, and the 3.02
+; at 08h-0Fh: the DSP takes nothing until a reset [fw].
+.halt:
+    mov byte [sb_hung], 1
+    jmp .done
+; 4Eh: the DSP's timer, once, from two bytes; 4Fh: the timer started from
+; two bytes, or stopped when it runs. Nothing outside the DSP follows it
+; (it toggles a port pin of its own) [fw].
+.timer_once:
+    mov byte [sb_timer], 0
+    jmp .done
+.timer_switch:
+    xor byte [sb_timer], 1
+    jz .done
+    mov word [dsp_handler], .ignore
+    mov byte [arguments], 2
+    jmp .done
+; F4h on the 4.05: two fixed bytes [fw].
+.dsp_signature:
+    mov ax, 1b7dh
+    jmp .two_replies
+; F9h, FAh: the 4.05's internal RAM [fw]. The bytes that hold this card's
+; state here are the 8-bit block length (0Eh, 0Fh), the test register
+; (2Ah) and the last two commands (20h, 30h); the others read 00h and take
+; no write.
+.ram_read:
+    call sb_ram_byte
+    jc .zero_reply
+    mov al, [bx]
+    jmp .one_reply
+.ram_write:
+    call sb_ram_byte
+    jc .done
+    mov al, [dsp_args+1]
+    mov [bx], al
+    jmp .done
+; FBh: the 4.05's status byte: bit 4 the speaker flag, bit 6 the timer's
+; reload [fw]; the DMA handshake bits are only set within a command.
+.dsp_status:
+    mov al, [sb_speaker_flag]
+    shl al, 4
+    cmp byte [sb_timer], 0
+    je .one_reply
+    or al, 40h
+    jmp .one_reply
+; FCh: the 4.05's auxiliary byte: bit 2 an 8-bit, bit 4 a 16-bit auto-init
+; transfer running that no exit command ends [fw].
+.dsp_auxiliary:
+    xor al, al
+    cmp byte [game_active], 0
+    jne .auxiliary_kind
+    cmp byte [sb_paused], 0
+    je .one_reply
+.auxiliary_kind:
+    cmp byte [sb_single], 0
+    jne .one_reply
+    cmp byte [sb_exit_pending], 0
+    jne .one_reply
+    cmp dword [game_exit_frame], 0
+    jne .one_reply
+    mov al, 4
+    cmp byte [game_irq_bit], 2
+    jne .one_reply
+    mov al, 10h
+    jmp .one_reply
+; FDh: the command before it [fw].
+.last_command:
+    mov al, [sb_previous_command]
+    jmp .one_reply
+; 04h on the SB Pro (the 3.02's status register, 04h-07h [fw]): bit 0 the
+; speaker, bit 1 stereo input, and the transfer that runs or is paused: bit 2
+; input, 3 silence, 4 2-bit ADPCM, 5 2.6-bit, 6 4-bit, 7 8-bit output (not a
+; high-speed one). The bits a transfer sets stay until it ends.
+.pro_status:
+    mov al, [sb_speaker_flag]
+    and al, 1
+    cmp byte [sb_input_stereo], 0
+    je .pro_kind
+    or al, 2
+.pro_kind:
+%ifdef VIRTUAL_IRQ
+    cmp byte [sb_silence], 0
+    je .pro_transfer
+    or al, 8
+.pro_transfer:
+%endif
+    cmp byte [game_active], 0
+    jne .pro_running
+    cmp byte [sb_paused], 0
+    je .one_reply
+.pro_running:
+    mov ah, 4
+    cmp byte [sb_input], 0
+    jne .pro_bit
+    cmp byte [sb_highspeed], 0
+    jne .one_reply
+    mov ah, 80h
+    test byte [game_format], 8
+    jz .pro_bit
+    ; The ADPCM kinds 1, 2, 3 (4-bit, 2.6-bit, 2-bit) are bits 6, 5, 4.
+    mov cl, [sb_adpcm_kind]
+    shr ah, cl
+.pro_bit:
+    or al, ah
+    jmp .one_reply
+; 04h on the SB 2.0: 88h (DOSBox-X; no firmware to read).
+.sb20_status:
+    mov al, 88h
+    jmp .one_reply
+; F1h on the SB Pro: the DSP's port 2 [fw]: bit 0 high with the speaker
+; off, bit 3 with stereo input; bits 1, 4 and 5 rest high, 2 low (ACh-AFh
+; would set it), 6 and 7 are the mailbox flags, clear here.
+.pro_port:
+    mov al, 32h
+    cmp byte [sb_speaker_flag], 0
+    jne .pro_port_input
+    or al, 1
+.pro_port_input:
+    cmp byte [sb_input_stereo], 0
+    je .one_reply
+    or al, 8
+    jmp .one_reply
 .version:
     mov ax, [virtual_dsp_version]
-    mov [reply], ax
-    mov byte [reply_count], 2
-    jmp .done
+; AL, then AH, to the reply queue.
+.two_replies:
+    call sb_reply_put
+    mov al, ah
+    jmp .one_reply
 .direct_dac:
     mov al, [dsp_args]
     call sb_dac_write
@@ -744,7 +910,9 @@ port_callback:
     mov al, [dsp_args]
     call sb_identify
     jc .command_unsupported
-    jmp .done
+    test ah, ah
+    jz .done
+    jmp .one_reply
 .invert:
     mov al, [dsp_args]
     not al
@@ -780,8 +948,7 @@ port_callback:
 .test_read:
     mov al, [sb_test_register]
 .one_reply:
-    mov [reply], al
-    mov byte [reply_count], 1
+    call sb_reply_put
     jmp .done
 .direct_input:
     ; Direct ADC: silence.
@@ -854,6 +1021,7 @@ port_callback:
     mul dword [game_block_bytes]
     mov cl, [game_frame_shift]
     shr eax, cl
+    mov [sb_exit_frames], eax
     mov edx, eax
     shr edx, 16
     shl eax, 16
@@ -875,6 +1043,7 @@ port_callback:
     div ebx
     inc eax
     mul ebx
+    mov [sb_exit_frames], eax
     mov ecx, OUTPUT_RATE
     mul ecx
     movzx ecx, word [game_rate]
@@ -934,10 +1103,22 @@ port_callback:
 .rate:
     mov ah, [dsp_args]
     mov al, [dsp_args+1]
+    ; Outside 5000-45000 Hz (SBG:3573) the 4.05 plays below 4864 Hz at
+    ; 4986 Hz and from 45312 Hz at 45412 Hz, its rate register's 1Ch and FFh
+    ; [fw].
+    cmp ah, 13h
+    jae .rate_floor
+    mov ax, 4986
+.rate_floor:
+    cmp ah, 0b1h
+    jb .rate_ceiling
+    mov ax, 45412
+.rate_ceiling:
     mov [rate_pending], ax
 .set_rate:
     ; The rate is checked before it replaces game_rate, which divides later.
-    cmp word [rate_pending], 4000
+    ; Time constant 00h is 3906 Hz, 1953 Hz a channel in stereo.
+    cmp word [rate_pending], 1953
     jb .command_unsupported
     ; Games can request a little more than the documented 45000 Hz.
     cmp word [rate_pending], 48000
@@ -958,16 +1139,20 @@ port_callback:
     shl ax, 1
 .legacy_rate_store:
     mov [legacy_rate], ax
-    movzx eax, word [game_rate]
-    shl eax, 16
-    xor edx, edx
-    mov ecx, OUTPUT_RATE
-    div ecx
-    mov [game_step], eax
+    call sb_game_step
     jmp .done
-; 40h: the time constant (SBG:3553-3568).
+; 40h: the time constant (SBG:3553-3568). The SB16's 4.05 plays EAh and
+; above at its highest rate, 45412 Hz [fw].
 .time_constant:
     movzx ecx, byte [dsp_args]
+    cmp byte [virtual_model], 0
+    jne .time_value
+    cmp cl, 0eah
+    jb .time_value
+    mov word [legacy_pending], 45412
+    mov ax, 45412
+    jmp .time_mono
+.time_value:
     neg ecx
     add ecx, 256
     mov eax, 1000000
@@ -1020,12 +1205,7 @@ port_callback:
     xor dx, dx
     div cx
     mov [game_rate], ax
-    movzx eax, ax
-    shl eax, 16
-    xor edx, edx
-    mov ecx, OUTPUT_RATE
-    div ecx
-    mov [game_step], eax
+    call sb_game_step
     mov ax, [dsp_args]
     cmp byte [dsp_command], 1fh
     je .adpcm_auto
@@ -1079,12 +1259,7 @@ port_callback:
     mov ax, [legacy_rate]
 .legacy_rate:
     mov [game_rate], ax
-    movzx eax, ax
-    shl eax, 16
-    xor edx, edx
-    mov ecx, OUTPUT_RATE
-    div ecx
-    mov [game_step], eax
+    call sb_game_step
     pop ax
     jmp .validate_start
 ; Bxh, Cxh on the SB16: the mode byte, then the length.
@@ -1126,6 +1301,7 @@ port_callback:
     jz .play_length
     mov byte [pending_frame_shift], 1
 .play_length:
+    call sb_game_step
     mov ax, [dsp_args+1]
     jmp .validate_start
 %ifdef VIRTUAL_IRQ
@@ -1149,6 +1325,15 @@ port_callback:
     jmp .done
 %endif
 .validate_start:
+    call sb_queue_check
+    jnc .start
+    ; Queued (sb_queue_check): an auto-init transfer ends with the current
+    ; block, as DAh ends it.
+    cmp byte [sb_single], 0
+    jne .done
+    mov byte [sb_adpcm_auto], 0
+    jmp .exit_block
+.start:
     mov byte [sb_finished], 0
     mov byte [sb_exit_pending], 0
     mov byte [sb_single], 0
@@ -1209,6 +1394,7 @@ port_callback:
     movzx edx, ax
     inc edx
     shl edx, cl
+%endif
 .validate_dma:
     cmp byte [sb_single], 1
     je .single_buffer
@@ -1416,6 +1602,7 @@ port_callback:
     mov [game_offset], bx
     shr esi, 4
     mov [game_segment], si
+%ifdef SB_CARDS
     ; ADPCM: the firmware's first fetch (sb_adpcm.asm), from the block's
     ; start in the buffer.
     test byte [game_format], 8
@@ -1440,6 +1627,7 @@ port_callback:
     pop fs
     popad
 .pcm_started:
+%endif
     mov byte [game_start_pending], 1
     mov dword [game_exit_frame], 0
     mov byte [sb_paused], 0
@@ -1488,15 +1676,17 @@ port_callback:
 %ifdef VIRTUAL_IRQ
     call virtual_irq_reset
 %endif
-    ; 90h, 91h, 98h and 99h on the SB 2.0 and the SB Pro: high-speed mode,
-    ; which takes no command until a reset, or until a single-cycle block
-    ; ends (SBG:1346-1351).
-    cmp byte [virtual_model], 0
-    je .speed_ready
+    ; 90h, 91h, 98h and 99h: high-speed mode, where a reset keeps the DSP's
+    ; parameters (sb_warm). On the SB 2.0 and the SB Pro it takes no
+    ; command until a reset, or until a single-cycle block ends
+    ; (SBG:1346-1351); the SB16's 4.05 goes on taking them [fw].
     mov al, [dsp_command]
     and al, 0f6h
     cmp al, 90h
     jne .speed_ready
+    mov byte [sb_warm], 1
+    cmp byte [virtual_model], 0
+    je .speed_ready
     mov byte [sb_highspeed], 1
 .speed_ready:
     mov bl, [game_active]
@@ -1547,6 +1737,7 @@ port_callback:
     cmp dx, 21h
     je .pic_read
 %endif
+%ifdef SB_CARDS
     cmp dx, 22ch
     je .ready
     cmp dx, 22eh
@@ -1559,6 +1750,7 @@ port_callback:
     je .mixer_read
     cmp dx, 224h
     je .index_read
+%endif
     ; 2xBh and 2xDh on the SB16 (the others alias them, above).
     cmp dx, 22bh
     je .reset_read
@@ -1619,6 +1811,10 @@ port_callback:
     shl ah, cl
     or al, ah
     jmp .result
+.reset_read:
+    mov al, 0ffh
+    jmp .result
+%ifdef SB_CARDS
 .index_read:
     ; 2x4h is write only (SBG:2221). The SB Pro reads back the index
     ; (DOSBox-X, 86Box); the SB16 reads FFh (86Box; DOSBox-X reads the
@@ -1627,9 +1823,6 @@ port_callback:
     cmp byte [virtual_model], 1
     jne .result
     mov al, [virtual_mixer_index]
-    jmp .result
-.reset_read:
-    mov al, 0ffh
     jmp .result
 .ready:
     ; Only bit 7 is defined (SBG:940-943). The other bits read 7Fh on the
@@ -1676,12 +1869,11 @@ port_callback:
     mov [reply_last], al
     jmp .result
 .reply_byte:
-    mov al, [reply]
     ; A string reply (reply_pointer set) reads from memory; the others from
-    ; the reply word, low byte first.
+    ; the queue (sb_reply_put).
     mov bx, [reply_pointer]
     test bx, bx
-    jz .reply_word
+    jz .reply_queued
     mov al, [bx]
     inc word [reply_pointer]
     dec byte [reply_count]
@@ -1689,13 +1881,18 @@ port_callback:
     mov word [reply_pointer], 0
 .reply_done:
     ret
-.reply_word:
-    shr word [reply], 8
+.reply_queued:
+    movzx bx, byte [reply_head]
+    mov al, [reply_queue+bx]
+    inc bl
+    and bl, REPLY_QUEUE-1
+    mov [reply_head], bl
     dec byte [reply_count]
     ret
 .mixer_read:
     call virtual_mixer_read
     jmp .result
+%endif
 .dma_read:
     cmp byte [si+DMA_FLIP], 0
     jne .count_high
@@ -1853,6 +2050,26 @@ port_callback:
 .result:
     mov [ss:bp+28], al
 .done:
+%ifdef SB_CARDS
+    ; A queued single-cycle command starts once the transfer before it has
+    ; ended, at the first trapped access after (the game's acknowledge,
+    ; as a rule); the byte that access read is in the frame already.
+    cmp byte [sb_queued], 0
+    je .queue_done
+    cmp byte [game_active], 0
+    jne .queue_done
+    cmp byte [sb_paused], 0
+    jne .queue_done
+    mov byte [sb_queued], 0
+    mov al, [sb_queue_command]
+    mov [dsp_command], al
+    mov ax, [sb_queue_args]
+    mov [dsp_args], ax
+    mov al, [sb_queue_args+2]
+    mov [dsp_args+2], al
+    jmp [sb_queue_handler]
+.queue_done:
+%endif
     DRV_TSC_END trap
 %ifdef RESIDENT_AUDIO
     ; Time the hold from the end of the write that started the block. On a
@@ -1871,6 +2088,10 @@ port_callback:
     clc
     retf
 
+; E2h, DMA identification (the virtual ESS's too): AL=the argument. The
+; firmware's sequence byte goes by DMA when the 8-bit channel is ready for a
+; transfer to memory (AH=0); otherwise it is a reply, AL with AH=1. CF set,
+; and no answer, while a stream runs. BX, SI, DI, ES changed.
 sb_identify:
     movzx bx, byte [sb_id_phase]
     xor al, [.masks+bx]
@@ -1918,9 +2139,11 @@ sb_identify:
     jmp .done
 .reply:
     mov al, [sb_id_value]
-    mov [reply], al
-    mov byte [reply_count], 1
+    mov ah, 1
+    clc
+    ret
 .done:
+    xor ah, ah
     clc
     ret
 .failed:
@@ -1928,6 +2151,7 @@ sb_identify:
     ret
 .masks db 96h,0a5h,69h,5ah
 
+%ifdef SB_CARDS
 ; AL=a byte of SB-MIDI output (38h, or a write in UART mode). It goes out of
 ; the physical card's MIDI port through its DSP's 38h where that DSP takes
 ; commands while the driver plays: the SB16 and the SB 2.0, not the SB Pro
@@ -1970,12 +2194,297 @@ sb_midi_out:
     clc
     ret
 
-; The virtual Sound Blasters' commands by model (vsb/SPEC.md section 5):
-; command, argument bytes, models, handler. A command missing here, or not
-; of the presented model, takes no argument and does nothing. Bxh and Cxh
-; are the SB16's alone (port_callback .sb16_transfer). The commands that
-; only take their arguments (.ignore) are the ASP's and the 8051's, which a
-; card without the ASP does not act on.
+; The command the DSP runs for the byte in AL (vsb/SPEC.md 5.2). The SB16's
+; DSP 4.05 and the SB Pro 2's 3.02 decode most commands by their low bits
+; within the group, so that a group's undocumented members run as one of its
+; documented commands; the 4.05 looks groups 0, 4, 5, 6 and A-F up in
+; tables whose unused entries do nothing (S95Sedan's disassembly of both
+; firmwares, CT1741_DSP). sb_commands holds the commands as they run. The
+; SB 2.0's DSP 2.01 is not dumped: its commands stay as written. BX changed.
+sb_decode:
+    movzx bx, al
+    shr bl, 4
+    cmp byte [virtual_model], 1
+    je .group
+    ja .done
+    ; The 4.05: groups 1, 2, 3, 7, 8 and 9 by bits.
+    bt word [.sb16_groups], bx
+    jnc .done
+.group:
+    shl bx, 1
+    jmp [.groups+bx]
+.sb16_groups dw 0000001110001110b
+.groups dw .group0, .group1, .group2, .group3, .group4, .done, .done, .group7
+    dw .group8, .group9, .groupA, .done, .done, .groupD, .groupEF, .groupEF
+; 00h-03h nothing, 04h-07h the status, 08h-0Fh a halt (the 3.02).
+.group0:
+    test al, 8
+    jz .and4
+    mov al, 8
+    ret
+.and4:
+    and al, 4
+    ret
+; 10h-13h the direct DAC; bit 2 single-cycle, bit 3 auto-init, bit 1 2-bit
+; ADPCM, bit 0 its reference byte: 14h, 16h, 17h, 1Ch, 1Eh, 1Fh.
+.group1:
+    test al, 0ch
+    jnz .transfer
+    mov al, 10h
+    ret
+.transfer:
+    mov bh, 0bh
+    test al, 2
+    jnz .kind
+    mov bh, 8
+.kind:
+    and al, bh
+    or al, 14h
+    ret
+; 20h-23h the direct ADC, 24h-27h single-cycle, 28h-2Fh auto-init input.
+.group2:
+    test al, 8
+    jz .and24
+    mov al, 2ch
+    ret
+.and24:
+    and al, 24h
+    ret
+; 30h-33h MIDI input, 34h-37h the UART modes, 38h-3Fh MIDI output.
+.group3:
+    test al, 8
+    jz .and34
+    mov al, 38h
+    ret
+.and34:
+    and al, 34h
+    ret
+; The 3.02: 40h-47h the time constant, 48h-4Fh the block size.
+.group4:
+    and al, 48h
+    ret
+; ADPCM: single-cycle with bit 2 alone, else auto-init; bit 1 2.6-bit (else
+; 4-bit), bit 0 the reference byte: 74h-77h, 7Ch-7Fh.
+.group7:
+    mov bh, al
+    and al, 3
+    or al, 7ch
+    test bh, 8
+    jnz .done
+    test bh, 4
+    jz .done
+    and al, 77h
+    ret
+.group8:
+    mov al, 80h
+    ret
+; Bit 3 input, bit 0 single-cycle: 90h, 91h, 98h, 99h.
+.group9:
+    and al, 99h
+    ret
+; The 3.02: A0h-A7h mono input, A8h-AFh stereo.
+.groupA:
+    and al, 0a8h
+    ret
+; The 3.02: bit 2 continues (D4h); bit 3 the speaker's status (D8h) or, with
+; bit 1, ends auto-init (DAh); bit 0 the speaker on (D1h) or off (D3h);
+; neither pauses (D0h).
+.groupD:
+    test al, 4
+    jz .speaker
+    mov al, 0d4h
+    ret
+.speaker:
+    test al, 8
+    jz .switch
+    and al, 0dah
+    ret
+.switch:
+    test al, 1
+    jz .pause
+    and al, 0d3h
+    ret
+.pause:
+    mov al, 0d0h
+    ret
+; The 3.02: the highest of bits 3-0 picks the command: E8h, E4h, E2h, E1h,
+; E0h; F8h, F4h, F2h, F1h, F0h.
+.groupEF:
+    mov bh, 8
+.bit:
+    test al, bh
+    jnz .found
+    shr bh, 1
+    jnz .bit
+.found:
+    and al, 0f0h
+    or al, bh
+.done:
+    ret
+
+; The DSP's defaults, set by the firmware's cold start (port_callback
+; .reset_hold) and at install [fw]: a time constant of 9Ch (10000 Hz; the
+; SB16's rate register 38h), the 8-bit block length 07FFh, the identification
+; (E2h) sequence from its start, mono input, the timer off, and the speaker
+; off: on the SB Pro and SB 2.0 its output too, on the SB16 only the flag D8h
+; reads (SBG:3920-3926). DS=CS; EAX, ECX, EDX changed.
+sb_cold_start:
+    mov word [legacy_rate], 10000
+    mov word [game_rate], 10000
+    call sb_game_step
+    mov word [legacy_block], 07ffh
+    mov byte [sb_id_value], 0aah
+    mov byte [sb_id_phase], 0
+    mov byte [sb_input_stereo], 0
+    mov byte [sb_timer], 0
+    mov byte [sb_speaker_flag], 0
+    cmp byte [virtual_model], 0
+    je .done
+    mov byte [sb_speaker], 0
+.done:
+    ret
+
+; CF set when the command being started (port_callback .validate_start)
+; waits for the transfer running: a single-cycle command during an auto-init
+; transfer of the same width takes effect at the end of the current block,
+; where "the DSP will exit from auto-initialize DMA mode and continue to
+; transfer using the specified single-cycle DMA mode" (SBG:1318-1323,
+; 3335-3338); the 4.05 no longer queues once DAh has ended auto-init. The
+; SB Pro's 3.02 queues one behind any transfer that runs, a single-cycle one
+; too [fw]. High-speed commands start at once. The command is kept in
+; sb_queue_command, sb_queue_args and sb_queue_handler. Every register is
+; kept (AX holds the block's length).
+sb_queue_check:
+    push ax
+    ; Single-cycle: 14h, 24h, Bxh and Cxh without bit 2 (dsp_command has
+    ; the FIFO bit set by now), and the ADPCM commands without bit 3.
+    mov al, [dsp_command]
+    cmp al, 14h
+    je .single
+    cmp al, 24h
+    je .single
+    test byte [pending_format], 8
+    jnz .adpcm
+    mov ah, al
+    and ah, 0f0h
+    cmp ah, 0b0h
+    je .sb16
+    cmp ah, 0c0h
+    jne .start
+.sb16:
+    test al, 4
+    jnz .start
+    ; Cxh on the 8-bit interrupt, Bxh on the 16-bit one.
+    mov ah, 1
+    cmp al, 0c0h
+    jae .width
+    inc ah
+    jmp .width
+.adpcm:
+    test al, 8
+    jnz .start
+.single:
+    mov ah, 1
+.width:
+    cmp byte [virtual_model], 1
+    jne .auto_only
+    cmp byte [game_active], 0
+    je .start
+    jmp .queue
+.auto_only:
+    cmp byte [game_active], 0
+    jne .running
+    cmp byte [sb_paused], 0
+    je .start
+.running:
+    cmp byte [sb_single], 0
+    jne .start
+    cmp byte [sb_exit_pending], 0
+    jne .start
+    cmp dword [game_exit_frame], 0
+    jne .start
+    cmp ah, [game_irq_bit]
+    jne .start
+.queue:
+    mov al, [dsp_command]
+    mov [sb_queue_command], al
+    mov ax, [dsp_args]
+    mov [sb_queue_args], ax
+    mov al, [dsp_args+2]
+    mov [sb_queue_args+2], al
+    mov ax, [dsp_handler]
+    mov [sb_queue_handler], ax
+    mov byte [sb_queued], 1
+    pop ax
+    stc
+    ret
+.start:
+    pop ax
+    clc
+    ret
+
+; AL to the reply queue. The DSP writes a reply into its one-byte output
+; latch and waits for the program to read the one before (the firmware's
+; dsp_data_write) [fw]: a reply waits behind those not yet read. A queue
+; that is full drops the byte. BX changed.
+sb_reply_put:
+    movzx bx, byte [reply_count]
+    cmp bl, REPLY_QUEUE
+    jae .full
+    add bl, [reply_head]
+    and bl, REPLY_QUEUE-1
+    mov [reply_queue+bx], al
+    inc byte [reply_count]
+.full:
+    ret
+
+; game_step from game_rate. EAX, ECX, EDX changed.
+sb_game_step:
+    movzx eax, word [game_rate]
+    shl eax, 16
+    xor edx, edx
+    mov ecx, OUTPUT_RATE
+    div ecx
+    mov [game_step], eax
+    ret
+
+; F9h, FAh: BX=the byte that holds the 4.05's internal RAM byte dsp_args
+; names, CF set when none here does (port_callback .ram_read).
+sb_ram_byte:
+    mov al, [dsp_args]
+    mov bx, sb_ram_map
+.next:
+    cmp byte [bx], 0ffh
+    je .none
+    cmp [bx], al
+    je .found
+    add bx, 3
+    jmp .next
+.found:
+    mov bx, [bx+1]
+    clc
+    ret
+.none:
+    stc
+    ret
+sb_ram_map:
+    db 0eh
+    dw legacy_block
+    db 0fh
+    dw legacy_block+1
+    db 20h
+    dw sb_command_byte
+    db 2ah
+    dw sb_test_register
+    db 30h
+    dw sb_previous_command
+    db 0ffh
+
+; The virtual Sound Blasters' commands by model (vsb/SPEC.md section 5),
+; as they run (sb_decode): command, argument bytes, models, handler. A byte
+; can run differently on each model. A command missing here, or not of the
+; presented model, takes no argument and does nothing. Bxh and Cxh are the
+; SB16's alone (port_callback .sb16_transfer).
 SB_16 equ 1
 SB_PRO equ 2
 SB_20 equ 8
@@ -1985,38 +2494,53 @@ SB_ALL equ SB_16 | SB_PRO | SB_20
     dw port_callback.%4
 %endmacro
 sb_commands:
+    dsp 01h, 0, SB_16, csp_upload
+    dsp 02h, 1, SB_16, ignore
+    dsp 03h, 0, SB_16, csp_read
     dsp 04h, 1, SB_16, ignore
+    dsp 04h, 0, SB_PRO, pro_status
+    dsp 04h, 0, SB_20, sb20_status
     dsp 05h, 2, SB_16, ignore
-    dsp 08h, 1, SB_16, ignore
+    dsp 08h, 0, SB_16, csp_read
+    dsp 08h, 0, SB_PRO, halt
+    dsp 09h, 0, SB_16, csp_name
+    dsp 0ah, 0, SB_16, csp_lock
+    dsp 0bh, 1, SB_16, halt
+    dsp 0ch, 1, SB_16, halt
     dsp 0eh, 2, SB_16, ignore
-    dsp 0fh, 1, SB_16, ignore
+    dsp 0fh, 1, SB_16, csp_read
     dsp 10h, 1, SB_ALL, direct_dac
     dsp 14h, 2, SB_ALL, single8
     dsp 16h, 2, SB_ALL, adpcm
     dsp 17h, 2, SB_ALL, adpcm
     dsp 1ch, 0, SB_ALL, legacy_start
+    dsp 1eh, 0, SB_16 | SB_PRO, adpcm
     dsp 1fh, 0, SB_ALL, adpcm
     dsp 20h, 0, SB_ALL, direct_input
     dsp 24h, 2, SB_ALL, single8
     dsp 2ch, 0, SB_ALL, legacy_start
-    dsp 30h, 0, SB_ALL, ignore
-    dsp 31h, 0, SB_ALL, ignore
+    dsp 30h, 0, SB_ALL, midi_input
+    dsp 31h, 0, SB_20, midi_input
     dsp 34h, 0, SB_ALL, midi_uart
-    dsp 35h, 0, SB_ALL, midi_uart
-    dsp 36h, 0, SB_ALL, midi_uart
-    dsp 37h, 0, SB_ALL, midi_uart
+    dsp 35h, 0, SB_20, midi_uart
+    dsp 36h, 0, SB_20, midi_uart
+    dsp 37h, 0, SB_20, midi_uart
     dsp 38h, 1, SB_ALL, midi_out
     dsp 40h, 1, SB_ALL, time_constant
     dsp 41h, 2, SB_16, rate
     dsp 42h, 2, SB_16, rate
-    dsp 45h, 0, SB_16, continue8
-    dsp 47h, 0, SB_16, continue16
     dsp 48h, 2, SB_ALL, block_size
+    dsp 4ch, 2, SB_16, ignore
+    dsp 4dh, 1, SB_16, zero_reply
+    dsp 4eh, 2, SB_16, timer_once
+    dsp 4fh, 0, SB_16, timer_switch
     dsp 74h, 2, SB_ALL, adpcm
     dsp 75h, 2, SB_ALL, adpcm
     dsp 76h, 2, SB_ALL, adpcm
     dsp 77h, 2, SB_ALL, adpcm
+    dsp 7ch, 0, SB_16 | SB_PRO, adpcm
     dsp 7dh, 0, SB_ALL, adpcm
+    dsp 7eh, 0, SB_16 | SB_PRO, adpcm
     dsp 7fh, 0, SB_ALL, adpcm
 %ifdef VIRTUAL_IRQ
     dsp 80h, 2, SB_ALL, silence
@@ -2042,11 +2566,16 @@ sb_commands:
     dsp 0e3h, 0, SB_16, copyright
     dsp 0e4h, 1, SB_ALL, test_write
     dsp 0e8h, 0, SB_ALL, test_read
+    dsp 0f1h, 0, SB_PRO, pro_port
     dsp 0f2h, 0, SB_ALL, force_irq
     dsp 0f3h, 0, SB_16, force_irq16
+    dsp 0f4h, 0, SB_16, dsp_signature
     dsp 0f8h, 0, SB_ALL, zero_reply
-    dsp 0f9h, 1, SB_16, ignore
-    dsp 0fah, 2, SB_16, ignore
+    dsp 0f9h, 1, SB_16, ram_read
+    dsp 0fah, 2, SB_16, ram_write
+    dsp 0fbh, 0, SB_16, dsp_status
+    dsp 0fch, 0, SB_16, dsp_auxiliary
+    dsp 0fdh, 0, SB_16, last_command
     db 0ffh
 %unmacro dsp 4
 
@@ -2059,6 +2588,8 @@ dsp_status_base:
     mov al, 2ah
 .done:
     ret
+
+%endif
 
 dma_unowned_write:
 %ifdef RESIDENT_AUDIO
@@ -2186,8 +2717,10 @@ pending_format db 0
 ; E3h on a DSP 4.xx: the text the CT1741 firmware sends, zero included. While
 ; reply_pointer is set the write port reads busy and commands are dropped.
 reply_pointer dw 0
+%ifdef SB_CARDS
 copyright_text db 'COPYRIGHT (C) CREATIVE TECHNOLOGY LTD, 1992.',0
 copyright_length equ $-copyright_text
+%endif
 game_block_bytes dd 4096
 game_exit_frame dd 0
 game_mix_frame dd 0
@@ -2220,9 +2753,13 @@ dsp_handler dw 0
 rate_pending dw 0
 legacy_pending dw 0
 block_low db 0
-legacy_block dw 0
-legacy_rate dw 22050
-reply dw 0
+legacy_block dw 07ffh
+legacy_rate dw 10000
+; The replies waiting at 2xAh (sb_reply_put), oldest at reply_head; while a
+; string reply is read (reply_pointer), reply_count counts its bytes.
+REPLY_QUEUE equ 8
+reply_queue times REPLY_QUEUE db 0
+reply_head db 0
 reply_count db 0
 ; The last byte read from 2xAh, which it reads again with nothing waiting.
 reply_last db 0aah
@@ -2243,6 +2780,24 @@ pending_adpcm db 0
 pending_adpcm_ref db 0
 sb_id_value db 0aah
 sb_id_phase db 0
+; Set in high-speed and UART modes, where a reset is the firmware's warm
+; start (port_callback .reset_hold); a single-cycle block's end clears it.
+sb_warm db 0
+; Set while the DSP takes nothing until a reset (port_callback .halt).
+sb_hung db 0
+; The SB16 DSP's timer (4Eh, 4Fh) runs with reload.
+sb_timer db 0
+; The command byte last written and the one before it (FDh, F9h).
+sb_command_byte db 0
+sb_previous_command db 0
+; A single-cycle command waiting for the transfer before it to end
+; (sb_queue_check): its byte, arguments and handler.
+sb_queued db 0
+sb_queue_command db 0
+sb_queue_args times 3 db 0
+sb_queue_handler dw 0
+; An auto-init transfer's frames at the end of the block it is to end with.
+sb_exit_frames dd 0
 %ifdef WSS_INPUT
 %include "audio/wss_state.inc"
 %else

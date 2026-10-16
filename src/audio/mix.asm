@@ -510,7 +510,7 @@ mix_half:
 .output_sample:
     cmp byte [game_frame_shift], 0
     jne .stereo
-%ifdef RESIDENT_AUDIO
+%ifdef SB_CARDS
     ; ADPCM: the firmware's engine, run to the position (sb_adpcm.asm).
     test byte [game_format], 8
     jz .pcm8

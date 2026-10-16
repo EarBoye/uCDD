@@ -71,39 +71,65 @@ virtual_irq_tick:
     mov eax, [game_exit_frame]
     mov byte [game_active], 0
     cmp byte [sb_single], 0
+    jne .single_end
+%ifdef SB_CARDS
+    ; An auto-init transfer that a queued single-cycle command ends: the
+    ; controller stops after its last block, where the queued transfer goes
+    ; on (trap.asm, sb_queued). The transfer started at the buffer's base.
+    cmp byte [sb_queued], 0
     je .position
     push eax
+    mov dword [si+DMA_POSITION], 0
+    mov eax, [sb_exit_frames]
+    mov cl, [game_frame_shift]
+    shl eax, cl
+    call .controller_stop
+    pop eax
+%endif
+    jmp .position
+.single_end:
+    push eax
     mov eax, [game_block_bytes]
+    call .controller_stop
+    mov byte [sb_finished], 1
+    ; 91h leaves high-speed mode at the end of its block (SBG:1349-1350); a
+    ; reset after it is a cold start again (trap.asm, sb_warm).
+    mov byte [sb_highspeed], 0
+    mov byte [sb_warm], 0
+%ifdef SB_CARDS
+    ; An ADPCM block's last ticks, run while the buffer still holds its
+    ; bytes (sb_adpcm.asm).
+    call sb_adpcm_close
+%endif
+    pop eax
+    mov eax, [game_block_bytes]
+    jmp .byte_position
+; EAX=the bytes a transfer moved: the controller's position and count after
+; them, from its position at the start. SI=the channel. EAX, BX, ECX, EDX
+; changed.
+.controller_stop:
     cmp si, dma16
-    jne .single_units
+    jne .units
     shr eax, 1
-.single_units:
+.units:
     add eax, [si+DMA_POSITION]
     movzx ecx, word [si+DMA_COUNT]
     inc ecx
     test byte [si+DMA_MODE], 10h
-    jz .single_position
+    jz .stop_position
     xor edx, edx
     div ecx
     mov eax, edx
-.single_position:
+.stop_position:
     mov [si+DMA_POSITION], eax
     mov bx, [si+DMA_COUNT]
     sub bx, ax
     mov [si+DMA_SNAPSHOT], bx
     cmp bx, 0ffffh
-    jne .single_done
+    jne .stopped
     mov byte [si+3], 1
-.single_done:
-    mov byte [sb_finished], 1
-    ; 91h leaves high-speed mode at the end of its block (SBG:1349-1350).
-    mov byte [sb_highspeed], 0
-    ; An ADPCM block's last ticks, run while the buffer still holds its
-    ; bytes (sb_adpcm.asm).
-    call sb_adpcm_close
-    pop eax
-    mov eax, [game_block_bytes]
-    jmp .byte_position
+.stopped:
+    ret
 .position:
     cmp byte [sb_tail_mode], 0
     je .render_position
