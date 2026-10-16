@@ -1142,8 +1142,21 @@ resident_io:
     jnz .callback
     mov esi, [ebp+resident_fast+4]
     and byte [esi], 0fdh
+    call .line_dropped
     mov al, 0ffh
     clc
+    ret
+; After an acknowledge: with no source left on the virtual line, a request
+; not yet taken goes away (irq.asm, virtual_line_dropped). ESI=the DSP
+; interrupt bits.
+.line_dropped:
+    cmp byte [esi], 0
+    jne .line_held
+    mov esi, [ebp+resident_audio_request]
+    test esi, esi
+    jz .line_held
+    mov byte [esi], 0
+.line_held:
     ret
 .index:
     test ch, ch
@@ -1182,6 +1195,7 @@ resident_io:
     jnz .callback
     mov esi, [ebp+resident_fast+4]
     and byte [esi], 0feh
+    call .line_dropped
     mov esi, [ebp+resident_fast+8]
     mov al, 7fh
     cmp byte [esi], 0

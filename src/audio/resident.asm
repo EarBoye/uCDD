@@ -8,17 +8,17 @@
 %define CD_IMAGE_TEST 1
 %define VIRTUAL_IRQ 1
 ; The virtual ESS's FIFO and DAC model (audio/ess_fifo.asm), for output
-; periods up to 256 frames.
+; periods up to 256 frames, and the virtual ESS AudioDrive (audio/ess/card.asm),
+; which needs the model. Only with --virtual-ess (VIRTUAL_ESS) for now: the
+; Sound Blasters have its room in the segment. The physical ESS output does
+; not depend on it.
+%ifdef VIRTUAL_ESS
 %if OUTPUT_SHIFT <= 8
 %define ESS_FIFO_MODEL
-; The virtual ESS AudioDrive (audio/ess/card.asm), which needs the model.
 %define ESS_CARD
 %endif
-; The virtual WSS codec. The verify-mix test build leaves it out to fit its
-; segment: the mixer paths it checks are the Sound Blaster and ESS ones.
-%ifndef VERIFY_MIX
-%define WSS_INPUT 1
 %endif
+%define WSS_INPUT 1
 %include "audio/layout.inc"
 
 qpi dd 0
@@ -58,6 +58,7 @@ audio_linked db 0
 %include "audio/mounted.asm"
 %include "audio/background.asm"
 %include "audio/irq.asm"
+%include "audio/sb_adpcm.asm"
 %include "audio/ess_fifo.asm"
 %include "audio/ess/card.asm"
 %include "audio/sb_patch.asm"

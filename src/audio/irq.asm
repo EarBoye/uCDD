@@ -98,6 +98,9 @@ virtual_irq_tick:
     mov byte [sb_finished], 1
     ; 91h leaves high-speed mode at the end of its block (SBG:1349-1350).
     mov byte [sb_highspeed], 0
+    ; An ADPCM block's last ticks, run while the buffer still holds its
+    ; bytes (sb_adpcm.asm).
+    call sb_adpcm_close
     pop eax
     mov eax, [game_block_bytes]
     jmp .byte_position
@@ -215,6 +218,16 @@ virtual_dsp_raise_line:
     ret
 .held:
     or [virtual_dsp_irq], al
+    ret
+
+; After an acknowledge (2xEh, 2xFh): with no source left the line is low, and
+; a request the controller has not yet given to the CPU goes away with it,
+; as at an 8259 whose input falls before the interrupt is taken. Flags only.
+virtual_line_dropped:
+    cmp byte [virtual_dsp_irq], 0
+    jne .done
+    mov byte [virtual_pic_request], 0
+.done:
     ret
 
 ; Bit 2 of virtual_dsp_irq is the MPU-401's request on the virtual SB16's

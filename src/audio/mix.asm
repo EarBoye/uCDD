@@ -479,15 +479,46 @@ mix_half:
     shr eax, 16
     cmp byte [sb_input], 0
     je .output_sample
+    ; The virtual input records silence in the game's format (vsb/SPEC.md
+    ; 7.7): 80h or 00h a byte, 0000h or 8000h a word, each channel.
     mov si, ax
+    push cx
+    mov cl, [game_frame_shift]
+    shl si, cl
+    pop cx
     add si, [game_offset]
-    ; The virtual input supplies unsigned PCM silence.
-    mov byte [fs:si], 128
+    test byte [game_format], 1
+    jnz .input16
+    cmp byte [game_frame_shift], 2
+    je .input16
+    mov al, 80h
+    xor al, [sb_sign8]
+    mov [fs:si], al
+    cmp byte [game_frame_shift], 0
+    je .input_done
+    mov [fs:si+1], al
+    jmp .input_done
+.input16:
+    mov ax, [sb_sign16]
+    mov [fs:si], ax
+    cmp byte [game_frame_shift], 2
+    jne .input_done
+    mov [fs:si+2], ax
+.input_done:
     xor esi, esi
     jmp .advance
 .output_sample:
     cmp byte [game_frame_shift], 0
     jne .stereo
+%ifdef RESIDENT_AUDIO
+    ; ADPCM: the firmware's engine, run to the position (sb_adpcm.asm).
+    test byte [game_format], 8
+    jz .pcm8
+    call sb_adpcm_sample
+    movzx edx, al
+    jmp .mono8_level
+.pcm8:
+%endif
     mov si, ax
 %ifdef OWN_HOST
     cmp dword [game_physical], 0
@@ -503,6 +534,7 @@ mix_half:
 .mono_value:
 %endif
     xor edx, [sb_sign8]
+.mono8_level:
     sub edx, 128
     shl edx, 7
     mov esi, edx

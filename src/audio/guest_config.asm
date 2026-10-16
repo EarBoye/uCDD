@@ -3,6 +3,14 @@
 
 ; UCDDSET checked the virtual card and the volumes in config_data.
 guest_configure:
+%ifndef ESS_CARD
+    ; A build without the virtual ESS presents an SB Pro in its place.
+    cmp byte [virtual_model], 4
+    jne .model_ready
+    mov byte [virtual_model], 1
+    mov word [virtual_dsp_version], 0203h
+.model_ready:
+%endif
     mov ax, [virtual_base]
     mov [guest_base], ax
     movzx ax, byte [virtual_irq]

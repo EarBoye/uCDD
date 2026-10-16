@@ -635,10 +635,12 @@ sb_port_list:
 ; chip's, and a game set to it expects ESFM at the FM ports.
 virtual_model_list:
     mov si, virtual_model_values
+%ifdef VIRTUAL_ESS
     cmp byte [sound_card], 4
     jb .done
     mov si, virtual_model_values_ess
 .done:
+%endif
     ret
 wss_port_list:
     mov si, wss_port_values
@@ -682,8 +684,10 @@ model_changed:
 .virtual:
     cmp byte [virtual_model], 4
     jne .done
+%ifdef VIRTUAL_ESS
     cmp byte [sound_card], 4
     jae .done
+%endif
     mov byte [virtual_model], 1
 .done:
     clc

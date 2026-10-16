@@ -63,6 +63,9 @@ def main():
                         help='Do not recognise the flags image in a register (PUSHF, POP reg, CLI).')
     parser.add_argument('--verify-mix', action='store_true',
                         help='Test build: check every mix_run half against the general loop.')
+    parser.add_argument('--virtual-ess', action='store_true',
+                        help='Include the virtual ESS AudioDrive (virtual model 4). Left out by '
+                             'default for now: the Sound Blasters take its room in the segment.')
     parser.add_argument('--audio-period-frames', type=int, choices=(32, 64, 128, 256),
                         default=32, help='Set the resident audio output period for testing.')
     args = parser.parse_args()
@@ -87,6 +90,8 @@ def main():
                 defines.append('INJECT_REG=1')
             if args.verify_mix:
                 defines.append('VERIFY_MIX=1')
+            if args.virtual_ess:
+                defines.append('VIRTUAL_ESS=1')
             if args.profile_driver:
                 defines.append('DRIVER_PROFILE=1')
             import os
@@ -95,7 +100,7 @@ def main():
             assemble_resident_host(tuple(defines),
                                    profile=args.profile_host)
         else:
-            assemble(source, name, exe=True)
+            assemble(source, name, ('VIRTUAL_ESS=1',) if args.virtual_ess else (), exe=True)
     assemble_player()
     (BUILD / 'UCDDRV.EXE').unlink(missing_ok=True)
     if (ROOT / 'tests' / 'probe.asm').is_file():

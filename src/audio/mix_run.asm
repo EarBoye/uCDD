@@ -110,8 +110,8 @@ mix_run_select:
 %endif
     cmp dword [game_limit], 0
     MIX_RUN_LEAVE e, 6
-    ; Signed 8-bit data: only the general loop converts it.
-    test byte [game_format], 4
+    ; Signed 8-bit data and ADPCM: only the general loop converts them.
+    test byte [game_format], 0ch
     MIX_RUN_LEAVE nz, 13
     or bh, bl
     mov word [mix_run_sign], 0

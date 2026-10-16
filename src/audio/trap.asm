@@ -405,6 +405,7 @@ port_callback:
     mov byte [sb_reset_held], 1
     mov byte [sb_highspeed], 0
     mov byte [sb_midi_uart], 0
+    mov byte [sb_input_stereo], 0
     mov byte [sb_id_value], 0aah
     mov byte [sb_id_phase], 0
     mov byte [sb_dac_enabled], 0
@@ -704,6 +705,28 @@ port_callback:
 .midi_uart:
     mov byte [sb_midi_uart], 1
     jmp .done
+; 45h, 47h: the SB16 continues an 8-bit or 16-bit auto-init transfer that a
+; DAh or D9h was to end; the guide is silent, DOSBox-X has them.
+.continue8:
+    cmp byte [game_irq_bit], 2
+    je .done
+    jmp .continue
+.continue16:
+    cmp byte [game_irq_bit], 2
+    jne .done
+.continue:
+    cmp byte [sb_single], 0
+    jne .done
+    mov byte [sb_exit_pending], 0
+    mov dword [game_exit_frame], 0
+    jmp .done
+; A0h, A8h: the SB Pro's input mode, mono or stereo (SBG:3806-3832).
+.input_mono:
+    mov byte [sb_input_stereo], 0
+    jmp .done
+.input_stereo:
+    mov byte [sb_input_stereo], 1
+    jmp .done
 ; 30h, 31h: MIDI input by polling or interrupt (SBG:3426-3456): no input.
 ; Commands that only take their argument bytes go here too.
 .ignore:
@@ -804,6 +827,8 @@ port_callback:
 .exit8:
     cmp byte [game_irq_bit], 2
     je .done
+    ; The ADPCM engine stops at the block's end too (sb_adpcm.asm).
+    mov byte [sb_adpcm_auto], 0
     jmp .exit_block
 .exit16:
     cmp byte [game_irq_bit], 2
@@ -962,24 +987,91 @@ port_callback:
     mov ax, [dsp_args]
     mov [legacy_block], ax
     jmp .done
+; ADPCM (SBG:1360-1377, 3289-3714): 74h-77h 4-bit and 3-bit, 16h, 17h 2-bit
+; single-cycle with the length; 7Dh, 7Fh, 1Fh auto-init from 48h's. The odd
+; commands start with the reference byte. Kinds: 1 4-bit, 2 3-bit, 3 2-bit
+; (audio/sb_adpcm.asm). The time constant gives the sample rate; the stream is
+; counted in bytes, a byte holding 2, 3 or 4 codes.
+.adpcm:
+    call sb_adpcm_close
+    mov al, [dsp_command]
+    mov ah, 3
+    cmp al, 20h
+    jb .adpcm_kind
+    mov ah, 2
+    cmp al, 7eh
+    jae .adpcm_kind
+    mov ah, 1
+    cmp al, 7ch
+    jae .adpcm_kind
+    test al, 2
+    jz .adpcm_kind
+    inc ah
+.adpcm_kind:
+    and al, 1
+    mov [pending_adpcm_ref], al
+    mov [pending_adpcm], ah
+    mov byte [pending_input], 0
+    mov byte [pending_frame_shift], 0
+    mov byte [pending_format], 8
+    movzx cx, ah
+    inc cx
+    mov ax, [legacy_rate]
+    xor dx, dx
+    div cx
+    mov [game_rate], ax
+    movzx eax, ax
+    shl eax, 16
+    xor edx, edx
+    mov ecx, OUTPUT_RATE
+    div ecx
+    mov [game_step], eax
+    mov ax, [dsp_args]
+    cmp byte [dsp_command], 1fh
+    je .adpcm_auto
+    cmp byte [dsp_command], 7ch
+    jb .validate_start
+.adpcm_auto:
+    mov ax, [legacy_block]
+    jmp .validate_start
 ; 14h, 24h: an 8-bit single-cycle block, the length from the command.
 .single8:
     mov ax, [dsp_args]
     jmp .legacy_format
-; 1Ch, 90h, 91h: the length from 48h.
+; 1Ch, 90h, 91h, and for input 2Ch, 98h, 99h: the length from 48h.
 .legacy_start:
     mov ax, [legacy_block]
 .legacy_format:
     push ax
     mov byte [pending_frame_shift], 0
     mov byte [pending_format], 0
-    cmp byte [dsp_command], 24h
-    je .legacy_mono
+    ; 24h, 2Ch, 98h and 99h record; 14h, 1Ch, 90h and 91h play.
+    mov bl, [dsp_command]
+    cmp bl, 98h
+    jae .legacy_input
+    and bl, 0f0h
+    cmp bl, 20h
+    je .legacy_input
+    xor bl, bl
+    jmp .legacy_direction
+.legacy_input:
+    mov bl, 8
+.legacy_direction:
+    mov [pending_input], bl
+    ; Stereo: the mixer's switch for output (SBG:2476-2481), A8h for input
+    ; (SBG:3820-3825), and the high-speed input only (SBG:1446-1456).
+    mov cl, [sb_pro_stereo]
+    test bl, bl
+    jz .legacy_kind
+    mov cl, [sb_input_stereo]
+    cmp byte [dsp_command], 90h
+    jb .legacy_mono
+.legacy_kind:
+    test cl, cl
+    jz .legacy_mono
     test ax, ax
     jz .legacy_mono
     mov ax, [legacy_rate]
-    test byte [sb_pro_stereo], 2
-    jz .legacy_rate
     mov byte [pending_frame_shift], 1
     shr ax, 1
     jmp .legacy_rate
@@ -997,10 +1089,11 @@ port_callback:
     jmp .validate_start
 ; Bxh, Cxh on the SB16: the mode byte, then the length.
 .play:
-    ; Input (bit 3) is not played yet: the arguments are taken.
-    test byte [dsp_command], 8
-    jnz .done
-    ; Both FIFO modes use the same PCM conversion and block interrupts.
+    ; Bit 3: input. Both FIFO modes use the same PCM conversion and block
+    ; interrupts.
+    mov al, [dsp_command]
+    and al, 8
+    mov [pending_input], al
     or byte [dsp_command], 2
     and byte [dsp_command], 0f6h
     mov byte [pending_frame_shift], 0
@@ -1059,20 +1152,30 @@ port_callback:
     mov byte [sb_finished], 0
     mov byte [sb_exit_pending], 0
     mov byte [sb_single], 0
-    mov byte [sb_input], 0
-    cmp byte [dsp_command], 24h
-    jne .output_kind
-    mov byte [sb_input], 1
-    jmp .single
-.output_kind:
-    cmp byte [dsp_command], 0b2h
+    mov bl, [pending_input]
+    mov [sb_input], bl
+    ; Single-cycle: B2h, C2h (the SB16's, FIFO bit set, input bit clear),
+    ; 14h, 24h, 91h, 99h. The others loop.
+    mov bl, [dsp_command]
+    cmp bl, 0b2h
     je .single
-    cmp byte [dsp_command], 0c2h
+    cmp bl, 0c2h
     je .single
-    cmp byte [dsp_command], 14h
+    cmp bl, 14h
     je .single
-    cmp byte [dsp_command], 91h
-    jne .start_kind
+    cmp bl, 24h
+    je .single
+    cmp bl, 91h
+    je .single
+    cmp bl, 99h
+    je .single
+    ; ADPCM: all but 1Fh, 7Dh and 7Fh are single-cycle.
+    test byte [pending_format], 8
+    jz .start_kind
+    cmp bl, 1fh
+    je .start_kind
+    cmp bl, 7ch
+    jae .start_kind
 .single:
     mov byte [sb_single], 1
 .start_kind:
@@ -1247,6 +1350,8 @@ port_callback:
     jne .command_unsupported
     cmp byte [sb_input], 0
     jne .command_unsupported
+    test byte [pending_format], 8
+    jnz .command_unsupported
     mov [game_physical], ecx
     jmp .source_ready
 .low_source:
@@ -1311,6 +1416,30 @@ port_callback:
     mov [game_offset], bx
     shr esi, 4
     mov [game_segment], si
+    ; ADPCM: the firmware's first fetch (sb_adpcm.asm), from the block's
+    ; start in the buffer.
+    test byte [game_format], 8
+    jz .pcm_started
+    pushad
+    push fs
+    mov fs, si
+    mov ebx, [game_limit]
+    shr ebx, 16
+    mov esi, [game_origin]
+    shr esi, 16
+    mov dx, [dsp_args]
+    xor cx, cx
+    cmp byte [sb_single], 0
+    jne .adpcm_single
+    mov dx, [legacy_block]
+    inc cx
+.adpcm_single:
+    mov al, [pending_adpcm_ref]
+    mov ah, [pending_adpcm]
+    call sb_adpcm_start
+    pop fs
+    popad
+.pcm_started:
     mov byte [game_start_pending], 1
     mov dword [game_exit_frame], 0
     mov byte [sb_paused], 0
@@ -1359,12 +1488,13 @@ port_callback:
 %ifdef VIRTUAL_IRQ
     call virtual_irq_reset
 %endif
-    ; 90h and 91h on the SB 2.0 and the SB Pro: high-speed mode, which takes
-    ; no command until a reset, or until 91h's block ends (SBG:1346-1351).
+    ; 90h, 91h, 98h and 99h on the SB 2.0 and the SB Pro: high-speed mode,
+    ; which takes no command until a reset, or until a single-cycle block
+    ; ends (SBG:1346-1351).
     cmp byte [virtual_model], 0
     je .speed_ready
     mov al, [dsp_command]
-    and al, 0feh
+    and al, 0f6h
     cmp al, 90h
     jne .speed_ready
     mov byte [sb_highspeed], 1
@@ -1519,6 +1649,7 @@ port_callback:
 .status:
 %ifdef VIRTUAL_IRQ
     and byte [virtual_dsp_irq], 0feh
+    call virtual_line_dropped
 %endif
     ; Bit 7: a reply waits (SBG:924-926); the other bits as at 2xCh.
     call dsp_status_base
@@ -1531,6 +1662,7 @@ port_callback:
 .status16:
 %ifdef VIRTUAL_IRQ
     and byte [virtual_dsp_irq], 0fdh
+    call virtual_line_dropped
 %endif
     mov al, 0ffh
     jmp .result
@@ -1842,8 +1974,8 @@ sb_midi_out:
 ; command, argument bytes, models, handler. A command missing here, or not
 ; of the presented model, takes no argument and does nothing. Bxh and Cxh
 ; are the SB16's alone (port_callback .sb16_transfer). The commands that
-; only take their arguments (.ignore) are not played yet: ADPCM, input
-; beyond 24h, the ASP's and the 8051's.
+; only take their arguments (.ignore) are the ASP's and the 8051's, which a
+; card without the ASP does not act on.
 SB_16 equ 1
 SB_PRO equ 2
 SB_20 equ 8
@@ -1860,13 +1992,13 @@ sb_commands:
     dsp 0fh, 1, SB_16, ignore
     dsp 10h, 1, SB_ALL, direct_dac
     dsp 14h, 2, SB_ALL, single8
-    dsp 16h, 2, SB_ALL, ignore
-    dsp 17h, 2, SB_ALL, ignore
+    dsp 16h, 2, SB_ALL, adpcm
+    dsp 17h, 2, SB_ALL, adpcm
     dsp 1ch, 0, SB_ALL, legacy_start
-    dsp 1fh, 0, SB_ALL, ignore
+    dsp 1fh, 0, SB_ALL, adpcm
     dsp 20h, 0, SB_ALL, direct_input
     dsp 24h, 2, SB_ALL, single8
-    dsp 2ch, 0, SB_ALL, ignore
+    dsp 2ch, 0, SB_ALL, legacy_start
     dsp 30h, 0, SB_ALL, ignore
     dsp 31h, 0, SB_ALL, ignore
     dsp 34h, 0, SB_ALL, midi_uart
@@ -1877,24 +2009,24 @@ sb_commands:
     dsp 40h, 1, SB_ALL, time_constant
     dsp 41h, 2, SB_16, rate
     dsp 42h, 2, SB_16, rate
-    dsp 45h, 0, SB_16, ignore
-    dsp 47h, 0, SB_16, ignore
+    dsp 45h, 0, SB_16, continue8
+    dsp 47h, 0, SB_16, continue16
     dsp 48h, 2, SB_ALL, block_size
-    dsp 74h, 2, SB_ALL, ignore
-    dsp 75h, 2, SB_ALL, ignore
-    dsp 76h, 2, SB_ALL, ignore
-    dsp 77h, 2, SB_ALL, ignore
-    dsp 7dh, 0, SB_ALL, ignore
-    dsp 7fh, 0, SB_ALL, ignore
+    dsp 74h, 2, SB_ALL, adpcm
+    dsp 75h, 2, SB_ALL, adpcm
+    dsp 76h, 2, SB_ALL, adpcm
+    dsp 77h, 2, SB_ALL, adpcm
+    dsp 7dh, 0, SB_ALL, adpcm
+    dsp 7fh, 0, SB_ALL, adpcm
 %ifdef VIRTUAL_IRQ
     dsp 80h, 2, SB_ALL, silence
 %endif
     dsp 90h, 0, SB_ALL, legacy_start
     dsp 91h, 0, SB_ALL, legacy_start
-    dsp 98h, 0, SB_ALL, ignore
-    dsp 99h, 0, SB_ALL, ignore
-    dsp 0a0h, 0, SB_PRO, ignore
-    dsp 0a8h, 0, SB_PRO, ignore
+    dsp 98h, 0, SB_ALL, legacy_start
+    dsp 99h, 0, SB_ALL, legacy_start
+    dsp 0a0h, 0, SB_PRO, input_mono
+    dsp 0a8h, 0, SB_PRO, input_stereo
     dsp 0d0h, 0, SB_ALL, pause8
     dsp 0d1h, 0, SB_ALL, speaker_on
     dsp 0d3h, 0, SB_ALL, speaker_off
@@ -2100,10 +2232,17 @@ sb_reset_held db 0
 sb_highspeed db 0
 ; Set in the SB-MIDI UART modes (34h-37h).
 sb_midi_uart db 0
+; 8 when the command being started records (24h, 2Ch, 98h, 99h, Bxh and Cxh
+; with bit 3), else 0.
+pending_input db 0
+; The SB Pro's input mode: A8h stereo, A0h mono.
+sb_input_stereo db 0
+; The ADPCM command being started: its kind (audio/sb_adpcm.asm) and 1
+; when it starts with the reference byte.
+pending_adpcm db 0
+pending_adpcm_ref db 0
 sb_id_value db 0aah
 sb_id_phase db 0
-%ifdef RESIDENT_AUDIO
-%endif
 %ifdef WSS_INPUT
 %include "audio/wss_state.inc"
 %else
