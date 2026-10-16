@@ -119,6 +119,9 @@ audio_activate:
     jc .cleanup
     call cd_half_promote
     call cd_work_promote
+%ifdef ESS_FIFO_MODEL
+    call ess_dac_promote
+%endif
     mov al, [guest_irq]
     cmp [sb_irq], al
     jne .dos_vector_ready
@@ -252,6 +255,24 @@ cd_buffer_promote:
 .discard:
     pop bx
     ret
+
+%ifdef ESS_FIFO_MODEL
+; The virtual ESS's DAC ring: only the CPU reads and writes it, so upper
+; memory serves; it was allocated low with the rest, before the host freed
+; its loading buffer. Freed low, it joins the free space below it (it is the
+; lowest of the driver's blocks at the top of conventional memory).
+ess_dac_promote:
+    cmp word [ess_dac_segment], 0
+    je .done
+    mov bx, (ESS_DAC_BYTES+ESS_FIFO_BYTES)/16
+    mov si, ess_dac_segment
+    mov di, si
+    mov bp, ess_dac_spare
+    jmp cd_buffer_promote
+.done:
+    ret
+ess_dac_spare dw 0
+%endif
 
 cd_buffer_strategy dw 0
 cd_buffer_umb db 0
