@@ -440,7 +440,7 @@ observable behaviour identical with it on and off.
    sound. Evidence from the ESS drivers and the game set decides the
    order, never whether.
 
-## 12. The mantra (16 Oct 2026, rule 1 amended 17 Oct 2026)
+## 12. The mantra (16 Oct 2026, rule 1 restated 18 Oct 2026)
 
 Agreed with Michael after a review; it replaces the three principles of
 15 Oct. When the rules conflict, rule 5 sets the order.
@@ -453,23 +453,17 @@ Agreed with Michael after a review; it replaces the three principles of
      decides first, then the real hardware we have.
    - That hardware is one sample, not the whole family. Every disagreement
      between documents, emulators and hardware is written down.
-   - Only a game can override the specification, and only where it
-     specifically requires it (amended 17 Oct 2026). All four must hold:
-     a) a named game fails with the specified behaviour;
-     b) the failure is traced to the exact behaviour the game depends on,
-        and that behaviour is measured in the environment the game was
-        built for (its own DOS extender or the bare machine, in an
-        emulator at least);
-     c) the change is the narrowest that makes the game work (one vector,
-        one command, one case), and everything else keeps to the
-        specification;
-     d) it is written beside the specification item it breaks, with the
-        game, the evidence and its grade, and named as a deviation in the
-        code.
-     Convenience, speed, tidiness or a guess about other software never
-     justify a deviation. If one cannot be kept that narrow, the
-     specification stays and the game is listed as not working, with the
-     reason.
+   - We respond exactly as the real hardware would (restated by Michael,
+     18 Oct 2026; it replaces the game exception of 17 Oct). The aim is
+     the most accurate virtual sound card and the best driver we can
+     build. A game that breaks the specification gets the real hardware's
+     response: there is nothing to do for it, and no special case is
+     written. Where the real hardware, or the period software the games
+     ran on (DOS/4GW, the CD-ROM drivers of the day), does something the
+     documents do not say, we copy the measured real behaviour and write
+     it beside the specification item with its evidence grade. D-7
+     (DOS/4GW's INT 16h) and M-5 (OAKCDROM's status bit 10) are copied
+     real behaviour under this rule.
 2. **We are platform and hardware agnostic.**
    - The driver works from a 386 to an Athlon or Pentium III; the 386 is
      best effort.
@@ -481,8 +475,8 @@ Agreed with Michael after a review; it replaces the three principles of
    record which.
 4. **Performance is the crown we earn.** If the specification allows it,
    we reach for it.
-5. **When rules conflict, the order is: specification (its one exception:
-   rule 1's game that requires otherwise), then working on every platform,
+5. **When rules conflict, the order is: specification (read as rule 1
+   says, the real hardware's behaviour), then working on every platform,
    then accurate audio, then performance.**
    - Added latency never exceeds 16 ms.
    - Within that ceiling, a system that cannot keep up may get a longer
