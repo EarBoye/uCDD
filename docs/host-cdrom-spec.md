@@ -292,3 +292,21 @@ that a failure in both is the rig's and only one in the first is ours.
   driver the timer interrupt arrives later. A latency question (D-8, the
   period handler), not a single fault.
 
+The games too big for the rig's 504 MB D: (33) ran later the same night
+on a D: with 255 heads (the rig's GL_BIGD), with and without the driver:
+
+- Run both ways (host lines are the game's own doing): Little Big
+  Adventure 2 (1977 general protection faults its handler takes),
+  Syndicate Wars (5263 refused 0501h, a size probe), Settlers II Gold,
+  Mechwarrior 2 Mercenaries, and more whose screens show the game.
+- Better under the driver: Time Warriors (without it, DOS/4GW reports a
+  page fault for want of memory).
+- The rig's: launchers that fail ("Bad command or file name"), no mouse
+  driver (Capitalism Plus, Deus), multi-disc games whose .MDM the disc
+  cutter leaves out (Creature Shock, Storm 96), Stonekeep's data path.
+- Ours, open: Inca II warns "Not enough extended memory, RAM: -6103 Ko"
+  (likely free XMS counted after the host's pool, not checked); Time
+  Commando stays black while its DPMI 0100h requests of 1 to 28 KB fail
+  with 0008h, insufficient memory (without the driver it reaches its
+  menu); Battle Race 95 stays on its loading screen.
+
