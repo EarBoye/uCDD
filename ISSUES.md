@@ -125,7 +125,11 @@ changed volumes.
 - Hexen: the machine sometimes freezes after the game exits. The launcher
   log shows the game returned and the image was unmounted first. A test
   client that makes Hexen's CD calls, followed by a second protected-mode
-  program, does not reproduce it in QEMU.
+  program, does not reproduce it in QEMU. Not reproduced in 86Box either
+  (`host-gauntlet` 824d2da, the SB16 physical and virtual, the shortened
+  disc with three audio tracks): ten passes in one boot, five ending with
+  the demo's timed exit and five quit through the game's menu with
+  LaunchBox for DOS run and closed after each unmount.
 - Mortal Kombat Trilogy hangs at the Battle screen, at a CD track change.
   Understood on `host-gauntlet` (docs/host-cdrom-spec.md, D-7 and section
   7): the game leaves interrupts off and relies on its keyboard poll to turn
