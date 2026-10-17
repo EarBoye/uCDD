@@ -287,8 +287,14 @@ that a failure in both is the rig's and only one in the first is ours.
   MP, EM and ET: at ring 3 that is a general protection fault, 32RTM has
   no handler, and the host ends it (in the game run the batch then went on
   into a real-mode crash, JemmEx's invalid opcode at 0803:6288, back to
-  0.9.3b). DPMI 1.0 gives a client 0E01h for those bits; emulating a CR0
-  write at ring 3 would be a deviation: a decision for Michael. Mass Destruction finds no CD: MSCDEX lists nothing on its
+  0.9.3b). DPMI 1.0 gives a client 0E01h for those bits. Tried: emulating
+  that one write (only MP, EM, ET or TS changing) lets 32RTM go on, and it
+  then stops with "32rtm error: DPMI without DOS Extender": it also needs
+  the host to translate DOS calls for 32-bit clients, which this host does
+  for 16-bit ones only (dos16.asm, D-11). Not kept: the emulation alone
+  does not make the game run (rule 1's bar), and 32-bit DOS translation is
+  a feature of its own. The experiment is kept outside the fork as a
+  patch. Mass Destruction finds no CD: MSCDEX lists nothing on its
   disc (system id "PLAYSTATION", XA records), M-5; with status bit 10 the
   disc lists. Shellshock stops with DOS/4GW's divide error at 1:000049D2:
   its millisecond clock (its own tick count plus PIT channel 0, retried
