@@ -435,36 +435,42 @@ virtual_pic_write:
     mov [pic_icw_pending], ah
     jmp .fault
 .not_icw1:
-    cmp al, 0ch
-    jne .command
+    ; OCW3 (bits 7 and 4 clear, bit 3 set): bit 1 with bit 0 selects what
+    ; port 20h reads, 0Ah the request register, 0Bh the in-service register;
+    ; bit 2 polls; bits 6:5 set or clear special mask mode, which the
+    ; physical controller keeps for itself as it serves the mixer as well;
+    ; with none of them it does nothing (8259A data sheet, OCW3).
+    mov ah, al
+    and ah, 98h
+    cmp ah, 08h
+    jne .ocw2
+    test al, 4
+    jz .read_select
     ; Poll: the next read answers like the request register.
     mov al, 0ah
-.command:
-    cmp al, 0ah
-    je .select
-    cmp al, 0bh
-    je .select
+    jmp .select
+.read_select:
+    test al, 2
+    jz .done
+    and al, 0bh
+    jmp .select
+.ocw2:
+    ; OCW2, by bits 6:5 (bit 7 adds a rotation, which the physical
+    ; controller keeps for itself, as it does the automatic rotation, 00,
+    ; and set priority, 10 with bit 7; 10 alone does nothing): 01 the
+    ; non-specific EOI, whatever the level bits, which count only in the
+    ; specific form, 11.
     mov ah, al
-    and ah, 0f8h
-    ; Set priority, and special mask mode: the physical controller keeps its
-    ; own, as it serves the mixer as well.
-    cmp ah, 0c0h
-    je .done
-    cmp al, 40h
-    je .done
-    cmp al, 48h
-    je .done
-    cmp al, 68h
-    je .done
-    ; The rotate forms end the service like their plain forms.
-    and ah, 7fh
-    and al, 7fh
-    ; 20h to 27h are all the non-specific EOI: the level bits only count in
-    ; the specific forms (8259A data sheet, OCW2).
+    and ah, 60h
     cmp ah, 20h
-    jne .not_eoi
+    jne .not_plain_eoi
     mov al, 20h
     jmp .eoi
+.not_plain_eoi:
+    cmp ah, 60h
+    jne .done
+    and al, 7fh
+    mov ah, 60h
 .not_eoi:
     cmp al, [guest_eoi]
     je .guest_eoi

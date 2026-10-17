@@ -5,6 +5,7 @@ HOST_PROTECTED
 dpmi_pic_reset:
     mov word [ebp+dpmi_pic_service], 0
     mov word [ebp+dpmi_pic_read_mode], 0a0ah
+    mov word [ebp+dpmi_pic_icw], 0
     in al, 21h
     mov [ebp+dpmi_pic_mask], al
     in al, 0a1h
@@ -225,38 +226,56 @@ dpmi_pic_io:
     jz .read
     test dl, 1
     jnz .mask
-    ; ICW1 starts an initialisation, which the host does not emulate.
+    ; ICW1 starts an initialisation, which the host does not emulate: the
+    ; controllers keep their bases (0400h) and the ICW2 to ICW4 bytes that
+    ; follow on the mask port are counted off, not taken as masks.
     test al, 10h
-    jnz .failure
-    cmp al, 0ch
-    jne .command
-    ; Poll: the next read answers like the request register.
-    mov al, 0ah
-.command:
-    cmp al, 0ah
-    je .mode
-    cmp al, 0bh
-    je .mode
+    jz .not_icw1
+    mov ah, 1
+    test al, 2
+    jnz .single
+    inc ah
+.single:
+    test al, 1
+    jz .icw_counted
+    inc ah
+.icw_counted:
+    mov [ebp+dpmi_pic_icw+ebx], ah
+    jmp .success
+.not_icw1:
+    ; OCW3 (bits 7 and 4 clear, bit 3 set): bit 1 with bit 0 selects what
+    ; the command port reads, 0Ah the request register, 0Bh the in-service
+    ; register; bit 2 polls (answered as a request read); bits 6:5 set or
+    ; clear special mask mode, which the physical controller keeps for
+    ; itself; with none of them it does nothing (8259A data sheet, OCW3).
     mov ah, al
-    and ah, 0f8h
-    ; Set priority, and special mask mode: the host keeps its own priorities,
-    ; and the physical controller serves the mixer as well.
-    cmp ah, 0c0h
-    je .success
-    cmp al, 40h
-    je .success
-    cmp al, 48h
-    je .success
-    cmp al, 68h
-    je .success
-    ; The rotate forms end the service like their plain forms, and the
-    ; controller gets the plain form.
-    and ah, 7fh
+    and ah, 98h
+    cmp ah, 08h
+    jne .ocw2
+    test al, 4
+    jz .read_select
+    mov al, 0ah
+    jmp .mode
+.read_select:
+    test al, 2
+    jz .success
+    and al, 0bh
+    jmp .mode
+.ocw2:
+    ; OCW2, by bits 6:5 (bit 7 adds a rotation, which the controller keeps
+    ; for itself, as it does the automatic rotation, 00, and set priority,
+    ; 10 with bit 7; 10 alone does nothing): 01 the non-specific EOI,
+    ; whatever the level bits, which count only in the specific form, 11.
+    ; The controller gets the plain form.
     and al, 7fh
-    ; 20h to 27h are all the non-specific EOI: the level bits only count in
-    ; the specific forms (8259A data sheet, OCW2).
+    mov ah, al
+    and ah, 60h
     cmp ah, 20h
-    jne .eoi_form
+    je .plain_eoi
+    cmp ah, 60h
+    jne .success
+    jmp .eoi_form
+.plain_eoi:
     mov al, 20h
 .eoi_form:
     mov [esp+28], al
@@ -321,6 +340,11 @@ dpmi_pic_io:
     mov [esp+28], al
     jmp .forward
 .mask:
+    cmp byte [ebp+dpmi_pic_icw+ebx], 0
+    je .mask_write
+    dec byte [ebp+dpmi_pic_icw+ebx]
+    jmp .success
+.mask_write:
     mov [ebp+dpmi_pic_mask+ebx], al
 .forward:
     popad
@@ -446,4 +470,6 @@ dpmi_pic_mask dw 0ffffh
 HOST_REAL
 ; The real-mode IRQ stubs put the selected register back after a read.
 dpmi_pic_read_mode dw 0a0ah
+; ICW bytes still to come on each controller's mask port after an ICW1.
+dpmi_pic_icw dw 0
 HOST_PROTECTED

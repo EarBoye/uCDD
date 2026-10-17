@@ -316,6 +316,11 @@ monitor_init:
     add eax, dpmi_bridge_done
     mov bl, 0eeh
     call mon_gate
+    mov di, mon_idt+0f6h*8
+    mov eax, [mon_base]
+    add eax, dpmi_exception_default
+    mov bl, 0eeh
+    call mon_gate
 %endif
     xor bp, bp
 .irq:
@@ -1162,7 +1167,11 @@ mon_exception:
     jmp .advance
 .ordinary:
     cmp dword [esp+44], 0
+%ifdef HOST_DPMI
+    jne .idt_fault
+%else
     jne .fault
+%endif
     mov esi, [esp+48]
     xor edi, edi
     mov ecx, 4
@@ -1419,6 +1428,41 @@ mon_exception:
 %endif
     or word [esp+56], 200h
     jmp .advance
+%ifdef HOST_DPMI
+; A #GP with the IDT bit in its error code. A client's INT n to a vector
+; whose gate is an IRQ's (DPL 0, so that only the controller enters it)
+; lands here with n in the error code: every vector reflects by default
+; (DPMI 0.9, section 2.4.2), so it runs as the INT it is, after the two
+; bytes of the instruction, through dpmi_software_interrupt.
+.idt_fault:
+    mov eax, [esp+44]
+    and eax, 3
+    cmp eax, 2
+    jne .fault
+    test byte [esp+52], 3
+    jz .fault
+    cmp byte [ebp+dpmi_active], 0
+    je .fault
+    mov ecx, [esp+44]
+    shr ecx, 3
+    mov ax, [esp+52]
+    mov edx, [esp+48]
+    push ecx
+    mov ecx, 2
+    mov edi, 2
+    call dpmi_buffer
+    pop ecx
+    jc .fault
+    cmp byte [eax], 0cdh
+    jne .fault
+    cmp [eax+1], cl
+    jne .fault
+    add dword [esp+48], 2
+    mov [esp+40], ecx
+    mov dword [esp+44], 0
+    mov ebx, esp
+    jmp dpmi_software_interrupt
+%endif
 .fault:
 %ifdef HOST_DPMI
     cmp byte [ebp+dpmi_active], 0
@@ -1436,9 +1480,19 @@ mon_exception:
     cmp eax, 32
     jae .unhandled
     imul eax, 6
+    ; A fault whose handler chained to the host's default comes through
+    ; once more without its handler (dpmi_exception_default).
+    cmp byte [ebp+dpmi_exception_chained], 0
+    mov byte [ebp+dpmi_exception_chained], 0
+    jne .no_handler
     lea esi, [ebp+dpmi_exceptions+eax]
     cmp word [esi+4], 0
     jne dpmi_deliver_exception
+.no_handler:
+    ; With no handler, exceptions 0-5 and 7 are reflected as interrupts: to
+    ; the protected-mode handler, or with none to the real-mode vector, as
+    ; they would be in real mode; 6 and the faults from 8 up end the client
+    ; (DPMI 0.9, section 10.4).
     mov ecx, [esp+40]
     mov edx, 0bfh
     bt edx, ecx
@@ -1446,12 +1500,6 @@ mon_exception:
     lea esi, [ebp+mon_vectors+eax]
     cmp word [esi+4], 0
     jne .deliver
-    ; With no handler, exceptions 1, 3, 4 and 5 go to the real-mode vector,
-    ; as they would in real mode (DPMI 0.9, section 10.4). 0 and 7 end the
-    ; client, as 6 and the faults from 8 up do.
-    mov edx, 3ah
-    bt edx, ecx
-    jnc .unhandled
     mov ebx, esp
     jmp dpmi_software_interrupt
 .deliver:

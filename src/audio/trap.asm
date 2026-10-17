@@ -496,13 +496,17 @@ port_callback:
     jne .unowned_dma
     and al, 0fch
     or al, 1
-    ; The virtual ESS is programmed with demand-mode transfers (B9h): the
-    ; emulation moves data a period at a time whatever the request mode, so
-    ; demand mode is kept as the single mode of the same kind.
-    cmp byte [virtual_model], 4
-    jne .mode_value
-    test al, 0c0h
-    jnz .mode_value
+    ; Bits 7:6 the request mode: demand and block differ from single only
+    ; in how many transfers go per request, which the emulation does not
+    ; model (it moves data a period at a time), so both are kept as the
+    ; single mode of the same kind; the virtual ESS is programmed with
+    ; demand mode (B9h). Cascade is refused, as are verify (bits 3:2 00) and
+    ; decrement (bit 5) below (8237A data sheet, mode register).
+    mov ah, al
+    and ah, 0c0h
+    cmp ah, 0c0h
+    je .unsupported
+    and al, 3fh
     or al, 40h
 .mode_value:
     cmp al, 49h

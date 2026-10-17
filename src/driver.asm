@@ -423,13 +423,54 @@ ioctl_output:
 audio_request:
     cmp dword [si+AUDIO_ENTRY], 0
     jne .entry
-    ; Without CD audio a stop is ignored and a seek has nothing to move.
+    ; Without CD audio a stop is ignored and a seek has nothing to move; the
+    ; audio IOCTLs answer as an idle drive's head at the start of the disc
+    ; would ("The Q-Channel information is valid even when the drive is
+    ; idle", MSCDEX 2.1, IOCTL input 12), and channel control is taken.
     mov al, [fs:bp+2]
     cmp al, 85h
     je request_ok
     cmp al, 83h
     je request_ok
-    jmp request_unknown
+    cmp al, 0ch
+    je request_ok
+    cmp al, 3
+    jne request_unknown
+    mov al, [es:di]
+    cmp al, 1
+    je .idle_head
+    cmp al, 4
+    je .idle_channels
+    cmp al, 12
+    jne request_unknown
+    ; Q-channel: a data track, ADR 1, track 1 index 1, 00:00:00 into the
+    ; track, 00:02:00 on the disc.
+    cmp cx, 11
+    jb request_error
+    mov dword [es:di+1], 00010141h
+    mov dword [es:di+5], 0
+    mov word [es:di+9], 0002h
+    jmp request_ok
+.idle_head:
+    ; Sector 0: HSG 0, or Red Book 00:02:00 (frame, second, minute).
+    cmp cx, 6
+    jb request_error
+    xor eax, eax
+    cmp byte [es:di+1], 1
+    ja request_error
+    jb .idle_head_store
+    mov ah, 2
+.idle_head_store:
+    mov [es:di+2], eax
+    jmp request_ok
+.idle_channels:
+    ; Inputs 0 to 3 on outputs 0 to 3, the first two at full volume, as
+    ; the audio units report them before a channel control.
+    cmp cx, 9
+    jb request_error
+    mov dword [es:di+1], 0ff01ff00h
+    mov dword [es:di+5], 00030002h
+    jmp request_ok
 .entry:
     call far [si+AUDIO_ENTRY]
     ret

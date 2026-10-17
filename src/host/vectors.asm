@@ -41,14 +41,25 @@ dpmi_set_real_vector:
     call dpmi_bridge_real_vector
     mov [esi], edx
     jmp mon_dpmi.success
+; 0202h: the client's handler, or with none the host's default for that
+; exception, a valid address the client may chain to (DPMI 0.9, 0202h:
+; "a valid protected mode selector"; dpmi_exception_default).
 dpmi_get_exception:
     movzx eax, byte [ebx+24]
     cmp eax, 32
     jae dpmi_bad_value
+    mov ecx, eax
     imul eax, 6
     mov edx, [ebp+dpmi_exceptions+eax]
     mov [ebx+28], edx
     mov dx, [ebp+dpmi_exceptions+eax+4]
+    test dx, dx
+    jnz .selector
+    lea edx, [dpmi_default_exceptions+ecx*2]
+    mov [ebx+28], edx
+    call dpmi_stub_selector
+    mov dx, ax
+.selector:
     mov [ebx+32], dx
     jmp mon_dpmi.success
 dpmi_set_exception:
@@ -126,6 +137,9 @@ dpmi_code_target:
 
 dpmi_exceptions times 32*6 db 0
 dpmi_exception_active db 0
+; Set while an exception a client handler chained to the default goes
+; through mon_exception once more, so that its handler is not called again.
+dpmi_exception_chained db 0
 
 ; AX=return SS, EDX=return ESP. Keep all registers.
 dpmi_stack_target:
@@ -391,6 +405,130 @@ dpmi_reflect:
     jmp mon_exception
 dpmi_reflect_vector db 21h
 
+; Entered through the gate of a default exception stub: the client's handler
+; chained to the host's default, SS:ESP at the exception frame as the host
+; built it (dpmi_deliver_exception). The fault's context comes back from the
+; frame, and mon_exception handles it as with no handler: exceptions 0-5 and
+; 7 go to the protected-mode interrupt handler or to the real-mode vector,
+; the others end the client (DPMI 0.9, section 10.4).
+dpmi_exception_default:
+    DPMI_DEBUG_STOP
+    pushad
+    push ds
+    push es
+    mov ax, 10h
+    mov ds, ax
+    mov es, ax
+    call .base
+.base:
+    pop ebp
+    sub ebp, .base
+    cmp byte [ebp+dpmi_exception_active], 1
+    jne .bad
+    mov ecx, [esp+40]
+    sub ecx, dpmi_default_exceptions+2
+    jc .bad
+    test ecx, 1
+    jnz .bad
+    shr ecx, 1
+    cmp ecx, 32
+    jae .bad
+    cmp word [esp+56], DPMI_IRQ_SS
+    jne .bad
+    ; ESI=the error code's place: 8 bytes into a 32-bit frame, 4 into a
+    ; 16-bit one; on the locked stack within the bounds exception_done keeps.
+    mov esi, [esp+52]
+    mov eax, [ebp+dpmi_exception_cursor]
+    sub eax, 4096-8
+    cmp byte [ebp+dpmi_client16], 0
+    jne .word_frame
+    cmp word [esp+44], 3bh
+    jne .bad
+    add esi, 8
+    cmp esi, eax
+    jb .bad
+    mov eax, [ebp+dpmi_exception_cursor]
+    sub eax, 24
+    cmp esi, eax
+    ja .bad
+    add esi, 3e0000h
+    push esi
+    mov edx, [esi+4]
+    mov ax, [esi+8]
+    call dpmi_code_target
+    pop esi
+    jc .bad
+    mov edx, [esi+16]
+    mov ax, [esi+20]
+    call dpmi_stack_target
+    jc .bad
+    mov edx, [esi]
+    xor eax, eax
+.copy:
+    mov edi, [esi+eax*4+4]
+    mov [esp+40+eax*4], edi
+    inc eax
+    cmp eax, 5
+    jb .copy
+    jmp .restored
+.word_frame:
+    cmp word [esp+44], DPMI_STUB16
+    jne .bad
+    add esi, 4
+    cmp esi, eax
+    jb .bad
+    mov eax, [ebp+dpmi_exception_cursor]
+    sub eax, 12
+    cmp esi, eax
+    ja .bad
+    add esi, 3e0000h
+    push esi
+    movzx edx, word [esi+2]
+    mov ax, [esi+4]
+    call dpmi_code_target
+    pop esi
+    jc .bad
+    movzx edx, word [esi+8]
+    mov ax, [esi+10]
+    call dpmi_stack_target
+    jc .bad
+    movzx edx, word [esi]
+    xor eax, eax
+.word_copy:
+    movzx edi, word [esi+eax*2+2]
+    mov [esp+40+eax*4], edi
+    inc eax
+    cmp eax, 5
+    jb .word_copy
+.restored:
+    ; ECX=the exception, EDX=its error code; the fault's context is in the
+    ; gate's frame now, as when the exception was taken.
+    mov byte [ebp+dpmi_exception_active], 0
+    mov eax, [esp+48]
+    call dpmi_restore_flags
+    mov [esp+48], eax
+    call dpmi_stack_release
+    mov byte [ebp+dpmi_exception_chained], 1
+    ; mon_exception's frame has the exception and the error code below the
+    ; client's EIP: the saved registers move down 8 bytes to make room.
+    mov ebx, ecx
+    sub esp, 8
+    xor ecx, ecx
+.shift:
+    mov eax, [esp+ecx*4+8]
+    mov [esp+ecx*4], eax
+    inc ecx
+    cmp ecx, 10
+    jb .shift
+    mov [esp+40], ebx
+    mov [esp+44], edx
+    pop es
+    pop ds
+    popad
+    jmp mon_exception
+.bad:
+    jmp dpmi_exception_done.bad_return
+
 ; Preserve arithmetic results across the default vector's outer IRET.
 dpmi_reflect_flags:
     cmp word [ebx+44], 3bh
@@ -451,6 +589,13 @@ dpmi_default_vectors:
 %rep 256
     int 0f2h
     iret
+%endrep
+; The default exception handlers 0202h hands out, one INT a vector: a
+; client's handler that chains to one jumps here with the host's exception
+; frame as it got it (dpmi_exception_default).
+dpmi_default_exceptions:
+%rep 32
+    int 0f6h
 %endrep
 
 ; EBX=interrupt frame, ESI=protected vector of a software INT 00h-07h. Its

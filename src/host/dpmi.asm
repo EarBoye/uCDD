@@ -621,6 +621,7 @@ dpmi_client_init:
     mov ecx, 32*6/4
     rep stosd
     mov byte [ebp+dpmi_exception_active], 0
+    mov byte [ebp+dpmi_exception_chained], 0
     lea edi, [ebp+dpmi_callbacks]
     mov ecx, 16*20/4
     rep stosd
