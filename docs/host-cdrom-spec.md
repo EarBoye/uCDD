@@ -1,6 +1,6 @@
 # The host, the CD-ROM driver and the virtual PIC and DMA: reference check
 
-Version 0.1, 17 Oct 2026. The parts of uCDD outside the sound cards, read
+Version 0.2, 17 Oct 2026 (0.1 the same day). The parts of uCDD outside the sound cards, read
 against their specifications: the DPMI host, its use of VCPI, XMS, EMS and
 JemmEx, the CD-ROM device driver under MSCDEX, and the virtual 8259A and
 8237A the driver keeps for games. It starts from the review in the
@@ -45,6 +45,8 @@ reprogrammable (D09:353-356, 2082-2104).
 | D-4 | With no handler, exceptions 0 and 7 ended the client; only 1, 3, 4 and 5 were reflected. | D09:1428-1431 | **Fixed.** 0-5 and 7 go to the protected-mode interrupt handler, or with none to the real-mode vector, as the spec says. [86Box: DPMIG Z, a divide by zero, reaches the real-mode INT 0; the old build ends.] |
 | D-5 | An ICW1 written to the host's virtual PIC was refused: #GP, and the client ended. | D09:353-356 | **Partly fixed.** ICW1 is taken and the ICW2-ICW4 that follow are counted off, not read as masks; the bases stay as 0400h reports them (open: a client that moves them under DPMI). [86Box: DPMIG P, the mask reads the same before and after.] |
 | D-6 | 000Dh (allocate a specific LDT descriptor) is not supported, and the host keeps LDT entries 6 and 7 for itself, which 0.9 reserves for clients. | D09:1142-1160 | Open. |
+| D-7 | A software interrupt reflected to real mode came back with the client's virtual IF as it was before the call, whatever the real-mode handler did with it; the handler always got a flags image with IF set (202h). Mortal Kombat Trilogy waits for ever under the host (section 7). | D09:304-322, 411; D10:1428-1439, 1531-1532 | **Changed, a disagreement with the specification; Michael to decide.** The handler's flags image carries the client's virtual IF, and a handler that returns with interrupts enabled turns the client's virtual IF on. The keyboard services do that (the BIOS's INT 16h and MS-DOS 7's hook of it end with STI and RETF 2); a handler that returns through its IRET frame leaves the client's flag as it was. [86Box: the game reaches the fight with CD music; QEMU, the game without the host: DOS/4GW's own INT 16h starts with STI and returns with RETF, IF on in 12 of 12 calls made with IF off.] |
+| D-8 | A stepped interrupts-off region has no bound: the host steps until the region ends, so a long first region from a CLI site (a game that draws a frame with interrupts off) costs about 10,000 steps a second in 86Box. | none (cost) | Open. A step budget with a learned "long region" site state was tried (it fixed nothing on its own here, and it can miss a POPF that ends a region after the budget); not kept. |
 | - | Harmless, kept as they are: callback entry leaves the structure's CS:IP stale; a fresh locked-stack page per nesting level; separate descriptors for DS and SS when equal; CL=3 on every CPU; the audio and disk IRQs go to real mode first (a design choice); callbacks on their own stack. | review 1.3 | No change. |
 
 ## 2. VCPI, XMS, EMS and JemmEx
@@ -115,3 +117,59 @@ on so that the host is offered (DPMIG needs it):
 | DPMIG P | ends the client | ISR 00, mask B8 B8 |
 | DPMIG Z | ends the client | real-mode INT 0 |
 | CDPLAY G Q, DATA.ISO | IOCTL 12, 1, 4: 8103h | 0100h, an idle drive at sector 0 |
+
+Mortal Kombat Trilogy from the library, the driver as on Michael's PC (not
+forced on), keys to the first fight: before D-7 it stops at the character
+select or the Battle screen with the timer IRQ waiting; with it, the menu,
+the character select, Choose Your Destiny and the fight, as in the run
+without the driver. With the full disc (audio tracks) the fight music plays
+through the driver. [86Box]
+
+## 7. Mortal Kombat Trilogy and the virtual IF (D-7)
+
+The game runs under DOS/4GW. Its scripts run in an interpreter that
+disables interrupts before it returns into the C code that called it
+(`CLI` then `JMP [EBX]`; EIP D47F7 in the game's code), so the C code goes
+on with interrupts off: input, drawing, the copy to the screen and a frame
+limiter that polls the timer count its own IRQ 0 handler advances. On the
+bare machine the next keyboard poll turns interrupts on again: DOS/4GW, as
+its own host under VCPI, handles INT 16h itself, and its handler starts with
+STI and returns with RETF. Under uCDD's host DOS/4GW is a DPMI client, does
+not install that handler, and the host reflects INT 16h to real mode. The
+BIOS and MS-DOS 7's hook end it with STI and RETF 2, but the host kept the
+client's virtual IF off, so the frame limiter waited for a tick that never
+came. The same happens to any game the host runs that was built on this
+behaviour.
+
+The specification is against the change. DPMI 0.9 (2.3) and 1.0 ("Virtual
+Interrupts") say a client that cleared its flag gets no hardware interrupts
+until it executes STI or calls 0901h, and both say that software interrupts
+other than 00h-07h "do not modify the interrupt flag state". DOS/4GW
+without a DPMI host, the environment the game was built for, disagrees
+(measured below). Windows' DOS sessions may as well, since Windows keeps the
+interrupt flag per virtual machine; that is neither measured nor taken from
+a document here.
+
+How the evidence was taken:
+- QEMU 11.1, the game without uCDD under JemmEx (DOS/4GW at ring 0), gdb on
+  QEMU's stub. A breakpoint at the CLI (linear 5F07F7 there; the game is
+  flat under VCPI and based at 5C4000h under the host): IF on again 81
+  instructions later, at the interpreter's next STI, on the same stack every
+  time (the main program, not an interrupt handler). The INT 16h with IF
+  forced off: IF on after it in 12 of 12 calls; stepped through, DOS/4GW's
+  handler at 0070:04FA is STI, its real-mode call, then STI and RETF.
+- 86Box, the host's diagnostic build: the region from that CLI never sees an
+  STI or an IRET or POPF that sets IF; it runs through the drawing and into
+  the frame limiter. Stepping natively (the decoder's emulation turned off)
+  gives the same path, so the emulation is not the cause.
+- QEMU has no game port, and the game's joystick read clears only CX before
+  a `LOOPNE` that counts ECX: without a port it waits up to 2^32 reads. The
+  QEMU runs patched that loop's count in memory to 65536.
+
+What the host does now: the real-mode handler's flags image carries the
+client's virtual IF (it had IF set always); after it returns, IF set in its
+flags turns the client's virtual IF on, as an STI would (the region's CLI
+site learns it as an STI end). A handler that returns through its IRET frame
+gives back the client's own flag, so a `CLI` / `INT 21h` keeps interrupts
+off as before. Only the off-to-on direction is taken: a handler returning
+with interrupts off does not turn the client's flag off.

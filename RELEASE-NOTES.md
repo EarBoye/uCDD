@@ -19,6 +19,7 @@ JemmEx).
 - Unmount by CUE sheet name; `-unmount NAME.CUE` matches a mount made from that sheet.
 - Install without `DOS=UMB` or on FreeDOS; a DOS that cannot link UMBs no longer fails the install.
 - MSCDEX details: interleave size and skip are ignored, Read Long takes Red Book addresses, Stop and Seek on a unit without audio return done, Eject works while the driver's own audio is bound, audio channel control accepts every mapping, the volume size is the disc up to the lead-out, the track control byte carries ADR 1, the raw sector size is 2352, a bad request length is error 5, a transfer address above 1 MiB returns general failure, and the media-changed answer stays "changed" after the mounting helper's own query until the redirector reads the disc.
+- An image with no CD audio answers the audio IOCTLs (Q-channel, head position, channels) as an idle drive at sector 0, and takes channel control, as MSCDEX 2.1 asks.
 - Fix memory corruption after exit when a game passes a protected-mode pointer to MSCDEX: a flat segment is reflected to real mode as segment A000h, not 0. Hardware.
 - Find the PCI disk controllers at `UCDD -install` through the PCI BIOS and pass their IRQs to DOS directly, with IRQ 14 and 15 and an IRQ set by hand in UCDDSET. A DOS/4GW game no longer freezes at its banner on a machine whose disk controller uses another IRQ. `UCDDPCI=OFF` skips the scan.
 
@@ -27,6 +28,7 @@ JemmEx).
 - Native ESS AudioDrive output through the chip's extended mode at 44.1 kHz, with a half-rate model that costs less CPU time. Register BAh is written only on an ES1868 or ES1878. Hardware, ES1868.
 - The ES1868 is recognised and its clock trimmed to an exact 44.1 kHz. The identification rewrote the mixer index before each read, which restarts the chip's answer, and lost the first byte to a port read, so every ESS ran at 44194 Hz with every CD frame interpolated. CD audio costs 2 to 3 percent of a Pentium 233 instead of 5. Hardware.
 - The physical interrupt handler on IRQ 7 switched to a stack in a segment taken from the interrupt controller's answer, over conventional memory at 512 KB. It loads its own segment again.
+- The virtual DMA controller takes demand and block mode as single mode (the emulation moves a period at a time whatever the mode); cascade, verify and decrement stay refused.
 - The common mixer chains (8-bit stereo and mono game sound with and without the disc, silence with the disc) run as single loops; the CD-only mixing takes a third less, a mono stream on a 386 a sixth less. Bit-identical.
 - The timer refill reads 16 KB per pass instead of up to 128 KB, so a 386 with an ISA disk waits 30 ms at a time instead of 200.
 - A virtual **ESS AudioDrive** model, offered in UCDDSET only with a physical ESS: a DSP 3.01 Sound Blaster Pro with the physical chip's own ESS identification (E7h) and the extension registers (C6h, C7h, C0h, A0h to BFh), so a game set to ESS plays 8- or 16-bit mono or stereo at the rate it programs over the 8-bit channel, in demand or single DMA mode, with mixer register 14h as the voice volume. Recording, ESPCM and ADPCM are not emulated; the FM side is the real chip's.
@@ -56,6 +58,10 @@ JemmEx).
 - Spurious IRQ 7 and 15 are dropped by the real-mode bridge stubs (IRQ 7 unless the virtual Sound Blaster is on it); the PIC read register is put back after the in-service probes; the spurious cascade EOI is specific.
 - Four of the seven trapped ports a game touches per sound interrupt (mixer index write, mixer data read, the DSP status reads that acknowledge, the DMA flip-flop reset) are answered in protected mode without a switch to the driver.
 - Less time on a 386: the pending test comes before the controller reads, the general protection fault decoder fetches four code bytes with one page walk, the real-mode transfer copies doublewords, and the plain EOIs with nothing virtual to end are answered in the host.
+- 0202h hands out a handler for each exception a program has not hooked, instead of 0000:0; a handler that chains to it gets the host's own handling. Without a handler, exceptions 0 to 5 and 7 are reflected as interrupts, as DPMI 0.9 asks (0 and 7 ended the program).
+- A program's INT n to a vector where an IRQ lands (08h-0Fh, 70h-77h under JemmEx) runs as a software interrupt instead of ending the program.
+- The host's virtual PIC takes ICW1 and every form of OCW2 and OCW3; some ended the program.
+- A software interrupt reflected to real mode whose handler comes back with interrupts enabled (the keyboard services: STI, then RETF 2) turns the program's virtual interrupt flag on, as DOS/4GW's own INT 16h does when it is the host. This fixes the hang at the character select and the Battle screen in Mortal Kombat Trilogy. The letter of DPMI 0.9 and 1.0 says software interrupts leave the flag alone; docs/host-cdrom-spec.md (D-7) has the case.
 
 ## UCDDSET
 

@@ -372,7 +372,14 @@ dpmi_dos_translate:
     mov ecx, 8
     rep movsd
     pop edi
-    mov word [edi+32], 202h
+    ; The flags image the real-mode handler returns through carries the
+    ; client's virtual IF, as the INT would have pushed it.
+    mov ax, 2
+    cmp byte [ebp+dpmi_vif], 0
+    je .flags_ready
+    mov ah, 2
+.flags_ready:
+    mov [edi+32], ax
     movzx eax, byte [ebp+dpmi_reflect_vector]
     call mon_real_int
     xor al, al
@@ -394,6 +401,20 @@ dpmi_dos_translate:
     mov ax, [esi]
     and ax, 08d5h
     or [ebx+48], ax
+    ; A handler that comes back with interrupts enabled turns the client's
+    ; virtual IF on: the keyboard services (the BIOS's INT 16h and MS-DOS's
+    ; hook of it) return with STI and RETF 2, and games built for DOS/4GW
+    ; rely on it, whose own INT 16h ends with STI as well. One that returns
+    ; through its IRET frame leaves the flag as the client had it.
+    test byte [esi+1], 2
+    jz .flag_kept
+    cmp byte [ebp+dpmi_vif], 0
+    jne .flag_kept
+    call dpmi_cli_learn_sti
+    mov byte [ebp+dpmi_vif], 1
+    mov byte [ebp+dpmi_step_active], 0
+    and word [ebx+48], 0feffh
+.flag_kept:
     jmp mon_dpmi.done
 .descriptor_full:
     mov ax, 8011h
