@@ -127,8 +127,14 @@ changed volumes.
   host feature of its own for one game; runs without the driver.
   Shellshock: DOS/4GW divide error in its own timer
   code when the timer interrupt arrives late (a latency question). Mass
-  Destruction: its disc lists empty under MSCDEX 2.25 (M-5, bit 10).
+  Destruction: fixed on `cdrom-bit10` (M-5, status bit 10 as OAKCDROM
+  sets it).
   docs/host-cdrom-spec.md section 10.
+- Star Command Revolution: with its disc's files visible (status bit 10,
+  as on the real PC under SHSUCDX) the game plays its Smacker intro, and
+  under the host that intro stalls: the client spins in a 16-bit code
+  segment with interrupts off, a region the host single-steps. Without the
+  driver (86Box's own drive, OAKCDROM) the intro plays. Open.
 - Chasm: The Rift does not run under the driver in 86Box. On
   `host-gauntlet` its RTM passes the DPMI check (D-11), stays resident as
   it is built to (D-12), and the game reaches its start-up screen with
@@ -140,8 +146,8 @@ changed volumes.
   all valid (pointer, descriptor and page checked at the fault), which
   Intel's description of LES does not allow: 86Box itself is suspect.
   The real PC decides.
-  MSCDEX 2.25 lists nothing on its CD-i Bridge disc under the driver
-  (M-5, device status bit 10, a decision); with the disc listed it ends
+  MSCDEX 2.25 listed nothing on its CD-i Bridge disc under the driver
+  until `cdrom-bit10` (M-5, device status bit 10); with the disc listed it ends
   in "Memory allocation error" as Beta 0.9.3b did (memory not given back,
   not a broken chain, as checked on 18 Oct without bit 10). Runs without
   the driver. docs/host-cdrom-spec.md section 9. The real PC uses SHSUCDX,

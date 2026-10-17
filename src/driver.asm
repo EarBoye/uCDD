@@ -295,7 +295,14 @@ ioctl_input:
     mov [es:di+3], cs
     jmp request_ok
 .status:
-    xor eax, eax
+    ; Bit 10 is reserved in MSCDEX 2.1 (RBIL names it "audio is playing"),
+    ; yet MSCDEX 2.25 lists the XA files of a CD-i Bridge disc (Chasm: The
+    ; Rift, Mass Destruction) only from a driver that sets it, and the
+    ; period drivers do: OAKCDROM reports 796h with nothing playing. Copied
+    ; from them, as the real hardware's answer (M-5, docs/host-cdrom-spec.md).
+    ; A capability, so it is set with or without a disc: MSCDEX reads the
+    ; word once, when it loads, before any disc is mounted.
+    mov eax, 0400h
     cmp byte [si+LOCKED], 0
     jne .lock_status
     or ax, 2
@@ -306,8 +313,7 @@ ioctl_input:
     jmp .status_done
 .status_disc:
     ; Raw reading (bit 2) where the image holds whole sectors (MSCDEX 2.1,
-    ; Device Status and the data read mode of READ LONG). MSCDEX hides the
-    ; XA files of a CD-i Bridge disc from a driver without it.
+    ; Device Status and the data read mode of READ LONG).
     cmp word [si+STRIDE], 2352
     jne .status_done
     or ax, 4
