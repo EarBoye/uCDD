@@ -440,7 +440,7 @@ observable behaviour identical with it on and off.
    sound. Evidence from the ESS drivers and the game set decides the
    order, never whether.
 
-## 12. The mantra (16 Oct 2026)
+## 12. The mantra (16 Oct 2026, rule 1 amended 17 Oct 2026)
 
 Agreed with Michael after a review; it replaces the three principles of
 15 Oct. When the rules conflict, rule 5 sets the order.
@@ -453,6 +453,23 @@ Agreed with Michael after a review; it replaces the three principles of
      decides first, then the real hardware we have.
    - That hardware is one sample, not the whole family. Every disagreement
      between documents, emulators and hardware is written down.
+   - Only a game can override the specification, and only where it
+     specifically requires it (amended 17 Oct 2026). All four must hold:
+     a) a named game fails with the specified behaviour;
+     b) the failure is traced to the exact behaviour the game depends on,
+        and that behaviour is measured in the environment the game was
+        built for (its own DOS extender or the bare machine, in an
+        emulator at least);
+     c) the change is the narrowest that makes the game work (one vector,
+        one command, one case), and everything else keeps to the
+        specification;
+     d) it is written beside the specification item it breaks, with the
+        game, the evidence and its grade, and named as a deviation in the
+        code.
+     Convenience, speed, tidiness or a guess about other software never
+     justify a deviation. If one cannot be kept that narrow, the
+     specification stays and the game is listed as not working, with the
+     reason.
 2. **We are platform and hardware agnostic.**
    - The driver works from a 386 to an Athlon or Pentium III; the 386 is
      best effort.
@@ -464,8 +481,9 @@ Agreed with Michael after a review; it replaces the three principles of
    record which.
 4. **Performance is the crown we earn.** If the specification allows it,
    we reach for it.
-5. **When rules conflict, the order is: specification, then working on
-   every platform, then accurate audio, then performance.**
+5. **When rules conflict, the order is: specification (its one exception:
+   rule 1's game that requires otherwise), then working on every platform,
+   then accurate audio, then performance.**
    - Added latency never exceeds 16 ms.
    - Within that ceiling, a system that cannot keep up may get a longer
      period, downsampled audio or another allowance, and we record why.
@@ -488,3 +506,11 @@ Agreed with Michael after a review; it replaces the three principles of
    hardware.
 9. **We write beautiful, efficient, well-commented code for humans to
    read.**
+
+The amendment of 17 Oct 2026 came from Mortal Kombat Trilogy under the
+DPMI host. DPMI 0.9 and 1.0 say a software interrupt leaves the client's
+interrupt flag alone; the game waits with interrupts off until a keyboard
+poll turns them on, as INT 16h does when DOS/4GW is its own host. Michael:
+"Spec first, unless games specifically require otherwise." Held to the
+bar above, the fix covers INT 16h alone (docs/host-cdrom-spec.md on
+`host-gauntlet`, D-7).
