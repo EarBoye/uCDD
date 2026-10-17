@@ -270,14 +270,16 @@ the quickest next answer: RGKIT asks for it.
 
 Protected-mode CD games that the first sweep could not run, each run under
 the driver and again without it (86Box's own drive, OAKCDROM, MSCDEX), so
-that a failure in both is the rig's and only one in the first is ours.
+that a failure in both belongs to the 86Box test setup and only one in the
+first is ours.
 
-- Same both ways (the rig, the cut disc or the launcher): Alien Trilogy and
-  Destruction Derby (their disc checks reject the shortened disc), Amok,
-  Extreme Assault, GTA, Inferno, Micro Machines 2, Battle Arena, Screamer
-  Rally, Shadow Warrior (launcher steps fail), Magic Carpet 2 and Worms
-  Reinforcements (no mouse driver in the rig), Warcraft II CD (its launcher
-  mounts a .MDM that the disc cutter does not copy).
+- Same both ways (the test setup, the cut disc or the launcher): Alien
+  Trilogy and Destruction Derby (their disc checks reject the shortened
+  disc), Amok, Extreme Assault, GTA, Inferno, Micro Machines 2, Battle
+  Arena, Screamer Rally, Shadow Warrior (launcher steps fail; the third
+  batch below ran the ones whose launchers carry a number), Magic Carpet 2
+  and Worms Reinforcements (no mouse driver in the test setup), Warcraft
+  II CD (its launcher mounts a .MDM that the disc cutter does not copy).
 - Ours, fixed: Lollypop (M-10).
 - Ours, open: Super Street Fighter II Turbo. Its batch first runs
   MAKESWP.EXE, a 32RTM program (Borland's 32-bit loader, with its own host
@@ -305,8 +307,8 @@ that a failure in both is the rig's and only one in the first is ours.
   driver the timer interrupt arrives later. A latency question (D-8, the
   period handler), not a single fault.
 
-The games too big for the rig's 504 MB D: (33) ran later the same night
-on a D: with 255 heads (the rig's GL_BIGD), with and without the driver:
+The games too big for the test setup's 504 MB D: (33) ran later the same
+night on a D: with 255 heads, with and without the driver:
 
 - Run both ways (host lines are the game's own doing): Little Big
   Adventure 2 (1977 general protection faults its handler takes),
@@ -314,9 +316,9 @@ on a D: with 255 heads (the rig's GL_BIGD), with and without the driver:
   Mechwarrior 2 Mercenaries, and more whose screens show the game.
 - Better under the driver: Time Warriors (without it, DOS/4GW reports a
   page fault for want of memory).
-- The rig's: launchers that fail ("Bad command or file name"), no mouse
-  driver (Capitalism Plus, Deus), multi-disc games whose .MDM the disc
-  cutter leaves out (Creature Shock, Storm 96), Stonekeep's data path.
+- The test setup's: launchers that fail ("Bad command or file name"), no
+  mouse driver (Capitalism Plus, Deus), multi-disc games whose .MDM the
+  disc cutter leaves out (Creature Shock, Storm 96), Stonekeep's data path.
 - Ours, open: Inca II warns "Not enough extended memory, RAM: -6183 Ko"
   and plays on with fewer effects. Not from 0500h: filling its total
   physical pages (offset 18h, -1 now as DPMI 0.9 allows) changed
@@ -325,3 +327,30 @@ on a D: with 255 heads (the rig's GL_BIGD), with and without the driver:
   with 0008h, insufficient memory (without the driver it reaches its
   menu); Battle Race 95 stays on its loading screen.
 
+A third batch, early on 18 Oct: 17 games had stopped at "Bad command or
+file name" because their launchers carry a number (BLOOD01.BAT,
+GTA01.BAT) and the test setup looked for GAME.BAT. It now takes the first
+launcher that changes to the game's folder.
+
+- The game on screen under the driver: Battle Arena Toshinden,
+  Carmageddon Max Pack, Descent II Vertigo, Extreme Assault, Rayman
+  Forever, Shadow Warrior, Dungeon Keeper, Redguard. Screamer 2 and
+  Screamer Rally play the same attract sequence with and without the
+  driver (a screenshot every 15 s for 150 s, no keys; under the driver
+  they start about 15 s later and keep that distance), although the host
+  refuses hundreds of their small 0100h requests (64 to 96 bytes) with
+  0008h, no DOS memory left. Time Commando's refusals are of the same
+  kind (0100h, 0008h) and do stop that game.
+- The test setup's: Archimedean Dynasty, Blood, MechWarrior 2 and Heroes
+  of Might and Magic II stop for want of a mouse driver. Redneck Rampage
+  reports "Playback failed, possibly due to an invalid or conflicting
+  IRQ" both ways: its REDNECK.CFG names IRQ 7, the card is on 5, and the
+  test setup skips the game's first-run setup. GTA says its CD is not
+  present both ways (the shortened disc). Red Alert's launcher mounts a
+  .MDM that the disc cutter leaves out; given a list naming the cut
+  discs, the driver mounts it and the game returns to DOS with an error
+  level, as it does without the driver.
+- Not examined: refused 0502h calls (8023h, invalid handle) in Descent II
+  Vertigo, Screamer Rally and Red Alert, none with a visible effect. The
+  sweep's log line shows the caller's EBX, not the handle, so whose
+  handle it was is not known.
