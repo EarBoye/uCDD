@@ -288,6 +288,8 @@ dpmi_terminate_hook:
     mov ax, [es:1]
     cmp ax, [dpmi_psp]
     je dpmi_terminate_real.released
+    ; AX is this segment again: the return frame below takes it.
+    mov ax, cs
     mov byte [dpmi_terminated], 1
 %ifdef RESIDENT_HOST
     cmp byte [dpmi_nested_depth], 0
