@@ -1167,7 +1167,7 @@ resident_io:
     ret
 .data:
     ; The CT1745's registers read as the driver's image of them holds them
-    ; (FFh where the chip has none).
+    ; (audio/sb_mixer.asm).
     test ch, ch
     jnz .callback
     mov esi, [ebp+resident_fast]
@@ -1180,8 +1180,8 @@ resident_io:
     ; driver reads (irq.asm, virtual_mpu_refresh).
     test al, 4
     jnz .callback
-    ; Bit 5: the DSP 4.05's revision (audio/sb_mixer.asm).
-    or al, 20h
+    ; Bit 7: the DSP 4.13's revision (audio/sb_mixer.asm).
+    or al, 80h
     clc
     ret
 .data_register:

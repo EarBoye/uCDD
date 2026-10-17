@@ -2,8 +2,8 @@
 
 ; ADPCM on the virtual Sound Blasters (Creative's guide, "ADPCM DMA mode";
 ; vsb/SPEC.md 7.5). Creative documents the commands but not the decoding,
-; so this follows the DSP's own firmware: the CT1741 4.05 and the SB Pro 2's
-; 3.02, which run the same engine (S95Sedan's disassembly, CT1741_DSP on
+; so this follows the DSP's own firmware: the CT1741 4.05 (the 4.13's
+; decoders are the same) and the SB Pro 2's 3.02, which run the same engine (S95Sedan's disassembly, CT1741_DSP on
 ; GitHub) [fw]. The virtual ESS decodes its ADPCM as the emulators do
 ; (ess_fifo.asm); the families differ (rule 6).
 ;
@@ -249,7 +249,7 @@ sb_adpcm_decode:
 .two_done:
     ret
 ; AL=the delta, BH=FFh to subtract: the level moves, saturating at 0 and
-; 255. (In one path, a 2-bit 0 code adding past 255, the 4.05 and 3.02
+; 255. (In one path, a 2-bit 0 code adding past 255, the 4.05, 4.13 and 3.02
 ; firmware load the direct byte at FFh, an SFR, where 0FFh was meant; the
 ; intent is taken.)
 .move:

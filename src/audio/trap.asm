@@ -471,6 +471,11 @@ port_callback:
     jne .unowned_dma
     and al, 4
     mov [si+DMA_MASK], al
+    ; An unmask lets an E2h byte the SB16 holds go.
+    test al, al
+    jnz .mask_kept
+    call sb_identify_release
+.mask_kept:
 %ifdef WSS_INPUT
     test al, al
     jnz .done
@@ -513,6 +518,7 @@ port_callback:
     jmp .done
 .clear_mask:
     mov byte [si+DMA_MASK], 0
+    call sb_identify_release
     mov dx, 0ah
     mov bx, [guest_dma8]
     cmp si, dma8
@@ -602,6 +608,10 @@ port_callback:
     inc cl
     cmp cl, 4
     jb .all_mask_bit
+    cmp byte [si+DMA_MASK], 0
+    jne .all_mask_done
+    call sb_identify_release
+.all_mask_done:
 %ifdef WSS_INPUT
     cmp si, dma8
     jne .done
@@ -638,7 +648,8 @@ port_callback:
     jne .done
     cmp byte [sb_highspeed], 0
     jne .done
-    ; A halted DSP (sb_hung) takes nothing until a reset.
+    ; A halted DSP (sb_hung) takes nothing until a reset, or while it holds
+    ; an E2h byte, until the DMA takes it.
     cmp byte [sb_hung], 0
     jne .done
     ; In the SB-MIDI UART modes every write is MIDI data (SBG:2820-2832);
@@ -653,7 +664,7 @@ port_callback:
     ; dropped here; the chip would hold it in its mailbox.
     cmp word [reply_pointer], 0
     jne .done
-    ; FDh reads the command before it (the 4.05's command_reg).
+    ; FDh reads the command before it (the 4.05's and 4.13's command_reg).
     mov ah, al
     xchg ah, [sb_command_byte]
     mov [sb_previous_command], ah
@@ -728,7 +739,7 @@ port_callback:
     jmp .done
 ; 30h-33h: MIDI input by polling or interrupt (SBG:3426-3456). No input
 ; arrives here; the next write ends the mode and is dropped ("send the
-; command 31h again"; the 4.05 and 3.02 drop any byte).
+; command 31h again"; the 4.05, 4.13 and 3.02 drop any byte).
 .midi_input:
     mov byte [sb_midi_uart], 2
     jmp .done
@@ -755,7 +766,7 @@ port_callback:
     jmp .done
 ; The SB16's commands for the CSP (the ASP), which the card may lack: reads
 ; of the absent chip's ports give FFh (a ViBRA without one, DOSBox-X); the
-; 4.05 answers as follows [fw]. 01h, an upload: 00h at once, then the
+; 4.05 and 4.13 answer as follows [fw]. 01h, an upload: 00h at once, then the
 ; length; the program, its checksum and its name after it are not taken.
 .csp_upload:
     mov word [dsp_handler], .ignore
@@ -773,7 +784,7 @@ port_callback:
 .csp_lock:
     mov ax, 0ff00h
     jmp .two_replies
-; The 4.05 after 0Bh's or 0Ch's length, waiting for the chip, and the 3.02
+; The 4.05 and 4.13 after 0Bh's or 0Ch's length, waiting for the chip, and the 3.02
 ; at 08h-0Fh: the DSP takes nothing until a reset [fw].
 .halt:
     mov byte [sb_hung], 1
@@ -790,11 +801,12 @@ port_callback:
     mov word [dsp_handler], .ignore
     mov byte [arguments], 2
     jmp .done
-; F4h on the 4.05: two fixed bytes [fw].
+; F4h on the 4.13: two fixed bytes, A4h 6Fh (the 4.05's are 7Dh 1Bh) [fw;
+; the CT2290].
 .dsp_signature:
-    mov ax, 1b7dh
+    mov ax, 6fa4h
     jmp .two_replies
-; F9h, FAh: the 4.05's internal RAM [fw]. The bytes that hold this card's
+; F9h, FAh: the 4.05's and 4.13's internal RAM, laid out alike there [fw]. The bytes that hold this card's
 ; state here are the 8-bit block length (0Eh, 0Fh), the test register
 ; (2Ah) and the last two commands (20h, 30h); the others read 00h and take
 ; no write.
@@ -809,7 +821,7 @@ port_callback:
     mov al, [dsp_args+1]
     mov [bx], al
     jmp .done
-; FBh: the 4.05's status byte: bit 4 the speaker flag, bit 6 the timer's
+; FBh: the 4.05's and 4.13's status byte: bit 4 the speaker flag, bit 6 the timer's
 ; reload [fw]; the DMA handshake bits are only set within a command.
 .dsp_status:
     mov al, [sb_speaker_flag]
@@ -818,7 +830,7 @@ port_callback:
     je .one_reply
     or al, 40h
     jmp .one_reply
-; FCh: the 4.05's auxiliary byte: bit 2 an 8-bit, bit 4 a 16-bit auto-init
+; FCh: the 4.05's and 4.13's auxiliary byte: bit 2 an 8-bit, bit 4 a 16-bit auto-init
 ; transfer running that no exit command ends [fw].
 .dsp_auxiliary:
     xor al, al
@@ -1098,22 +1110,16 @@ port_callback:
     mov byte [sb_paused], 1
     mov byte [game_active], 0
     jmp .done
-; 41h, 42h: the rate, high byte first (SBG:3573-3599); one rate for output
-; and input.
+; 41h, 42h, and on the 4.13 43h: the rate, high byte first (SBG:3573-3599);
+; one rate for output and input. The DSP keeps it as its rate register
+; (sb16_rate_register) and plays that register's step, so 22050 Hz plays
+; at 22083 Hz, as time constant D3h does [fw; the CT2290 plays the two
+; alike].
 .rate:
     mov ah, [dsp_args]
     mov al, [dsp_args+1]
-    ; Outside 5000-45000 Hz (SBG:3573) the 4.05 plays below 4864 Hz at
-    ; 4986 Hz and from 45312 Hz at 45412 Hz, its rate register's 1Ch and FFh
-    ; [fw].
-    cmp ah, 13h
-    jae .rate_floor
-    mov ax, 4986
-.rate_floor:
-    cmp ah, 0b1h
-    jb .rate_ceiling
-    mov ax, 45412
-.rate_ceiling:
+    call sb16_rate_register
+    call sb16_register_rate
     mov [rate_pending], ax
 .set_rate:
     ; The rate is checked before it replaces game_rate, which divides later.
@@ -1141,17 +1147,24 @@ port_callback:
     mov [legacy_rate], ax
     call sb_game_step
     jmp .done
-; 40h: the time constant (SBG:3553-3568). The SB16's 4.05 plays EAh and
-; above at its highest rate, 45412 Hz [fw].
+; 40h: the time constant (SBG:3553-3568). The SB Pro and the SB 2.0 count
+; it as the guide's formula has it, 1000000/(256-TC) bytes a second. The
+; SB16 looks it up in its firmware's table of rate registers instead
+; (sb16_time_table), whose entries round down: D3h, 22222 Hz by the
+; formula, plays at 22083 Hz [fw; the CT2290 plays it as 41h 22050].
 .time_constant:
     movzx ecx, byte [dsp_args]
     cmp byte [virtual_model], 0
     jne .time_value
-    cmp cl, 0eah
-    jb .time_value
-    mov word [legacy_pending], 45412
-    mov ax, 45412
-    jmp .time_mono
+    ; EBh and above read as EBh.
+    cmp cl, 0ebh
+    jb .time_lookup
+    mov cl, 0ebh
+.time_lookup:
+    mov bx, cx
+    mov al, [sb16_time_table+bx]
+    call sb16_register_rate
+    jmp .time_rate
 .time_value:
     neg ecx
     add ecx, 256
@@ -1160,6 +1173,7 @@ port_callback:
     div ecx
     cmp eax, 65535
     ja .command_unsupported
+.time_rate:
     mov [legacy_pending], ax
     test byte [sb_pro_stereo], 2
     jz .time_mono
@@ -1679,7 +1693,7 @@ port_callback:
     ; 90h, 91h, 98h and 99h: high-speed mode, where a reset keeps the DSP's
     ; parameters (sb_warm). On the SB 2.0 and the SB Pro it takes no
     ; command until a reset, or until a single-cycle block ends
-    ; (SBG:1346-1351); the SB16's 4.05 goes on taking them [fw].
+    ; (SBG:1346-1351); the SB16's 4.05 and 4.13 go on taking them [fw].
     mov al, [dsp_command]
     and al, 0f6h
     cmp al, 90h
@@ -2090,8 +2104,14 @@ port_callback:
 
 ; E2h, DMA identification (the virtual ESS's too): AL=the argument. The
 ; firmware's sequence byte goes by DMA when the 8-bit channel is ready for a
-; transfer to memory (AH=0); otherwise it is a reply, AL with AH=1. CF set,
-; and no answer, while a stream runs. BX, SI, DI, ES changed.
+; transfer to memory (AH=0). When it is not, the SB16's DSP writes the byte
+; to its DMA latch and waits there, taking no command, until the channel
+; takes it or a reset comes; nothing shows at 22Ah [fw: the 4.13's
+; cmd_dsp_dma_id; the CT2290]: sb_hung 2, AH=0, and sb_identify_release
+; sends it when the game unmasks the channel. The other models reply
+; instead, AL with AH=1 (the 3.02 waits too, but whether its byte shows at
+; 22Ah is not known). CF set, and no answer, while a stream runs. BX, SI,
+; DI, ES changed.
 sb_identify:
     movzx bx, byte [sb_id_phase]
     xor al, [.masks+bx]
@@ -2099,19 +2119,47 @@ sb_identify:
     inc bl
     and bl, 3
     mov [sb_id_phase], bl
+    call sb_identify_dma
+    jnc .sent
+    test ah, ah
+    jnz .failed
+    mov al, [sb_id_value]
+    cmp byte [virtual_model], 0
+    jne .reply
+    mov byte [sb_hung], 2
+.sent:
+    xor ah, ah
+    clc
+    ret
+.reply:
+    mov ah, 1
+    clc
+    ret
+.failed:
+    stc
+    ret
+.masks db 96h,0a5h,69h,5ah
+
+; sb_id_value to memory through the virtual 8-bit channel. CF clear when it
+; went; CF set with AH=0 when the channel is masked, not set for a write or
+; at its terminal count; CF set with AH=1 while a stream runs or when the
+; buffer lies above the first megabyte. BX, SI, DI, ES changed.
+sb_identify_dma:
     mov si, dma8
+    xor ah, ah
     cmp byte [si+DMA_MASK], 0
-    jne .reply
+    jne .refused
     cmp byte [si+3], 0
-    jne .reply
+    jne .refused
     mov al, [si+DMA_MODE]
     and al, 0ch
     cmp al, 4
-    jne .reply
+    jne .refused
+    mov ah, 1
     cmp byte [game_active], 0
-    jne .failed
+    jne .refused
     cmp byte [si+DMA_PAGE], 10h
-    jae .failed
+    jae .refused
     movzx ax, byte [si+DMA_PAGE]
     shl ax, 12
     mov es, ax
@@ -2129,27 +2177,38 @@ sb_identify:
     inc dword [si+DMA_POSITION]
     movzx eax, word [si+DMA_COUNT]
     cmp [si+DMA_POSITION], eax
-    jbe .done
+    jbe .sent
     test byte [si+DMA_MODE], 10h
     jz .terminal
     mov dword [si+DMA_POSITION], 0
-    jmp .done
+    jmp .sent
 .terminal:
     mov byte [si+3], 1
-    jmp .done
-.reply:
-    mov al, [sb_id_value]
-    mov ah, 1
+.sent:
     clc
     ret
-.done:
-    xor ah, ah
-    clc
-    ret
-.failed:
+.refused:
     stc
     ret
-.masks db 96h,0a5h,69h,5ah
+
+; SI=the controller whose owned channel the game just unmasked. An E2h byte
+; the SB16 holds (sb_hung 2) goes now, and its DSP takes commands again.
+; Every register kept.
+sb_identify_release:
+    cmp byte [sb_hung], 2
+    jne .done
+    cmp si, dma8
+    jne .done
+    pushad
+    push es
+    call sb_identify_dma
+    jc .held
+    mov byte [sb_hung], 0
+.held:
+    pop es
+    popad
+.done:
+    ret
 
 %ifdef SB_CARDS
 ; AL=a byte of SB-MIDI output (38h, or a write in UART mode). It goes out of
@@ -2195,11 +2254,12 @@ sb_midi_out:
     ret
 
 ; The command the DSP runs for the byte in AL (vsb/SPEC.md 5.2). The SB16's
-; DSP 4.05 and the SB Pro 2's 3.02 decode most commands by their low bits
-; within the group, so that a group's undocumented members run as one of its
-; documented commands; the 4.05 looks groups 0, 4, 5, 6 and A-F up in
-; tables whose unused entries do nothing (S95Sedan's disassembly of both
-; firmwares, CT1741_DSP). sb_commands holds the commands as they run. The
+; DSP 4.xx and the SB Pro 2's 3.02 decode most commands by their low bits
+; within the group, so that a group's undocumented members run as one of
+; its documented commands; the 4.xx looks groups 0, 4, 5, 6 and A-F up in
+; tables whose unused entries do nothing (S95Sedan's disassembly of the
+; firmwares, CT1741_DSP; the virtual SB16 runs the 4.13's tables, which add
+; 43h and DCh to the 4.05's). sb_commands holds the commands as they run. The
 ; SB 2.0's DSP 2.01 is not dumped: its commands stay as written. BX changed.
 sb_decode:
     movzx bx, al
@@ -2207,7 +2267,7 @@ sb_decode:
     cmp byte [virtual_model], 1
     je .group
     ja .done
-    ; The 4.05: groups 1, 2, 3, 7, 8 and 9 by bits.
+    ; The 4.xx: groups 1, 2, 3, 7, 8 and 9 by bits.
     bt word [.sb16_groups], bx
     jnc .done
 .group:
@@ -2349,7 +2409,7 @@ sb_cold_start:
 ; transfer of the same width takes effect at the end of the current block,
 ; where "the DSP will exit from auto-initialize DMA mode and continue to
 ; transfer using the specified single-cycle DMA mode" (SBG:1318-1323,
-; 3335-3338); the 4.05 no longer queues once DAh has ended auto-init. The
+; 3335-3338); the 4.05 and 4.13 no longer queue once DAh has ended auto-init. The
 ; SB Pro's 3.02 queues one behind any transfer that runs, a single-cycle one
 ; too [fw]. High-speed commands start at once. The command is kept in
 ; sb_queue_command, sb_queue_args and sb_queue_handler. Every register is
@@ -2448,7 +2508,7 @@ sb_game_step:
     mov [game_step], eax
     ret
 
-; F9h, FAh: BX=the byte that holds the 4.05's internal RAM byte dsp_args
+; F9h, FAh: BX=the byte that holds the 4.13's internal RAM byte dsp_args
 ; names, CF set when none here does (port_callback .ram_read).
 sb_ram_byte:
     mov al, [dsp_args]
@@ -2529,6 +2589,7 @@ sb_commands:
     dsp 40h, 1, SB_ALL, time_constant
     dsp 41h, 2, SB_16, rate
     dsp 42h, 2, SB_16, rate
+    dsp 43h, 2, SB_16, rate
     dsp 48h, 2, SB_ALL, block_size
     dsp 4ch, 2, SB_16, ignore
     dsp 4dh, 1, SB_16, zero_reply
@@ -2560,6 +2621,7 @@ sb_commands:
     dsp 0d8h, 0, SB_ALL, speaker_status
     dsp 0d9h, 0, SB_16, exit16
     dsp 0dah, 0, SB_ALL, exit8
+    dsp 0dch, 1, SB_16, ignore
     dsp 0e0h, 1, SB_ALL, invert
     dsp 0e1h, 0, SB_ALL, version
     dsp 0e2h, 1, SB_ALL, identify
@@ -2588,6 +2650,79 @@ dsp_status_base:
     mov al, 2ah
 .done:
     ret
+
+; AX=a rate in hertz: AL=the SB16's rate register for it, AH=0, as the DSP
+; 4.13 works it out (X09a7): 1Ch below 4864 Hz, FFh from 45312 Hz, else 23 x
+; rate / 4096 rounded, with the low byte's product cut to its high byte
+; first. (The 4.05 drops a carry in that sum, so 1652 rates play 2849 Hz
+; slow on it; the 4.13 keeps it [fw; the CT2290 plays 22900 Hz right].)
+sb16_rate_register:
+    cmp ah, 13h
+    jb .floor
+    cmp ah, 0b1h
+    jae .ceiling
+    push bx
+    push cx
+    mov cl, al
+    movzx bx, ah
+    imul bx, bx, 23
+    mov al, 23
+    mul cl
+    movzx ax, ah
+    add ax, bx
+    ; Rounded: the last bit shifted out is added back.
+    shr ax, 3
+    inc ax
+    shr ax, 1
+    pop cx
+    pop bx
+    ret
+.floor:
+    mov ax, 1ch
+    ret
+.ceiling:
+    mov ax, 0ffh
+    ret
+
+; AL=a rate register: AX=the rate it plays, its count times 4096/23 Hz (the
+; firmware's step; the CT2290 measured a little slower, 176.9-177.9 Hz a
+; step, to be measured finer). Other registers kept.
+sb16_register_rate:
+    push ecx
+    push edx
+    movzx eax, al
+    shl eax, 12
+    xor edx, edx
+    mov ecx, 23
+    div ecx
+    pop edx
+    pop ecx
+    ret
+
+; The rate register for each time constant 00h-EBh, the DSP 4.13's
+; samplerate_table. The 4.05's has C8h at C8h, 35617 Hz, where this one has
+; 64h, 17809 Hz [fw; the CT2290 plays C8h near 17.8 kHz].
+sb16_time_table:
+    db 15h, 16h, 16h, 16h, 16h, 16h, 16h, 16h, 16h, 16h, 16h, 16h
+    db 17h, 17h, 17h, 17h, 17h, 17h, 17h, 17h, 17h, 17h, 18h, 18h
+    db 18h, 18h, 18h, 18h, 18h, 18h, 18h, 18h, 19h, 19h, 19h, 19h
+    db 19h, 19h, 19h, 19h, 1ah, 1ah, 1ah, 1ah, 1ah, 1ah, 1ah, 1ah
+    db 1bh, 1bh, 1bh, 1bh, 1bh, 1bh, 1bh, 1bh, 1ch, 1ch, 1ch, 1ch
+    db 1ch, 1ch, 1ch, 1dh, 1dh, 1dh, 1dh, 1dh, 1dh, 1eh, 1eh, 1eh
+    db 1eh, 1eh, 1eh, 1fh, 1fh, 1fh, 1fh, 1fh, 1fh, 20h, 20h, 20h
+    db 20h, 20h, 21h, 21h, 21h, 21h, 21h, 22h, 22h, 22h, 22h, 22h
+    db 23h, 23h, 23h, 23h, 24h, 24h, 24h, 24h, 25h, 25h, 25h, 25h
+    db 26h, 26h, 26h, 26h, 27h, 27h, 27h, 27h, 28h, 28h, 28h, 29h
+    db 29h, 29h, 29h, 2ah, 2ah, 2ah, 2bh, 2bh, 2bh, 2ch, 2ch, 2dh
+    db 2dh, 2dh, 2eh, 2eh, 2eh, 2fh, 2fh, 30h, 30h, 30h, 31h, 31h
+    db 32h, 32h, 33h, 33h, 34h, 34h, 35h, 35h, 36h, 36h, 37h, 37h
+    db 38h, 38h, 39h, 39h, 3ah, 3bh, 3bh, 3ch, 3dh, 3dh, 3eh, 3fh
+    db 3fh, 40h, 41h, 42h, 42h, 43h, 44h, 45h, 46h, 47h, 48h, 49h
+    db 49h, 4ah, 4bh, 4dh, 4eh, 4fh, 50h, 51h, 52h, 53h, 55h, 56h
+    db 57h, 59h, 5ah, 5ch, 5dh, 5fh, 60h, 62h, 64h, 66h, 68h, 6ah
+    db 6ch, 6eh, 70h, 72h, 75h, 77h, 7ah, 7ch, 7fh, 82h, 85h, 89h
+    db 8ch, 90h, 93h, 97h, 9ch, 0a0h, 0a5h, 0aah, 0afh, 0b5h, 0bbh, 0c1h
+    db 0c8h, 0d0h, 0d8h, 0e0h, 0eah, 0f4h, 0ffh, 0ffh
 
 %endif
 
@@ -2783,7 +2918,8 @@ sb_id_phase db 0
 ; Set in high-speed and UART modes, where a reset is the firmware's warm
 ; start (port_callback .reset_hold); a single-cycle block's end clears it.
 sb_warm db 0
-; Set while the DSP takes nothing until a reset (port_callback .halt).
+; Set while the DSP takes nothing: 1 until a reset (port_callback .halt), 2
+; until the DMA takes an E2h byte or a reset (sb_identify).
 sb_hung db 0
 ; The SB16 DSP's timer (4Eh, 4Fh) runs with reload.
 sb_timer db 0

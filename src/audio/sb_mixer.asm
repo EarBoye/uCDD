@@ -5,8 +5,10 @@
 ; SB Pro, the CT1745 on the SB16. The virtual ESS has its own mixer
 ; (audio/ess/card.asm).
 ;
-; virtual_mixer holds what each register reads back on the presented chip,
-; FFh where the chip has no register. On every model the gains the mixing
+; virtual_mixer holds what each register reads back on the presented chip:
+; on the CT1745 the bits its register has, 00h below 80h where it has none
+; and FFh from 83h (the CT2290); on the CT1345 FFh where it has none. On
+; every model the gains the mixing
 ; code uses sit at 30h-37h in the CT1745's form: master, voice, MIDI and CD,
 ; left then right, the level in bits 7:3. On the SB16 those are the chip's
 ; own registers. On the SB Pro, whose 30h-3Fh read as 20h-2Fh, the CT1345's
@@ -36,6 +38,9 @@ virtual_mixer_write:
     jb .done
     cmp bl, 47h
     ja .done
+    ; Only the register's own bits keep what is written; the others read 0
+    ; (SBG:2678-2752; the CT2290).
+    and al, [sb16_bits+bx-30h]
     mov [virtual_mixer+bx], al
     cmp bl, 3ah
     je .sb16_mic_view
@@ -181,11 +186,12 @@ virtual_mixer_read:
     ja .done                        ; the SB 2.0: nothing at 2x5h
     cmp bl, 82h
     jne .register
-    ; Bits 2:0 the sources (SBG:969-982), bit 5 the DSP's revision as a
-    ; DSP 4.05 reads it (86Box; DOSBox-X sets the same bit on every SB16).
+    ; Bits 2:0 the sources (SBG:969-982); bits 7:4, reserved in the guide,
+    ; read the DSP's revision: 80h from 4.11 (86Box; the CT2290's 4.13),
+    ; where DOSBox-X has 20h on every SB16 (vsb/SPEC.md 8.2).
     call virtual_mpu_refresh
     mov al, [virtual_dsp_irq]
-    or al, 20h
+    or al, 80h
     jmp .done
 .pro:
     cmp bl, 40h
@@ -214,14 +220,21 @@ virtual_mixer_reset:
     push cs
     pop es
     cld
+    ; The CT1345 reads FFh where it has no register; the CT1745 00h below
+    ; 80h and FFh from there (the CT2290).
     mov di, virtual_mixer
-    mov cx, 128
-    mov ax, 0ffffh
-    rep stosw
+    mov cx, 64
+    xor ax, ax
     mov si, sb16_reset
     cmp byte [virtual_model], 0
-    je .values
+    je .fill
+    dec ax
     mov si, pro_reset
+.fill:
+    rep stosw
+    mov ax, 0ffffh
+    mov cx, 64
+    rep stosw
 .values:
     ; Pairs of register and value, ended by FFh.
     lodsw
@@ -240,7 +253,8 @@ virtual_mixer_reset:
     ret
 
 ; 80h and 81h, the CT1745's IRQ and DMA select (SBG:1028-1046), as the
-; virtual card is set.
+; virtual card is set. 80h's bits 7:4 read 1 (the CT2290; DOSBox-X notes the
+; same of the real card).
 virtual_mixer_card:
     cmp byte [virtual_model], 0
     jne .done
@@ -257,6 +271,7 @@ virtual_mixer_card:
     je .irq
     mov al, 8
 .irq:
+    or al, 0f0h
     mov [virtual_mixer+80h], al
     mov cl, [guest_dma8]
     mov al, 1
@@ -282,6 +297,14 @@ pro_reset:
     db 04h,99h, 0ah,00h, 0ch,00h, 0eh,11h, 22h,99h, 26h,99h, 28h,11h, 2eh,11h
     db 30h,88h, 31h,88h, 32h,88h, 33h,88h, 34h,88h, 35h,88h, 36h,08h, 37h,08h
     db 0ffh,0ffh
+; The bits each CT1745 register from 30h to 47h keeps (SBG:2678-2752): the
+; levels' five (7:3), the PC speaker's and the gains' two (7:6), the output
+; and input switches (4:0, 6:0), AGC (0), treble and bass (7:4). The CT2290
+; reads 30h, 32h F8h, 3Bh C0h, 3Ch 1Fh, 40h C0h, 44h F0h after FFh.
+sb16_bits:
+    db 0f8h, 0f8h, 0f8h, 0f8h, 0f8h, 0f8h, 0f8h, 0f8h, 0f8h, 0f8h, 0f8h
+    db 0c0h, 1fh, 7fh, 7fh, 0c0h, 0c0h, 0c0h, 0c0h, 01h
+    db 0f0h, 0f0h, 0f0h, 0f0h
 ; The volume registers of the CT1345 and the CT1745's compatibility ones,
 ; with the gain pair each sets (SBG:2658-2677). Line in, the fifth, maps
 ; onto 38h/39h on the CT1745 only, and no gain of the driver's follows it.

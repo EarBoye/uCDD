@@ -42,7 +42,7 @@ virtual_wss_irq db 11
 %ifdef VIRTUAL_ESS
 virtual_dsp_version dw 0103h
 %else
-virtual_dsp_version dw 0504h
+virtual_dsp_version dw 0d04h
 %endif
 ; IRQ of a disk controller that the PCI scan does not find, or 0. The byte was
 ; padding, so every older UCDD.CFG reads as 0.

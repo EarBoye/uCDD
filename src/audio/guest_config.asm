@@ -16,6 +16,11 @@ guest_configure:
     mov byte [virtual_model], 1
     mov word [virtual_dsp_version], 0203h
 .model_ready:
+    ; The SB16 is a DSP 4.13 (trap.asm), whatever an older UCDD.CFG holds.
+    cmp byte [virtual_model], 0
+    jne .version_ready
+    mov word [virtual_dsp_version], 0d04h
+.version_ready:
 %endif
     ; The DSP after power-on, as the firmware's cold start leaves it
     ; (trap.asm, sb_cold_start): 10000 Hz, whose step the first transfer
