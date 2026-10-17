@@ -184,7 +184,7 @@ dpmi_entry:
     mov [dpmi_environment], ax
     test ax, ax
     jz .no_environment
-    mov word [es:2ch], 2fh
+    mov word [es:2ch], DPMI_CLIENT_ENV
 .no_environment:
     ; DOS jumps to PSP:0Ah once it has ended the process. Point it at the
     ; host's hook, so that an end from real mode still releases the client
@@ -642,8 +642,8 @@ dpmi_client_init:
     mov byte [ebp+dpmi_first_exception], 0ffh
     call dpmi_ivt_snapshot_protected
     call dpmi_pic_reset
-    mov dword [ebp+dpmi_used+1], 01010101h
-    lea edi, [ebp+dpmi_ldt+8]
+    mov dword [ebp+dpmi_used+16], 01010101h
+    lea edi, [ebp+dpmi_ldt+16*8]
     movzx eax, word [ebp+dpmi_client_cs]
     mov bl, 0fah
     call dpmi_initial_descriptor
@@ -654,19 +654,19 @@ dpmi_client_init:
     call dpmi_initial_descriptor
     cmp byte [ebp+dpmi_client16], 0
     jne .stack_ready
-    mov byte [ebp+dpmi_ldt+2*8+6], 40h
-    mov byte [ebp+dpmi_ldt+3*8+6], 40h
+    mov byte [ebp+dpmi_ldt+17*8+6], 40h
+    mov byte [ebp+dpmi_ldt+18*8+6], 40h
 .stack_ready:
     movzx eax, word [ebp+dpmi_psp]
     call dpmi_initial_descriptor
-    mov word [ebp+dpmi_ldt+4*8], 0ffh
+    mov word [ebp+dpmi_ldt+19*8], 0ffh
     movzx eax, word [ebp+dpmi_environment]
     test eax, eax
     jz .environment_ready
-    mov byte [ebp+dpmi_used+5], 1
+    mov byte [ebp+dpmi_used+20], 1
     call dpmi_initial_descriptor
 .environment_ready:
-    mov dword [ebp+dpmi_dos16_dta], 00800027h
+    mov dword [ebp+dpmi_dos16_dta], 00800000h + DPMI_CLIENT_PSP
     mov word [ebp+dpmi_dll_vector+4], 0
     jmp dpmi_enter_client
 
@@ -700,16 +700,16 @@ dpmi_enter_client:
     call dpmi_memory_init
     jc dpmi_locked_abort
     call dpmi_bridge_install
-    push dword 1fh
+    push dword DPMI_CLIENT_SS
     movzx eax, word [ebp+dpmi_client_sp]
     push eax
     movzx eax, word [ebp+dpmi_client_flags]
     push eax
-    push dword 0fh
+    push dword DPMI_CLIENT_CS
     push dword [ebp+dpmi_client_ip]
-    mov ax, 17h
+    mov ax, DPMI_CLIENT_DS
     mov ds, ax
-    mov ax, 27h
+    mov ax, DPMI_CLIENT_PSP
     mov es, ax
     xor eax, eax
     mov fs, ax
@@ -815,6 +815,8 @@ dpmi_dispatch:
 %endif
     cmp eax, 0ch
     jbe dpmi_descriptors
+    cmp eax, 0dh
+    je dpmi_descriptor_specific
     cmp eax, 0100h
     je dpmi_dos_allocate
     cmp eax, 0101h

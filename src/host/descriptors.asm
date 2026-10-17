@@ -4,14 +4,13 @@
 HOST_PROTECTED
 ; AX=client selector, ESI=descriptor on success. EBX/EBP stay intact.
 dpmi_descriptor:
+    ; An LDT selector by its table bit, whatever its RPL: DPMI writes the
+    ; ones 000Dh keeps as 04h-7Ch.
     movzx eax, ax
-    mov edx, eax
-    and edx, 7
-    cmp edx, 7
-    jne .gdt
+    test al, 4
+    jz .gdt
+    ; Entry 0 is valid in an LDT; only 000Dh hands it out.
     shr eax, 3
-    test eax, eax
-    jz .bad
     cmp eax, DPMI_LDT_COUNT
     jae .bad
     cmp byte [ebp+dpmi_used+eax], 0
@@ -52,9 +51,9 @@ dpmi_descriptor_base:
 dpmi_descriptor_allocate:
     test ecx, ecx
     jz .bad
-    cmp ecx, DPMI_LDT_COUNT-1
+    cmp ecx, DPMI_LDT_COUNT-DPMI_LDT_RESERVED
     ja .bad
-    mov edi, 1
+    mov edi, DPMI_LDT_RESERVED
 .scan:
     lea eax, [edi+ecx]
     cmp eax, DPMI_LDT_COUNT
@@ -86,6 +85,29 @@ dpmi_descriptor_allocate:
 .bad:
     stc
     ret
+
+; 000Dh: allocate the LDT descriptor BX names (DPMI 0.9 8.13, 1.0 000DH).
+; Entries 0-15 are kept free for it; any other free entry is given as well.
+; The descriptor starts as 0000h's do: data, present, DPL 3, base and limit 0.
+dpmi_descriptor_specific:
+    movzx eax, word [ebx+24]
+    test al, 4
+    jz .invalid
+    shr eax, 3
+    cmp eax, DPMI_LDT_COUNT
+    jae .invalid
+    cmp byte [ebp+dpmi_used+eax], 0
+    jne .in_use
+    mov byte [ebp+dpmi_used+eax], 1
+    mov dword [ebp+dpmi_ldt+eax*8], 0
+    mov dword [ebp+dpmi_ldt+eax*8+4], 0000f200h
+    jmp mon_dpmi.success
+.in_use:
+    mov ax, 8011h
+    jmp dpmi_error
+.invalid:
+    mov ax, 8022h
+    jmp dpmi_error
 
 dpmi_descriptors:
     cmp eax, 0

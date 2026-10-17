@@ -487,7 +487,7 @@ dpmi_dos16:
     mov ax, [edi+16]
     cmp ax, [ebp+dpmi_psp]
     jne .psp_other
-    mov word [edi+16], 27h
+    mov word [edi+16], DPMI_CLIENT_PSP
     jmp .result
 .psp_other:
     call dpmi_segment_descriptor
@@ -496,7 +496,7 @@ dpmi_dos16:
     jmp .result
 .set_psp:
     mov ax, [ebx+24]
-    cmp ax, 27h
+    cmp ax, DPMI_CLIENT_PSP
     jne .psp_base
     mov ax, [ebp+dpmi_psp]
     jmp .psp_set

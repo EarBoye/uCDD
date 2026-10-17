@@ -35,11 +35,11 @@ dpmi_locked_init:
     inc ebx
     cmp ebx, DPMI_LOCK_PAGES
     jb .page
-    mov dword [ebp+dpmi_ldt+6*8], 00003fffh
-    mov dword [ebp+dpmi_ldt+6*8+4], 0040f23eh
-    mov dword [ebp+dpmi_ldt+7*8], 0e0000fffh
-    mov dword [ebp+dpmi_ldt+7*8+4], 0040f23fh
-    mov word [ebp+dpmi_used+6], 0404h
+    mov dword [ebp+dpmi_ldt+21*8], 00003fffh
+    mov dword [ebp+dpmi_ldt+21*8+4], 0040f23eh
+    mov dword [ebp+dpmi_ldt+22*8], 0e0000fffh
+    mov dword [ebp+dpmi_ldt+22*8+4], 0040f23fh
+    mov word [ebp+dpmi_used+21], 0404h
     mov dword [ebp+dpmi_locked_cursor], 4096
     mov dword [ebp+dpmi_locked_depth], 0
     mov dword [ebp+dpmi_stack_depth], 0

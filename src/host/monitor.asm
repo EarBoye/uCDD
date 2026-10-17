@@ -23,8 +23,17 @@
 %endif
 %define MON_VECTOR_COUNT 256
 %define MON_SERVER_SELECTOR 80
-%define DPMI_IRQ_SS 37h
-%define DPMI_CALLBACK_SS 3fh
+; LDT entries 0-15 (selectors 04h-7Ch) are the client's, for 000Dh (DPMI
+; 0.9 8.13, 1.0 000DH: "must not be used by the DPMI host"). The host's own
+; and the client's initial descriptors start at entry 16.
+%define DPMI_LDT_RESERVED 16
+%define DPMI_CLIENT_CS 87h
+%define DPMI_CLIENT_DS 8fh
+%define DPMI_CLIENT_SS 97h
+%define DPMI_CLIENT_PSP 9fh
+%define DPMI_CLIENT_ENV 0a7h
+%define DPMI_IRQ_SS 0afh
+%define DPMI_CALLBACK_SS 0b7h
 %define DPMI_STUB16 6bh
 %define DPMI_LOCK_PAGES 7
 %define DPMI_XFER_BYTES 4096

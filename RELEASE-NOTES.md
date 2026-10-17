@@ -64,6 +64,7 @@ JemmEx).
 - INT 16h reflected to real mode comes back with the program's virtual interrupt flag on, as DOS/4GW's own INT 16h does when it is the host. This fixes the hang at the character select and the Battle screen in Mortal Kombat Trilogy. DPMI 0.9 and 1.0 say software interrupts leave the flag alone; this is a deviation the game requires, and every other vector still follows the specification (docs/host-cdrom-spec.md, D-7).
 - 0400h reports the processor in CL (03h 386, 04h 486, then the CPUID family: 05h Pentium, 06h P6 and Athlon); it reported a 386 on every CPU. This fixes the page fault at 1A7:0000002F in X-Men Children of the Atom, which refuses a 386.
 - INT 2Fh AX=168Ah from a program is answered by the host (no vendor extension, AL unchanged) instead of being passed to real mode, as DPMI 1.0 says.
+- 000Dh allocates the LDT descriptor a program names, and the host keeps selectors 04h-7Ch free for it, as DPMI asks: the initial selectors a program gets are now CS 87h, DS 8Fh, SS 97h and ES 9Fh (the PSP).
 
 ## UCDDSET
 
