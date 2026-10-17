@@ -296,11 +296,21 @@ dpmi_dos_translate:
     jmp mon_dpmi.success
 .vendor:
     ; INT 2Fh AX=168Ah (the vendor-specific API entry point) is a protected-
-    ; mode service the host answers: this host has no extension, so AL stays
-    ; 8Ah (DPMI 1.0, Int 2FH Function 168AH). Reflected, a real-mode handler
-    ; could change AL and hand the client a bogus entry point.
+    ; mode service the host answers (DPMI 1.0, Int 2FH Function 168AH).
+    ; Reflected, a real-mode handler could change AL and hand the client a
+    ; bogus entry point. AL stays 8Ah for every name but "MS-DOS" (RBIL
+    ; table 02719) asked by a 16-bit client. Borland's RTM takes that name
+    ; to mean that the host translates DOS calls that carry protected-mode
+    ; addresses, as Windows does; this host does so for 16-bit clients
+    ; (dos16.asm) and for no others. Without the name RTM stops with "no
+    ; DOS extensions in the DPMI server" (Chasm: The Rift). The lookup,
+    ; shared with INT 31h AX=0A00h, is dpmi_vendor_entry in switch.asm.
     cmp word [ebx+36], 168ah
-    je mon_dpmi.success
+    jne .ordinary
+    call dpmi_vendor_entry
+    jc mon_dpmi.success
+    mov byte [ebx+36], 0
+    jmp mon_dpmi.success
 .ordinary:
     call dpmi_dos_frame
     mov al, [ebp+dpmi_reflect_vector]

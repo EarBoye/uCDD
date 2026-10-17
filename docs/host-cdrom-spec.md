@@ -53,7 +53,8 @@ reprogrammable (D09:353-356, 2082-2104).
 | D-7 | A software interrupt reflected to real mode came back with the client's virtual IF as it was before the call. Mortal Kombat Trilogy waits for ever under the host (section 7): it needs INT 16h to turn interrupts on. | D09:304-322, 411; D10:1428-1439, 1531-1532 | **Deviation, kept (Michael, 17 Oct 2026; rule 1's game exception).** A reflected INT 16h comes back with the client's virtual IF on, as an STI would, which is what INT 16h does when DOS/4GW is its own host. Every other vector keeps the flag as DPMI says. A first version took the IF from whatever any real-mode handler returned with; no game needs that, so it was narrowed to INT 16h. [86Box: the game reaches the fight, with CD music on the full disc; QEMU, the game without the host: DOS/4GW's INT 16h returns IF on in 12 of 12 calls made with IF off.] |
 | D-8 | A stepped interrupts-off region has no bound: the host steps until the region ends, so a long first region from a CLI site (a game that draws a frame with interrupts off) costs about 10,000 steps a second in 86Box. | none (cost) | Open. A step budget with a learned "long region" site state was tried (it fixed nothing on its own here, and it can miss a POPF that ends a region after the budget); not kept. |
 | D-9 | 0400h reported CL=03h (an 80386) on every processor. X-Men Children of the Atom asks 0400h for the processor, stops with its fatal error 7 when it reads anything below 04h, and its error path then calls a sound-library routine that was never set up: DOS/4GW's page fault at 1A7:0000002F (section 8). | D10:Int 31H 0400H ("CL = processor type: 02H 80286, 03H 80386, 04H 80486, 05H-FFH reserved for future Intel processors") | **Fixed.** CL is the processor found at the call: 03h when EFLAGS.AC cannot be changed, 04h when EFLAGS.ID cannot, otherwise the CPUID family (05h Pentium, 06h P6 and Athlon), with the extended family added to family 0Fh. [86Box: DPMIG G gives CL 05 on the Pentium MMX, 03 before; X-Men reaches its attract mode under the driver, as without it.] |
-| D-10 | INT 2Fh AX=168Ah (the vendor-specific API entry point) from protected mode was reflected to real mode, where any handler could change AL and hand the client a bogus entry point. | D10:Int 2FH Function 168AH ("available only in protected mode"; unsuccessful: "AL = unchanged (8AH)") | **Fixed.** The host answers it: no extension, AL stays 8Ah. 0A00h already failed with 8001h. [86Box: DPMIG V gives AL 8A and 0A00h CF 1 AX 8001, before and after; the change removes the real-mode chance.] |
+| D-10 | INT 2Fh AX=168Ah (the vendor-specific API entry point) from protected mode was reflected to real mode, where any handler could change AL and hand the client a bogus entry point. | D10:Int 2FH Function 168AH ("available only in protected mode"; unsuccessful: "AL = unchanged (8AH)") | **Fixed.** The host answers it. AL stays 8Ah for every name but the one extension in D-11; 0A00h fails with 8001h for those names. [86Box: DPMIG V gives AL 8A and 0A00h CF 1 AX 8001, before and after; the change removes the real-mode chance.] |
+| D-11 | Borland's RTM (16-bit) asks INT 2Fh AX=168Ah for "MS-DOS" and, refused, accepts only Windows (INT 2Fh AX=1600h); otherwise it stops: "Error: no DOS extensions in the DPMI server" (Chasm: The Rift, section 9). It discards the entry point: to RTM the name means that the host translates DOS calls carrying protected-mode addresses, as Windows does. | D10:Int 2FH Function 168AH and Int 31H 0A00H (vendor extensions, "All extended API parameters are specified by the vendor"); RBIL tables 02719 and 02720 ("MS-DOS": AX=0100h, get LDT alias selector) | **Fixed, an extension, not a deviation.** The host answers "MS-DOS" to 16-bit clients, the only ones whose DOS calls it translates (dos16.asm); 32-bit clients and other names still get 8Ah, and 0A00h gives the same answer as 168Ah. The entry point (`dpmi_msdos_entry`, ring 3, DPMI calls only) takes AX=0100h: an LDT alias, a 16-bit data descriptor at DPL 3 over the whole table, allocated by 0000h so the client owns it; any other function returns carry set. [86Box: DPMIG M, AL 00 and 006B:AA2A from both functions, the alias reads the program's CS descriptor as 000Bh gives it, 0200h refused, the alias freed; RTM passes its check. Chasm itself still fails in 86Box, section 9.] |
 | - | Harmless, kept as they are: callback entry leaves the structure's CS:IP stale; a fresh locked-stack page per nesting level; separate descriptors for DS and SS when equal; the audio and disk IRQs go to real mode first (a design choice); callbacks on their own stack. | review 1.3 | No change. |
 
 ## 2. VCPI, XMS, EMS and JemmEx
@@ -206,3 +207,38 @@ that led there was the host's. With CL the real processor type the game
 runs as it does without the driver. The earlier notes found the crash
 sensitive to the driver's size and to timing; that was not followed up and
 does not fit this cause, which is the same every run.
+
+## 9. Chasm: The Rift and Borland RTM (D-11)
+
+Chasm's PS10.EXE is a Borland 16-bit protected-mode program; its stub loads
+RTM.EXE ("DPMI LOADER built 03/05/93"), which uses the DPMI host when one is
+present and its own DPMI16BI.OVL otherwise. Under the driver it stopped
+with "Error: no DOS extensions in the DPMI server, Loader error (0025)".
+RTM's code (file offset 1FBBh) asks INT 2Fh AX=168Ah for "MS-DOS", throws
+the entry point away, and when AL comes back 8Ah accepts only a Windows
+answer to INT 2Fh AX=1600h. D-11 answers it. What was found on the way:
+
+- Beta 0.9.3b passed the check by accident. It refused to reflect an INT
+  2Fh whose DS lay above 1 MiB and returned AX=0001h with carry; RTM read
+  AL=01h as "extension present". When the fork made that reflection
+  follow DPMI 0.9 (DS sent as a harmless segment), the check failed as it
+  should, which is why the release notes of 0.9.3 call the game fixed.
+- With D-11, RTM goes on, takes its first segment-not-present fault (its
+  demand loading, handled through 0203h as DPMI allows), switches to real
+  mode through 0306h and ends there: the host releases it, no message.
+- In 86Box, every build tested fails Chasm after RTM, 0.9.3b too (its
+  later "Memory allocation error, Cannot load COMMAND, system halted").
+  Which point it reaches moves with the driver's layout: of the parts of
+  one fork commit (d7c134e), reverting either of two unrelated halves
+  restores 0.9.3b's point. That is the mark of a memory overwrite, not of
+  one wrong service.
+- In the same runs MSCDEX lists nothing on the game's disc (Mode 2 Form 1,
+  read back correctly through MSCDEX's absolute read, INT 2Fh AX=1508h,
+  by CDSEC), nor on two other games' discs, while another Mode 2 disc
+  (Destruction Derby 2) lists. The real PC uses SHSUCDX, so the game may
+  behave differently there.
+
+Open: why MSCDEX cannot list these discs under the driver, and whether
+Chasm runs once its disc is readable. A test on the real PC (SHSUCDX) is
+the quickest answer.
+

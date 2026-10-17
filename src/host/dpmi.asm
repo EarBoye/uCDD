@@ -881,6 +881,8 @@ dpmi_dispatch:
     je .enable
     cmp eax, 0902h
     je .interrupt_state
+    cmp eax, 0a00h
+    je dpmi_vendor_api
     jmp mon_dpmi.unsupported
 .disable:
     call .interrupt_state_value

@@ -25,6 +25,84 @@ dpmi_raw_addresses:
     jmp mon_dpmi.success
 dpmi_state_pm:
     retf
+
+; The "MS-DOS" vendor entry point (RBIL table 02720), for 16-bit clients
+; through DPMI_STUB16 (INT 2Fh AX=168Ah in dos.asm). It runs at ring 3 and
+; uses DPMI calls only. AX=0100h returns in AX an alias of the LDT: a
+; 16-bit data descriptor, DPL 3, over the whole table, allocated by 0000h,
+; so the client owns it and may free it. Other functions return carry set.
+    bits 16
+dpmi_msdos_entry:
+    cmp ax, 0100h
+    jne .refuse
+    push bx
+    push cx
+    push dx
+    xor ax, ax
+    mov cx, 1
+    int 31h
+    jc .done
+    mov bx, ax
+    mov dx, [cs:mon_base]
+    mov cx, [cs:mon_base+2]
+    add dx, dpmi_ldt
+    adc cx, 0
+    mov ax, 0007h
+    int 31h
+    jc .free
+    xor cx, cx
+    mov dx, DPMI_LDT_COUNT*8-1
+    mov ax, 0008h
+    int 31h
+    jc .free
+    mov ax, bx
+.done:
+    pop dx
+    pop cx
+    pop bx
+    retf
+.free:
+    push ax
+    mov ax, 0001h
+    int 31h
+    pop ax
+    stc
+    jmp .done
+.refuse:
+    stc
+    retf
+    bits 32
+
+; EBX=client frame whose DS:(E)SI names a vendor (INT 2Fh AX=168Ah and
+; INT 31h AX=0A00h, the same lookup in DPMI 1.0). The one extension this
+; host has is "MS-DOS" for a 16-bit client (the note at dos.asm .vendor):
+; then CF clear and ES:DI = dpmi_msdos_entry. CF set for any other name.
+dpmi_vendor_entry:
+    cmp byte [ebp+dpmi_client16], 0
+    je .none
+    mov ax, [ebx+4]
+    movzx edx, word [ebx+12]
+    mov ecx, 7
+    xor edi, edi
+    call dpmi_buffer
+    jc .none
+    cmp dword [eax], 'MS-D'
+    jne .none
+    cmp dword [eax+3], 'DOS'
+    jne .none
+    mov word [ebx], DPMI_STUB16
+    mov word [ebx+8], dpmi_msdos_entry
+    clc
+    ret
+.none:
+    stc
+    ret
+
+; INT 31h AX=0A00h (DPMI 0.9 and 1.0): 8001h when the name is not known.
+dpmi_vendor_api:
+    call dpmi_vendor_entry
+    jc mon_dpmi.unsupported
+    jmp mon_dpmi.success
 dpmi_raw_exit:
     int 0f0h
     ud2
