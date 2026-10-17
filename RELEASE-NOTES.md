@@ -22,6 +22,7 @@ JemmEx).
 - An image with no CD audio answers the audio IOCTLs (Q-channel, head position, channels) as an idle drive at sector 0, and takes channel control, as MSCDEX 2.1 asks.
 - Fix memory corruption after exit when a game passes a protected-mode pointer to MSCDEX: a flat segment is reflected to real mode as segment A000h, not 0. Hardware.
 - Find the PCI disk controllers at `UCDD -install` through the PCI BIOS and pass their IRQs to DOS directly, with IRQ 14 and 15 and an IRQ set by hand in UCDDSET. A DOS/4GW game no longer freezes at its banner on a machine whose disk controller uses another IRQ. `UCDDPCI=OFF` skips the scan.
+- An IOCTL request whose length byte is 0 is taken as a full one, as OAKCDROM does: Lollypop's CD check sends one and stopped with "005 cd error".
 - READ LONG in raw mode (MSCDEX 2.1's optional data read mode): on a BIN/CUE image with 2352-byte sectors each sector comes back whole, and the device status says so. An ISO image still refuses it.
 
 ## Sound card emulation and output

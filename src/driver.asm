@@ -87,6 +87,17 @@ interrupt:
     lfs bp, [active_request]
     cmp bp, 0fff3h
     ja .return_only_status
+    ; Lollypop's CD check sends IOCTL input with the length byte 0 (MSCDEX
+    ; 2.1 has error 5 for a bad length but asks no driver to check it, and
+    ; OAKCDROM does not). An IOCTL request of length 0 is taken as a full
+    ; one; ioctl_buffer checks its control block.
+    cmp byte [fs:bp], 0
+    jne .length_given
+    cmp byte [fs:bp+2], 3
+    je .length_unknown
+    cmp byte [fs:bp+2], 0ch
+    je .length_unknown
+.length_given:
     cmp byte [fs:bp], 13
     jb .bad_length
     movzx eax, byte [fs:bp]
@@ -94,6 +105,7 @@ interrupt:
     add eax, edx
     cmp eax, 10000h
     ja .bad_length
+.length_unknown:
     movzx ax, byte [fs:bp+1]
     cmp al, [unit_count]
     jae .bad_unit
@@ -192,6 +204,8 @@ ioctl_buffer:
     cmp bp, 0ffech
     ja .bad
     mov al, [fs:bp]
+    test al, al
+    jz .header_ok
     cmp al, 13
     je .header_ok
     cmp al, 18

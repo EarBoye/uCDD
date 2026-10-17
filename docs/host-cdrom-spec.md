@@ -88,6 +88,7 @@ commands, IOCTLs and their formats are MSCDEX 2.1's (MSC:199-1161).
 | M-7 | Reads during play succeed with busy set. | MSC:322-325 | No change (friendlier than busy+error). |
 | M-8 | PLAY with a zero count or into a data track fails 810Ch. | spec silent | No change. |
 | M-9 | High Sierra discs are refused. | MSC:1512-1560 | No change (1990s games use ISO 9660). |
+| M-10 | A request header with the length byte 0 was refused (8105h, bad request structure length). Lollypop's CD check (LOLLY_CD.EXE, through MSCDEX 1510h) sends IOCTL input 06h (device status) so, transfer address and count filled in, length not, and stopped: "005 cd error"; Beta 0.9.3b refused it in ioctl_buffer ("012 cd error"). | MSC:292-340 (the length byte; error 05h is listed, not required) | **Fixed, a tolerance in the spirit of ioctl_buffer's** (which takes 13- and 18-byte IOCTL headers and, for Absolute Pinball, a zero count): an IOCTL request (03h or 0Ch) whose length byte is 0 is taken as a full one, and its control block is checked as before; every other command still needs its length. [86Box: Lollypop reaches its title menu and plays, as without the driver (OAKCDROM ignores the byte); the regression matches the one before it.] |
 
 ## 4. The virtual 8259A (the driver's, for real-mode games, and the host's)
 
