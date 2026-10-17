@@ -266,3 +266,29 @@ Open: the game's fault after its start-up screen (D-14 suspected), and
 the broken memory chain once the disc lists. The real PC (SHSUCDX, which lists the disc) is
 the quickest next answer: RGKIT asks for it.
 
+## 10. The second sweep (18 Oct): failures with and without the driver
+
+Protected-mode CD games that the first sweep could not run, each run under
+the driver and again without it (86Box's own drive, OAKCDROM, MSCDEX), so
+that a failure in both is the rig's and only one in the first is ours.
+
+- Same both ways (the rig, the cut disc or the launcher): Alien Trilogy and
+  Destruction Derby (their disc checks reject the shortened disc), Amok,
+  Extreme Assault, GTA, Inferno, Micro Machines 2, Battle Arena, Screamer
+  Rally, Shadow Warrior (launcher steps fail), Magic Carpet 2 and Worms
+  Reinforcements (no mouse driver in the rig), Warcraft II CD (its launcher
+  mounts a .MDM that the disc cutter does not copy).
+- Ours, fixed: Lollypop (M-10).
+- Ours, open: Super Street Fighter II Turbo crashes in real mode before it
+  asks for DPMI (JemmEx: invalid opcode at 0803:6288), in every build back
+  to 0.9.3b. Mass Destruction finds no CD: MSCDEX lists nothing on its
+  disc (system id "PLAYSTATION", XA records), M-5; with status bit 10 the
+  disc lists. Shellshock stops with DOS/4GW's divide error at 1:000049D2:
+  its millisecond clock (its own tick count plus PIT channel 0, retried
+  only when the tick count changes during the read) runs backwards when
+  the PIT has wrapped and the timer interrupt has not yet reached its
+  handler; the negative interval wraps and a multiply and divide by 1000
+  overflow. Real hardware has the same race over microseconds; under the
+  driver the timer interrupt arrives later. A latency question (D-8, the
+  period handler), not a single fault.
+

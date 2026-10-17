@@ -122,6 +122,12 @@ changed volumes.
 
 ## Not solved
 
+- Super Street Fighter II Turbo crashes under the driver before its DPMI
+  start (JemmEx invalid opcode in real mode), back to Beta 0.9.3b; runs
+  without the driver. Shellshock: DOS/4GW divide error in its own timer
+  code when the timer interrupt arrives late (a latency question). Mass
+  Destruction: its disc lists empty under MSCDEX 2.25 (M-5, bit 10).
+  docs/host-cdrom-spec.md section 10.
 - Chasm: The Rift does not run under the driver in 86Box. On
   `host-gauntlet` its RTM passes the DPMI check (D-11), stays resident as
   it is built to (D-12), and the game reaches its start-up screen with
