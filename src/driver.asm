@@ -48,6 +48,8 @@ candidate_payload dw 0
 candidate_origin dd 0
 candidate_count dw 0
 read_skip dw 0
+; Bytes per sector in the caller's buffer: 2048 cooked, 2352 raw.
+read_unit dw 2048
 descriptor_sector dd 0
 read_remaining dw 0
 read_completed dw 0
@@ -285,8 +287,16 @@ ioctl_input:
     or ax, 2
 .lock_status:
     cmp word [si+HANDLE], 0ffffh
-    jne .status_done
+    jne .status_disc
     or ax, 0800h
+    jmp .status_done
+.status_disc:
+    ; Raw reading (bit 2) where the image holds whole sectors (MSCDEX 2.1,
+    ; Device Status and the data read mode of READ LONG). MSCDEX hides the
+    ; XA files of a CD-i Bridge disc from a driver without it.
+    cmp word [si+STRIDE], 2352
+    jne .status_done
+    or ax, 4
 .status_done:
     cmp dword [si+AUDIO_ENTRY], 0
     je .status_store
@@ -489,8 +499,18 @@ read_sectors:
     jne .changed_seen
     mov byte [si+CHANGED], 1
 .changed_seen:
+    ; Data read mode: 0 cooked, 2048 bytes a sector; 1 raw, all 2352 bytes
+    ; of the sector as the image holds it (MSCDEX 2.1, READ LONG). Raw needs
+    ; an image of whole sectors; an ISO image has none to give.
+    mov word [read_unit], 2048
     cmp byte [fs:bp+24], 0
+    je .mode_ready
+    cmp byte [fs:bp+24], 1
     jne request_unknown
+    cmp word [si+STRIDE], 2352
+    jne request_unknown
+    mov word [read_unit], 2352
+.mode_ready:
     ; Interleave size and skip are ignored: the driver reads contiguously.
     mov eax, [fs:bp+20]
     cmp byte [fs:bp+13], 0
@@ -527,7 +547,8 @@ read_sectors:
     shl ebx, 4
     add ebx, edx
     movzx edx, cx
-    shl edx, 11
+    movzx ecx, word [read_unit]
+    imul edx, ecx
     add edx, ebx
     cmp edx, 100000h
     ja request_error
@@ -542,10 +563,15 @@ read_sectors:
     sub eax, edx
     movzx edx, word [si+STRIDE]
     imul eax, edx
+    ; Raw sectors are read whole and back to back: no payload offset, no skip.
+    xor dx, dx
+    cmp word [read_unit], 2352
+    je .raw_layout
     movzx edx, word [si+PAYLOAD]
     add eax, edx
     mov dx, [si+STRIDE]
     sub dx, 2048
+.raw_layout:
     mov [read_skip], dx
     mov edx, eax
     shr eax, 16
@@ -563,6 +589,8 @@ read_sectors:
     jc .io_failure
 .next:
     mov ax, [cs:read_remaining]
+    cmp word [cs:read_unit], 2352
+    je .raw_chunk
     cmp ax, 31
     jbe .chunk
     mov ax, 31
@@ -599,6 +627,8 @@ read_sectors:
     pop dx
     jmp .count_result
 .cooked_result:
+    cmp word [read_unit], 2352
+    je .raw_result
     shr ax, 11
 .count_result:
     add [read_completed], ax
@@ -606,6 +636,8 @@ read_sectors:
     jnz .io_failure
     sub [read_remaining], ax
     jz .read_done
+    cmp word [read_unit], 2352
+    je .raw_advance
     shl ax, 7
     add [read_destination+2], ax
     cmp word [read_skip], 0
@@ -617,6 +649,27 @@ read_sectors:
     mov ax, 4201h
     int 21h
     jc .io_failure
+    jmp .next
+.raw_chunk:
+    ; 27 whole sectors (63504 bytes) fit one DOS read.
+    cmp ax, 27
+    jbe .raw_count
+    mov ax, 27
+.raw_count:
+    imul cx, ax, 2352
+    jmp .read_chunk
+.raw_result:
+    push dx
+    mov ax, dx
+    xor dx, dx
+    mov bx, 2352
+    div bx
+    pop dx
+    jmp .count_result
+.raw_advance:
+    ; 2352 bytes are 147 paragraphs.
+    imul ax, ax, 147
+    add [read_destination+2], ax
     jmp .next
 .read_done:
     call dos_leave
