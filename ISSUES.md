@@ -122,20 +122,26 @@ changed volumes.
 
 ## Not solved
 
-- Super Street Fighter II Turbo crashes under the driver before its DPMI
-  start (JemmEx invalid opcode in real mode), back to Beta 0.9.3b; runs
-  without the driver. Shellshock: DOS/4GW divide error in its own timer
+- Super Street Fighter II Turbo: dropped (Michael, 18 Oct). Its 32RTM
+  loader writes CR0 and then needs DOS translation for 32-bit programs, a
+  host feature of its own for one game; runs without the driver.
+  Shellshock: DOS/4GW divide error in its own timer
   code when the timer interrupt arrives late (a latency question). Mass
   Destruction: its disc lists empty under MSCDEX 2.25 (M-5, bit 10).
   docs/host-cdrom-spec.md section 10.
 - Chasm: The Rift does not run under the driver in 86Box. On
   `host-gauntlet` its RTM passes the DPMI check (D-11), stays resident as
   it is built to (D-12), and the game reaches its start-up screen with
-  nested exceptions delivered (D-13); then its runtime reports "Runtime
-  error 216" (a general protection fault in the game's code) and exits.
+  nested exceptions delivered (D-13); then one fault ends it, inside
+  RTM's exception handler as it loads the locked stack's selector (00AF):
+  RTM's own report, "Runtime error 216", or (when the host ends it) RTM's
+  memory not given back, by timing. Not D-14 (a continuous locked stack
+  gives the same fault). Lead: RTM's LDT alias (D-11) can write the
+  host's own LDT entries.
   MSCDEX 2.25 lists nothing on its CD-i Bridge disc under the driver
-  (M-5, device status bit 10, a decision); with the disc listed the game
-  breaks the DOS memory chain instead, as Beta 0.9.3b did. Runs without
+  (M-5, device status bit 10, a decision); with the disc listed it ends
+  in "Memory allocation error" as Beta 0.9.3b did (memory not given back,
+  not a broken chain, as checked on 18 Oct without bit 10). Runs without
   the driver. docs/host-cdrom-spec.md section 9. The real PC uses SHSUCDX,
   which lists the disc.
 - Hexen: the machine sometimes freezes after the game exits. The launcher

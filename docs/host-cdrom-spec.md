@@ -57,7 +57,7 @@ reprogrammable (D09:353-356, 2082-2104).
 | D-11 | Borland's RTM (16-bit) asks INT 2Fh AX=168Ah for "MS-DOS" and, refused, accepts only Windows (INT 2Fh AX=1600h); otherwise it stops: "Error: no DOS extensions in the DPMI server" (Chasm: The Rift, section 9). It discards the entry point: to RTM the name means that the host translates DOS calls carrying protected-mode addresses, as Windows does. | D10:Int 2FH Function 168AH and Int 31H 0A00H (vendor extensions, "All extended API parameters are specified by the vendor"); RBIL tables 02719 and 02720 ("MS-DOS": AX=0100h, get LDT alias selector) | **Fixed, an extension, not a deviation.** The host answers "MS-DOS" to 16-bit clients, the only ones whose DOS calls it translates (dos16.asm); 32-bit clients and other names still get 8Ah, and 0A00h gives the same answer as 168Ah. The entry point (`dpmi_msdos_entry`, ring 3, DPMI calls only) takes AX=0100h: an LDT alias, a 16-bit data descriptor at DPL 3 over the whole table, allocated by 0000h so the client owns it; any other function returns carry set. [86Box: DPMIG M, AL 00 and 006B:AA2A from both functions, the alias reads the program's CS descriptor as 000Bh gives it, 0200h refused, the alias freed; RTM passes its check. Chasm itself still fails in 86Box, section 9.] |
 | D-12 | A client that stays resident from real mode (INT 21h AH=31h) was released: the real-mode end hook (PSP:0Ah) took it for an end. Borland's RTM goes resident this way after its protected-mode start, and the program's stub then calls it through INT 2Fh; with the client released, Chasm: The Rift left silently. | D10:"Writing Resident Service Providers" (a client serving real-mode programs uses DOS's Int 21H Function 31H through 0300H); D10:Int 21H Function 4CH (the host acts on the end) | **Fixed.** The hook keeps a client whose PSP's memory block is still its own (the arena header below the PSP names it), which only a resident exit leaves, and goes on to the address DOS would have jumped to. The first version (620904c) left the arena's owner in AX, which the release's return frame needs: a client ended from real mode then hung the next one; fixed in the commit after D-13. [86Box: Chasm's RTM goes resident, its stub calls it, and RTM loads the game's segments; DPMIG Z (ended from real mode) and then V in one boot, now in the standard regression.] |
 | D-13 | An exception raised while a client exception handler ran ended the client: the host kept one exception state and took a second exception as unhandled. Chasm: The Rift's runtime takes a general protection fault inside its segment-not-present handling. | D10:"the host automatically switches to this stack during servicing of ... all exceptions ... Subsequent nested interrupts or calls will not cause a stack switch"; D09 silent | **Fixed.** A nested exception goes to the client's handlers like the first, on a new level of the locked stack; the outer handler's place (cursor, SP) is kept by level and comes back when the inner one returns or chains to the default. The stack's levels bound the nesting (four, as for interrupts). [86Box: Chasm then reaches its full start-up screen (memory, controls, VESA, the SB16, MSCDEX) and its runtime reports its own fault, "Runtime error 216", and exits cleanly, where the client was ended before; the regression matches the one before it.] |
-| D-14 | Each nested event on the locked stack (an exception or interrupt while a handler runs there) gets a new 4 KB page of it, so the inner handler's stack does not continue the outer one's. Chasm's RTM faults inside its segment-not-present handling at the second level: its own report, "UNHANDLED EXCEPTION 0D at 00C7:95DE", SS=00AF (the locked stack), SP=1FE0, in RTM's segment 0 (les bx,[bp-4]). | D10:"Subsequent nested interrupts or calls will not cause a stack switch" | Open. The levels are the host's design (vorvek's); one continuous locked stack is a larger change. Whether RTM's fault comes from this is not proven. |
+| D-14 | Each nested event on the locked stack (an exception or interrupt while a handler runs there) gets a new 4 KB page of it, so the inner handler's stack does not continue the outer one's. Chasm's RTM faults inside its segment-not-present handling at the second level: its own report, "UNHANDLED EXCEPTION 0D at 00C7:95DE", SS=00AF (the locked stack), SP=1FE0, in RTM's segment 0 (les bx,[bp-4]). | D10:"Subsequent nested interrupts or calls will not cause a stack switch" | Open, a decision for Michael. The levels are the host's design (vorvek's). Tested 18 Oct: a scratch build with one continuous locked stack (the cursor kept at the interrupted SP, the stack starting at the top of its 16 KB) gives Chasm the same fault at RTM's 95DE, so this is not Chasm's cause. [86Box] |
 | - | Harmless, kept as they are: callback entry leaves the structure's CS:IP stale; a fresh locked-stack page per nesting level; separate descriptors for DS and SS when equal; the audio and disk IRQs go to real mode first (a design choice); callbacks on their own stack. | review 1.3 | No change. |
 
 ## 2. VCPI, XMS, EMS and JemmEx
@@ -245,6 +245,9 @@ answer to INT 2Fh AX=1600h. D-11 answers it. What was found on the way:
   the game takes another path and the DOS memory chain breaks again
   ("Memory allocation error"), as in 0.9.3b. Not traced further: both
   failures depend on what the game reads from the disc and the driver.
+  [Corrected 18 Oct: without bit 10 the same message comes from memory
+  that is not given back when the host ends the program; the chain
+  itself was intact. See the end of this section.]
 - In 86Box, every build tested fails Chasm after RTM, 0.9.3b too (its
   later "Memory allocation error, Cannot load COMMAND, system halted").
   Which point it reaches moves with the driver's layout: of the parts of
@@ -262,9 +265,36 @@ real mode hung the next one), RTM's own exception report names the fault:
 "UNHANDLED EXCEPTION 0D at 00C7:95DE Error code: 0000", in RTM.EXE's
 segment 0, on the host's locked stack at its second level (D-14).
 
-Open: the game's fault after its start-up screen (D-14 suspected), and
-the broken memory chain once the disc lists. The real PC (SHSUCDX, which lists the disc) is
-the quickest next answer: RGKIT asks for it.
+The night of 18 Oct (86Box) narrowed it down:
+
+- The fault is in RTM's exception handler (segment 0, from 9576). It saves
+  every register, keeps a far pointer to its own exception frame at
+  [BP-4] (SS:BP+18h), and for a fault of its own kind rewrites the frame
+  so that the faulting code resumes in RTM at 951B, pushing the old
+  flags, CS and IP on the faulting code's stack (a frame change DPMI
+  allows). At 95DE it loads that pointer back, LES BX,[BP-4]: the
+  selector is the locked stack's own, 00AF, and the load faults (RTM
+  reports error code 0).
+- Not D-14: a scratch build with one continuous locked stack gives the
+  same fault.
+- The three endings seen are one fault at different moments: RTM's
+  UNHANDLED EXCEPTION report; "Runtime error 216" (the Pascal runtime
+  takes the fault and the game exits); or the host ends the program
+  (error level 1), RTM's memory is not given back, and COMMAND.COM cannot
+  reload ("Memory allocation error ... Cannot load COMMAND, system
+  halted": DOS's largest free block 0F9Fh paragraphs, 989Fh at the start).
+  The DOS memory chain itself stays intact: a TSR in the test setup that
+  walks both chains (conventional and upper) at every INT 21h call found
+  no break.
+- The lead: loading 00AF can only fault if its descriptor changed. The
+  host refuses descriptor calls (0001h, 0007h to 0009h, 000Ch) on its own
+  entries, but RTM also holds an LDT alias from the "MS-DOS" extension
+  (D-11) and can write the LDT through it, the host's entries 21 and 22
+  (the locked stack) included. Next: compare entry 21 at the fault with
+  its value at start.
+
+The real PC (SHSUCDX, which lists the disc) is still the quickest next
+answer: RGKIT asks for it.
 
 ## 10. The second sweep (18 Oct): failures with and without the driver
 
@@ -281,8 +311,8 @@ first is ours.
   and Worms Reinforcements (no mouse driver in the test setup), Warcraft
   II CD (its launcher mounts a .MDM that the disc cutter does not copy).
 - Ours, fixed: Lollypop (M-10).
-- Ours, open: Super Street Fighter II Turbo. Its batch first runs
-  MAKESWP.EXE, a 32RTM program (Borland's 32-bit loader, with its own host
+- Ours, dropped (Michael, 18 Oct): Super Street Fighter II Turbo. Its
+  batch first runs MAKESWP.EXE, a 32RTM program (Borland's 32-bit loader, with its own host
   DPMI32VM.OVL). With the driver stepped aside 32RTM uses DPMI32VM and
   MAKESWP works; with it engaged 32RTM uses this host, and at 0137:18DF
   executes MOV CR0,EAX (0F 22 C0) after SMSW and an AND/OR of the FPU bits
@@ -296,7 +326,11 @@ first is ours.
   for 16-bit ones only (dos16.asm, D-11). Not kept: the emulation alone
   does not make the game run (rule 1's bar), and 32-bit DOS translation is
   a feature of its own. The experiment is kept outside the fork as a
-  patch. Mass Destruction finds no CD: MSCDEX lists nothing on its
+  patch. Why dropped: one game needs it, and what it needs is a host
+  feature of its own (DOS translation for 32-bit programs, which DPMI does
+  not ask of a host; Windows and Borland's DPMI32VM provide it). If more
+  32RTM games turn up, this note and the patch are where to start.
+- Ours, open: Mass Destruction finds no CD: MSCDEX lists nothing on its
   disc (system id "PLAYSTATION", XA records), M-5; with status bit 10 the
   disc lists. Shellshock stops with DOS/4GW's divide error at 1:000049D2:
   its millisecond clock (its own tick count plus PIT channel 0, retried
