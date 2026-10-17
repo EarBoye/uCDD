@@ -1280,9 +1280,10 @@ ess_mixer_gain:
     ret
 
 ; ----------------------------------------------------------------------------
-; At install: the presented model from the physical chip's identification,
-; the reset state, and the physical chip's mixer levels as UNISOUND left
-; them, so the virtual card starts where the real one stands. DS=CS.
+; At install: the presented model from the physical chip's identification
+; (an ES1868 when there is no ESS to identify), the reset state, and on a
+; physical ESS its mixer levels as UNISOUND left them, so the virtual card
+; starts where the real one stands. DS=CS.
 ess_card_install:
     cmp byte [virtual_model], 4
     jne .done
@@ -1310,6 +1311,14 @@ ess_card_install:
     cld
     rep movsb
     call ess_mixer_reset
+    ; The levels and the master come from the physical chip only when it is
+    ; an ESS on its native path (ess_native, set by sb_model; the chip was
+    ; identified by ess_identify): another card's mixer has other registers
+    ; at those numbers, and an SB16 has no 60h/62h, so the copy started the
+    ; virtual card muted over one. Over another card it keeps the reset
+    ; state of the sheet (SPEC 10.2).
+    cmp byte [ess_native], 0
+    je .master_done
     mov si, ess_physical_levels
 .level:
     lodsb
