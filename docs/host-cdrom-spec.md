@@ -304,8 +304,10 @@ on a D: with 255 heads (the rig's GL_BIGD), with and without the driver:
 - The rig's: launchers that fail ("Bad command or file name"), no mouse
   driver (Capitalism Plus, Deus), multi-disc games whose .MDM the disc
   cutter leaves out (Creature Shock, Storm 96), Stonekeep's data path.
-- Ours, open: Inca II warns "Not enough extended memory, RAM: -6103 Ko"
-  (likely free XMS counted after the host's pool, not checked); Time
+- Ours, open: Inca II warns "Not enough extended memory, RAM: -6183 Ko"
+  and plays on with fewer effects. Not from 0500h: filling its total
+  physical pages (offset 18h, -1 now as DPMI 0.9 allows) changed
+  nothing; free XMS after the host's pool is the next suspect; Time
   Commando stays black while its DPMI 0100h requests of 1 to 28 KB fail
   with 0008h, insufficient memory (without the driver it reaches its
   menu); Battle Race 95 stays on its loading screen.
