@@ -1,3 +1,17 @@
+# Beta 0.9.3d
+
+## Changes in 0.9.3d
+
+- Add a Landscape visualization to UCDDPLAY. Frequency levels form wireframe ridges that move from the horizon toward the listener.
+- Correct DPMI free-memory information. This fixes false insufficient-memory errors in Warcraft and Warcraft II.
+- Accept the fixed CD-ROM control blocks used by Warcraft II and the short control request headers used by SuperKarts.
+- Support Sound Blaster interrupt detection with high DSP time constants and 16-bit audio through an 8-bit DMA channel. This fixes sound card detection and sound effects in The Horde.
+- Improve conversion of low-rate Sound Blaster PCM with linear interpolation. This reduces distortion in The Horde.
+- Keep CD audio refills active when games stop the BIOS timer, as SuperKarts does. Prevent retrace timing from delaying an urgent refill, which caused gaps in The Horde.
+- Grow DPMI memory blocks in place when the adjacent address range is free. This fixes a page fault in Inferno.
+- Support unsigned 8-bit Sound Blaster 16 single-cycle audio commands with and without FIFO. This fixes sound effects in Inferno.
+- Add Alien Logic: A Skyrealms of Jorune Adventure, Inferno, Quarantine, Quarantine II: Road Warrior, SuperKarts, The Horde, and Warcraft II: Tides of Darkness to the list of working Redbook-audio games. Add a note about Alien Logic's CD music behavior.
+
 # Beta 0.9.3c
 
 ## Changes in 0.9.3c

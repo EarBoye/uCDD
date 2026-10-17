@@ -58,11 +58,11 @@ dpmi_memory_info:
     pop edi
     mov [edi+4], edx
     mov [edi+8], edx
+    mov [edi+16], edx
     mov [edi+20], edx
     shl edx, 12
     mov [edi], edx
     mov dword [edi+12], 0fc00h
-    mov dword [edi+16], 0
     mov dword [edi+32], 0
     jmp mon_dpmi.success
 
@@ -105,6 +105,19 @@ dpmi_resize:
     movzx eax, word [ebx+24]
     shl eax, 16
     mov ax, [ebx+32]
+    call dpmi_memory_grow
+    jc .move
+    pop esi
+    mov eax, [esi]
+    mov edx, [esi+12]
+    mov [ebx+32], ax
+    shr eax, 16
+    mov [ebx+24], ax
+    mov [ebx+8], dx
+    shr edx, 16
+    mov [ebx+12], dx
+    jmp mon_dpmi.success
+.move:
     mov ecx, [esi+8]
     cmp ecx, eax
     jbe .size
@@ -160,6 +173,9 @@ dpmi_memory_allocate:
     shr eax, 12
     mov [esi+4], eax
     mov edx, 400000h
+    cmp dword [ebp+dpmi_allocate_hint], 0
+    je .restart
+    mov edx, [ebp+dpmi_allocate_hint]
 .restart:
     mov edi, dpmi_blocks
     lea eax, [edx+ecx]
@@ -177,9 +193,14 @@ dpmi_memory_allocate:
     add eax, [edi]
     cmp edx, eax
     jae .no_overlap
+    cmp dword [ebp+dpmi_allocate_hint], 0
+    jne .blocked
     mov edx, eax
     pop eax
     jmp .restart
+.blocked:
+    pop eax
+    jmp .full
 .no_overlap:
     pop eax
 .next:
@@ -249,6 +270,61 @@ dpmi_memory_allocate:
     pop esi
     pop ecx
     pop ebx
+    ret
+
+; Keep the block address when the next linear pages are free.
+dpmi_memory_grow:
+    pushad
+    test eax, eax
+    jz .bad
+    cmp eax, 0fc00000h
+    ja .bad
+    mov ecx, eax
+    add ecx, 4095
+    shr ecx, 12
+    cmp ecx, [esi+4]
+    jb .bad
+    je .size
+    mov edi, [esi+4]
+    shl edi, 12
+    add edi, [esi]
+    mov [ebp+dpmi_allocate_hint], edi
+    mov eax, ecx
+    sub eax, [esi+4]
+    shl eax, 12
+    call dpmi_memory_allocate
+    mov dword [ebp+dpmi_allocate_hint], 0
+    jc .bad
+    cmp eax, edi
+    pushfd
+    push esi
+    mov eax, edx
+    call dpmi_memory_find
+    pop edi
+    popfd
+    jne .release
+    xor eax, eax
+    mov [esi], eax
+    mov [esi+4], eax
+    mov [esi+8], eax
+    mov [esi+12], eax
+    mov esi, edi
+    mov eax, [esp+28]
+    mov ecx, eax
+    add ecx, 4095
+    shr ecx, 12
+    mov [esi+4], ecx
+.size:
+    mov eax, [esp+28]
+    mov [esi+8], eax
+    popad
+    clc
+    ret
+.release:
+    call dpmi_memory_release
+.bad:
+    popad
+    stc
     ret
 
 dpmi_memory_find:
@@ -511,6 +587,7 @@ dpmi_blocks_pte dd 0
 dpmi_pool_head dd 0
 dpmi_pool_count dd 0
 dpmi_map_source dd 0
+dpmi_allocate_hint dd 0
 dpmi_release_failed db 0
 
 dpmi_physical_map:

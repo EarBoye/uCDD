@@ -70,7 +70,9 @@ Do not load the audio driver for games that use ADPCM sound. ADPCM is not suppor
 
 ### Installation
 
-Install once per boot, before the redirector. `UCDD -install -units 2` creates two empty drives (1 to 4). Restart DOS to change the unit count. `LH` loads the resident driver into upper memory when UMBs are available (requires ~50KB of upper memory).
+Install once per boot, before the redirector. `UCDD -install -units 2` creates two empty drives (1 to 4). Restart DOS to change the unit count. `LH` loads the resident driver into upper memory when UMBs are available. Allow about 64 KB of free upper memory for `LH`.
+
+With one drive, JEMMEX, and free UMBs, a sample installation used 560 bytes of conventional memory with `LH UCDD -install`. When loaded low and moved to upper memory, it used 848 bytes.
 
 ```dos
 UCDD -mount C:\IMAGES\GAME.CUE
@@ -163,7 +165,7 @@ Other MODE2 sector formats, compressed audio, and multi-file CUE sheets are not 
 - **OPEN** shows CD drives and the images on local hard disks. Select a CD drive to use its disc, or select a CUE sheet, an ISO or BIN image, or an MDM file to mount it. If a physical drive is selected, images mount on the first μCDD drive. **EJECT** unmounts an image or opens the physical drive tray.
 - **SHUF** plays the tracks in a random order. **REPEAT** repeats one track or all tracks.
 - The equalizer has a preamp, 10 bands from 31 Hz to 16 kHz, and presets. It changes only the CD-Audio, and only while `UCDDPLAY` runs. If the CPU is too slow for it, it stays off.
-- Push V or click the bottom window to select Warp Speed, Spectra, Firebars, Lavaflow, Bubbles, Plasma, Tunnel, Lissajous, or Random. Tunnel shows moving wireframe rings. Their speed changes with the audio level. Lissajous draws a stereo trace with fading trails: the left channel sets its horizontal position, and the right channel sets its vertical position.
+- Push V or click the bottom window to select Warp Speed, Spectra, Firebars, Lavaflow, Bubbles, Plasma, Tunnel, Lissajous, Landscape, or Random. Tunnel shows moving wireframe rings. Their speed changes with the audio level. Lissajous draws a stereo trace with fading trails: the left channel sets its horizontal position, and the right channel sets its vertical position. Landscape shows the frequency levels as wireframe ridges that move from the horizon toward you.
 - Push F1 to see all keys. With a mouse driver, the mouse also works.
 
 `UCDDPLAY D:` selects CD drive D:. Push D to select the next CD drive. When you exit `UCDDPLAY`, the CD-Audio stops.
@@ -179,6 +181,7 @@ Physical-disc playback uses the wave output level set in UCDDSET. The player's v
 These are games known to work, not a list of every game that may work.
 
 - Absolute Pinball
+- Alien Logic: A Skyrealms of Jorune Adventure ‡
 - Alien Trilogy
 - Alone in the Dark
 - Alone in the Dark 2
@@ -211,6 +214,7 @@ These are games known to work, not a list of every game that may work.
 - Gobliiins
 - Gobliins 2: The Prince Buffoon
 - Goblins Quest 3
+- Inferno
 - Little Big Adventure
 - Little Big Adventure 2
 - Loom
@@ -218,6 +222,8 @@ These are games known to work, not a list of every game that may work.
 - Pro Pinball: The Web
 - Pro Pinball: Timeshock!
 - Quake
+- Quarantine
+- Quarantine II: Road Warrior
 - Rayman
 - Rayman 60 Levels
 - Rayman By His Fans
@@ -230,9 +236,14 @@ These are games known to work, not a list of every game that may work.
 - Screamer 2
 - Screamer Rally
 - ShadowCaster
+- SuperKarts
+- The Horde
 - The Manhole
 - The Secret of Monkey Island
 - Tomb Raider
+- Warcraft II: Tides of Darkness
+
+‡ **Alien Logic:** The game pauses CD music after loading. This also occurs with 86Box's native CD-ROM emulation. Start the game with `ALIEN.EXE /f /s:SBLASTER`. Push S to turn sound effects on or off.
 
 † **Carmageddon:** Use SHSUCDX with μCDD for European editions. Affected editions check disc files while CD audio plays; MSCDEX can reject these checks. Some European rereleases also have an incompatible `DATA\64X48X8\FONTS\NEWBIGGR.PIX` file. This can cause a `DatafileStack type mismatch` error in high-resolution mode, including without μCDD. For the affected 3,068-byte file, follow [rc2sm's font repair instructions (archived post)](https://web.archive.org/web/20261017032720/https://steamcommunity.com/app/282010/discussions/0/530649887216891282/#c521643320364994991). Back up the file first. Do not apply this repair to a file of a different size.
 

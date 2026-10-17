@@ -603,8 +603,7 @@ packet:
     dd 0
     dw 2
 change_buffer db 9,0
-usage_message db 'UCDD mounts CD images as CD-ROM drives.',13,10,13,10
-    db 'UCDD -install [-units n]'
+usage_message db 'UCDD -install [-units n]'
 %ifdef RESIDENT_AUDIO
 %ifdef EMS_QUEUE
     db ' [-ems]'
@@ -614,25 +613,24 @@ usage_message db 'UCDD mounts CD images as CD-ROM drives.',13,10,13,10
     db 13,10
     db 'UCDD -mount image [-drive d]',13,10
     db 'UCDD -unmount [image] [-drive d]',13,10,13,10
-    db '  -units n   Number of drives, 1 to 4.',13,10
+    db 'n: 1 to 4 drives; d: uCDD drive letter.',13,10
 %ifdef RESIDENT_AUDIO
 %ifdef EMS_QUEUE
-    db '  -ems       Keep the CD audio queue in EMS, not in XMS.',13,10
+    db '-ems: EMS CD audio queue.',13,10
 %endif
-    db '  -vcpi      Keep VCPI. The sound of VCPI programs bypasses uCDD.',13,10
+    db '-vcpi: VCPI programs bypass uCDD audio.',13,10
 %endif
-    db '  image      ISO, CUE, BIN, or MDM file. An MDM file lists up to 10 discs.',13,10
-    db '  -drive d   uCDD drive letter.',13,10,'$'
+    db 'image: ISO, CUE, BIN, or MDM (up to 10 discs).',13,10,'$'
 no_drives_message db 'No uCDD drive is available.',13,10,'$'
-full_message db 'All uCDD drives are in use.',13,10,'$'
-empty_message db 'No image is mounted on the selected drive.',13,10,'$'
-drive_error_message db 'The selected drive is not a uCDD drive.',13,10,'$'
+full_message db 'No free uCDD drives.',13,10,'$'
+empty_message db 'No image is mounted on this drive.',13,10,'$'
+drive_error_message db 'This is not a uCDD drive.',13,10,'$'
 source_error_message db 'Use an image on a local hard disk.',13,10,'$'
 image_error_message db 'The image cannot be opened or is not valid.',13,10,'$'
-mdm_error_message db 'The disc list cannot be mounted. Check its images and XMS memory.',13,10
-    db 'Only one MDM file can be mounted at a time.',13,10,'$'
-operation_error_message db 'The drive is locked or in use. Try again.',13,10,'$'
-refresh_error_message db 'The image changed. The drive cache update failed.',13,10,'$'
+mdm_error_message db 'Check the disc images and XMS memory.',13,10
+    db 'Mount only one MDM file at a time.',13,10,'$'
+operation_error_message db 'The drive is locked or in use.',13,10,'$'
+refresh_error_message db 'The image changed. Cannot update the drive cache.',13,10,'$'
 mounted_message db 'The image is mounted.',13,10,'$'
 unmounted_message db 'The image is unmounted.',13,10,'$'
 drive_message db 'Drive '

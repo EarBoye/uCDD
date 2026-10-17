@@ -21,6 +21,10 @@ org 0
 %define WORK_BYTES (ENTRIES+ENTRY_MAX*ENTRY_SIZE)
 %define STACK_BYTES 2048
 
+%if LAND_PIXELS+SCROLL_W*SCROLL_H > ENTRIES
+    %error Landscape workspace exceeds the effects buffer
+%endif
+
     jmp strict near start
     ; The build reads this offset. The zero data after it is not in the file.
     dw bss_start
@@ -268,6 +272,7 @@ error_exit:
 %include "play/eq.asm"
 %include "play/fft.asm"
 %include "play/vis.asm"
+%include "play/landscape.asm"
 %include "play/ui.asm"
 %include "play/input.asm"
 %include "play/text.asm"
@@ -446,6 +451,16 @@ scroll_shadow dw 0
 scope_channel dw 0
 scope_last dw 0
 liss_head dw 0
+land_head db 0
+land_phase db 0
+land_have_previous db 0
+land_ridge db 0
+land_depth dw 0
+land_span dw 0
+land_x dw 0
+land_xstep dw 0
+land_ybase dw 0
+land_height dw 0
 fire_heat dw 0
 tunnel_phase dw 0
 tunnel_x dw 0

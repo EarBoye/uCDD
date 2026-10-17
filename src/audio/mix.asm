@@ -384,172 +384,9 @@ mix_half:
     xor esi, esi
     jmp .advance
 .output_sample:
-    cmp byte [game_frame_shift], 0
-    jne .stereo
-    mov si, ax
-%ifdef OWN_HOST
-    cmp dword [game_physical], 0
-    je .mono_low
-    call sb_high_sample
-    movzx edx, al
-    jmp .mono_value
-.mono_low:
-%endif
-    add si, [sb_tail_read_offset]
-    movzx edx, byte [fs:si]
-%ifdef OWN_HOST
-.mono_value:
-%endif
-    sub edx, 128
-    shl edx, 7
-    mov esi, edx
+    call sb_dma_sample
+    call sb_pcm_interpolate
     jmp .advance
-.stereo:
-    cmp byte [game_frame_shift], 1
-    je .stereo8
-    shl eax, 2
-    cmp byte [game_source], 0
-    jne .stereo16_normal
-    cmp byte [sb_single], 0
-    je .stereo16_normal
-    mov edx, [dma16+DMA_POSITION]
-    shl edx, 1
-    add edx, eax
-    movzx esi, word [dma16+DMA_COUNT]
-    inc esi
-    shl esi, 1
-    cmp edx, esi
-    jb .single16_address
-    sub edx, esi
-.single16_address:
-    add dx, [game_offset]
-    push eax
-    mov si, dx
-    movsx edx, word [fs:si]
-    sar edx, 1
-    pop eax
-    add eax, 2
-    cmp eax, [game_block_bytes]
-    jae .single_left
-    push edx
-    movzx edx, word [dma16+DMA_COUNT]
-    inc edx
-    shl edx, 1
-    movzx eax, si
-    sub ax, [game_offset]
-    add eax, 2
-    cmp eax, edx
-    jb .single16_right
-    sub eax, edx
-.single16_right:
-    add ax, [game_offset]
-    mov si, ax
-    movsx esi, word [fs:si]
-    pop edx
-    sar esi, 1
-    jmp .advance
-.single_left:
-    xor esi, esi
-    jmp .advance
-.stereo16_normal:
-    add ax, [sb_tail_read_offset]
-    mov si, ax
-    movsx edx, word [fs:si]
-    movsx esi, word [fs:si+2]
-    test byte [game_format], 2
-    jnz .unsigned_pair
-.pair_scale:
-    sar edx, 1
-    sar esi, 1
-    jmp .advance
-.unsigned_pair:
-    xor dh, 80h
-    movsx edx, dx
-    xor si, 8000h
-    movsx esi, si
-    jmp .pair_scale
-.sb_mono16:
-    shl eax, 1
-    add ax, [sb_tail_read_offset]
-    mov si, ax
-    movsx edx, word [fs:si]
-    test byte [game_format], 2
-    jz .mono16_scale
-    xor dh, 80h
-    movsx edx, dx
-.mono16_scale:
-    sar edx, 1
-    mov esi, edx
-    jmp .advance
-.stereo8:
-    test byte [game_format], 1
-    jnz .sb_mono16
-%ifdef WSS_INPUT
-    cmp byte [game_source], 1
-    jne .bytes
-    test byte [wss_registers+8], 40h
-    jnz .mono16
-.bytes:
-%endif
-    shl eax, 1
-    cmp byte [game_source], 0
-    jne .stereo8_normal
-    cmp byte [sb_single], 0
-    je .stereo8_normal
-    mov edx, [dma8+DMA_POSITION]
-    add edx, eax
-    movzx esi, word [dma8+DMA_COUNT]
-    inc esi
-    cmp edx, esi
-    jb .single8_address
-    sub edx, esi
-.single8_address:
-    add dx, [game_offset]
-    push eax
-    mov si, dx
-    movzx edx, byte [fs:si]
-    sub edx, 128
-    shl edx, 7
-    pop eax
-    inc eax
-    cmp eax, [game_block_bytes]
-    jae .single_left
-    push edx
-    movzx edx, word [dma8+DMA_COUNT]
-    inc edx
-    movzx eax, si
-    sub ax, [game_offset]
-    inc eax
-    cmp eax, edx
-    jb .single8_right
-    sub eax, edx
-.single8_right:
-    add ax, [game_offset]
-    mov si, ax
-    movzx esi, byte [fs:si]
-    sub esi, 128
-    shl esi, 7
-    pop edx
-    jmp .advance
-.stereo8_normal:
-    add ax, [sb_tail_read_offset]
-    mov si, ax
-    movzx edx, byte [fs:si]
-    movzx esi, byte [fs:si+1]
-    sub edx, 128
-    sub esi, 128
-    shl edx, 7
-    shl esi, 7
-%ifdef WSS_INPUT
-    jmp .advance
-.mono16:
-    shl ax, 1
-    add ax, [game_offset]
-    mov si, ax
-    movsx edx, word [fs:si]
-    sar edx, 1
-    mov esi, edx
-%endif
 .advance:
 %ifdef WSS_INPUT
     cmp byte [game_source], 1
@@ -836,6 +673,245 @@ mix_half:
 .done:
     ret
 
+
+sb_dma_sample:
+    cmp byte [game_frame_shift], 0
+    jne .stereo
+    mov si, ax
+%ifdef OWN_HOST
+    cmp dword [game_physical], 0
+    je .mono_low
+    call sb_high_sample
+    movzx edx, al
+    jmp .mono_value
+.mono_low:
+%endif
+    add si, [sb_tail_read_offset]
+    movzx edx, byte [fs:si]
+%ifdef OWN_HOST
+.mono_value:
+%endif
+    sub edx, 128
+    shl edx, 7
+    mov esi, edx
+    ret
+.stereo:
+    cmp byte [game_frame_shift], 1
+    je .stereo8
+    shl eax, 2
+    cmp byte [game_source], 0
+    jne .stereo16_normal
+    cmp byte [sb_single], 0
+    je .stereo16_normal
+    mov edx, [dma16+DMA_POSITION]
+    shl edx, 1
+    add edx, eax
+    movzx esi, word [dma16+DMA_COUNT]
+    inc esi
+    shl esi, 1
+    cmp edx, esi
+    jb .single16_address
+    sub edx, esi
+.single16_address:
+    add dx, [game_offset]
+    push eax
+    mov si, dx
+    movsx edx, word [fs:si]
+    sar edx, 1
+    pop eax
+    add eax, 2
+    cmp eax, [game_block_bytes]
+    jae .single_left
+    push edx
+    movzx edx, word [dma16+DMA_COUNT]
+    inc edx
+    shl edx, 1
+    movzx eax, si
+    sub ax, [game_offset]
+    add eax, 2
+    cmp eax, edx
+    jb .single16_right
+    sub eax, edx
+.single16_right:
+    add ax, [game_offset]
+    mov si, ax
+    movsx esi, word [fs:si]
+    pop edx
+    sar esi, 1
+    ret
+.single_left:
+    xor esi, esi
+    ret
+.stereo16_normal:
+    add ax, [sb_tail_read_offset]
+    mov si, ax
+    movsx edx, word [fs:si]
+    movsx esi, word [fs:si+2]
+    test byte [game_format], 2
+    jnz .unsigned_pair
+.pair_scale:
+    sar edx, 1
+    sar esi, 1
+    ret
+.unsigned_pair:
+    xor dh, 80h
+    movsx edx, dx
+    xor si, 8000h
+    movsx esi, si
+    jmp .pair_scale
+.sb_mono16:
+    shl eax, 1
+    add ax, [sb_tail_read_offset]
+    mov si, ax
+    movsx edx, word [fs:si]
+    test byte [game_format], 2
+    jz .mono16_scale
+    xor dh, 80h
+    movsx edx, dx
+.mono16_scale:
+    sar edx, 1
+    mov esi, edx
+    ret
+.stereo8:
+    test byte [game_format], 1
+    jnz .sb_mono16
+%ifdef WSS_INPUT
+    cmp byte [game_source], 1
+    jne .bytes
+    test byte [wss_registers+8], 40h
+    jnz .mono16
+.bytes:
+%endif
+    shl eax, 1
+    cmp byte [game_source], 0
+    jne .stereo8_normal
+    cmp byte [sb_single], 0
+    je .stereo8_normal
+    mov edx, [dma8+DMA_POSITION]
+    add edx, eax
+    movzx esi, word [dma8+DMA_COUNT]
+    inc esi
+    cmp edx, esi
+    jb .single8_address
+    sub edx, esi
+.single8_address:
+    add dx, [game_offset]
+    push eax
+    mov si, dx
+    movzx edx, byte [fs:si]
+    sub edx, 128
+    shl edx, 7
+    pop eax
+    inc eax
+    cmp eax, [game_block_bytes]
+    jae .single_left
+    push edx
+    movzx edx, word [dma8+DMA_COUNT]
+    inc edx
+    movzx eax, si
+    sub ax, [game_offset]
+    inc eax
+    cmp eax, edx
+    jb .single8_right
+    sub eax, edx
+.single8_right:
+    add ax, [game_offset]
+    mov si, ax
+    movzx esi, byte [fs:si]
+    sub esi, 128
+    shl esi, 7
+    pop edx
+    ret
+.stereo8_normal:
+    add ax, [sb_tail_read_offset]
+    mov si, ax
+    movzx edx, byte [fs:si]
+    movzx esi, byte [fs:si+1]
+    sub edx, 128
+    sub esi, 128
+    shl edx, 7
+    shl esi, 7
+%ifdef WSS_INPUT
+    ret
+.mono16:
+    shl ax, 1
+    add ax, [game_offset]
+    mov si, ax
+    movsx edx, word [fs:si]
+    sar edx, 1
+    mov esi, edx
+%endif
+    ret
+
+sb_pcm_interpolate:
+    cmp byte [game_source], 0
+    jne .done
+    cmp byte [sb_filter_legacy], 0
+    jne .done
+    cmp dword [game_step], 65536
+    jae .done
+    push eax
+    push ebx
+    push ecx
+    push ebp
+    push fs
+    push word [sb_tail_read_offset]
+    push edx
+    push esi
+    movzx ecx, bp
+    add ebp, 65536
+    cmp byte [sb_single], 0
+    je .ring
+    mov eax, ebp
+    sub eax, [game_origin]
+    jnc .single_position
+    add eax, [game_limit]
+.single_position:
+    shr eax, 16
+    push cx
+    mov cl, [game_frame_shift]
+    shl eax, cl
+    pop cx
+    cmp eax, [game_block_bytes]
+    jae .last
+.ring:
+    cmp dword [game_limit], 0
+    je .next
+    cmp ebp, [game_limit]
+    jb .next
+    sub ebp, [game_limit]
+    cmp byte [sb_tail_valid], 0
+    je .next
+    mov fs, [game_segment]
+    mov ax, [game_offset]
+    mov [sb_tail_read_offset], ax
+.next:
+    mov eax, ebp
+    shr eax, 16
+    call sb_dma_sample
+    pop ebx
+    sub esi, ebx
+    imul esi, ecx
+    sar esi, 16
+    add esi, ebx
+    pop ebx
+    sub edx, ebx
+    imul edx, ecx
+    sar edx, 16
+    add edx, ebx
+    jmp .restore
+.last:
+    pop esi
+    pop edx
+.restore:
+    pop word [sb_tail_read_offset]
+    pop fs
+    pop ebp
+    pop ecx
+    pop ebx
+    pop eax
+.done:
+    ret
 
 ; Two-pole 3.2 kHz filter at the nominal 44.1 kHz mix rate, Q14.
 sb_filter:

@@ -352,7 +352,7 @@ port_callback:
     cmp bl, 80h
     je .done
     cmp bl, 81h
-    je .done
+    je .dma_select
     test bl, bl
     jz .mixer_reset
     mov [virtual_mixer+bx], al
@@ -370,6 +370,11 @@ port_callback:
     jne .volume16
     mov bx, 32h
     jmp .volume_pair
+.dma_select:
+    mov [virtual_mixer+81h], al
+    test al, 0e0h
+    setz byte [sb_dma16_low]
+    jmp .done
 .master_pair:
     mov bx, 30h
     jmp .volume_pair
@@ -549,6 +554,10 @@ port_callback:
     je .legacy_start
     cmp al, 91h
     je .legacy_start
+    cmp al, 0c0h
+    je .play
+    cmp al, 0c2h
+    je .play
     cmp al, 0c6h
     je .play
     cmp al, 0c4h
@@ -872,8 +881,11 @@ port_callback:
     mov eax, 1000000
     xor edx, edx
     div ecx
-    cmp eax, 65535
-    ja .unsupported
+    ; IRQ probes use time constants above the playback range.
+    cmp eax, 48000
+    jbe .time_limit
+    mov eax, 48000
+.time_limit:
     mov [legacy_rate], ax
     test byte [virtual_mixer+0eh], 2
     jz .time_mono
@@ -913,6 +925,8 @@ port_callback:
 .output_kind:
     cmp byte [dsp_command], 0b2h
     je .single
+    cmp byte [dsp_command], 0c2h
+    je .single
     cmp byte [dsp_command], 14h
     je .single
     cmp byte [dsp_command], 91h
@@ -932,8 +946,10 @@ port_callback:
     test byte [pending_format], 1
     jz .dma_selected
 .wide_dma:
-    mov si, dma16
     mov cl, 1
+    cmp byte [sb_dma16_low], 0
+    jne .dma_selected
+    mov si, dma16
 .dma_selected:
 %ifdef RESIDENT_AUDIO
     cmp byte [host_backend], 2
@@ -965,7 +981,10 @@ port_callback:
     je .single_buffer
     movzx ebx, word [si+DMA_COUNT]
     inc ebx
-    shl ebx, cl
+    cmp si, dma16
+    jne .buffer_units
+    shl ebx, 1
+.buffer_units:
     cmp edx, 512
     jae .large_block
     ; Detection code loops one short block over the whole buffer.
@@ -1113,7 +1132,9 @@ port_callback:
     mov al, [pending_format]
     mov [game_format], al
     mov al, 1
-    cmp cl, 2
+    mov ah, [dsp_command]
+    and ah, 0f0h
+    cmp ah, 0b0h
     je .wide_irq
     cmp word [game_dma], dma16
     jne .irq_bit

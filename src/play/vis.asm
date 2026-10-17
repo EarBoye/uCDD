@@ -318,6 +318,8 @@ set_visual:
     mov [vis_mode], al
     mov word [vis_timer], 0
     mov word [liss_head], 0
+    mov byte [land_head], 0
+    mov byte [land_phase], 0
     push es
     push ds
     pop es

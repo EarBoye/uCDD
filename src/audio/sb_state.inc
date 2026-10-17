@@ -16,6 +16,7 @@ guest_dma_ports dw 2,3,83h,0c4h,0c6h,8bh
 audio_irq_busy db 0
 audio_irq_mask_bit db 0
 sb_single db 0
+sb_dma16_low db 0
 sb_input db 0
 sb_finished db 0
 sb_paused db 0

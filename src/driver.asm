@@ -85,7 +85,14 @@ interrupt:
     cmp bp, 0fff3h
     ja .return_only_status
     cmp byte [fs:bp], 13
-    jb .bad_length
+    jae .length_ok
+    cmp byte [fs:bp], 7
+    jne .bad_length
+    cmp byte [fs:bp+2], 3
+    je .length_ok
+    cmp byte [fs:bp+2], 0ch
+    jne .bad_length
+.length_ok:
     movzx eax, byte [fs:bp]
     movzx edx, bp
     add eax, edx
@@ -192,6 +199,8 @@ ioctl_buffer:
     cmp bp, 0ffech
     ja .bad
     mov al, [fs:bp]
+    cmp al, 7
+    je .header_ok
     cmp al, 13
     je .header_ok
     cmp al, 18
@@ -206,6 +215,25 @@ ioctl_buffer:
     mov cl, 11
 .count_ok:
     les di, [fs:bp+14]
+    ; Warcraft II uses a four-byte count for fixed-size control blocks.
+    cmp cx, 4
+    jne .size_ok
+    movzx bx, byte [es:di]
+    cmp byte [fs:bp+2], 3
+    jne .output_size
+    cmp bx, 15
+    ja .size_ok
+    movzx ax, byte [ioctl_sizes+bx]
+    jmp .extend
+.output_size:
+    cmp bl, 3
+    jne .size_ok
+    mov ax, 9
+.extend:
+    cmp ax, cx
+    jbe .size_ok
+    mov cx, ax
+.size_ok:
     movzx eax, di
     movzx edx, cx
     add eax, edx
@@ -349,7 +377,7 @@ ioctl_input:
     mov [es:di+3], al
     mov byte [es:di+5], 0
     jmp request_ok
-ioctl_sizes db 5,0,0,0,0,0,5,4,5,2,7,7,0,0,0,11
+ioctl_sizes db 5,6,0,0,9,0,5,4,5,2,7,7,11,0,0,11
 
 ioctl_output:
     call ioctl_buffer

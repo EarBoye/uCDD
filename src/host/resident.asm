@@ -670,6 +670,22 @@ resident_refill_schedule:
 .refill_due:
     cmp edx, 1
     je .window
+    ; The client can stop the BIOS timer.
+    test edi, edi
+    jz .bios_wait
+    cmp byte [esi], 2
+    jne .queue_wait
+    mov eax, [edi]
+    sub eax, [ebp+resident_refill_last]
+    cmp eax, 512
+    jae .window
+.queue_wait:
+    mov eax, [edi]
+    sub eax, [ebp+resident_vga_clock]
+    cmp eax, 4096
+    jb .done
+    jmp .window
+.bios_wait:
     mov eax, [46ch]
     sub eax, [ebp+resident_vga_tick]
     cmp eax, 2
