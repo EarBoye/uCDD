@@ -265,6 +265,13 @@ dpmi_entry:
 ; stack is loaded, but the host still holds the client's state. Release it
 ; as dpmi_finish and the end of dpmi_entry do, through protected mode, on the
 ; host's own stack, then go on to the address DOS would have jumped to.
+; DOS comes here too when the client stays resident (INT 21h AH=31h from
+; real mode, which DPMI 1.0 names for a client that serves real-mode
+; programs, "Writing Resident Service Providers"). Borland's RTM works so:
+; it goes resident, and the program's stub then calls it through INT 2Fh.
+; Such a client is not ended: its PSP's memory block is still its own (the
+; arena header one paragraph below the PSP names it as owner; an end frees
+; the block). The client is kept, and only the jump is left.
 dpmi_terminate_hook:
     pushf
     pop word [cs:dpmi_terminate_flags]
@@ -274,6 +281,12 @@ dpmi_terminate_hook:
     mov ax, cs
     mov ds, ax
     cmp byte [dpmi_active], 0
+    je dpmi_terminate_real.released
+    mov ax, [dpmi_psp]
+    dec ax
+    mov es, ax
+    mov ax, [es:1]
+    cmp ax, [dpmi_psp]
     je dpmi_terminate_real.released
     mov byte [dpmi_terminated], 1
 %ifdef RESIDENT_HOST
