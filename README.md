@@ -132,7 +132,7 @@ DOS=HIGH,UMB
 DEVICE=C:\JEMMEX\JEMMEX.EXE
 ```
 
-JEMMEX options to avoid: `NOVCPI` (the audio driver's host is a VCPI client and cannot start without it), `SB` (it maps the first 4 MB into the page table the host shares with JEMMEX), and `NOEMS` if protected-mode games need more than the 8 MB pool it leaves. `UCDD -install -ems` needs an EMS page frame.
+JEMMEX options to avoid: `NOVCPI` (the audio driver's host is a VCPI client and cannot start without it), `SB` (it maps the first 4 MB into the page table the host shares with JEMMEX), `VME` (with the V86 mode extensions a game's CLI clears only the virtual flag, and the port trap's return would find interrupts enabled; `NOVME`, Jemm's default, is required), and `NOEMS` if protected-mode games need more than the 8 MB pool it leaves. `UCDD -install -ems` needs an EMS page frame.
 
 AUTOEXEC.BAT:
 ```dos

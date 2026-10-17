@@ -40,8 +40,7 @@ pro_start:
     xor cx, cx
     mov ah, 48h
     call pro_dma
-    mov al, 0d1h
-    call dsp_write
+    call dsp_speaker_on
     mov al, 14h
     call dsp_write
     xor al, al
@@ -109,8 +108,7 @@ pro_start:
     call dsp_write
     mov al, 211
     call dsp_write
-    mov al, 0d1h
-    call dsp_write
+    call dsp_speaker_on
     cmp byte [sb_mono_auto], 0
     je .mono_single
     mov al, 48h
@@ -271,6 +269,38 @@ pro_registers db 22h,04h,0eh
 pro_saved times 3 db 0
 pro_priming db 0
 sb_mono_auto db 0
+
+; D1h, then its time: "The DSP takes a maximum of 112 milliseconds to
+; complete this command" (SBG, D1h). dsp_write waits 65535 port reads, about
+; 65 ms on an ISA bus; this waits up to four times that before the next
+; command. A DSP still busy after it is left to the next dsp_write. CF as
+; dsp_write. AX, BX and CX kept (physical_read keeps BX and CX, not AH).
+dsp_speaker_on:
+    mov al, 0d1h
+    call dsp_write
+    jc .done
+    push ax
+    push bx
+    push cx
+    mov dx, [sb_base]
+    add dx, 0ch
+    mov bx, 4
+.round:
+    mov cx, 65535
+.busy:
+    call physical_read
+    test al, 80h
+    jz .ready
+    loop .busy
+    dec bx
+    jnz .round
+.ready:
+    pop cx
+    pop bx
+    pop ax
+    clc
+.done:
+    ret
 
 ; Returns AL=a byte from the DSP, CF set if none came.
 dsp_read:

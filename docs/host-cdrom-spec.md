@@ -66,7 +66,7 @@ reprogrammable (D09:353-356, 2082-2104).
 | X-2 | EMS queue (a build option): 47h/48h around each copy, one context per handle. | EMS:528-541, 1337-1415 | No change: a nested copy fails cleanly with 8Dh. |
 | Q-1 | Word and dword I/O on the Sound Blaster's ports: only a word OUT to base+4 is taken; others are dropped. | RBIL.P:5965-5974 | Open (rare). |
 | Q-2 | Jemm's internals are read through an undocumented IOCTL (versions 5605h and 5705h only). | JR:351-353 | No change; a new Jemm may need a look. |
-| Q-3 | VME: with Jemm's VME option a game's CLI leaves IF set in the V86 frame, which the trap exit tests (`host_jemm.asm`, host_io_irq). | JR:194-196 | Open. NOVME is Jemm's default; the README should say it is required. |
+| Q-3 | VME: with Jemm's VME option a game's CLI leaves IF set in the V86 frame, which the trap exit tests (`host_jemm.asm`, host_io_irq). | JR:194-196 | **Documented.** The README lists `VME` among the JEMMEX options to avoid; `NOVME` is Jemm's default. |
 
 ## 3. The CD-ROM device driver
 
