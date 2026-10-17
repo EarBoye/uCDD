@@ -279,9 +279,16 @@ that a failure in both is the rig's and only one in the first is ours.
   Reinforcements (no mouse driver in the rig), Warcraft II CD (its launcher
   mounts a .MDM that the disc cutter does not copy).
 - Ours, fixed: Lollypop (M-10).
-- Ours, open: Super Street Fighter II Turbo crashes in real mode before it
-  asks for DPMI (JemmEx: invalid opcode at 0803:6288), in every build back
-  to 0.9.3b. Mass Destruction finds no CD: MSCDEX lists nothing on its
+- Ours, open: Super Street Fighter II Turbo. Its batch first runs
+  MAKESWP.EXE, a 32RTM program (Borland's 32-bit loader, with its own host
+  DPMI32VM.OVL). With the driver stepped aside 32RTM uses DPMI32VM and
+  MAKESWP works; with it engaged 32RTM uses this host, and at 0137:18DF
+  executes MOV CR0,EAX (0F 22 C0) after SMSW and an AND/OR of the FPU bits
+  MP, EM and ET: at ring 3 that is a general protection fault, 32RTM has
+  no handler, and the host ends it (in the game run the batch then went on
+  into a real-mode crash, JemmEx's invalid opcode at 0803:6288, back to
+  0.9.3b). DPMI 1.0 gives a client 0E01h for those bits; emulating a CR0
+  write at ring 3 would be a deviation: a decision for Michael. Mass Destruction finds no CD: MSCDEX lists nothing on its
   disc (system id "PLAYSTATION", XA records), M-5; with status bit 10 the
   disc lists. Shellshock stops with DOS/4GW's divide error at 1:000049D2:
   its millisecond clock (its own tick count plus PIT channel 0, retried
