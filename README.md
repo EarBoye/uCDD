@@ -163,7 +163,7 @@ Other MODE2 sector formats, compressed audio, and multi-file CUE sheets are not 
 - **OPEN** shows CD drives and the images on local hard disks. Select a CD drive to use its disc, or select a CUE sheet, an ISO or BIN image, or an MDM file to mount it. If a physical drive is selected, images mount on the first μCDD drive. **EJECT** unmounts an image or opens the physical drive tray.
 - **SHUF** plays the tracks in a random order. **REPEAT** repeats one track or all tracks.
 - The equalizer has a preamp, 10 bands from 31 Hz to 16 kHz, and presets. It changes only the CD-Audio, and only while `UCDDPLAY` runs. If the CPU is too slow for it, it stays off.
-- Push V or click the bottom window to select Warp Speed, Spectra, Firebars, Lavaflow, Bubbles, Plasma, Tunnel, or Random. Tunnel shows moving wireframe rings. Their speed changes with the audio level.
+- Push V or click the bottom window to select Warp Speed, Spectra, Firebars, Lavaflow, Bubbles, Plasma, Tunnel, Lissajous, or Random. Tunnel shows moving wireframe rings. Their speed changes with the audio level. Lissajous draws a stereo trace with fading trails: the left channel sets its horizontal position, and the right channel sets its vertical position.
 - Push F1 to see all keys. With a mouse driver, the mouse also works.
 
 `UCDDPLAY D:` selects CD drive D:. Push D to select the next CD drive. When you exit `UCDDPLAY`, the CD-Audio stops.

@@ -2,6 +2,7 @@
 
 ## Changes in 0.9.3c
 
+- Add a Lissajous visualization to UCDDPLAY. The stereo channels draw an XY trace with fading trails.
 - Preserve interrupt ownership when protected-mode programs call real-mode interrupt handlers. This prevents unrelated BIOS interrupt acknowledgments from clearing the virtual Sound Blaster interrupt state and fixes silent or repeating sound effects in Batman Forever.
 - Use 16-bit interrupt and callback stacks for 16-bit DPMI programs. This fixes the startup failure in Chasm: The Rift.
 - Return the data-read status expected by SHSUCDX while CD audio plays. This fixes the CD check in affected Carmageddon editions with a full installation.
