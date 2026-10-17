@@ -152,6 +152,9 @@ virtual_irq_take:
     cmp byte [virtual_pic_request], 0
     je .done
     call physical_pic_isr
+%ifdef OWN_HOST
+    call virtual_pic_host_service
+%endif
     test al, [guest_irq_priority]
     jnz .done
     mov byte [virtual_pic_request], 0
@@ -193,6 +196,9 @@ virtual_pic_read:
     ret
 .service:
     or al, [virtual_pic_service]
+%ifdef OWN_HOST
+    call virtual_pic_host_service
+%endif
     ret
 .mask:
     and al, [pic_visible_bits]
@@ -211,12 +217,18 @@ virtual_pic_write:
     je .select
     cmp al, 20h
     je .eoi
-    cmp al, [guest_eoi]
-    je .virtual_eoi
     mov ah, al
     and ah, 0f8h
     cmp ah, 60h
-    je .physical
+    jne .unsupported
+%ifdef OWN_HOST
+    call virtual_pic_host_specific
+    jc .done
+%endif
+    cmp al, [guest_eoi]
+    je .virtual_eoi
+    jmp .physical
+.unsupported:
 %ifdef MOUNTED_AUDIO
     mov byte [fault], 5
 %else
@@ -230,6 +242,10 @@ virtual_pic_write:
     ret
 .eoi:
     call physical_pic_isr
+%ifdef OWN_HOST
+    call virtual_pic_host_eoi
+    jc .done
+%endif
     cmp byte [virtual_pic_service], 0
     je .hardware_service
     test al, [guest_irq_higher]
@@ -240,6 +256,7 @@ virtual_pic_write:
     jnz .physical_eoi
 .virtual_eoi:
     mov byte [virtual_pic_service], 0
+.done:
     ret
 .physical_eoi:
     mov al, 20h
@@ -260,6 +277,98 @@ virtual_pic_write:
     mov [emm_pic_mask_shadow], al
 %endif
     jmp .physical
+
+%ifdef OWN_HOST
+virtual_pic_host_service:
+    push es
+    push di
+    cmp word [own_host_active+2], 0
+    je .done
+    les di, [own_host_active]
+    cmp byte [es:di], 1
+    jne .done
+    or al, [es:di+4]
+.done:
+    pop di
+    pop es
+    ret
+
+; A reflected real IRQ keeps its master-PIC EOI ownership.
+virtual_pic_host_eoi:
+    push ax
+    push bx
+    push cx
+    push es
+    push di
+    cmp word [own_host_active+2], 0
+    je .none
+    les di, [own_host_active]
+    cmp byte [es:di], 1
+    jne .none
+    mov bl, [es:di+4]
+    test bl, bl
+    jz .none
+    mov bh, al
+    or al, bl
+    or al, [virtual_pic_service]
+    movzx cx, al
+    bsf cx, cx
+    mov al, 1
+    shl al, cl
+    test bh, al
+    jnz .none
+    test bl, al
+    jz .none
+    not al
+    and [es:di+4], al
+    pop di
+    pop es
+    pop cx
+    pop bx
+    pop ax
+    stc
+    ret
+.none:
+    pop di
+    pop es
+    pop cx
+    pop bx
+    pop ax
+    clc
+    ret
+
+virtual_pic_host_specific:
+    push ax
+    push cx
+    push es
+    push di
+    cmp word [own_host_active+2], 0
+    je .none
+    les di, [own_host_active]
+    cmp byte [es:di], 1
+    jne .none
+    mov cl, al
+    and cl, 7
+    mov al, 1
+    shl al, cl
+    test [es:di+4], al
+    jz .none
+    not al
+    and [es:di+4], al
+    pop di
+    pop es
+    pop cx
+    pop ax
+    stc
+    ret
+.none:
+    pop di
+    pop es
+    pop cx
+    pop ax
+    clc
+    ret
+%endif
 
 virtual_dsp_irq db 0
 virtual_pic_mask db 0ffh

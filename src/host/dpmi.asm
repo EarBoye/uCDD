@@ -956,7 +956,8 @@ dpmi_sti_sb_held db 0
 dpmi_active db 0
 dpmi_audio_pm_handler db 0
 dpmi_virtual_entry dw dpmi_bridge_virtual
-%if dpmi_audio_pm_handler-dpmi_active != 1 || dpmi_virtual_entry-dpmi_active != 2
+dpmi_real_eoi db 0
+%if dpmi_audio_pm_handler-dpmi_active != 1 || dpmi_virtual_entry-dpmi_active != 2 || dpmi_real_eoi-dpmi_active != 4
     %error Invalid resident IRQ state layout
 %endif
 dpmi_psp dw 0

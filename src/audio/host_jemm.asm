@@ -215,6 +215,9 @@ host_io_irq:
     je .priority
     cmp byte [esi+1], 0
     jne .done
+    mov al, [esi+4]
+    test al, [ebx+guest_irq_priority]
+    jnz .done
 .priority:
     mov al, 0bh
     out 20h, al

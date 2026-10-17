@@ -183,6 +183,7 @@ These are games known to work, not a list of every game that may work.
 - Alone in the Dark
 - Alone in the Dark 2
 - Alone in the Dark 3
+- Alpha Storm
 - Amazing Learning Games with Rayman
 - An Elder Scrolls Legend: Battlespire
 - Archimedean Dynasty
@@ -196,7 +197,7 @@ These are games known to work, not a list of every game that may work.
 - Blam! Machinehead
 - Blood
 - Bust-A-Move 2 Arcade Edition
-- Carmageddon
+- Carmageddon †
 - Chasm: The Rift
 - Corridor 7: Alien Invasion
 - Cyber Police (CYBERPO1.EXE)
@@ -232,6 +233,8 @@ These are games known to work, not a list of every game that may work.
 - The Manhole
 - The Secret of Monkey Island
 - Tomb Raider
+
+† **Carmageddon:** Use SHSUCDX with μCDD for European editions. Affected editions check disc files while CD audio plays; MSCDEX can reject these checks. Some European rereleases also have an incompatible `DATA\64X48X8\FONTS\NEWBIGGR.PIX` file. This can cause a `DatafileStack type mismatch` error in high-resolution mode, including without μCDD. For the affected 3,068-byte file, follow [rc2sm's font repair instructions (archived post)](https://web.archive.org/web/20261017032720/https://steamcommunity.com/app/282010/discussions/0/530649887216891282/#c521643320364994991). Back up the file first. Do not apply this repair to a file of a different size.
 
 ## Build
 

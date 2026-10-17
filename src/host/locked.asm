@@ -39,6 +39,11 @@ dpmi_locked_init:
     mov dword [ebp+dpmi_ldt+6*8+4], 0040f23eh
     mov dword [ebp+dpmi_ldt+7*8], 0e0000fffh
     mov dword [ebp+dpmi_ldt+7*8+4], 0040f23fh
+    cmp byte [ebp+dpmi_client16], 0
+    je .stack_ready
+    and byte [ebp+dpmi_ldt+6*8+6], 0bfh
+    and byte [ebp+dpmi_ldt+7*8+6], 0bfh
+.stack_ready:
     mov word [ebp+dpmi_used+6], 0404h
     mov dword [ebp+dpmi_locked_cursor], 4096
     mov dword [ebp+dpmi_locked_depth], 0

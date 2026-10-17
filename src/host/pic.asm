@@ -4,6 +4,7 @@
 HOST_PROTECTED
 dpmi_pic_reset:
     mov word [ebp+dpmi_pic_service], 0
+    mov byte [ebp+dpmi_real_eoi], 0
     mov word [ebp+dpmi_pic_read_mode], 0a0ah
     in al, 21h
     mov [ebp+dpmi_pic_mask], al
@@ -41,6 +42,7 @@ dpmi_pic_next:
     call dpmi_pic_read_isr
     movzx ebx, al
     or bl, [ebp+dpmi_pic_service]
+    or bl, [ebp+dpmi_real_eoi]
     movzx ecx, word [ebp+dpmi_pic_mask]
     not ecx
     and ecx, [ebp+dpmi_pending_irqs]
@@ -98,9 +100,21 @@ dpmi_pic_reflect:
     cmp al, 8
     jae .done
     add eax, 8
-    and byte [ebp+dpmi_pic_service], 0fbh
 .clear:
+    bt [ebp+dpmi_pic_service], eax
+    jnc .done
     btr [ebp+dpmi_pic_service], eax
+    mov ecx, eax
+    cmp eax, 8
+    jb .owner
+    and byte [ebp+dpmi_pic_service], 0fbh
+    mov ecx, 2
+.owner:
+%ifdef RESIDENT_HOST
+    mov al, 1
+    shl al, cl
+    or [ebp+dpmi_real_eoi], al
+%endif
 .done:
     popad
     ret
@@ -124,9 +138,17 @@ dpmi_pic_real_chain:
     jne .next
 .chain:
     btr [ebp+dpmi_pic_service], ebx
+    mov ecx, ebx
     cmp ebx, 8
-    jb .restored
+    jb .owner
     and byte [ebp+dpmi_pic_service], 0fbh
+    mov ecx, 2
+.owner:
+%ifdef RESIDENT_HOST
+    mov al, 1
+    shl al, cl
+    or [ebp+dpmi_real_eoi], al
+%endif
     jmp .restored
 .next:
     inc ebx
@@ -145,7 +167,11 @@ dpmi_pic_audio_allowed:
     mov cl, ch
     dec ch
     or cl, ch
-    test [ebp+dpmi_pic_service], cl
+    push eax
+    mov al, [ebp+dpmi_pic_service]
+    or al, [ebp+dpmi_real_eoi]
+    test al, cl
+    pop eax
     jnz .blocked
     push eax
     movzx eax, word [ebp+dpmi_pic_mask]
@@ -299,6 +325,7 @@ dpmi_pic_backend:
     ret
 .resident_service:
     or al, [esi+1]
+    or al, [ebp+dpmi_real_eoi]
     clc
     ret
 .resident_select:

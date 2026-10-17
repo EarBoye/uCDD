@@ -148,9 +148,12 @@ interrupt:
     mov ax, 0100h
 .done:
 %ifdef RESIDENT_AUDIO
-    ; MSCDEX drivers report busy on every request while audio plays.
+    ; SHSUCDX requires an exact success status for data reads.
     cmp ax, 0100h
     jne .status
+    lfs bp, [active_request]
+    cmp byte [fs:bp+2], 80h
+    je .status
     mov si, [unit_pointer]
     cmp dword [si+AUDIO_ENTRY], 0
     je .status
