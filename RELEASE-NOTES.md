@@ -22,6 +22,7 @@ JemmEx).
 - An image with no CD audio answers the audio IOCTLs (Q-channel, head position, channels) as an idle drive at sector 0, and takes channel control, as MSCDEX 2.1 asks.
 - Fix memory corruption after exit when a game passes a protected-mode pointer to MSCDEX: a flat segment is reflected to real mode as segment A000h, not 0. Hardware.
 - Find the PCI disk controllers at `UCDD -install` through the PCI BIOS and pass their IRQs to DOS directly, with IRQ 14 and 15 and an IRQ set by hand in UCDDSET. A DOS/4GW game no longer freezes at its banner on a machine whose disk controller uses another IRQ. `UCDDPCI=OFF` skips the scan.
+- READ LONG in raw mode (MSCDEX 2.1's optional data read mode): on a BIN/CUE image with 2352-byte sectors each sector comes back whole, and the device status says so. An ISO image still refuses it.
 
 ## Sound card emulation and output
 
@@ -45,6 +46,7 @@ JemmEx).
 - WSS: the board register's IRQ codes follow the documented table; the codec start no longer fails when the calibration bit is never seen set; the ESS mixer registers the start writes are put back at the stop.
 - The interpolation of the last CD frame of a half no longer reads one frame past the data loaded at output rates above 44.1 kHz.
 - More interrupt-flag patterns recognised (the flags image in a register), and a larger, hashed table of learned sites. Hardware, benefit partly confirmed.
+- The ESS build (`--virtual-ess`) over a card that is not an ESS (an SB16, SB Pro, SB 2.0) played silence, CD audio included: its virtual ESS copied its starting mixer from the physical card's registers. It now copies them only from a physical ESS, and starts at the ESS sheet's reset levels over any other card.
 
 ## DPMI host
 
@@ -65,6 +67,8 @@ JemmEx).
 - 0400h reports the processor in CL (03h 386, 04h 486, then the CPUID family: 05h Pentium, 06h P6 and Athlon); it reported a 386 on every CPU. This fixes the page fault at 1A7:0000002F in X-Men Children of the Atom, which refuses a 386.
 - INT 2Fh AX=168Ah from a program is answered by the host instead of being passed to real mode, as DPMI 1.0 says. The one vendor name it knows is "MS-DOS", for 16-bit programs only (INT 31h AX=0A00h gives the same answer): Borland's RTM takes it to mean that the host translates DOS calls for 16-bit programs, which this host does, and stops with "no DOS extensions in the DPMI server" without it (Chasm: The Rift). The entry point's function 0100h returns an alias of the LDT. Every other name, and every 32-bit program, gets AL unchanged.
 - 000Dh allocates the LDT descriptor a program names, and the host keeps selectors 04h-7Ch free for it, as DPMI asks: the initial selectors a program gets are now CS 87h, DS 8Fh, SS 97h and ES 9Fh (the PSP).
+- A program that stays resident from real mode (INT 21h AH=31h) keeps its protected-mode side, as DPMI 1.0 allows for a resident service; the host released it before. Borland's RTM works so: it goes resident and the program's stub calls it next.
+- An exception raised inside a program's own exception handler goes to its handlers again, on a new level of the locked stack, as DPMI 1.0 describes; the host ended the program before. Chasm: The Rift now reaches its start-up screen under the driver (it still stops after it; see ISSUES.md).
 
 ## UCDDSET
 

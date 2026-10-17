@@ -56,6 +56,7 @@ reprogrammable (D09:353-356, 2082-2104).
 | D-10 | INT 2Fh AX=168Ah (the vendor-specific API entry point) from protected mode was reflected to real mode, where any handler could change AL and hand the client a bogus entry point. | D10:Int 2FH Function 168AH ("available only in protected mode"; unsuccessful: "AL = unchanged (8AH)") | **Fixed.** The host answers it. AL stays 8Ah for every name but the one extension in D-11; 0A00h fails with 8001h for those names. [86Box: DPMIG V gives AL 8A and 0A00h CF 1 AX 8001, before and after; the change removes the real-mode chance.] |
 | D-11 | Borland's RTM (16-bit) asks INT 2Fh AX=168Ah for "MS-DOS" and, refused, accepts only Windows (INT 2Fh AX=1600h); otherwise it stops: "Error: no DOS extensions in the DPMI server" (Chasm: The Rift, section 9). It discards the entry point: to RTM the name means that the host translates DOS calls carrying protected-mode addresses, as Windows does. | D10:Int 2FH Function 168AH and Int 31H 0A00H (vendor extensions, "All extended API parameters are specified by the vendor"); RBIL tables 02719 and 02720 ("MS-DOS": AX=0100h, get LDT alias selector) | **Fixed, an extension, not a deviation.** The host answers "MS-DOS" to 16-bit clients, the only ones whose DOS calls it translates (dos16.asm); 32-bit clients and other names still get 8Ah, and 0A00h gives the same answer as 168Ah. The entry point (`dpmi_msdos_entry`, ring 3, DPMI calls only) takes AX=0100h: an LDT alias, a 16-bit data descriptor at DPL 3 over the whole table, allocated by 0000h so the client owns it; any other function returns carry set. [86Box: DPMIG M, AL 00 and 006B:AA2A from both functions, the alias reads the program's CS descriptor as 000Bh gives it, 0200h refused, the alias freed; RTM passes its check. Chasm itself still fails in 86Box, section 9.] |
 | D-12 | A client that stays resident from real mode (INT 21h AH=31h) was released: the real-mode end hook (PSP:0Ah) took it for an end. Borland's RTM goes resident this way after its protected-mode start, and the program's stub then calls it through INT 2Fh; with the client released, Chasm: The Rift left silently. | D10:"Writing Resident Service Providers" (a client serving real-mode programs uses DOS's Int 21H Function 31H through 0300H); D10:Int 21H Function 4CH (the host acts on the end) | **Fixed.** The hook keeps a client whose PSP's memory block is still its own (the arena header below the PSP names it), which only a resident exit leaves, and goes on to the address DOS would have jumped to. [86Box: Chasm's RTM goes resident, its stub calls it, and RTM loads the game's segments; the regression matches the one before it.] |
+| D-13 | An exception raised while a client exception handler ran ended the client: the host kept one exception state and took a second exception as unhandled. Chasm: The Rift's runtime takes a general protection fault inside its segment-not-present handling. | D10:"the host automatically switches to this stack during servicing of ... all exceptions ... Subsequent nested interrupts or calls will not cause a stack switch"; D09 silent | **Fixed.** A nested exception goes to the client's handlers like the first, on a new level of the locked stack; the outer handler's place (cursor, SP) is kept by level and comes back when the inner one returns or chains to the default. The stack's levels bound the nesting (four, as for interrupts). [86Box: Chasm then reaches its full start-up screen (memory, controls, VESA, the SB16, MSCDEX) and its runtime reports its own fault, "Runtime error 216", and exits cleanly, where the client was ended before; the regression matches the one before it.] |
 | - | Harmless, kept as they are: callback entry leaves the structure's CS:IP stale; a fresh locked-stack page per nesting level; separate descriptors for DS and SS when equal; the audio and disk IRQs go to real mode first (a design choice); callbacks on their own stack. | review 1.3 | No change. |
 
 ## 2. VCPI, XMS, EMS and JemmEx
@@ -230,11 +231,18 @@ answer to INT 2Fh AX=1600h. D-11 answers it. What was found on the way:
   built to: PS10's stub started it with EXEC and calls it next. The host
   released it there (D-12). With D-12 the stub calls RTM, RTM opens
   PS10.EXE, reads the program past the stub and demand-loads its segments.
-- It then fails later, at a point that moves with the driver's layout: in
-  one build a page fault, in another a general protection fault raised
-  inside RTM's own segment-not-present handler, which the host does not
-  deliver (it ends the client on any exception while a client exception
-  handler runs; DPMI 1.0 expects nested exceptions on the locked stack).
+- It then failed later, at a point that moved with the driver's layout:
+  in one build a page fault, in another a general protection fault
+  inside the program's segment-not-present handling, which the host did
+  not deliver (D-13, fixed). With D-13 the game shows its whole start-up
+  screen (memory 62814K, keyboard, VESA 1.2, "SB16 #220h, IRQ05, DMA5,
+  DSPv4.13", MSCDEX 2.25), then its runtime reports "Runtime error 216 at
+  00CF:95DE" (a general protection fault in the game's code: les bx,
+  [bp-4], then a write through ES:BX) and exits cleanly.
+- With M-5's bit 10 as well (an experiment: MSCDEX then lists the disc),
+  the game takes another path and the DOS memory chain breaks again
+  ("Memory allocation error"), as in 0.9.3b. Not traced further: both
+  failures depend on what the game reads from the disc and the driver.
 - In 86Box, every build tested fails Chasm after RTM, 0.9.3b too (its
   later "Memory allocation error, Cannot load COMMAND, system halted").
   Which point it reaches moves with the driver's layout: of the parts of
@@ -247,7 +255,7 @@ answer to INT 2Fh AX=1600h. D-11 answers it. What was found on the way:
   (Destruction Derby 2) lists. The real PC uses SHSUCDX, so the game may
   behave differently there.
 
-Open: why MSCDEX cannot list these discs under the driver, and whether
-Chasm runs once its disc is readable. A test on the real PC (SHSUCDX) is
-the quickest answer.
+Open: the game's fault after its start-up screen, and the broken memory
+chain once the disc lists. The real PC (SHSUCDX, which lists the disc) is
+the quickest next answer: RGKIT asks for it.
 

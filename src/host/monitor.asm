@@ -1483,8 +1483,8 @@ mon_exception:
     jnc .fault_frame
     call dpmi_tf_fired
 .fault_frame:
-    cmp byte [ebp+dpmi_exception_active], 0
-    jne .unhandled
+    ; Nested exceptions go to the client's handlers too; the locked stack's
+    ; levels bound them (dpmi_stack_acquire).
     mov eax, [esp+40]
     cmp eax, 32
     jae .unhandled

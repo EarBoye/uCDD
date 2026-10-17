@@ -377,3 +377,8 @@ dpmi_stack_depth dd 0
 HOST_PROTECTED
 dpmi_exception_sp dd 0
 dpmi_exception_cursor dd 0
+; The outer exception handlers' places on the locked stack, cursor and SP
+; by level (vectors.asm, dpmi_exception_outer). One entry more than the
+; levels: the save comes before dpmi_stack_acquire, which ends the client
+; when every level is taken.
+dpmi_exception_saved times (DPMI_LOCK_LEVELS+1)*8 db 0

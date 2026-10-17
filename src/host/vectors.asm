@@ -136,7 +136,20 @@ dpmi_code_target:
     ret
 
 dpmi_exceptions times 32*6 db 0
+; The client exception handlers running, nested (DPMI 1.0 lets an
+; exception in a handler reach the handlers again).
 dpmi_exception_active db 0
+; The innermost handler has returned or chained: the outer one's place.
+dpmi_exception_outer:
+    push eax
+    dec byte [ebp+dpmi_exception_active]
+    movzx eax, byte [ebp+dpmi_exception_active]
+    push dword [ebp+dpmi_exception_saved+eax*8]
+    pop dword [ebp+dpmi_exception_cursor]
+    push dword [ebp+dpmi_exception_saved+eax*8+4]
+    pop dword [ebp+dpmi_exception_sp]
+    pop eax
+    ret
 ; Set while an exception a client handler chained to the default goes
 ; through mon_exception once more, so that its handler is not called again.
 dpmi_exception_chained db 0
@@ -189,6 +202,16 @@ dpmi_deliver_exception:
     mov eax, [esp+52]
     mov [ebp+dpmi_first_exception+12], eax
 .recorded:
+    ; An exception raised while a client exception handler runs is delivered
+    ; as well, on a new level of the locked stack (DPMI 1.0, "the host
+    ; automatically switches to this stack ... during ... all exceptions";
+    ; nested ones need no other switch). The outer one's place is kept by
+    ; level and comes back when the inner handler returns.
+    movzx eax, byte [ebp+dpmi_exception_active]
+    push dword [ebp+dpmi_exception_cursor]
+    pop dword [ebp+dpmi_exception_saved+eax*8]
+    push dword [ebp+dpmi_exception_sp]
+    pop dword [ebp+dpmi_exception_saved+eax*8+4]
     call dpmi_stack_acquire
     mov edi, [ebp+dpmi_locked_cursor]
     mov [ebp+dpmi_exception_cursor], edi
@@ -197,7 +220,7 @@ dpmi_deliver_exception:
     lea eax, [edi+8]
     mov [ebp+dpmi_exception_sp], eax
     add edi, 3e0000h
-    mov byte [ebp+dpmi_exception_active], 1
+    inc byte [ebp+dpmi_exception_active]
     mov edx, [esi]
     movzx eax, word [esi+4]
     push eax
@@ -264,8 +287,8 @@ dpmi_exception_done:
 .base:
     pop ebp
     sub ebp, .base
-    cmp byte [ebp+dpmi_exception_active], 1
-    jne .bad_return
+    cmp byte [ebp+dpmi_exception_active], 0
+    je .bad_return
     cmp byte [ebp+dpmi_client16], 0
     jne .word_return
     cmp word [esp+44], 3bh
@@ -301,7 +324,7 @@ dpmi_exception_done:
     cld
     rep movsd
 .restored:
-    mov byte [ebp+dpmi_exception_active], 0
+    call dpmi_exception_outer
     mov eax, [esp+48]
     call dpmi_restore_flags
     mov [esp+48], eax
@@ -423,8 +446,8 @@ dpmi_exception_default:
 .base:
     pop ebp
     sub ebp, .base
-    cmp byte [ebp+dpmi_exception_active], 1
-    jne .bad
+    cmp byte [ebp+dpmi_exception_active], 0
+    je .bad
     mov ecx, [esp+40]
     sub ecx, dpmi_default_exceptions+2
     jc .bad
@@ -503,7 +526,7 @@ dpmi_exception_default:
 .restored:
     ; ECX=the exception, EDX=its error code; the fault's context is in the
     ; gate's frame now, as when the exception was taken.
-    mov byte [ebp+dpmi_exception_active], 0
+    call dpmi_exception_outer
     mov eax, [esp+48]
     call dpmi_restore_flags
     mov [esp+48], eax
