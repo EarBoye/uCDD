@@ -61,7 +61,7 @@ JemmEx).
 - 0202h hands out a handler for each exception a program has not hooked, instead of 0000:0; a handler that chains to it gets the host's own handling. Without a handler, exceptions 0 to 5 and 7 are reflected as interrupts, as DPMI 0.9 asks (0 and 7 ended the program).
 - A program's INT n to a vector where an IRQ lands (08h-0Fh, 70h-77h under JemmEx) runs as a software interrupt instead of ending the program.
 - The host's virtual PIC takes ICW1 and every form of OCW2 and OCW3; some ended the program.
-- A software interrupt reflected to real mode whose handler comes back with interrupts enabled (the keyboard services: STI, then RETF 2) turns the program's virtual interrupt flag on, as DOS/4GW's own INT 16h does when it is the host. This fixes the hang at the character select and the Battle screen in Mortal Kombat Trilogy. The letter of DPMI 0.9 and 1.0 says software interrupts leave the flag alone; docs/host-cdrom-spec.md (D-7) has the case.
+- INT 16h reflected to real mode comes back with the program's virtual interrupt flag on, as DOS/4GW's own INT 16h does when it is the host. This fixes the hang at the character select and the Battle screen in Mortal Kombat Trilogy. DPMI 0.9 and 1.0 say software interrupts leave the flag alone; this is a deviation the game requires, and every other vector still follows the specification (docs/host-cdrom-spec.md, D-7).
 
 ## UCDDSET
 

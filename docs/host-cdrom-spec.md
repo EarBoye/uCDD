@@ -14,6 +14,11 @@ item was checked again against this branch's code before anything changed.
   emulators, then the real PC (the uCDD mantra, rules 1 and 5). Each
   finding carries its grade: [doc] a specification, [86Box] a run of this
   project's test programs in 86Box, [hw] Michael's PC.
+- One exception (rule 1 as amended on 17 Oct 2026): a game that
+  specifically requires behaviour the specification forbids, when the
+  failure is traced, the expected behaviour is measured where the game was
+  built to run, and the change is the narrowest that makes it work. Such a
+  deviation is marked **Deviation** below.
 - Sources, all in the reference library: DPMI 0.9 (D09) and 1.0 (D10)
   specifications, VCPI 1.0 (VCPI), XMS 3.5 (XMS), LIM EMS 4.0 (EMS), the
   Jemm readme (JR) and QPIEMU (QPI) in `Memory managers and DOS extenders/`;
@@ -45,7 +50,7 @@ reprogrammable (D09:353-356, 2082-2104).
 | D-4 | With no handler, exceptions 0 and 7 ended the client; only 1, 3, 4 and 5 were reflected. | D09:1428-1431 | **Fixed.** 0-5 and 7 go to the protected-mode interrupt handler, or with none to the real-mode vector, as the spec says. [86Box: DPMIG Z, a divide by zero, reaches the real-mode INT 0; the old build ends.] |
 | D-5 | An ICW1 written to the host's virtual PIC was refused: #GP, and the client ended. | D09:353-356 | **Partly fixed.** ICW1 is taken and the ICW2-ICW4 that follow are counted off, not read as masks; the bases stay as 0400h reports them (open: a client that moves them under DPMI). [86Box: DPMIG P, the mask reads the same before and after.] |
 | D-6 | 000Dh (allocate a specific LDT descriptor) is not supported, and the host keeps LDT entries 6 and 7 for itself, which 0.9 reserves for clients. | D09:1142-1160 | Open. |
-| D-7 | A software interrupt reflected to real mode came back with the client's virtual IF as it was before the call, whatever the real-mode handler did with it; the handler always got a flags image with IF set (202h). Mortal Kombat Trilogy waits for ever under the host (section 7). | D09:304-322, 411; D10:1428-1439, 1531-1532 | **Changed, a disagreement with the specification; Michael to decide.** The handler's flags image carries the client's virtual IF, and a handler that returns with interrupts enabled turns the client's virtual IF on. The keyboard services do that (the BIOS's INT 16h and MS-DOS 7's hook of it end with STI and RETF 2); a handler that returns through its IRET frame leaves the client's flag as it was. [86Box: the game reaches the fight with CD music; QEMU, the game without the host: DOS/4GW's own INT 16h starts with STI and returns with RETF, IF on in 12 of 12 calls made with IF off.] |
+| D-7 | A software interrupt reflected to real mode came back with the client's virtual IF as it was before the call. Mortal Kombat Trilogy waits for ever under the host (section 7): it needs INT 16h to turn interrupts on. | D09:304-322, 411; D10:1428-1439, 1531-1532 | **Deviation, kept (Michael, 17 Oct 2026; rule 1's game exception).** A reflected INT 16h comes back with the client's virtual IF on, as an STI would, which is what INT 16h does when DOS/4GW is its own host. Every other vector keeps the flag as DPMI says. A first version took the IF from whatever any real-mode handler returned with; no game needs that, so it was narrowed to INT 16h. [86Box: the game reaches the fight, with CD music on the full disc; QEMU, the game without the host: DOS/4GW's INT 16h returns IF on in 12 of 12 calls made with IF off.] |
 | D-8 | A stepped interrupts-off region has no bound: the host steps until the region ends, so a long first region from a CLI site (a game that draws a frame with interrupts off) costs about 10,000 steps a second in 86Box. | none (cost) | Open. A step budget with a learned "long region" site state was tried (it fixed nothing on its own here, and it can miss a POPF that ends a region after the budget); not kept. |
 | - | Harmless, kept as they are: callback entry leaves the structure's CS:IP stale; a fresh locked-stack page per nesting level; separate descriptors for DS and SS when equal; CL=3 on every CPU; the audio and disk IRQs go to real mode first (a design choice); callbacks on their own stack. | review 1.3 | No change. |
 
@@ -166,10 +171,13 @@ How the evidence was taken:
   a `LOOPNE` that counts ECX: without a port it waits up to 2^32 reads. The
   QEMU runs patched that loop's count in memory to 65536.
 
-What the host does now: the real-mode handler's flags image carries the
-client's virtual IF (it had IF set always); after it returns, IF set in its
-flags turns the client's virtual IF on, as an STI would (the region's CLI
-site learns it as an STI end). A handler that returns through its IRET frame
-gives back the client's own flag, so a `CLI` / `INT 21h` keeps interrupts
-off as before. Only the off-to-on direction is taken: a handler returning
-with interrupts off does not turn the client's flag off.
+What the host does now: after a reflected INT 16h, a client whose virtual
+IF was off has it on, as after an STI (the region's CLI site learns it as
+an STI end). That is DOS/4GW's own INT 16h, which ends with STI whatever
+the caller's flag. Nothing else changed: the real-mode handler still gets
+a flags image with IF set, and every other reflected vector leaves the
+client's flag as it was, as DPMI 0.9 and 1.0 ask. The first version of
+this change (824d2da) took the flag from any real-mode handler that
+returned with interrupts on (keyboard, but also disk, system and multiplex
+services that end with STI and RETF 2); no game was shown to need that,
+so under rule 1's bar it was narrowed to the one vector the game uses.

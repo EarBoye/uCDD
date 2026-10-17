@@ -372,14 +372,7 @@ dpmi_dos_translate:
     mov ecx, 8
     rep movsd
     pop edi
-    ; The flags image the real-mode handler returns through carries the
-    ; client's virtual IF, as the INT would have pushed it.
-    mov ax, 2
-    cmp byte [ebp+dpmi_vif], 0
-    je .flags_ready
-    mov ah, 2
-.flags_ready:
-    mov [edi+32], ax
+    mov word [edi+32], 202h
     movzx eax, byte [ebp+dpmi_reflect_vector]
     call mon_real_int
     xor al, al
@@ -401,13 +394,14 @@ dpmi_dos_translate:
     mov ax, [esi]
     and ax, 08d5h
     or [ebx+48], ax
-    ; A handler that comes back with interrupts enabled turns the client's
-    ; virtual IF on: the keyboard services (the BIOS's INT 16h and MS-DOS's
-    ; hook of it) return with STI and RETF 2, and games built for DOS/4GW
-    ; rely on it, whose own INT 16h ends with STI as well. One that returns
-    ; through its IRET frame leaves the flag as the client had it.
-    test byte [esi+1], 2
-    jz .flag_kept
+    ; A deviation from DPMI that a game requires (docs/host-cdrom-spec.md,
+    ; D-7): INT 16h comes back with the virtual IF on, as it does when
+    ; DOS/4GW is its own host (its INT 16h handler ends with STI). Mortal
+    ; Kombat Trilogy waits for its timer with interrupts off until a
+    ; keyboard poll turns them on. DPMI 0.9 and 1.0 say a software
+    ; interrupt leaves the flag alone, and every other vector still does.
+    cmp byte [ebp+dpmi_reflect_vector], 16h
+    jne .flag_kept
     cmp byte [ebp+dpmi_vif], 0
     jne .flag_kept
     call dpmi_cli_learn_sti
