@@ -286,15 +286,24 @@ The night of 18 Oct (86Box) narrowed it down:
   The DOS memory chain itself stays intact: a TSR in the test setup that
   walks both chains (conventional and upper) at every INT 21h call found
   no break.
-- The lead: loading 00AF can only fault if its descriptor changed. The
-  host refuses descriptor calls (0001h, 0007h to 0009h, 000Ch) on its own
-  entries, but RTM also holds an LDT alias from the "MS-DOS" extension
-  (D-11) and can write the LDT through it, the host's entries 21 and 22
-  (the locked stack) included. Next: compare entry 21 at the fault with
-  its value at start.
+- What the host logged at the fault (diagnostic builds, three runs
+  each): the CPU itself raises GP(0) at ring 3 at 00C7:95DE, with the
+  trap flag clear (the host was not stepping). The far pointer the
+  instruction loads is intact (00AF:0FF4, as RTM stored it), LDT entry
+  21 never changes (base 3E0000h, limit 3FFFh; only the CPU's accessed
+  bit gets set), and the locked stack's page is present and user
+  accessible (PTE 0014A067h, CR2 0). One run raised a page fault (user
+  read, not present) at the same instruction instead.
+- By Intel's description of LES, neither fault can come from that
+  instruction with those operands: a bad selector gives GP(selector), a
+  stack-relative operand outside its limit gives a stack fault. Either
+  the emulator (86Box) faults where a real CPU would not, or the CPU's
+  state differs from what the host's tables show. QEMU could not be
+  compared: the driver's install hangs there (not looked into).
+- So the real PC is the deciding test (RGKIT, Chasm step).
 
-The real PC (SHSUCDX, which lists the disc) is still the quickest next
-answer: RGKIT asks for it.
+The real PC (SHSUCDX, which lists the disc) runs the same game in the
+RGKIT test.
 
 ## 10. The second sweep (18 Oct): failures with and without the driver
 

@@ -136,8 +136,10 @@ changed volumes.
   RTM's exception handler as it loads the locked stack's selector (00AF):
   RTM's own report, "Runtime error 216", or (when the host ends it) RTM's
   memory not given back, by timing. Not D-14 (a continuous locked stack
-  gives the same fault). Lead: RTM's LDT alias (D-11) can write the
-  host's own LDT entries.
+  gives the same fault). The fault is GP(0) on an LES whose operands are
+  all valid (pointer, descriptor and page checked at the fault), which
+  Intel's description of LES does not allow: 86Box itself is suspect.
+  The real PC decides.
   MSCDEX 2.25 lists nothing on its CD-i Bridge disc under the driver
   (M-5, device status bit 10, a decision); with the disc listed it ends
   in "Memory allocation error" as Beta 0.9.3b did (memory not given back,
