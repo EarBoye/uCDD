@@ -291,9 +291,16 @@ dpmi_dos_translate:
     cmp byte [ebp+dpmi_reflect_vector], 2fh
     jne .ordinary
     cmp word [ebx+36], 1686h
-    jne .ordinary
+    jne .vendor
     mov word [ebx+36], 0
     jmp mon_dpmi.success
+.vendor:
+    ; INT 2Fh AX=168Ah (the vendor-specific API entry point) is a protected-
+    ; mode service the host answers: this host has no extension, so AL stays
+    ; 8Ah (DPMI 1.0, Int 2FH Function 168AH). Reflected, a real-mode handler
+    ; could change AL and hand the client a bogus entry point.
+    cmp word [ebx+36], 168ah
+    je mon_dpmi.success
 .ordinary:
     call dpmi_dos_frame
     mov al, [ebp+dpmi_reflect_vector]

@@ -52,7 +52,9 @@ reprogrammable (D09:353-356, 2082-2104).
 | D-6 | 000Dh (allocate a specific LDT descriptor) is not supported, and the host keeps LDT entries 6 and 7 for itself, which 0.9 reserves for clients. | D09:1142-1160 | Open. |
 | D-7 | A software interrupt reflected to real mode came back with the client's virtual IF as it was before the call. Mortal Kombat Trilogy waits for ever under the host (section 7): it needs INT 16h to turn interrupts on. | D09:304-322, 411; D10:1428-1439, 1531-1532 | **Deviation, kept (Michael, 17 Oct 2026; rule 1's game exception).** A reflected INT 16h comes back with the client's virtual IF on, as an STI would, which is what INT 16h does when DOS/4GW is its own host. Every other vector keeps the flag as DPMI says. A first version took the IF from whatever any real-mode handler returned with; no game needs that, so it was narrowed to INT 16h. [86Box: the game reaches the fight, with CD music on the full disc; QEMU, the game without the host: DOS/4GW's INT 16h returns IF on in 12 of 12 calls made with IF off.] |
 | D-8 | A stepped interrupts-off region has no bound: the host steps until the region ends, so a long first region from a CLI site (a game that draws a frame with interrupts off) costs about 10,000 steps a second in 86Box. | none (cost) | Open. A step budget with a learned "long region" site state was tried (it fixed nothing on its own here, and it can miss a POPF that ends a region after the budget); not kept. |
-| - | Harmless, kept as they are: callback entry leaves the structure's CS:IP stale; a fresh locked-stack page per nesting level; separate descriptors for DS and SS when equal; CL=3 on every CPU; the audio and disk IRQs go to real mode first (a design choice); callbacks on their own stack. | review 1.3 | No change. |
+| D-9 | 0400h reported CL=03h (an 80386) on every processor. X-Men Children of the Atom asks 0400h for the processor, stops with its fatal error 7 when it reads anything below 04h, and its error path then calls a sound-library routine that was never set up: DOS/4GW's page fault at 1A7:0000002F (section 8). | D10:Int 31H 0400H ("CL = processor type: 02H 80286, 03H 80386, 04H 80486, 05H-FFH reserved for future Intel processors") | **Fixed.** CL is the processor found at the call: 03h when EFLAGS.AC cannot be changed, 04h when EFLAGS.ID cannot, otherwise the CPUID family (05h Pentium, 06h P6 and Athlon), with the extended family added to family 0Fh. [86Box: DPMIG G gives CL 05 on the Pentium MMX, 03 before; X-Men reaches its attract mode under the driver, as without it.] |
+| D-10 | INT 2Fh AX=168Ah (the vendor-specific API entry point) from protected mode was reflected to real mode, where any handler could change AL and hand the client a bogus entry point. | D10:Int 2FH Function 168AH ("available only in protected mode"; unsuccessful: "AL = unchanged (8AH)") | **Fixed.** The host answers it: no extension, AL stays 8Ah. 0A00h already failed with 8001h. [86Box: DPMIG V gives AL 8A and 0A00h CF 1 AX 8001, before and after; the change removes the real-mode chance.] |
+| - | Harmless, kept as they are: callback entry leaves the structure's CS:IP stale; a fresh locked-stack page per nesting level; separate descriptors for DS and SS when equal; the audio and disk IRQs go to real mode first (a design choice); callbacks on their own stack. | review 1.3 | No change. |
 
 ## 2. VCPI, XMS, EMS and JemmEx
 
@@ -181,3 +183,26 @@ this change (824d2da) took the flag from any real-mode handler that
 returned with interrupts on (keyboard, but also disk, system and multiplex
 services that end with STI and RETF 2); no game was shown to need that,
 so under rule 1's bar it was narrowed to the one vector the game uses.
+
+## 8. X-Men Children of the Atom and 0400h (D-9)
+
+Under the driver the game stopped with "DOS/4GW Professional error (2001):
+exception 0Eh (page fault) at 1A7:0000002F", every run, with either
+virtual card and with no sound driver at all (16 Oct). On 17 Oct a sampler
+in the host and a dump of the client's stack at the fault traced it:
+
+- The game called a null function pointer: a table of interrupt helpers
+  that its sound library's DPMI layer fills at initialisation was still
+  zero, so the call ran through the interrupt vector table from address 0
+  until a garbage instruction at 2Fh read an unmapped page.
+- The call came from the library's unlock routine, called by the game's
+  cleanup, called by its fatal-error routine with error 7, before the
+  library was set up.
+- Error 7 is the game's processor check: it calls DPMI 0400h and accepts
+  CL 04h and up. The host returned 03h on every processor.
+
+The page fault is the game's own latent bug on an error path; the fault
+that led there was the host's. With CL the real processor type the game
+runs as it does without the driver. The earlier notes found the crash
+sensitive to the driver's size and to timing; that was not followed up and
+does not fit this cause, which is the same every run.

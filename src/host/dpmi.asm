@@ -723,6 +723,60 @@ dpmi_enter_client:
     mov ebp, [ss:ebp+dpmi_client_regs+8]
     MON_IRETD
 
+; AL=the processor type 0400h reports in CL (DPMI 0.9 and 1.0: 03h 80386,
+; 04h 80486, 05h-FFh later processors): 3 when EFLAGS.AC cannot be changed,
+; 4 when EFLAGS.ID cannot, otherwise the CPUID family, with the extended
+; family added to family 0Fh. Other registers kept.
+dpmi_cpu_type:
+    push ebx
+    push ecx
+    push edx
+    pushfd
+    pop ecx
+    mov edx, 40000h
+    mov bl, 3
+    call .toggles
+    jz .done
+    mov edx, 200000h
+    mov bl, 4
+    call .toggles
+    jz .done
+    xor eax, eax
+    db 0fh, 0a2h                ; CPUID 0: the highest standard leaf
+    test eax, eax
+    jz .done
+    mov eax, 1
+    db 0fh, 0a2h                ; CPUID 1: the family in EAX bits 11:8
+    shr eax, 8
+    mov bl, al
+    and bl, 0fh
+    cmp bl, 0fh
+    jne .done
+    shr eax, 12                 ; the extended family, bits 27:20
+    add bl, al
+    jnc .done
+    mov bl, 0ffh
+.done:
+    mov al, bl
+    pop edx
+    pop ecx
+    pop ebx
+    ret
+; ECX=the flags as found, EDX=a flag bit. ZF when the bit does not change;
+; the flags are put back.
+.toggles:
+    mov eax, ecx
+    xor eax, edx
+    push eax
+    popfd
+    pushfd
+    pop eax
+    push ecx
+    popfd
+    xor eax, ecx
+    test eax, edx
+    ret
+
 dpmi_dispatch:
     mov byte [ebp+dpmi_dos_via21], 0
     movzx eax, word [ebx+36]
@@ -856,7 +910,8 @@ dpmi_dispatch:
 .version:
     mov word [ebx+36], 90
     mov word [ebx+24], 1
-    mov byte [ebx+32], 3
+    call dpmi_cpu_type
+    mov [ebx+32], al
     mov al, [ebp+mon_master]
     mov [ebx+29], al
     mov al, [ebp+mon_slave]
