@@ -243,7 +243,7 @@ These are games known to work, not a list of every game that may work.
 - Tomb Raider
 - Warcraft II: Tides of Darkness
 
-† **Carmageddon:** Use SHSUCDX with μCDD for European editions. Affected editions check disc files while CD audio plays; MSCDEX can reject these checks. Some European rereleases also have an incompatible `DATA\64X48X8\FONTS\NEWBIGGR.PIX` file. This can cause a `DatafileStack type mismatch` error in high-resolution mode, including without μCDD. For the affected 3,068-byte file, follow [rc2sm's font repair instructions (archived post)](https://web.archive.org/web/20261017032720/https://steamcommunity.com/app/282010/discussions/0/530649887216891282/#c521643320364994991). Back up the file first. Do not apply this repair to a file of a different size.
+† **Carmageddon:** Use SHSUCDX with μCDD for European editions. Affected editions check disc files while CD audio plays; MSCDEX can reject these checks.
 
 ## Build
 
