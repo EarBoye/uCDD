@@ -130,11 +130,13 @@ changed volumes.
   Destruction: fixed on `cdrom-bit10` (M-5, status bit 10 as OAKCDROM
   sets it).
   docs/host-cdrom-spec.md section 10.
-- Star Command Revolution: with its disc's files visible (status bit 10,
-  as on the real PC under SHSUCDX) the game plays its Smacker intro, and
-  under the host that intro stalls: the client spins in a 16-bit code
-  segment with interrupts off, a region the host single-steps. Without the
-  driver (86Box's own drive, OAKCDROM) the intro plays. Open.
+- Star Command Revolution: its intro stopped at the first frame under the
+  driver. The game (DOS/4GW) runs RAD's Smacker player through
+  COMMAND.COM; the player is CauseWay, which takes VCPI first, and a
+  program started by a DPMI program still saw VCPI, so it drove the card
+  behind the traps. Fixed on `vcpi-children` (D-16): children see no VCPI
+  either and become children of the host. 86Box: logo, intro and main
+  menu as without the driver. Not yet on the PC.
 - Chasm: The Rift runs on `locked-stack` (D-15): RTM, a 16-bit client, was
   given 32-bit stack segments for the locked stack; its LEAVE then loaded
   ESP from an EBP with a stale upper half (a stack fault on the real PC,
