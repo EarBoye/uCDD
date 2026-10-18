@@ -306,7 +306,10 @@ dpmi_step_check:
     call .fetch
     jc .done
     cmp al, 0b2h
-    jne .done
+    je .extended_lss
+    mov al, 0fh
+    jmp .simple
+.extended_lss:
     inc edi
     call .effective_address
     jc .done
@@ -601,8 +604,38 @@ dpmi_step_check:
     mov edx, [ebp+dpmi_debug_regs+28]
     test dl, 0ffh
     jnz .done
+    cmp al, 8dh
+    je .simple_lea
+    cmp al, 0fh
+    je .simple_movzx
+    cmp al, 50h
+    jb .simple_segment_push
+    cmp al, 5fh
+    jbe .simple_stack_register
+.simple_segment_push:
+    cmp al, 06h
+    je .simple_push_segment
+    cmp al, 0eh
+    je .simple_push_segment
+    cmp al, 16h
+    je .simple_push_segment
+    cmp al, 1eh
+    je .simple_push_segment
+    cmp al, 0f6h
+    je .simple_test_byte
     cmp byte [ebp+dpmi_step_address_size], 4
     je .simple_dispatch
+    cmp al, 0ebh
+    je .simple_jump
+    cmp al, 70h
+    jb .simple_small_register
+    cmp al, 7fh
+    jbe .simple_branch
+.simple_small_register:
+    cmp al, 83h
+    je .simple_adjust_immediate
+    cmp al, 8bh
+    je .simple_nonbranch
     cmp al, 40h
     jb .done
     cmp al, 4fh
@@ -629,7 +662,7 @@ dpmi_step_check:
     cmp al, 81h
     je .simple_compare_immediate
     cmp al, 83h
-    je .simple_compare_immediate
+    je .simple_adjust_immediate
     cmp al, 0ffh
     je .simple_count_operand
     cmp al, 0ebh
@@ -682,6 +715,199 @@ dpmi_step_check:
     je .simple_store_word
     mov [ebx+esi], al
     jmp .simple_advance
+.simple_push_segment:
+    cmp ecx, 2
+    jne .done
+    mov esi, 0
+    cmp al, 06h
+    je .simple_push_value
+    mov esi, 52
+    cmp al, 0eh
+    je .simple_push_value
+    mov esi, 64
+    cmp al, 16h
+    je .simple_push_value
+    mov esi, 4
+    jmp .simple_push_value
+.simple_lea:
+    call .fetch
+    jc .done
+    cmp al, 0c0h
+    jae .done
+    mov esi, eax
+    shr esi, 3
+    and esi, 7
+    movzx esi, byte [ebp+dpmi_full_registers+esi]
+    push esi
+    call .effective_address
+    pop esi
+    jc .done
+    cmp ecx, 2
+    jne .simple_lea_wide
+    mov [ebx+esi], dx
+    jmp .simple_advance
+.simple_lea_wide:
+    mov [ebx+esi], edx
+    jmp .simple_advance
+.simple_movzx:
+    call .fetch
+    jc .done
+    cmp al, 0b6h
+    je .simple_movzx_byte
+    cmp al, 0b7h
+    jne .done
+    cmp ecx, 4
+    jne .done
+    mov esi, 2
+    jmp .simple_movzx_width
+.simple_movzx_byte:
+    mov esi, 1
+.simple_movzx_width:
+    push ecx
+    push esi
+    inc edi
+    call .fetch
+    jc .simple_movzx_bad_width
+    mov esi, eax
+    shr esi, 3
+    and esi, 7
+    movzx esi, byte [ebp+dpmi_full_registers+esi]
+    push esi
+    mov ecx, [esp+4]
+    cmp al, 0c0h
+    jb .simple_movzx_memory
+    and eax, 7
+    cmp ecx, 1
+    jne .simple_movzx_register_word
+    movzx esi, byte [ebp+dpmi_byte_registers+eax]
+    jmp .simple_movzx_register
+.simple_movzx_register_word:
+    movzx esi, byte [ebp+dpmi_full_registers+eax]
+.simple_movzx_register:
+    lea eax, [ebx+esi]
+    inc edi
+    jmp .simple_movzx_read
+.simple_movzx_memory:
+    call .effective_address
+    jc .simple_movzx_bad_target
+    push edi
+    xor edi, edi
+    call dpmi_read_buffer
+    pop edi
+    jc .simple_movzx_bad_target
+.simple_movzx_read:
+    cmp ecx, 1
+    jne .simple_movzx_read_word
+    movzx edx, byte [eax]
+    jmp .simple_movzx_store
+.simple_movzx_read_word:
+    movzx edx, word [eax]
+.simple_movzx_store:
+    pop esi
+    add esp, 4
+    pop ecx
+    cmp ecx, 2
+    jne .simple_lea_wide
+    mov [ebx+esi], dx
+    jmp .simple_advance
+.simple_movzx_bad_target:
+    add esp, 4
+.simple_movzx_bad_width:
+    add esp, 8
+    jmp .done
+.simple_stack_register:
+    mov edx, eax
+    and eax, 7
+    cmp eax, 4
+    je .done
+    movzx esi, byte [ebp+dpmi_full_registers+eax]
+    test dl, 8
+    jnz .simple_pop_register
+.simple_push_value:
+    mov eax, [ebx+esi]
+    push edi
+    push dword [ebx+60]
+    push eax
+    mov eax, ecx
+    neg eax
+    call .adjust_stack
+    call .write_stack
+    jc .simple_push_bad
+    pop eax
+    cmp ecx, 2
+    jne .simple_push_dword
+    mov [esi], ax
+    jmp .simple_push_done
+.simple_push_dword:
+    mov [esi], eax
+.simple_push_done:
+    add esp, 4
+    pop edi
+    jmp .simple_advance
+.simple_push_bad:
+    add esp, 4
+    pop dword [ebx+60]
+    pop edi
+    jmp .done
+.simple_pop_register:
+    push edi
+    push esi
+    call .stack
+    jc .simple_pop_bad
+    cmp ecx, 2
+    jne .simple_pop_dword
+    movzx edx, word [esi]
+    jmp .simple_pop_loaded
+.simple_pop_dword:
+    mov edx, [esi]
+.simple_pop_loaded:
+    pop esi
+    mov eax, ecx
+    call .adjust_stack
+    cmp ecx, 2
+    jne .simple_pop_store_dword
+    mov [ebx+esi], dx
+    jmp .simple_pop_done
+.simple_pop_store_dword:
+    mov [ebx+esi], edx
+.simple_pop_done:
+    pop edi
+    jmp .simple_advance
+.simple_pop_bad:
+    pop esi
+    pop edi
+    jmp .done
+.simple_test_byte:
+    call .fetch
+    jc .done
+    test al, 38h
+    jnz .done
+    mov ecx, 1
+    cmp al, 0c0h
+    jb .simple_test_memory
+    and eax, 7
+    movzx esi, byte [ebp+dpmi_byte_registers+eax]
+    add esi, ebx
+    inc edi
+    jmp .simple_test_value
+.simple_test_memory:
+    call .effective_address
+    jc .done
+    push edi
+    xor edi, edi
+    call dpmi_read_buffer
+    pop edi
+    jc .done
+    mov esi, eax
+.simple_test_value:
+    movzx eax, byte [esi]
+    push eax
+    call .fetch
+    pop edx
+    jc .done
+    inc edi
+    test dl, al
+    jmp .simple_flags
 .simple_store_word:
     mov [ebx+esi], ax
     jmp .simple_advance
@@ -710,9 +936,15 @@ dpmi_step_check:
     jmp .simple_direction
 .simple_full:
     cmp eax, 4
-    je .done
+    jne .simple_source_stack
+    cmp dl, 8bh
+    jne .done
+.simple_source_stack:
     cmp esi, 4
-    je .done
+    jne .simple_full_offsets
+    cmp dl, 89h
+    jne .done
+.simple_full_offsets:
     movzx eax, byte [ebp+dpmi_full_registers+eax]
     movzx esi, byte [ebp+dpmi_full_registers+esi]
 .simple_direction:
@@ -936,6 +1168,46 @@ dpmi_step_check:
 .simple_compare_bad:
     pop eax
     jmp .done
+.simple_adjust_immediate:
+    call .fetch
+    jc .done
+    cmp al, 0c0h
+    jb .simple_adjust_other
+    mov edx, eax
+    and edx, 38h
+    jz .simple_adjust_register
+    cmp edx, 28h
+    jne .simple_adjust_other
+.simple_adjust_register:
+    and eax, 7
+    movzx esi, byte [ebp+dpmi_full_registers+eax]
+    inc edi
+    call .fetch
+    jc .done
+    inc edi
+    movsx eax, al
+    test edx, edx
+    jnz .simple_subtract_register
+    cmp ecx, 2
+    jne .simple_add_dword
+    add [ebx+esi], ax
+    jmp .simple_flags
+.simple_add_dword:
+    add [ebx+esi], eax
+    jmp .simple_flags
+.simple_subtract_register:
+    cmp ecx, 2
+    jne .simple_subtract_dword
+    sub [ebx+esi], ax
+    jmp .simple_flags
+.simple_subtract_dword:
+    sub [ebx+esi], eax
+    jmp .simple_flags
+.simple_adjust_other:
+    cmp byte [ebp+dpmi_step_address_size], 4
+    jne .done
+    mov al, 83h
+    jmp .simple_compare_immediate
 ; EDX is zero for a read, one for a write. Return the operand in ESI.
 .simple_operand:
     push edx
@@ -1022,6 +1294,10 @@ dpmi_step_check:
 .simple_branch_target:
     mov edx, [ebx+48]
     add edx, edi
+    cmp byte [ebp+dpmi_window_size], 2
+    jne .simple_branch_wide
+    movzx edx, dx
+.simple_branch_wide:
     mov ax, [ebx+52]
     call dpmi_code_target
     jc .done
@@ -1079,6 +1355,10 @@ dpmi_step_check:
     jmp .next
 .simple_advance:
     add [ebx+48], edi
+    cmp byte [ebp+dpmi_window_size], 2
+    jne .simple_advanced
+    and dword [ebx+48], 0ffffh
+.simple_advanced:
     inc dword [esp+12]
     jmp .next
 .done:

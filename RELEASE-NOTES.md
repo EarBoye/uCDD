@@ -1,3 +1,8 @@
+# Unreleased
+
+- Extend bounded protected-mode instruction decoding for stack operations, address calculations, zero-extension loads, and register arithmetic.
+- Skip virtual debug-register scans when no client breakpoints are enabled.
+
 # Beta 0.9.4
 
 ## Changes in 0.9.4
