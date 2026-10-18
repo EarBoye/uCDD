@@ -366,13 +366,20 @@ night on a D: with 255 heads, with and without the driver:
 - The test setup's: launchers that fail ("Bad command or file name"), no
   mouse driver (Capitalism Plus, Deus), multi-disc games whose .MDM the
   disc cutter leaves out (Creature Shock, Storm 96), Stonekeep's data path.
-- Ours, open: Inca II warns "Not enough extended memory, RAM: -6183 Ko"
-  and plays on with fewer effects. Not from 0500h: filling its total
-  physical pages (offset 18h, -1 now as DPMI 0.9 allows) changed
-  nothing; free XMS after the host's pool is the next suspect; Time
-  Commando stays black while its DPMI 0100h requests of 1 to 28 KB fail
-  with 0008h, insufficient memory (without the driver it reaches its
-  menu); Battle Race 95 stays on its loading screen.
+- Inca II warns "Not enough extended memory, RAM: -6183 Ko" and plays on
+  with fewer effects. Not ours (19 Oct): its extender is Phar Lap's
+  286|DOS-Extender, made for a 16 MB machine. On an 86Box machine with
+  16 MB the host's 0500h reports 14 MB free and the game starts without the
+  warning; with 32 MB (30 MB free) and 64 MB (62 MB free) it prints the
+  same -6183 both times. The host answers 0500h as DPMI 0.9 asks, as any
+  DPMI host on such a machine would; without the driver the extender
+  takes VCPI and XMS, whose largest block there is 2.3 MB. Rule 1: the
+  game's own limit, nothing to change.
+- Time Commando: fine on `locked-stack` and later (19 Oct, 86Box: logo,
+  intro, menu), as without the driver. The 0100h failures came before
+  status bit 10 (M-5), which its disc needs to be read.
+- Battle Race 95 stays on its loading screen (not run again: no launcher
+  of that name in the current libraries).
 
 A third batch, early on 18 Oct: 17 games had stopped at "Bad command or
 file name" because their launchers carry a number (BLOOD01.BAT,
