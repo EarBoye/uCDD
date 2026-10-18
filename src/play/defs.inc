@@ -3,7 +3,8 @@
 
 ; Constants of UCDDPLAY.
 
-; drive
+; drive: the request header, READ LONG being the longest (27 bytes)
+%define REQUEST_BYTES 28
 %define STOPPED 0
 %define PLAYING 1
 %define PAUSED 2
@@ -89,6 +90,9 @@
 %define B_MAX 6
 %define B_COLOR 7
 %define BUBBLE_Y (SCROLL_Y1+1)
+%define LOGO_LEFT ((LOGO_X0+LOGO_X1+1-LOGO_W)/2)
+%define LOGO_TOP ((LOGO_Y0+LOGO_Y1+1-LOGO_H)/2)
+%define LOGO_RUNS 256
 
 ; ui
 %define DIGIT_BYTES (DIGIT_W*DIGIT_H)
@@ -101,6 +105,19 @@
 %define DRAG_SLIDER 1
 %define DRAG_VOLUME 2
 %define FLASH_FRAMES 6
+
+; physical: the buffer is allocated twice its size, to find a part that
+; does not cross 64 KB.
+%define PHY_SECTORS 6
+%define PHY_HALF (2352*PHY_SECTORS)
+%define PHY_BYTES (PHY_HALF*2)
+%define PHY_PARAGRAPHS ((PHY_BYTES*2+15)/16)
+
+; gfx: the screen copy for present, and what must stay free beside it: the
+; physical buffer and a disc list being mounted, which can coexist.
+%define SHADOW_PARAGRAPHS 4000
+%define SHADOW_SPARE (PHY_PARAGRAPHS+(MDM_INPUT_SIZE+15)/16)
+%define REFRESH_DWORDS 320
 
 ; text
 %define PRESET_SIZE 19

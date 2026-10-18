@@ -383,50 +383,48 @@ draw_vu:
     jb .needle
     jmp clip_full
 
+; The color of each row of a bar, bottom first: 0 for the gap after every
+; two rows, else 16 shades over the height.
+bar_colors:
+%assign row 0
+%rep BAR_HEIGHT
+%if row % 3 == 2
+    db 0
+%else
+    db C_SPECTRUM+row*16/(BAR_HEIGHT+1)
+%endif
+%assign row row+1
+%endrep
+
+%if ANA_BAR_W != 5
+%error "draw_analyzer writes bars 5 pixels wide"
+%endif
 draw_analyzer:
     xor bp, bp
 .bar:
     imul ax, bp, ANA_STEP
     add ax, ANA_BAR_X0
-    mov cx, ANA_BAR_W
-    mov dx, 1
     movzx si, byte [bar_level+bp]
     mov bx, ANA_BOTTOM
-    xor di, di
+    call pixel_offset
+    xor bx, bx
 .level:
-    cmp di, si
+    cmp bx, si
     jae .peak
-    push ax
-    mov ax, di
-    push dx
-    xor dx, dx
-    push bx
-    mov bx, 3
-    div bx
-    pop bx
-    cmp dx, 2
-    pop dx
-    pop ax
-    je .gap
-    push ax
-    mov ax, di
-    shl ax, 4
-    push dx
-    xor dx, dx
-    push cx
-    mov cx, BAR_HEIGHT+1
-    div cx
-    pop cx
-    pop dx
-    add al, C_SPECTRUM
-    mov [draw_color], al
-    pop ax
-    call fill_rect
+    mov cl, [bar_colors+bx]
+    test cl, cl
+    jz .gap
+    mov ch, cl
+    mov [es:di], cx
+    mov [es:di+2], cx
+    mov [es:di+4], cl
 .gap:
-    dec bx
-    inc di
+    sub di, 320
+    inc bx
     jmp .level
 .peak:
+    mov cx, ANA_BAR_W
+    mov dx, 1
     movzx di, byte [bar_peak+bp]
     test di, di
     jz .reflection

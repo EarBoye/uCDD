@@ -1,10 +1,6 @@
 ; SPDX-FileCopyrightText: 2026 vorvek
 ; SPDX-License-Identifier: GPL-3.0-only
 
-%define PHY_SECTORS 6
-%define PHY_HALF (2352*PHY_SECTORS)
-%define PHY_BYTES (PHY_HALF*2)
-
 ; EAX = first sector, EDX = end. All reads stay before the end.
 physical_play:
     cmp edx, eax
@@ -35,7 +31,7 @@ physical_play:
     jc .output
     cmp word [phy_allocation], 0
     jne .prime
-    mov bx, (PHY_BYTES*2+15)/16
+    mov bx, PHY_PARAGRAPHS
     mov ah, 48h
     int 21h
     jc .memory
@@ -104,7 +100,7 @@ physical_fill:
 .count:
     mov [phy_count], ax
     mov al, 80h
-    mov cl, 26
+    mov cl, 27
     call new_request
     mov ax, [phy_offset]
     mov [request+14], ax
@@ -384,6 +380,7 @@ physical_config:
     jc .bad
     mov al, 80h
     call physical_mixer_read
+    and al, 0fh
     mov byte [phy_irq], 5
     cmp al, 2
     je .irq
@@ -481,9 +478,11 @@ physical_volume:
     cmp byte [phy_running], 0
     je .done
     mov ah, [volume]
+    and ah, 0f8h
     mov al, 32h
     call physical_mixer_write
     mov ah, [volume]
+    and ah, 0f8h
     mov al, 33h
     call physical_mixer_write
 .done:

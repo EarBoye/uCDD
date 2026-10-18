@@ -46,15 +46,16 @@ eq_hook:
     mov bx, [hook_offset]
     mov cx, [chunk_frames]
     mov di, [ring_pos]
+    shl di, 2
 .ring:
     mov eax, [gs:bx]
-    shl di, 2
     mov [ring+di], eax
-    shr di, 2
-    inc di
-    and di, RING_FRAMES-1
+    add di, 4
+    and di, RING_FRAMES*4-1
     add bx, 4
-    loop .ring
+    dec cx
+    jnz .ring
+    shr di, 2
     mov [ring_pos], di
     mov [hook_offset], bx
     mov ax, [chunk_frames]
@@ -93,33 +94,54 @@ hook_new_set:
     jb .band
     ret
 
+; Round EAX from 4 fraction bits, saturate it and store it at GS:BX.
+%macro EQ_STORE 0
+    add eax, 8
+    sar eax, 4
+    cmp eax, 32767
+    jle %%low
+    mov eax, 32767
+%%low:
+    cmp eax, -32768
+    jge %%store
+    mov eax, -32768
+%%store:
+    mov [gs:bx], ax
+    add bx, 4
+%endmacro
+
 ; One channel of a chunk. DI = channel state.
 eq_block:
-    mov bx, [hook_offset]
-    add bx, [chunk_channel]
-    mov [block_input], bx
+    ; BP = input, BX = delay position, CX = decimation count, SI = frame
+    ; in the block arrays.
+    mov bp, [hook_offset]
+    add bp, [chunk_channel]
+    mov bx, [di+CH_POS]
+    mov cx, [di+CH_COUNT]
     xor si, si
 .input:
-    mov bx, [block_input]
-    movsx eax, word [gs:bx]
-    add word [block_input], 4
+    movsx eax, word [gs:bp]
+    add bp, 4
     shl eax, 4
     add [di+CH_ACC], eax
-    inc word [di+CH_COUNT]
-    cmp word [di+CH_COUNT], EQ_DECIM
+    inc cx
+    cmp cx, EQ_DECIM
     jb .between
-    mov word [di+CH_COUNT], 0
     push eax
+    push bx
+    push bp
     push si
     call eq_low
     pop si
+    pop bp
+    pop bx
     pop eax
+    xor cx, cx
     jmp .delay
 .between:
     mov edx, [di+CH_STEP]
     add [di+CH_VALUE], edx
 .delay:
-    mov bx, [di+CH_POS]
     mov edx, [di+bx+CH_DELAY]
     mov [di+bx+CH_DELAY], eax
     add bx, 4
@@ -127,7 +149,6 @@ eq_block:
     jb .position
     xor bx, bx
 .position:
-    mov [di+CH_POS], bx
     mov eax, edx
     sub eax, [di+CH_T2]
     mov [block_t+si], eax
@@ -139,6 +160,8 @@ eq_block:
     add si, 4
     cmp si, [chunk_bytes]
     jb .input
+    mov [di+CH_POS], bx
+    mov [di+CH_COUNT], cx
     cmp word [hook_set], 0
     je .output
     ; The bands at the full rate, each over the whole chunk.
@@ -202,28 +225,23 @@ eq_block:
     mov bx, [hook_offset]
     add bx, [chunk_channel]
     xor si, si
+    cmp word [hook_set], 0
+    je .plain
 .sample:
     mov eax, [block_y+si]
-    cmp word [hook_set], 0
-    je .round
     imul dword [band_gain]
     shrd eax, edx, 14
-.round:
-    add eax, 8
-    sar eax, 4
-    cmp eax, 32767
-    jle .low
-    mov eax, 32767
-.low:
-    cmp eax, -32768
-    jge .store
-    mov eax, -32768
-.store:
-    mov [gs:bx], ax
-    add bx, 4
+    EQ_STORE
     add si, 4
     cmp si, [chunk_bytes]
     jb .sample
+    ret
+.plain:
+    mov eax, [block_y+si]
+    EQ_STORE
+    add si, 4
+    cmp si, [chunk_bytes]
+    jb .plain
     ret
 
 ; The four lowest bands, once for each EQ_DECIM frames. DI = channel state.
@@ -431,29 +449,33 @@ eq_calibrate:
     push ds
     push 40h
     pop ds
-    mov bx, [6ch]
+    mov ebx, [6ch]
 .edge:
-    cmp bx, [6ch]
+    cmp ebx, [6ch]
     je .edge
-    mov bx, [6ch]
+    mov ebx, [6ch]
     pop ds
     xor bp, bp
 .run:
     mov word [hook_offset], ring
     mov di, eq_state
     push bp
-    push bx
+    push ebx
     call eq_block
-    pop bx
+    pop ebx
     pop bp
     inc bp
     push ds
     push 40h
     pop ds
-    mov ax, [6ch]
+    mov eax, [6ch]
     pop ds
-    sub ax, bx
-    cmp ax, 4
+    ; The count goes back to 0 at midnight, after 1800AFh.
+    sub eax, ebx
+    jnc .elapsed
+    add eax, 1800b0h
+.elapsed:
+    cmp eax, 4
     jb .run
     cmp bp, 404
     jae .fast

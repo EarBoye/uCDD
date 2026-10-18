@@ -579,16 +579,25 @@ browser_close:
 ; Frame for requesters: frame_x0..frame_y1, title in SI.
 draw_frame:
     push si
-    mov ax, [frame_x0]
-    add ax, 3
+    ; The shadow, 3 pixels down and right. The rings and the fill below cover
+    ; the frame itself, so only the strips at the right and the bottom show.
+    mov ax, [frame_x1]
+    inc ax
     mov bx, [frame_y0]
     add bx, 3
-    mov cx, [frame_x1]
-    sub cx, [frame_x0]
-    inc cx
+    mov cx, 3
     mov dx, [frame_y1]
     sub dx, [frame_y0]
     inc dx
+    call shade_rect
+    mov ax, [frame_x0]
+    add ax, 3
+    mov bx, [frame_y1]
+    inc bx
+    mov cx, [frame_x1]
+    sub cx, [frame_x0]
+    sub cx, 2
+    mov dx, 3
     call shade_rect
     mov si, frame_rings
     xor bp, bp

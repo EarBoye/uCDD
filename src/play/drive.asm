@@ -117,7 +117,7 @@ new_request:
     mov di, request
     push ax
     xor ax, ax
-    mov cx, 13
+    mov cx, REQUEST_BYTES/2
     rep stosw
     pop ax
     pop es

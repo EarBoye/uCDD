@@ -54,6 +54,19 @@ start:
     int 21h
     jc no_memory
     mov [work_seg], ax
+    ; A copy of the screen lets present write only what changed. Take it
+    ; only when the memory that the player may need later stays free.
+    mov bx, 0ffffh
+    mov ah, 48h
+    int 21h
+    cmp bx, SHADOW_PARAGRAPHS+SHADOW_SPARE
+    jb .no_shadow
+    mov bx, SHADOW_PARAGRAPHS
+    mov ah, 48h
+    int 21h
+    jc .no_shadow
+    mov [shadow_seg], ax
+.no_shadow:
     mov ax, [psp_seg]
     add ax, 10h
     mov [face_seg], ax
@@ -129,9 +142,9 @@ start:
     mov [saved_terminate], eax
     mov word [es:0ah], emergency_exit
     mov [es:0ch], cs
-    call init_mouse
     mov ax, 13h
     int 10h
+    call init_mouse
     push ds
     mov ds, [extra_seg]
     mov si, A_PALETTE
@@ -178,12 +191,18 @@ exit:
 ; DOS ended the program after an error. Remove the filter and restore the
 ; text screen. The memory of the program is free but not changed yet.
 emergency_exit:
+    pushad
+    push ds
+    push es
     push cs
     pop ds
     call physical_stop
     call hook_remove
     mov ax, 3
     int 10h
+    pop es
+    pop ds
+    popad
     jmp far [cs:saved_terminate]
 
 break_handler:
@@ -281,6 +300,9 @@ bss_start:
 psp_seg dw 0
 back_seg dw 0
 work_seg dw 0
+shadow_seg dw 0
+refresh_offset dw 0
+shadow_valid db 0
 face_seg dw 0
 extra_seg dw 0
 saved_terminate dd 0
@@ -293,6 +315,8 @@ draw_color db 0
 sprite_mask db 0
 sprite_shade db 0
 sprite_rows dw 0
+sprite_stride dw 0
+sprite_count dw 0
 text_x dw 0
 line_dx dw 0
 line_dy dw 0
@@ -321,7 +345,7 @@ unit_controls times 26 dd 0
 drive_count dw 0
 drive_list times 26 db 0
 device_list times 26*5 db 0
-request times 26 db 0
+request times REQUEST_BYTES db 0
 control_block times 16 db 0
 disc_present db 0
 first_track db 0
@@ -394,7 +418,6 @@ eq_saved times EQ_BANDS+1 db 0
 chunk_frames dw 0
 chunk_bytes dw 0
 chunk_channel dw 0
-block_input dw 0
 block_state dw 0
 block_band dw 0
 block_v dw 0
@@ -407,12 +430,13 @@ block_y times EQ_CHUNK dd 0
 ring_pos dw 0
     align 4, db 0
 ring times RING_FRAMES*4 db 0
+fft_window times FFT_SIZE dw 0
 
 ; Analysis.
 fft_half dw 0
 fft_k dw 0
-fft_sin dd 0
-fft_cos dd 0
+fft_step dw 0
+fft_angle dw 0
 bar_level times ANA_BARS db 0
 bar_peak times ANA_BARS db 0
 bar_hold times ANA_BARS db 0
@@ -426,6 +450,12 @@ star_x1 dw 0
 star_y1 dw 0
 star_boost dw 0
 logo_stars times LOGO_STARS*STAR_SIZE db 0
+logo_runs_ok db 0
+run_next dw 0
+run_open dw 0
+run_left dw 0
+logo_shadow_runs times LOGO_RUNS*6 db 0
+logo_image_runs times LOGO_RUNS*6 db 0
 bottom_stars times BOTTOM_STARS*STAR_SIZE db 0
 dynamic_palette times (3*COPPER_SHADES+16)*3 db 0
 message_timer dw 0
@@ -454,6 +484,7 @@ tunnel_right dw 0
 tunnel_top dw 0
 tunnel_bottom dw 0
 tunnel_step dw 0
+plasma_rows times SCROLL_H db 0
 time_minus db 0
 needle_x dw 0
 button_flash times BUTTON_COUNT db 0

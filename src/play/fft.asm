@@ -19,6 +19,14 @@ init_bitreverse:
     mov si, bx
     add si, si
     mov [es:W_BITREV+si], dx
+    ; The Hann window: (1 - cos) / 2 in Q15.
+    lea ax, [bx+256]
+    call sine
+    movsx ecx, ax
+    neg ecx
+    add ecx, 32767
+    shr ecx, 1
+    mov [fft_window+si], cx
     inc bx
     cmp bx, FFT_SIZE
     jb .entry
@@ -49,18 +57,91 @@ log2_8:
 .done:
     ret
 
+; Clamp EAX to -32767..32767.
+%macro CLAMP_SHORT 0
+    cmp eax, 32767
+    jle %%low
+    mov eax, 32767
+%%low:
+    cmp eax, -32767
+    jge %%done
+    mov eax, -32767
+%%done:
+%endmacro
+
+; The butterflies of one twiddle, from BX to the end of the arrays. BX is the
+; first bin of a pair and DI the second, in bytes. %1 = 0: EBP = cos, ESI = sin.
+; %1 = 1: cos 32767, sin 0. %1 = 2: cos 0, sin 32767. A product by 32767 is
+; (x << 15) - x, exactly as IMUL gives it.
+%macro BUTTERFLIES 1
+%%next:
+    mov di, bx
+    add di, [fft_half]
+%if %1 == 0
+    mov eax, [es:W_RE+di]
+    imul eax, ebp
+    mov edx, [es:W_IM+di]
+    imul edx, esi
+    add eax, edx
+    sar eax, 15
+    mov ecx, [es:W_IM+di]
+    imul ecx, ebp
+    mov edx, [es:W_RE+di]
+    imul edx, esi
+    sub ecx, edx
+    sar ecx, 15
+%elif %1 == 1
+    mov eax, [es:W_RE+di]
+    mov edx, eax
+    shl eax, 15
+    sub eax, edx
+    sar eax, 15
+    mov ecx, [es:W_IM+di]
+    mov edx, ecx
+    shl ecx, 15
+    sub ecx, edx
+    sar ecx, 15
+%else
+    mov eax, [es:W_IM+di]
+    mov edx, eax
+    shl eax, 15
+    sub eax, edx
+    sar eax, 15
+    mov ecx, [es:W_RE+di]
+    mov edx, ecx
+    shl ecx, 15
+    sub ecx, edx
+    neg ecx
+    sar ecx, 15
+%endif
+    mov edx, [es:W_RE+bx]
+    sub edx, eax
+    sar edx, 1
+    mov [es:W_RE+di], edx
+    add eax, [es:W_RE+bx]
+    sar eax, 1
+    mov [es:W_RE+bx], eax
+    mov edx, [es:W_IM+bx]
+    sub edx, ecx
+    sar edx, 1
+    mov [es:W_IM+di], edx
+    add ecx, [es:W_IM+bx]
+    sar ecx, 1
+    mov [es:W_IM+bx], ecx
+    add bx, [fft_half]
+    add bx, [fft_half]
+    cmp bx, FFT_SIZE*4
+    jb %%next
+    jmp .twiddle_next
+%endmacro
+
 analyze:
     push es
     mov es, [work_seg]
     mov bx, [ring_pos]
     xor si, si
 .load:
-    mov ax, si
-    call cosine
-    movsx ecx, ax
-    neg ecx
-    add ecx, 32767
-    shr ecx, 1
+    movzx ecx, word [fft_window+si]
     mov di, bx
     shl di, 2
     movsx eax, word [ring+di]
@@ -69,78 +150,53 @@ analyze:
     sar eax, 1
     imul eax, ecx
     sar eax, 15
-    mov di, si
-    add di, di
-    mov di, [es:W_BITREV+di]
+    mov di, [es:W_BITREV+si]
     mov [es:W_RE+di], eax
     mov dword [es:W_IM+di], 0
     inc bx
     and bx, RING_FRAMES-1
-    inc si
-    cmp si, FFT_SIZE
+    add si, 2
+    cmp si, FFT_SIZE*2
     jb .load
-    mov word [fft_half], 1
+    ; The butterflies. fft_half and fft_k are in bytes of the work arrays
+    ; (4 a bin); fft_step and fft_angle in bytes of the sine table, so the
+    ; angle of twiddle k is k * 512 / half, as a sine table index.
+    mov word [fft_half], 4
+    mov word [fft_step], 1024
 .stage:
     mov word [fft_k], 0
+    mov word [fft_angle], 0
 .twiddle:
-    mov ax, 512
-    xor dx, dx
-    div word [fft_half]
-    mul word [fft_k]
-    push ax
-    call sine
-    movsx eax, ax
-    mov [fft_sin], eax
-    pop ax
-    call cosine
-    movsx eax, ax
-    mov [fft_cos], eax
+    mov bx, [fft_angle]
+    movsx esi, word [gs:A_SINE+bx]
+    movsx ebp, word [gs:A_SINE+512+bx]
     mov bx, [fft_k]
-.butterfly:
-    mov di, bx
-    add di, [fft_half]
-    shl di, 2
-    push bx
-    shl bx, 2
-    mov eax, [es:W_RE+di]
-    imul eax, [fft_cos]
-    mov edx, [es:W_IM+di]
-    imul edx, [fft_sin]
-    add eax, edx
-    sar eax, 15
-    mov ecx, [es:W_IM+di]
-    imul ecx, [fft_cos]
-    mov edx, [es:W_RE+di]
-    imul edx, [fft_sin]
-    sub ecx, edx
-    sar ecx, 15
-    mov edx, [es:W_RE+bx]
-    mov esi, edx
-    sub edx, eax
-    sar edx, 1
-    mov [es:W_RE+di], edx
-    add esi, eax
-    sar esi, 1
-    mov [es:W_RE+bx], esi
-    mov edx, [es:W_IM+bx]
-    mov esi, edx
-    sub edx, ecx
-    sar edx, 1
-    mov [es:W_IM+di], edx
-    add esi, ecx
-    sar esi, 1
-    mov [es:W_IM+bx], esi
-    pop bx
-    add bx, [fft_half]
-    add bx, [fft_half]
-    cmp bx, FFT_SIZE
-    jb .butterfly
-    inc word [fft_k]
+    ; A twiddle of 0 or 90 degrees multiplies by 32767 and 0 only.
+    cmp ebp, 32767
+    jne .not_zero
+    test esi, esi
+    jz .zero
+.not_zero:
+    cmp esi, 32767
+    jne .general
+    test ebp, ebp
+    jz .quarter
+.general:
+    BUTTERFLIES 0
+.zero:
+    BUTTERFLIES 1
+.quarter:
+    BUTTERFLIES 2
+.twiddle_next:
+    mov ax, [fft_step]
+    add [fft_angle], ax
+    add word [fft_k], 4
     mov ax, [fft_k]
     cmp ax, [fft_half]
     jb .twiddle
+    shr word [fft_step], 1
     shl word [fft_half], 1
-    cmp word [fft_half], FFT_SIZE
+    cmp word [fft_half], FFT_SIZE*4
     jb .stage
     ; Bars: the largest bin power in each band.
     xor bp, bp
@@ -149,24 +205,23 @@ analyze:
     add si, si
     mov bx, [gs:A_BARS+si]
     mov cx, [gs:A_BARS+si+2]
+    shl bx, 2
+    shl cx, 2
     xor edi, edi
 .bin:
-    push bx
-    shl bx, 2
     mov eax, [es:W_RE+bx]
-    call clamp_short
+    CLAMP_SHORT
     imul eax, eax
     mov edx, eax
     mov eax, [es:W_IM+bx]
-    call clamp_short
+    CLAMP_SHORT
     imul eax, eax
     add eax, edx
-    pop bx
     cmp eax, edi
     jbe .smaller
     mov edi, eax
 .smaller:
-    inc bx
+    add bx, 4
     cmp bx, cx
     jb .bin
     mov eax, edi
@@ -195,18 +250,6 @@ analyze:
     mov si, 2
     call vu_measure
     mov [vu_target+1], al
-    ret
-
-; EAX = signed value. Clamp it to a short.
-clamp_short:
-    cmp eax, 32767
-    jle .low
-    mov eax, 32767
-.low:
-    cmp eax, -32767
-    jge .done
-    mov eax, -32767
-.done:
     ret
 
 ; AL = new height of bar BP.
@@ -248,25 +291,25 @@ analyze_idle:
 
 ; SI = 0 for left, 2 for right. Return AL = needle position 0 to 255.
 vu_measure:
-    mov bx, [ring_pos]
-    sub bx, VU_FRAMES
-    xor edi, edi
+    mov di, [ring_pos]
+    sub di, VU_FRAMES
+    and di, RING_FRAMES-1
+    shl di, 2
+    add di, si
+    xor edx, edx
     mov cx, VU_FRAMES
 .frame:
-    and bx, RING_FRAMES-1
-    push bx
-    shl bx, 2
-    add bx, si
-    movsx eax, word [ring+bx]
-    pop bx
+    movsx eax, word [ring+di]
     test eax, eax
     jns .positive
     neg eax
 .positive:
-    add edi, eax
-    inc bx
-    loop .frame
-    mov eax, edi
+    add edx, eax
+    add di, 4
+    and di, RING_FRAMES*4-1
+    dec cx
+    jnz .frame
+    mov eax, edx
     shr eax, 9
     call log2_8
     sub eax, VU_FLOOR

@@ -100,6 +100,118 @@ init_visuals:
     mov si, bottom_stars
     mov cx, BOTTOM_STARS
     call init_stars
+    ; The logo and its shadow never move: find once where they are drawn.
+    mov ax, LOGO_LEFT+2
+    mov bx, LOGO_TOP+2
+    mov di, logo_shadow_runs
+    call logo_runs
+    jc .done
+    mov ax, LOGO_LEFT
+    mov bx, LOGO_TOP
+    mov di, logo_image_runs
+    call logo_runs
+    jc .done
+    mov byte [logo_runs_ok], 1
+.done:
+    ret
+
+; AX = x, BX = y of the logo, DI = a table of LOGO_RUNS entries. Fill it with
+; the stretches where draw_sprite with sprite_mask would draw the logo: the
+; screen offset, the logo offset in GS and the length of each, ended by a
+; length of 0. CF when they do not fit.
+logo_runs:
+    pusha
+    mov [run_next], di
+    mov word [run_left], LOGO_RUNS
+    mov si, A_LOGO
+    mov bp, LOGO_H
+.row:
+    cmp bx, 199
+    ja .end
+    push ax
+    mov word [run_open], 0
+    mov cx, LOGO_W
+.pixel:
+    cmp ax, 319
+    ja .gap
+    cmp byte [gs:si], C_TRANSPARENT
+    je .gap
+    call pixel_offset
+    cmp byte [fs:di], C_KEY
+    jne .gap
+    mov dx, di
+    mov di, [run_open]
+    test di, di
+    jnz .extend
+    dec word [run_left]
+    jz .full
+    mov di, [run_next]
+    mov [di], dx
+    mov [di+2], si
+    mov word [di+4], 0
+    mov [run_open], di
+    add word [run_next], 6
+.extend:
+    inc word [di+4]
+    jmp .next
+.gap:
+    mov word [run_open], 0
+.next:
+    inc si
+    inc ax
+    loop .pixel
+    pop ax
+    inc bx
+    dec bp
+    jnz .row
+.end:
+    mov di, [run_next]
+    mov word [di+4], 0
+    popa
+    clc
+    ret
+.full:
+    pop ax
+    popa
+    stc
+    ret
+
+; The logo's shadow, then the logo, from the tables of logo_runs.
+draw_logo_runs:
+    mov bx, logo_shadow_runs
+    jmp .shade_test
+.shade:
+    mov di, [bx]
+    mov cx, [bx+4]
+    push bx
+    mov bx, A_SHADE
+.dark:
+    mov al, [es:di]
+    gs xlatb
+    stosb
+    dec cx
+    jnz .dark
+    pop bx
+    add bx, 6
+.shade_test:
+    cmp word [bx+4], 0
+    jne .shade
+    ; DS = the assets while the logo is copied.
+    mov bx, logo_image_runs
+    push ds
+    push gs
+    pop ds
+    jmp .copy_test
+.copy:
+    mov di, [cs:bx]
+    mov si, [cs:bx+2]
+    mov cx, [cs:bx+4]
+    rep movsb
+    add bx, 6
+.copy_test:
+    cmp word [cs:bx+4], 0
+    jne .copy
+    pop ds
     ret
 
 draw_logo_window:
@@ -143,9 +255,11 @@ draw_logo_window:
     inc bp
     cmp bp, 3
     jb .bar
+    cmp byte [logo_runs_ok], 0
+    jne draw_logo_runs
     mov byte [sprite_mask], 1
-    mov ax, (LOGO_X0+LOGO_X1+1-LOGO_W)/2+2
-    mov bx, (LOGO_Y0+LOGO_Y1+1-LOGO_H)/2+2
+    mov ax, LOGO_LEFT+2
+    mov bx, LOGO_TOP+2
     mov cx, LOGO_W
     mov dx, LOGO_H
     mov si, A_LOGO
@@ -415,27 +529,30 @@ label_pass:
 label_block:
     pusha
     mov bx, dx
-    call .pair
+    call .row
     inc bx
-    call .pair
+    call .row
     popa
     ret
-.pair:
+; BX = y. Two pixels from CX.
+.row:
+    mov bp, bx
+    and bp, 3
+    shl bp, 2
+    add bp, bayer
     mov ax, cx
     call label_pixel
     inc ax
 
-; AX = x, BX = y. The Bayer matrix removes pixels while the label fades.
+; AX = x, BX = y, BP = the Bayer matrix row of y. The matrix removes pixels
+; while the label fades. Write over window glass, as put_masked does.
 label_pixel:
-    push bx
-    and bx, 3
-    shl bx, 2
     mov di, ax
     and di, 3
-    mov dl, [bayer+bx+di]
-    pop bx
+    mov dl, [ds:bp+di]
     cmp dl, [label_level]
     jae .done
+    mov dl, [draw_color]
     cmp word [scroll_shadow], 0
     jne .put
     mov dx, bx
@@ -444,7 +561,14 @@ label_pixel:
     add dl, C_RAINBOW
     mov [draw_color], dl
 .put:
-    jmp put_masked
+    cmp ax, 319
+    ja .done
+    cmp bx, 199
+    ja .done
+    PIXEL_OFFSET
+    cmp byte [fs:di], C_KEY
+    jne .done
+    mov [es:di], dl
 .done:
     ret
 
@@ -685,17 +809,23 @@ draw_fire:
 .store:
     stosb
     loop .seed
+    ; Each pixel is the mean of the three below it and the one two rows down,
+    ; less 2. The rows are one run in memory, and a pixel reads only pixels
+    ; after it, which this pass has not changed yet: so DX can carry the sum
+    ; of the three below from one pixel to the next.
+    push ds
+    push es
+    pop ds
+    mov si, W_FIRE+SCROLL_W-1
     mov di, W_FIRE
-    mov bx, FIRE_ROWS-2
-.row:
-    mov cx, SCROLL_W
+    mov cx, (FIRE_ROWS-2)*SCROLL_W
+    movzx dx, byte [si]
+    movzx ax, byte [si+1]
+    add dx, ax
+    movzx ax, byte [si+2]
+    add dx, ax
 .pixel:
-    movzx ax, byte [es:di+SCROLL_W]
-    movzx dx, byte [es:di+SCROLL_W-1]
-    add ax, dx
-    movzx dx, byte [es:di+SCROLL_W+1]
-    add ax, dx
-    movzx dx, byte [es:di+2*SCROLL_W]
+    movzx ax, byte [si+SCROLL_W+1]
     add ax, dx
     shr ax, 2
     sub ax, 2
@@ -703,49 +833,73 @@ draw_fire:
     xor ax, ax
 .heat:
     stosb
-    loop .pixel
-    dec bx
-    jnz .row
-    push ds
-    push es
-    pop ds
-    mov si, W_FIRE
-    mov di, W_FIRE+FIRE_ROWS*SCROLL_W
-    mov cx, SCROLL_W*SCROLL_H
-.map:
-    lodsb
-    shr al, 4
-    add al, C_HEAT
-    stosb
-    loop .map
+    movzx ax, byte [si]
+    sub dx, ax
+    movzx ax, byte [si+3]
+    add dx, ax
+    inc si
+    dec cx
+    jnz .pixel
     pop ds
     pop es
-    mov si, W_FIRE+FIRE_ROWS*SCROLL_W
-    jmp draw_buffer
+    mov si, W_FIRE
+    jmp draw_heat_buffer
+
+; The rows of the window are whole dwords.
+%if (SCROLL_X0 % 4) || (SCROLL_W % 4)
+%error "draw_buffer needs a dword-aligned bottom window"
+%endif
+
+; The rows of a buffer in the work segment to the bottom window, over glass.
+; %1 set: the bytes are heat, drawn as C_HEAT + heat / 16.
+%macro BUFFER_ROWS 1
+    push ds
+    mov ds, [work_seg]
+    mov di, SCROLL_Y0*320+SCROLL_X0
+    mov bx, SCROLL_H
+%%row:
+    mov cx, SCROLL_W/4
+%%dword:
+    lodsd
+%if %1
+    shr eax, 4
+    and eax, 0f0f0f0fh
+    add eax, C_HEAT*01010101h
+%endif
+    cmp dword [fs:di], C_KEY*01010101h
+    jne %%mixed
+    mov [es:di], eax
+    add di, 4
+    dec cx
+    jnz %%dword
+    jmp %%next
+%%mixed:
+    MASKED_PIXEL
+    shr eax, 8
+    MASKED_PIXEL
+    shr eax, 8
+    MASKED_PIXEL
+    shr eax, 8
+    MASKED_PIXEL
+    dec cx
+    jnz %%dword
+%%next:
+    add di, 320-SCROLL_W
+    dec bx
+    jnz %%row
+    pop ds
+    ret
+%endmacro
 
 draw_fire_buffer:
     mov si, W_FIRE
 ; SI = color buffer in the work segment, one byte for each window pixel.
 draw_buffer:
-    push ds
-    mov ds, [work_seg]
-    mov di, SCROLL_Y0*320+SCROLL_X0
-    mov bx, SCROLL_H
-.row:
-    mov cx, SCROLL_W
-.pixel:
-    lodsb
-    cmp byte [fs:di], C_KEY
-    jne .skip
-    mov [es:di], al
-.skip:
-    inc di
-    loop .pixel
-    add di, 320-SCROLL_W
-    dec bx
-    jnz .row
-    pop ds
-    ret
+    BUFFER_ROWS 0
+
+; SI = heat buffer in the work segment.
+draw_heat_buffer:
+    BUFFER_ROWS 1
 
 draw_warp:
     call effect_level
@@ -913,6 +1067,7 @@ draw_plasma:
     inc si
     cmp si, SCROLL_W
     jb .column
+    pop es
     xor bx, bx
 .row:
     imul ax, bx, 23
@@ -922,23 +1077,52 @@ draw_plasma:
     call sine
     imul bp
     shrd ax, dx, 15
-    mov dl, al
-    mov si, W_FIRE
-    mov cx, SCROLL_W
-.pixel:
-    mov al, [es:si]
-    add al, dl
-    and al, 15
-    add al, C_RAINBOW
-    stosb
-    inc si
-    loop .pixel
+    mov [plasma_rows+bx], al
     inc bx
     cmp bx, SCROLL_H
     jb .row
-    pop es
-    mov si, W_FIRE+SCROLL_W
-    jmp draw_buffer
+    ; Each pixel is C_RAINBOW + (column + row) mod 16. The low nibbles of
+    ; four columns and the row add without a carry between bytes.
+    push ds
+    mov ds, [work_seg]
+    mov di, SCROLL_Y0*320+SCROLL_X0
+    xor bx, bx
+.draw_row:
+    movzx edx, byte [cs:plasma_rows+bx]
+    and dl, 15
+    imul edx, edx, 01010101h
+    mov si, W_FIRE
+    mov cx, SCROLL_W/4
+.dword:
+    lodsd
+    and eax, 0f0f0f0fh
+    add eax, edx
+    and eax, 0f0f0f0fh
+    add eax, C_RAINBOW*01010101h
+    cmp dword [fs:di], C_KEY*01010101h
+    jne .mixed
+    mov [es:di], eax
+    add di, 4
+    dec cx
+    jnz .dword
+    jmp .next_row
+.mixed:
+    MASKED_PIXEL
+    shr eax, 8
+    MASKED_PIXEL
+    shr eax, 8
+    MASKED_PIXEL
+    shr eax, 8
+    MASKED_PIXEL
+    dec cx
+    jnz .dword
+.next_row:
+    add di, 320-SCROLL_W
+    inc bx
+    cmp bx, SCROLL_H
+    jb .draw_row
+    pop ds
+    ret
 
 ; Bubbles rise from each analyzer band. A louder band makes more bubbles,
 ; and they are larger and redder.
