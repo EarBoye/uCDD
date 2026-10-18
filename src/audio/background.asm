@@ -101,9 +101,24 @@ cd_deferred_refill:
     jne .done
     cmp byte [cd_bios_busy], 0
     jne .done
+    ; An interrupt in service at the controller is a handler running.
     call physical_pic_isr
-    or al, [virtual_pic_service]
+    test al, al
     jnz .done
+    ; The virtual Sound Blaster interrupt, taken by the host and not yet
+    ; delivered, goes first. Once it is delivered, the end of interrupt the
+    ; game owes does not hold the CD audio back: the host comes here only
+    ; with the game outside its interrupt handlers (resident_refill_schedule:
+    ; no locked stack, callback, exception or bridge in use), and a drive
+    ; plays its audio whatever the game does with its sound card's
+    ; interrupt. Mortal Kombat Trilogy's Miles driver leaves its last
+    ; interrupt unacknowledged for about 3 s after each sound; refills held
+    ; for that emptied the 448 KB queue every 5.5 s.
+    cmp byte [virtual_pic_service], 0
+    je .controller_free
+    cmp byte [virtual_pic_delivered], 0
+    je .done
+.controller_free:
     cmp byte [cd_started], 1
     jne .cancel
     cmp byte [cd_error], 0
