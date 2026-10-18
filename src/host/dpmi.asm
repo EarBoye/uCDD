@@ -982,13 +982,21 @@ dpmi_dispatch:
     ; An INT to a hardware vector whose IRQ the host holds in service chains
     ; to the real-mode handler: the host's EOI at the queue covers its own.
     call dpmi_pic_real_int
+    ; A real-mode INT of a hardware vector is a software interrupt there,
+    ; which no stub passes up (DPMI 0.9, 2.4.2), the protected-mode chain
+    ; included.
+    call dpmi_reflect_mark
+    call dpmi_reflect_begin
     call mon_real_int_copy
+    call dpmi_reflect_end
     xor al, al
     call resident_stray_eoi_mark
     jmp .stack_done
 .far_call:
     call dpmi_pic_real_chain
+    call dpmi_reflect_begin
     call mon_real_far_copy
+    call dpmi_reflect_end
     xor al, al
     call resident_stray_eoi_mark
 .stack_done:

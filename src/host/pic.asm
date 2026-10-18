@@ -89,7 +89,28 @@ dpmi_pic_next:
     stc
     ret
 
+; AL=interrupt number: dpmi_reflect_bits gets its IRQ's bit for a hardware
+; vector at the host's controller bases, else nothing. Every register kept.
+dpmi_reflect_mark:
+    push ecx
+    mov cl, al
+    sub cl, [ebp+mon_master]
+    cmp cl, 8
+    jb .bit
+    mov cl, al
+    sub cl, [ebp+mon_slave]
+    cmp cl, 8
+    jae .none
+    add cl, 8
+.bit:
+    movzx ecx, cl
+    bts [ebp+dpmi_reflect_bits], ecx
+.none:
+    pop ecx
+    ret
+
 ; The real-mode handler will own its EOI after a default-vector chain.
+; Carry set when the host had the IRQ in service, so the EOI is spent.
 dpmi_pic_reflect:
     pushad
     movzx eax, byte [ebp+dpmi_reflect_vector]
@@ -155,6 +176,7 @@ dpmi_pic_real_chain:
     jne .next
 .chain:
     btr [ebp+dpmi_pic_service], ebx
+    bts [ebp+dpmi_reflect_bits], ebx
     ; The host sent the EOI when it queued the IRQ. The handler's is stray.
     mov al, 1
     call resident_stray_eoi_mark

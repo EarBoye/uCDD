@@ -390,8 +390,10 @@ dpmi_dos_translate:
     rep movsd
     pop edi
     mov word [edi+32], 202h
+    call dpmi_reflect_begin
     movzx eax, byte [ebp+dpmi_reflect_vector]
     call mon_real_int
+    call dpmi_reflect_end
     xor al, al
     call resident_stray_eoi_mark
     cmp byte [ebp+dpmi_reflect_vector], 10h
@@ -431,11 +433,16 @@ dpmi_dos_translate:
     mov ax, 8011h
     jmp dpmi_error
 .hardware:
+    mov al, [ebp+dpmi_reflect_vector]
+    call dpmi_reflect_mark
     call dpmi_pic_reflect
-    ; The EOI went out when the IRQ was queued. The handler's own is stray.
-    ; Only for a hardware vector: a BIOS or DOS service reflected with its
-    ; registers alone joins below, and a real-mode handler that runs during
-    ; it owes the controller its EOI.
+    ; The EOI went out when the host queued the IRQ: the handler's own is
+    ; stray. Only for an IRQ the host had in service: one that reached the
+    ; client another way (DOS/4GW passes real-mode IRQs up through its own
+    ; stub and mode switch) still owes the controller the handler's EOI, and
+    ; swallowing it would hold the line, and every one below it, in service.
+    ; A BIOS or DOS service reflected with its registers alone joins below.
+    jnc .registers_only
     mov al, 1
     call resident_stray_eoi_mark
 ; Joined from .hardware (an IRQ vector, its EOI marked) and from the services

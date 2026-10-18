@@ -114,6 +114,8 @@ dpmi_bridge_install:
     mov dword [ebp+dpmi_bridge_stack], BRIDGE_TOP
     mov dword [ebp+dpmi_bridge_context], 0
     mov dword [ebp+dpmi_bridge_depth], 0
+    ; Marks left by a client that ended inside a reflection.
+    mov dword [ebp+dpmi_bridge_reflecting], 0
     mov word [ebp+dpmi_bridge_mask], 0
     mov byte [ebp+dpmi_bridge_int_hooks], 0
     mov byte [ebp+dpmi_bridge_retf], 0
@@ -272,6 +274,44 @@ dpmi_bridge_real_vector:
     pop eax
     ret
 
+; Before a call that sends an interrupt down the real-mode chain: mark the
+; IRQs in dpmi_reflect_bits for the call's length. Every register is kept
+; (not the flags: no caller needs them).
+dpmi_reflect_begin:
+    pushad
+    ; The bridge nests at most four deep (dpmi_bridge_depth), so five
+    ; saved levels are enough; a deeper level is counted, not marked.
+    mov ecx, [ebp+dpmi_reflect_depth]
+    inc dword [ebp+dpmi_reflect_depth]
+    cmp ecx, 5
+    jae .done
+    mov eax, [ebp+dpmi_bridge_reflecting]
+    mov [ebp+dpmi_reflect_saved+ecx*4], eax
+    mov eax, [ebp+dpmi_reflect_bits]
+    or [ebp+dpmi_bridge_reflecting], eax
+    not eax
+    and [ebp+dpmi_bridge_mask], ax
+.done:
+    mov dword [ebp+dpmi_reflect_bits], 0
+    popad
+    ret
+
+; After it: the marks as they were, and the stubs' mask from the vectors.
+dpmi_reflect_end:
+    pushad
+    mov ecx, [ebp+dpmi_reflect_depth]
+    jecxz .done
+    dec ecx
+    mov [ebp+dpmi_reflect_depth], ecx
+    cmp ecx, 5
+    jae .done
+    mov eax, [ebp+dpmi_reflect_saved+ecx*4]
+    mov [ebp+dpmi_bridge_reflecting], eax
+    call dpmi_bridge_update
+.done:
+    popad
+    ret
+
 dpmi_bridge_update:
     pushad
     xor ebx, ebx
@@ -287,6 +327,10 @@ dpmi_bridge_update:
     inc ebx
     cmp ebx, 16
     jb .irq
+    ; An IRQ on its way down from its handler stays out (dpmi_reflect_begin).
+    mov eax, [ebp+dpmi_bridge_reflecting]
+    not eax
+    and ecx, eax
     mov [ebp+dpmi_bridge_mask], cx
     ; The stubs of INT 1Ch, 23h and 24h read the same answer.
     xor ebx, ebx
@@ -578,6 +622,17 @@ dpmi_bridge_done:
 
 dpmi_bridge_stack dd BRIDGE_TOP
 dpmi_bridge_context dd 0
+; IRQs whose interrupt is on its way down the real-mode chain from the
+; client's protected-mode handler (bit n for IRQ n), kept out of
+; dpmi_bridge_mask meanwhile: the handler has had this interrupt, so a stub
+; that meets it again chains on to the handler it replaced instead of
+; passing it up a second time (DPMI 0.9, 2.4: a protected-mode handler that
+; chains reflects the interrupt to real mode). dpmi_reflect_bits holds what
+; the next reflection marks; the saved marks nest with the bridge.
+dpmi_bridge_reflecting dd 0
+dpmi_reflect_bits dd 0
+dpmi_reflect_depth dd 0
+dpmi_reflect_saved times 5 dd 0
 dpmi_bridge_int_table db 1ch,23h,24h
 
 HOST_REAL
