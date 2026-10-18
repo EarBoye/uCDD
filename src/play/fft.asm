@@ -70,7 +70,11 @@ log2_8:
 %endmacro
 
 ; The butterflies of one twiddle, from BX to the end of the arrays. BX is the
-; first bin of a pair and DI the second, in bytes. %1 = 0: EBP = cos, ESI = sin.
+; first bin of a pair and DI the second, in bytes. The rotated value is
+; re * cos + im * sin and im * cos - re * sin, before the shift.
+; %1 = 0: EBP = cos, ESI = cos + sin, fft_cos_sin = cos - sin. With
+; m = cos * (re + im) the two are m - im * (cos - sin) and m - re * (cos + sin):
+; the same integers from three products, so the same bits modulo 2^32.
 ; %1 = 1: cos 32767, sin 0. %1 = 2: cos 0, sin 32767. A product by 32767 is
 ; (x << 15) - x, exactly as IMUL gives it.
 %macro BUTTERFLIES 1
@@ -78,17 +82,17 @@ log2_8:
     mov di, bx
     add di, [fft_half]
 %if %1 == 0
-    mov eax, [es:W_RE+di]
-    imul eax, ebp
-    mov edx, [es:W_IM+di]
-    imul edx, esi
+    mov ecx, [es:W_RE+di]
+    mov eax, [es:W_IM+di]
+    lea edx, [eax+ecx]
+    imul edx, ebp
+    imul eax, [fft_cos_sin]
+    imul ecx, esi
+    neg eax
     add eax, edx
     sar eax, 15
-    mov ecx, [es:W_IM+di]
-    imul ecx, ebp
-    mov edx, [es:W_RE+di]
-    imul edx, esi
-    sub ecx, edx
+    neg ecx
+    add ecx, edx
     sar ecx, 15
 %elif %1 == 1
     mov eax, [es:W_RE+di]
@@ -182,6 +186,10 @@ analyze:
     test ebp, ebp
     jz .quarter
 .general:
+    mov eax, ebp
+    sub eax, esi
+    mov [fft_cos_sin], eax
+    add esi, ebp
     BUTTERFLIES 0
 .zero:
     BUTTERFLIES 1

@@ -437,6 +437,8 @@ fft_half dw 0
 fft_k dw 0
 fft_step dw 0
 fft_angle dw 0
+    align 4, db 0
+fft_cos_sin dd 0
 bar_level times ANA_BARS db 0
 bar_peak times ANA_BARS db 0
 bar_hold times ANA_BARS db 0

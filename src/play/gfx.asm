@@ -307,6 +307,8 @@ draw_line:
     mov [line_sy], si
     mov si, cx
     add si, dx
+    ; CX = the x distance, SI = the error, DL = the color.
+    mov dl, [draw_color]
 .point:
     cmp ax, [clip_left]
     jl .step
@@ -316,7 +318,13 @@ draw_line:
     jl .step
     cmp bx, [clip_bottom]
     jg .step
-    call put_pixel
+    ; As put_pixel.
+    cmp ax, 319
+    ja .step
+    cmp bx, 199
+    ja .step
+    PIXEL_OFFSET
+    mov [es:di], dl
 .step:
     cmp ax, [line_x1]
     jne .move
@@ -330,9 +338,9 @@ draw_line:
     add si, [line_dy]
     add ax, [line_sx]
 .no_x:
-    cmp di, [line_dx]
+    cmp di, cx
     jg .point
-    add si, [line_dx]
+    add si, cx
     add bx, [line_sy]
     jmp .point
 .done:

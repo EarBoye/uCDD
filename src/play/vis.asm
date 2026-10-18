@@ -620,27 +620,24 @@ message_line:
     mov byte [draw_color], C_GOLD_HI
     jmp draw_text_shadow
 
+; The scroller's pixels stay on the screen: the wave moves a column from 3
+; up to 2 down, and the shadow is 2 right and down.
+%if SCROLL_X1+2 > 319 || SCROLL_Y0+2-3 < 0 || SCROLL_Y0+2+2+2+15 > 199
+%error "draw_scroller needs the window inside the screen"
+%endif
+
+; Each column draws its shadow, then its text. A shadow lands two columns
+; to the right, so every pixel still gets the text after any shadow, as it
+; did when all the shadows came first.
 draw_scroller:
     mov word [star_boost], 16
     mov si, bottom_stars
     mov cx, BOTTOM_STARS
     call draw_stars
     mov byte [draw_color], C_BLACK
-    mov word [scroll_shadow], 2
-    call .pass
-    mov word [scroll_shadow], 0
-    call .pass
-    add word [scroll_offset], 2
-    mov ax, [scroll_length]
-    shl ax, 4
-    cmp [scroll_offset], ax
-    jb .done
-    sub [scroll_offset], ax
-.done:
-    ret
-.pass:
     mov cx, SCROLL_X0
 .column:
+    ; BX = the character's font rows, DH = the column's bit in them.
     mov ax, cx
     sub ax, SCROLL_X0
     add ax, [scroll_offset]
@@ -661,7 +658,7 @@ draw_scroller:
     xchg cl, dl
     shr dh, cl
     xchg cl, dl
-    push cx
+    ; AX = the wave: the column's top y.
     mov ax, cx
     shl ax, 3
     mov si, [frame]
@@ -672,39 +669,54 @@ draw_scroller:
     imul eax, 3
     sar eax, 15
     add ax, SCROLL_Y0+2
-    add ax, [scroll_shadow]
-    mov si, ax
-    pop cx
+    ; DI = the screen offset of the top; AH = its y in the window.
+    mov di, ax
+    shl di, 2
+    add di, ax
+    shl di, 6
+    add di, cx
+    sub al, SCROLL_Y0
+    mov ah, al
     mov bp, 8
 .row:
     test [gs:bx], dh
     jz .next_row
-    mov ax, cx
-    add ax, [scroll_shadow]
-    push bx
-    mov bx, si
-    cmp word [scroll_shadow], 0
-    jne .color_ready
-    mov di, bx
-    sub di, SCROLL_Y0
-    and di, 15
-    add di, C_RAINBOW
-    xchg ax, di
+    cmp byte [fs:di+642], C_KEY
+    jne .shadow_low
+    mov byte [es:di+642], C_BLACK
+.shadow_low:
+    cmp byte [fs:di+962], C_KEY
+    jne .text
+    mov byte [es:di+962], C_BLACK
+.text:
+    mov al, ah
+    and al, 15
+    add al, C_RAINBOW
     mov [draw_color], al
-    xchg ax, di
-.color_ready:
-    call put_masked
-    inc bx
-    call put_masked
-    pop bx
+    cmp byte [fs:di], C_KEY
+    jne .text_low
+    mov [es:di], al
+.text_low:
+    cmp byte [fs:di+320], C_KEY
+    jne .next_row
+    mov [es:di+320], al
 .next_row:
     inc bx
-    add si, 2
+    add di, 640
+    add ah, 2
     dec bp
     jnz .row
     inc cx
     cmp cx, SCROLL_X1
     jbe .column
+    mov word [scroll_shadow], 0
+    add word [scroll_offset], 2
+    mov ax, [scroll_length]
+    shl ax, 4
+    cmp [scroll_offset], ax
+    jb .done
+    sub [scroll_offset], ax
+.done:
     ret
 
 ; AX = x, BX = top, DX = bottom. A vertical span over window glass.

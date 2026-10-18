@@ -105,11 +105,13 @@ against the unchanged build (f585c30) in an emulator harness (below).
 | `present` | 64000 bytes to video memory every frame | A copy of the screen in a 64000-byte block: only the dwords that changed are written, and 4 rows always, so the whole screen is rewritten every 50 frames. The block is taken only when the physical buffer and a disc list could still be had beside it (8453 paragraphs free); without it, the whole frame as before |
 | The logo | The generic sprite routine twice a frame (shadow, then logo): 8900 pixels, each with a multiply and four tests | At start, the 210 stretches where the logo is opaque over glass, for each of the two positions. Each frame shades the shadow's 1899 pixels and copies the logo's with REP MOVSB. A logo with more than 256 stretches uses the old routine |
 | Sprites | A multiply and four tests a pixel | The columns clipped once, the row offset once a row, one of four inner loops (plain, glass only, shaded, both) |
-| FFT | A DIV and two table calls per twiddle, a call per window sample, every value through memory | The window as a table; the twiddle angle stepped instead of divided; cos and sin in registers; the 0 and 90 degree twiddles (1534 of 5120 butterflies) without IMUL, as (x << 15) - x, chosen by the table's own values |
+| FFT | A DIV and two table calls per twiddle, a call per window sample, every value through memory, four IMULs a butterfly | The window as a table; the twiddle angle stepped instead of divided; cos and sin in registers; the 0 and 90 degree twiddles (1534 of 5120 butterflies) without IMUL, as (x << 15) - x, chosen by the table's own values; the others with three IMULs, m = cos (re + im), then m - im (cos - sin) and m - re (cos + sin), the same integers |
 | Equalizer | The input pointer, delay position and decimation count read and written in memory each sample; the bypass test in the output loop | Those three in registers for the chunk; the test outside the loop |
 | Copper bars, fire, waterfall, plasma | A byte and two tests a pixel over glass | Four pixels at a time where all four are glass. The fire's blur keeps a running sum of the three pixels below (the rows are one run in memory, and a pixel reads only later ones), and its colours and the plasma's are made four at a time while drawing, not into a buffer first |
 | Analyzer | Two DIVs and a `fill_rect` call per bar row | The row colours as a table built by the assembler; 5 bytes written |
 | Text, label | A call and a bounds test per pixel | The row offset once a glyph row, empty rows skipped |
+| Scroller | Two passes over the 296 columns (shadows, then text), each finding the column's character, bit and wave again, two `put_masked` calls a pixel | One pass: a column's shadow, then its text; a shadow lands two columns right, so the text still comes after it. The window's constants keep every pixel on the screen, checked by the assembler |
+| Lines | A `put_pixel` call a pixel | The pixel written in place, after the same clip and screen tests |
 | `fill_rect`, `shade_rect`, frames | A byte at a time; the frame's whole shadow shaded, then painted over | Dwords; two pixels a turn through XLAT; only the shadow strips that show |
 | `pixel_offset` | IMUL by 320 | (y × 4 + y) << 6, the same 16-bit result for every y |
 
@@ -130,6 +132,16 @@ On average over a frame the screen changes in 389 of its 16000 dwords
 (median 235); a change of display or an overlay opening rewrites up to
 11546.
 
+Second round (the scroller, three-IMUL butterflies, lines), each display
+held with nothing over it, 10 frames, f585c30 to now:
+
+| On the screen | 386 clocks | Pentium clocks |
+| --- | --- | --- |
+| Stopped, the scroller | 1.91 M to 0.72 M | 0.59 M to 0.24 M |
+| Warp speed, playing | 2.56 M to 1.40 M | 0.85 M to 0.49 M |
+| Plasma, playing | 3.00 M to 1.54 M | 1.04 M to 0.54 M |
+| Fire, playing | 3.38 M to 1.88 M | 1.21 M to 0.68 M |
+
 DOSBox-X 2024.03.01, the same disc image, the time the 210-frame start-up
 message stays up (the loop waits for every retrace, so the rate is 70 / n):
 
@@ -147,7 +159,7 @@ A faster equalizer moves the calibration: `eq_calibrate` times the real
 code, so a CPU that was just too slow for the equalizer before may now keep
 it on. The threshold is unchanged.
 
-The program needs 4.5 KB more in its segment (58374 of 65534 bytes, most of
+The program needs 4.6 KB more in its segment (58426 of 65534 bytes, most of
 it tables) and, when there is room, the 64000-byte screen copy.
 
 ## 6. How it was checked
@@ -155,8 +167,8 @@ it tables) and, when there is room, the 64000-byte screen copy.
 An emulator harness (Unicorn) loads UCDDPLAY.EXE's image as DOS would and
 runs the player's own routines over a scripted session of 1500 frames: CD
 audio through `eq_hook` in driver-sized pieces (64 frames mostly, odd sizes
-too, and full-scale square waves), every bottom display, the label, the
-messages, the requester, the help over the requester, play, pause and stop,
+too, and full-scale square waves), every bottom display, the scroller, the
+label, the messages, the requester, the help over the requester, play, pause and stop,
 no disc, EQ changes and presets, the cursor across every screen edge. After
 each frame it compares the screen, the back buffer, the palette writes, the
 equalizer's output, the work segment and every variable by name. 1500 of
@@ -169,9 +181,10 @@ clears them).
 
 The pixel routines (sprites, shaded sprites, `masked_span`, `fill_rect`,
 `shade_rect`, `put_pixel`, `put_masked`, `pixel_offset`, `draw_text`,
-`draw_tiny`) were also called 5000 times with random arguments on random
+`draw_tiny`, `draw_line` with random clips) were also called 4000 to 5000 times with random arguments on random
 buffers, coordinates far off the screen and wrapping included: same pixels,
-same registers.
+same registers. `analyze` ran on 300 random rings (noise, full-scale
+squares, sweeps): the same FFT arrays, bars and needles.
 
 DOSBox-X ran both builds on a mixed-mode CUE image under its own MSCDEX:
 the same screens for the start, play (with the expected SB16 message, no
