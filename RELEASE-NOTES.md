@@ -64,6 +64,14 @@ JemmEx).
 - A review of the setup program: the SB Pro start waits for its priming interrupt by port reads instead of loop turns; the SB Pro stop masks the IRQ before the DSP reset; the real-mode handler checks the in-service bit for IRQ 7; INT 23h and 24h handlers, so Ctrl+Break no longer ends the program with vectors hooked; a kept BLASTER field is bounded; MDA, Hercules and CGA adapters get the right video segment and mode, and the previous text mode and line count come back on exit; a CPU check before 386 instructions; the detection's 8237 programming runs with interrupts off.
 - The Disk row text stops before the IRQ field.
 
+## UCDDPLAY
+
+- Faster, with nothing it shows or plays changed: the screen is written only where it changed (about 2 KB a frame instead of 64 KB), and the logo, sprites, analyzer, equalizer, spectrum, text and bottom displays take less time. On a slow CPU the display runs up to twice as many frames a second. The equalizer's calibration times the faster code, so a CPU just too slow for it before may keep it on.
+- A physical disc: Read Long is sent as the 27-byte request MSCDEX 2.1 defines, with its interleave bytes zero (one byte was the last IOCTL code); a Sound Blaster 16 whose mixer reports reserved bits in register 80h is accepted; the volume leaves the mixer's reserved bits zero.
+- The equalizer no longer turns itself off when the player starts within a few ticks of midnight.
+- The mouse is set up after the switch to the VGA mode, so a mouse driver that keeps its text-mode ranges still reaches the screen edges.
+- After a critical error ends the player, the parent program gets its registers back as DOS left them.
+
 ## Build
 
 - `--audio-period-frames`, `--no-refill-hint`, `--verify-mix`, `--profile-host` and `--profile-driver` as described in BUILDING.md. The flat sink, register flags image and word I/O split are in every resident-audio build.
