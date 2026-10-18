@@ -4,6 +4,15 @@
 %include "disc.inc"
 %define CD_QUEUE_BYTES 524288
 %define CD_READ_BYTES 4096
+; PLAY AUDIO reads this many chunks before the audio starts (16 KB, 93 ms:
+; the mixer starts a track at that much, cd_begin_resampled),
+; and this many in all before the request returns (64 KB, 371 ms). The
+; background refill brings the queue up to CD_QUEUE_BYTES from there. A
+; drive accepts PLAY AUDIO and returns; filling the whole queue first held
+; the caller and the audio for its whole read (84 ms in 86Box, 0.3-0.5 s on
+; a Pentium under the DPMI host), every time a game restarted a track.
+%define CD_PLAY_FIRST 4
+%define CD_PLAY_CHUNKS 16
 %ifdef RESIDENT_AUDIO
 %define EXTERNAL_CD_BUFFERS 1
 %define cd_half 0
@@ -519,6 +528,14 @@ cd_request:
     shr edx, 8
     mov [cd_gap_total], edx
     mov byte [cd_seek], 1
+%ifdef RESIDENT_AUDIO
+    ; 0FFh: a DPMI client runs under the driver's host, which does the reads
+    ; later (cd_deferred_refill); none here.
+    cmp byte [cd_background_reads], 0ffh
+    je .first_fill
+    mov byte [cd_background_reads], CD_PLAY_FIRST
+.first_fill:
+%endif
     call cd_foreground
     cmp byte [cd_error], 0
     jne .done
@@ -529,6 +546,19 @@ cd_request:
     call cd_msf
     mov [cd_status_end], eax
     mov byte [cd_started], 1
+%ifdef RESIDENT_AUDIO
+    ; The audio plays from here. The rest of the first fill reads behind
+    ; it: the mixer takes from the queue while cd_pump adds to it, as with
+    ; the background refill, and the driver's busy byte keeps that refill
+    ; out until this request returns.
+    cmp byte [cd_background_reads], 0ffh
+    je .filled
+    mov byte [cd_background_reads], CD_PLAY_CHUNKS-CD_PLAY_FIRST
+    call cd_foreground
+    ; cd_pump leaves a count behind when the queue or the track ends first.
+    mov byte [cd_background_reads], 0
+.filled:
+%endif
 .ok:
     mov word [cd_result], 100h
     cmp byte [cd_error], 0
