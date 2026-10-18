@@ -75,14 +75,17 @@ dpmi_ems_gateway dw 0
 dpmi_hide_vcpi db 1
     times 0ah-($-dpmi_ems_base) db 0
 dpmi_ems_name times 8 db 0
-; An extender in its own VCPI mode bypasses the port traps. Offer DPMI instead.
+; An extender in its own VCPI mode bypasses the port traps. Offer DPMI instead,
+; to a program that a DPMI program starts as well: the host takes it as a
+; child (nested.asm). Star Command Revolution starts RAD's Smacker player,
+; whose CauseWay extender takes VCPI first; in its own protected mode it
+; drove the card behind the traps and its intro stopped at the first frame.
+; The host's own VCPI check runs at the install, before this hook.
 dpmi_ems:
     cmp ax, 0de00h
     jne .chain
     push ds
     mov ds, [cs:dpmi_ems_gateway-dpmi_ems_base]
-    cmp byte [dpmi_active], 0
-    jne .chain_ds
     cmp byte [dpmi_dormant], 0
     jne .chain_ds
     pop ds

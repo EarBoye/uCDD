@@ -26,6 +26,8 @@ JemmEx).
 - Device status bit 10 is set for a mounted disc, as OAKCDROM and the drivers of its day set it: MSCDEX 2.25 lists the XA files of a CD-i Bridge disc (Chasm: The Rift, Mass Destruction) only then.
 - An IOCTL request whose length byte is 0 is taken as a full one, as OAKCDROM does: Lollypop's CD check sends one and stopped with "005 cd error".
 - READ LONG in raw mode (MSCDEX 2.1's optional data read mode): on a BIN/CUE image with 2352-byte sectors each sector comes back whole, and the device status says so. An ISO image still refuses it.
+- PLAY AUDIO returns at once, as MSCDEX 2.1 asks: the track starts after 16 KB is read and the request returns after 64 KB, where it read the whole 512 KB queue first (84 ms in 86Box with the caller held and the track silent; the gap repeated at every restart).
+- Under the DPMI host, CD audio no longer waits for a game to acknowledge its sound card's interrupt: Mortal Kombat Trilogy's music paused for a third to half a second every 5.5 s during its logos (heard on the real PC). Real mode keeps the old wait.
 
 ## Sound card emulation and output
 
@@ -57,6 +59,7 @@ JemmEx).
 - A program that DOS ends from real mode (a critical error answered with Abort, an INT 23h handler asking for the end) is released: the host hooks the program's terminate address, frees its state and vectors, and the next DPMI program starts. Before, the host stayed busy until reboot.
 - INT 20h and INT 21h AH=00h or 31h from a program end it as AH=4Ch does, instead of ending the DOS process under the host.
 - A real-mode callback of a suspended parent program (a mouse handler armed before a child started) no longer ends the child.
+- A program started by a DPMI program sees no VCPI either, so an extender that takes VCPI first (CauseWay, PMODE/W) becomes a child of the host and keeps the port traps. Star Command Revolution's intro, played by RAD's Smacker player under CauseWay, stopped at its first frame.
 - The hardware PIC masks a child program leaves behind are put back when it exits.
 - 0800h maps a physical range below 1 MiB to itself instead of refusing it.
 - INT 2Fh AX=1686h answers AX=0 in protected mode; a 0302h procedure is entered with interrupts off; software INT 0 to 7 reach a protected-mode handler with virtual interrupts off; exceptions 1, 3, 4 and 5 without a handler are reflected as real-mode interrupts; the return from a real-mode callback honours the ES:(E)DI the program returns with.
