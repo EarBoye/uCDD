@@ -135,17 +135,11 @@ changed volumes.
   under the host that intro stalls: the client spins in a 16-bit code
   segment with interrupts off, a region the host single-steps. Without the
   driver (86Box's own drive, OAKCDROM) the intro plays. Open.
-- Chasm: The Rift does not run under the driver in 86Box. On
-  `host-gauntlet` its RTM passes the DPMI check (D-11), stays resident as
-  it is built to (D-12), and the game reaches its start-up screen with
-  nested exceptions delivered (D-13); then one fault ends it, inside
-  RTM's exception handler as it loads the locked stack's selector (00AF):
-  RTM's own report, "Runtime error 216", or (when the host ends it) RTM's
-  memory not given back, by timing. Not D-14 (a continuous locked stack
-  gives the same fault). The fault is GP(0) on an LES whose operands are
-  all valid (pointer, descriptor and page checked at the fault), which
-  Intel's description of LES does not allow: 86Box itself is suspect.
-  The real PC decides.
+- Chasm: The Rift runs on `locked-stack` (D-15): RTM, a 16-bit client, was
+  given 32-bit stack segments for the locked stack; its LEAVE then loaded
+  ESP from an EBP with a stale upper half (a stack fault on the real PC,
+  a general protection fault in 86Box). With 16-bit stacks the game enters
+  its level in 86Box. Not yet on the PC.
   MSCDEX 2.25 listed nothing on its CD-i Bridge disc under the driver
   until `cdrom-bit10` (M-5, device status bit 10); with the disc listed it ends
   in "Memory allocation error" as Beta 0.9.3b did (memory not given back,

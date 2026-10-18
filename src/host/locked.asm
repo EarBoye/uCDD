@@ -39,6 +39,16 @@ dpmi_locked_init:
     mov dword [ebp+dpmi_ldt+21*8+4], 0040f23eh
     mov dword [ebp+dpmi_ldt+22*8], 0e0000fffh
     mov dword [ebp+dpmi_ldt+22*8+4], 0040f23fh
+    ; A 16-bit client's handlers run 16-bit code on these stacks: they get
+    ; 16-bit stack segments (B clear), so that LEAVE, ENTER and the string
+    ; pushes use SP, as on the client's own stack. On a big stack a 16-bit
+    ; LEAVE loads the whole of ESP from EBP, whose upper half such code
+    ; never clears: Chasm's RTM faulted at its LEAVE on the real PC (D-15).
+    cmp byte [ebp+dpmi_client16], 0
+    je .stack_width_ready
+    and byte [ebp+dpmi_ldt+21*8+6], 0bfh
+    and byte [ebp+dpmi_ldt+22*8+6], 0bfh
+.stack_width_ready:
     mov word [ebp+dpmi_used+21], 0404h
     mov dword [ebp+dpmi_locked_cursor], 4096
     mov dword [ebp+dpmi_locked_depth], 0
