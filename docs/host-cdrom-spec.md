@@ -398,3 +398,17 @@ launcher that changes to the game's folder.
   Vertigo, Screamer Rally and Red Alert, none with a visible effect. The
   sweep's log line shows the caller's EBX, not the handle, so whose
   handle it was is not known.
+
+Star Command Revolution, seen once status bit 10 (M-5) let the game
+find its disc (on the real PC SHSUCDX shows the files anyway): its
+Smacker intro stalls under the host. Traced in 86Box: the game's Miles
+SB16 driver probes the card (reset, E1h, mixer 80h/81h, a one-sample
+16-bit single-cycle transfer on DMA 5, 82h read, 22Fh acknowledge,
+volumes, a second reset); after that the host delivers vector 8, the
+timer, to the client about 20000 times a second, the client's main code
+never runs again, and no DPMI call, card access or raise of the virtual
+line follows (port log, request log, DOS log). The same with no digital
+driver, with Miles' SB Pro driver and with a virtual SB Pro; the game's
+own timer writes are not the cause as far as the host's port path shows.
+Open: where that timer rate comes from. Without the driver the intro
+plays.
