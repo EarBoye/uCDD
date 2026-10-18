@@ -154,6 +154,7 @@ virtual_irq_take:
     call physical_pic_isr
 %ifdef OWN_HOST
     call virtual_pic_host_service
+    and al, ah
 %endif
     test al, [guest_irq_priority]
     jnz .done
@@ -211,6 +212,10 @@ virtual_pic_read:
 virtual_pic_write:
     cmp dx, 21h
     je .mask
+    cmp al, 48h
+    je .physical
+    cmp al, 68h
+    je .physical
     cmp al, 0ah
     je .select
     cmp al, 0bh
@@ -241,10 +246,11 @@ virtual_pic_write:
     call physical_write
     ret
 .eoi:
-    call physical_pic_isr
 %ifdef OWN_HOST
     call virtual_pic_host_eoi
     jc .done
+%else
+    call physical_pic_isr
 %endif
     cmp byte [virtual_pic_service], 0
     je .hardware_service
@@ -282,32 +288,43 @@ virtual_pic_write:
 virtual_pic_host_service:
     push es
     push di
+    mov ah, 0ffh
     cmp word [own_host_active+2], 0
     je .done
     les di, [own_host_active]
     cmp byte [es:di], 1
     jne .done
     or al, [es:di+4]
+    mov ah, [es:di+5]
 .done:
     pop di
     pop es
     ret
 
-; A reflected real IRQ keeps its master-PIC EOI ownership.
+; Complete real handlers do not change virtual audio ownership.
 virtual_pic_host_eoi:
-    push ax
+virtual_pic_host_specific:
     push bx
     push cx
     push es
     push di
+    mov bh, al
     cmp word [own_host_active+2], 0
-    je .none
+    je .no_host
     les di, [own_host_active]
+    cmp byte [es:di], 2
+    je .complete
     cmp byte [es:di], 1
-    jne .none
+    jne .no_host
+    cmp al, 20h
+    jne .specific
+    call physical_pic_isr
+    and al, [es:di+5]
+    push ax
     mov bl, [es:di+4]
+    and bl, [es:di+5]
     test bl, bl
-    jz .none
+    jz .not_owned
     mov bh, al
     or al, bl
     or al, [virtual_pic_service]
@@ -315,58 +332,52 @@ virtual_pic_host_eoi:
     bsf cx, cx
     mov al, 1
     shl al, cl
-    test bh, al
-    jnz .none
     test bl, al
-    jz .none
+    jz .not_owned
+    and bh, al
     not al
     and [es:di+4], al
-    pop di
-    pop es
-    pop cx
-    pop bx
+    ; A physical owner still needs the hardware EOI.
+    neg bh
     pop ax
-    stc
-    ret
-.none:
-    pop di
-    pop es
-    pop cx
-    pop bx
-    pop ax
-    clc
-    ret
-
-virtual_pic_host_specific:
-    push ax
-    push cx
-    push es
-    push di
-    cmp word [own_host_active+2], 0
-    je .none
-    les di, [own_host_active]
-    cmp byte [es:di], 1
-    jne .none
+    cmc
+    jmp .restore
+.specific:
     mov cl, al
     and cl, 7
-    mov al, 1
-    shl al, cl
-    test [es:di+4], al
-    jz .none
-    not al
-    and [es:di+4], al
-    pop di
-    pop es
-    pop cx
+    mov ch, 1
+    shl ch, cl
+    push ax
+    push dx
+    call physical_pic_isr
+    pop dx
+    test [es:di+4], ch
+    jz .not_owned
+    and al, ch
+    not ch
+    and [es:di+4], ch
+    neg al
     pop ax
-    stc
-    ret
+    cmc
+    jmp .restore
+.not_owned:
+    pop ax
+    jmp .none
+.no_host:
+    cmp bh, 20h
+    jne .none
+    call physical_pic_isr
 .none:
+    clc
+    jmp .restore
+.complete:
+    call physical_write
+    stc
+.restore:
     pop di
     pop es
     pop cx
-    pop ax
-    clc
+    pop bx
     ret
 %endif
 

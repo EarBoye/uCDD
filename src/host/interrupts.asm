@@ -157,7 +157,7 @@ dpmi_step_check:
     call dpmi_sti_begin
     jmp .done
 .enable:
-    call dpmi_cli_learn_popf
+    call dpmi_tf_disarm
     mov byte [ebp+dpmi_vif], 1
     mov byte [ebp+dpmi_step_active], 0
     and word [ebx+56], 0feffh
@@ -598,11 +598,27 @@ dpmi_step_check:
     jae .done
     test dl, 6
     jnz .done
-    cmp byte [ebp+dpmi_step_address_size], 4
-    jne .done
     mov edx, [ebp+dpmi_debug_regs+28]
     test dl, 0ffh
     jnz .done
+    cmp byte [ebp+dpmi_step_address_size], 4
+    je .simple_dispatch
+    cmp al, 40h
+    jb .done
+    cmp al, 4fh
+    jbe .simple_count_register
+    cmp al, 0b0h
+    jb .simple_word_register
+    cmp al, 0bfh
+    jbe .simple_move
+    jmp .done
+.simple_word_register:
+    cmp al, 86h
+    jb .done
+    cmp al, 8bh
+    ja .done
+    jmp .simple_move
+.simple_dispatch:
     cmp al, 40h
     jb .simple_other
     cmp al, 4fh
@@ -1064,9 +1080,7 @@ dpmi_step_check:
 .simple_advance:
     add [ebx+48], edi
     inc dword [esp+12]
-    ; These instructions keep the same 32-bit code segment.
-    mov ecx, 4
-    jmp .decode
+    jmp .next
 .done:
     popad
     ret
@@ -1746,110 +1760,6 @@ dpmi_tf_loaded:
     clc
     ret
 
-; EBX=frame of a CLI that turned the virtual IF off. Find or add its site.
-; When earlier regions from this site ended with a trapped STI, do not step:
-; record the stack as for an injected image. CF when the host must not step.
-dpmi_cli_site_check:
-    pushad
-    mov dword [ebp+dpmi_cli_site], -1
-    mov ax, [ebx+52]
-    call dpmi_descriptor
-    jc .step
-    call dpmi_descriptor_base
-    add eax, [ebx+48]
-    xor ecx, ecx
-.find:
-    cmp [ebp+dpmi_cli_linear+ecx*4], eax
-    je .found
-    inc ecx
-    cmp ecx, DPMI_CLI_SITES
-    jb .find
-    xor ecx, ecx
-.empty:
-    cmp dword [ebp+dpmi_cli_linear+ecx*4], 0
-    je .replace
-    inc ecx
-    cmp ecx, DPMI_CLI_SITES
-    jb .empty
-    mov edx, DPMI_CLI_SITES
-.evict:
-    movzx ecx, byte [ebp+dpmi_cli_next]
-    inc byte [ebp+dpmi_cli_next]
-    and byte [ebp+dpmi_cli_next], DPMI_CLI_SITES-1
-    cmp byte [ebp+dpmi_cli_score+ecx], 0ffh
-    jne .replace
-    dec edx
-    jnz .evict
-.replace:
-    mov [ebp+dpmi_cli_linear+ecx*4], eax
-    mov byte [ebp+dpmi_cli_score+ecx], 0
-.found:
-    mov [ebp+dpmi_cli_site], ecx
-    mov al, [ebp+dpmi_cli_score+ecx]
-    cmp al, 2
-    jb .step
-    cmp al, 0ffh
-    je .step
-    mov ax, [ebx+64]
-    call dpmi_descriptor
-    jc .step
-    mov ecx, 0ffffffffh
-    mov edx, [ebx+60]
-    test byte [esi+6], 40h
-    jnz .quiet
-    mov ecx, 0ffffh
-    movzx edx, dx
-.quiet:
-    mov [ebp+dpmi_tf_mask], ecx
-    mov [ebp+dpmi_tf_esp], edx
-    mov ax, [ebx+64]
-    mov [ebp+dpmi_tf_ss], ax
-    mov byte [ebp+dpmi_tf_armed], 2
-    mov dword [ebp+dpmi_quiet_steps], DPMI_QUIET_STEPS
-    popad
-    stc
-    ret
-.step:
-    popad
-    clc
-    ret
-
-; A region ended with a trapped STI.
-dpmi_cli_learn_sti:
-    push eax
-    call dpmi_cli_top_site
-    jc .done
-    cmp byte [ebp+dpmi_cli_score+eax], 3
-    jae .done
-    inc byte [ebp+dpmi_cli_score+eax]
-.done:
-    call dpmi_tf_disarm
-    pop eax
-    ret
-
-; A region ended with POPF or IRET. Step at this site from now on.
-dpmi_cli_learn_popf:
-    push eax
-    call dpmi_cli_top_site
-    jc .done
-    mov byte [ebp+dpmi_cli_score+eax], 0ffh
-.done:
-    call dpmi_tf_disarm
-    pop eax
-    ret
-
-; Return EAX=index of the site that started the current top-level region,
-; or CF.
-dpmi_cli_top_site:
-    mov eax, [ebp+dpmi_cli_site]
-    cmp eax, DPMI_CLI_SITES
-    jae .none
-    call dpmi_top_level
-    ret
-.none:
-    stc
-    ret
-
 ; CF when a handler runs: a bridged IRQ, a locked IRQ handler, an exception
 ; handler or a real-mode callback.
 dpmi_top_level:
@@ -1873,38 +1783,7 @@ dpmi_tf_disarm:
     call dpmi_top_level
     jc .done
     mov byte [ebp+dpmi_tf_armed], 0
-    mov dword [ebp+dpmi_cli_site], -1
 .done:
-    ret
-
-; EBX=frame of a step. A quiet region can end with a POPF that was not
-; seen. When the fallback steps too long without an end, turn the virtual
-; IF on and step at this site from now on. CF when the IF is on.
-dpmi_quiet_limit:
-    cmp byte [ebp+dpmi_tf_armed], 2
-    jne .run
-    dec dword [ebp+dpmi_quiet_steps]
-    jnz .run
-    mov dword [ebp+dpmi_quiet_steps], DPMI_QUIET_STEPS
-    push eax
-    mov ax, [ebx+64]
-    cmp ax, [ebp+dpmi_tf_ss]
-    jne .inside
-    mov eax, [ebx+60]
-    and eax, [ebp+dpmi_tf_mask]
-    cmp eax, [ebp+dpmi_tf_esp]
-    jbe .inside
-    pop eax
-    call dpmi_cli_learn_popf
-    mov byte [ebp+dpmi_vif], 1
-    mov byte [ebp+dpmi_step_active], 0
-    and word [ebx+56], 0feffh
-    stc
-    ret
-.inside:
-    pop eax
-.run:
-    clc
     ret
 
 ; EBX=frame of a host service entry (ES, DS, PUSHAD, EIP, CS, EFLAGS).
@@ -1993,13 +1872,6 @@ dpmi_tf_esp dd 0
 dpmi_tf_mask dd 0
 dpmi_tf_ss dw 0
 dpmi_tf_armed db 0
-DPMI_CLI_SITES equ 16
-dpmi_cli_site dd -1
-dpmi_cli_linear times DPMI_CLI_SITES dd 0
-dpmi_cli_score times DPMI_CLI_SITES db 0
-dpmi_cli_next db 0
-dpmi_quiet_steps dd 0
-DPMI_QUIET_STEPS equ 20000
 dpmi_page_generation dd 0
 dpmi_window_generation dd 0
 dpmi_window_descriptor dd 0
@@ -2016,7 +1888,7 @@ HOST_PROTECTED
 dpmi_sti_begin:
     cmp byte [ebp+dpmi_vif], 0
     jne .enabled
-    call dpmi_cli_learn_sti
+    call dpmi_tf_disarm
     mov eax, [ebx+56]
     call dpmi_virtual_flags
     shr eax, 8

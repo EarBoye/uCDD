@@ -163,6 +163,8 @@ dpmi_nested_pm:
     mov ecx, DPMI_LOCK_PAGES
     rep stosd
     mov [ebp+dpmi_blocks_page], eax
+    mov [ebp+dpmi_block_count], eax
+    mov [ebp+dpmi_block_pages], eax
     mov [ebp+dpmi_pool_head], eax
     mov [ebp+dpmi_pool_count], eax
     mov [ebp+dpmi_large_stack_segment], ax
@@ -191,6 +193,7 @@ dpmi_nested_pm:
     mov byte [ebp+dpmi_nested_error], 1
     jmp .leave
 .restore:
+    mov edx, [ebp+dpmi_physical_pending]
     dec byte [ebp+dpmi_nested_depth]
     movzx ebx, byte [ebp+dpmi_nested_depth]
     shl ebx, 18
@@ -215,6 +218,8 @@ dpmi_nested_pm:
     lea edi, [ebp+mon_vectors]
     mov ecx, NEST_PM_BYTES
     rep movsb
+    or [ebp+dpmi_physical_pending], edx
+    or [ebp+dpmi_pending_irqs], edx
     call dpmi_flush
     call dpmi_bridge_install_vectors
     movzx ebx, byte [ebp+dpmi_nested_depth]

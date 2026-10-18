@@ -76,6 +76,8 @@ sb_real_irq:
     cmp word [own_host_active+2], 0
     je .done
     les di, [own_host_active]
+    cmp byte [es:di], 2
+    je .done
     cmp byte [es:di], 0
     je .take
     cmp byte [es:di+1], 0
@@ -192,7 +194,8 @@ sb_dos_vector:
 sb_game_vector dd 0
 sb_host_guest_irq dw guest_irq
 sb_host_ports dw trap_ports
-    dd 33464443h
+    dd 34464443h
     dw cd_deferred_refill, cd_refill_pending, virtual_pic_request, last_clock
+    dw host_info, host_jemm_version
 sb_old_dos dd 0
 %endif

@@ -165,7 +165,7 @@ Other MODE2 sector formats, compressed audio, and multi-file CUE sheets are not 
 - **OPEN** shows CD drives and the images on local hard disks. Select a CD drive to use its disc, or select a CUE sheet, an ISO or BIN image, or an MDM file to mount it. If a physical drive is selected, images mount on the first μCDD drive. **EJECT** unmounts an image or opens the physical drive tray.
 - **SHUF** plays the tracks in a random order. **REPEAT** repeats one track or all tracks.
 - The equalizer has a preamp, 10 bands from 31 Hz to 16 kHz, and presets. It changes only the CD-Audio, and only while `UCDDPLAY` runs. If the CPU is too slow for it, it stays off.
-- Push V or click the bottom window to select Warp Speed, Spectra, Firebars, Lavaflow, Bubbles, Plasma, Tunnel, Lissajous, Landscape, or Random. Tunnel shows moving wireframe rings. Their speed changes with the audio level. Lissajous draws a stereo trace with fading trails: the left channel sets its horizontal position, and the right channel sets its vertical position. Landscape shows the frequency levels as wireframe ridges that move from the horizon toward you.
+- Push V or click the bottom window to select Warp Speed, Spectra, Firebars, Lavaflow, Bubbles, Plasma, Tunnel, Lissajous, Landscape, Cubes, or Random. Tunnel shows moving wireframe rings. Their speed changes with the audio level. Lissajous draws a stereo trace with fading trails: the left channel sets its horizontal position, and the right channel sets its vertical position. Landscape shows the frequency levels as wireframe ridges that move from the horizon toward you. Cubes shows eight rotating wireframe cubes. Their sizes change with the frequency levels.
 - Push F1 to see all keys. With a mouse driver, the mouse also works.
 
 `UCDDPLAY D:` selects CD drive D:. Push D to select the next CD drive. When you exit `UCDDPLAY`, the CD-Audio stops.
@@ -209,16 +209,27 @@ These are games known to work, not a list of every game that may work.
 - Descent II: Vertigo Series
 - Destruction Derby
 - Destruction Derby 2
+- Diggers 2: Extractors
+- Earthworm Jim
+- Earthworm Jim 2
+- Eradicator (DOS Release Version 1.0)
 - Fascination
+- Fatal Racing / Whiplash
 - Future Wars
 - Gobliiins
 - Gobliins 2: The Prince Buffoon
 - Goblins Quest 3
+- Heroes of Might and Magic II: The Succession Wars (DOS base game from Deluxe Edition)
+- Hyper 3-D Pinball
 - Inferno
 - Little Big Adventure
 - Little Big Adventure 2
 - Loom
 - Lost in Time
+- Manic Karts
+- MechWarrior 2: 31st Century Combat
+- MechWarrior 2: Mercenaries
+- Mortal Kombat 3
 - Pro Pinball: The Web
 - Pro Pinball: Timeshock!
 - Quake
@@ -232,16 +243,24 @@ These are games known to work, not a list of every game that may work.
 - Realms of Arkania: Blade of Destiny (German CD edition)
 - Realms of Arkania: Star Trail (German CD edition)
 - Return to Zork
+- Rise 2: Resurrection (Director's Cut DOS edition)
 - Screamer
 - Screamer 2
 - Screamer Rally
 - ShadowCaster
+- Shattered Steel (DOS 1.14)
+- Super Street Fighter II Turbo (start SF2TURBO directly; bypass MAKESWP)
 - SuperKarts
+- Surface Tension
 - The Horde
 - The Manhole
 - The Secret of Monkey Island
+- The Settlers II: Veni, Vidi, Vici (DOS Gold Edition 1.51; mission loading is slow)
 - Tomb Raider
 - Warcraft II: Tides of Darkness
+- Wipeout
+- World Rally Fever: Born on the Road
+- Worms United
 
 † **Carmageddon:** Use SHSUCDX with μCDD for European editions. Affected editions check disc files while CD audio plays; MSCDEX can reject these checks.
 

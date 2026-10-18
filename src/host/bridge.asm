@@ -3,6 +3,7 @@
 
 %define BRIDGE_BOTTOM 3fa000h
 %define BRIDGE_TOP 3fc000h
+%define BRIDGE_SOFT_COUNT 1
 struc bridge_frame
     .previous: resd 1
     .stack: resd 1
@@ -21,16 +22,13 @@ struc bridge_frame
     .return: resb 36
     .regs: resb 50
     .reflect: resb 1
-    .padding: resb 5
+    .software: resb 1
+    .padding: resb 4
 endstruc
 
 HOST_REAL
 dpmi_bridge_real_allocate:
-    mov bx, 128
-    cmp byte [dpmi_client16], 0
-    je .size_ready
     mov bx, 128+DPMI_XFER_PARAS
-.size_ready:
 %ifdef RESIDENT_HOST
     cmp byte [dpmi_nested_depth], 0
     je .allocate
@@ -114,6 +112,7 @@ dpmi_bridge_install:
     mov dword [ebp+dpmi_bridge_context], 0
     mov dword [ebp+dpmi_bridge_depth], 0
     mov word [ebp+dpmi_bridge_mask], 0
+    mov byte [ebp+dpmi_bridge_soft_active], 0
     popad
 dpmi_bridge_install_vectors:
     pushad
@@ -136,12 +135,28 @@ dpmi_bridge_install_vectors:
     inc ebx
     cmp ebx, 16
     jb .irq
+    xor ebx, ebx
+.software:
+    movzx edx, byte [ebp+dpmi_bridge_soft_numbers+ebx]
+    mov ecx, [ebp+mon_real_base]
+    shl ecx, 12
+    mov cx, [ebp+dpmi_bridge_soft_stubs+ebx*2]
+    mov eax, [edx*4]
+    cmp eax, ecx
+    je .soft_saved
+    mov [ebp+dpmi_bridge_soft_vectors+ebx*4], eax
+.soft_saved:
+    mov [edx*4], ecx
+    inc ebx
+    cmp ebx, BRIDGE_SOFT_COUNT
+    jb .software
     mov byte [ebp+dpmi_bridge_installed], 1
     popad
     ret
 
 dpmi_bridge_remove:
     pushad
+    call dpmi_pic_restore
     mov word [ebp+dpmi_bridge_mask], 0
     cmp byte [ebp+dpmi_bridge_installed], 0
     je .done
@@ -159,6 +174,21 @@ dpmi_bridge_remove:
     inc ebx
     cmp ebx, 16
     jb .irq
+    xor ebx, ebx
+.software:
+    movzx edx, byte [ebp+dpmi_bridge_soft_numbers+ebx]
+    mov eax, [ebp+mon_real_base]
+    shl eax, 12
+    mov ax, [ebp+dpmi_bridge_soft_stubs+ebx*2]
+    cmp [edx*4], eax
+    jne .soft_next
+    mov eax, [ebp+dpmi_bridge_soft_vectors+ebx*4]
+    mov [edx*4], eax
+.soft_next:
+    inc ebx
+    cmp ebx, BRIDGE_SOFT_COUNT
+    jb .software
+    mov byte [ebp+dpmi_bridge_soft_mask], 0
     mov byte [ebp+dpmi_bridge_installed], 0
 .done:
     popad
@@ -184,6 +214,13 @@ dpmi_bridge_real_vector:
     lea esi, [eax*4]
     cmp byte [ebp+dpmi_bridge_installed], 0
     je .done
+    xor ebx, ebx
+.software:
+    cmp al, [ebp+dpmi_bridge_soft_numbers+ebx]
+    je .soft_vector
+    inc ebx
+    cmp ebx, BRIDGE_SOFT_COUNT
+    jb .software
     movzx ebx, byte [ebp+mon_master]
     sub eax, ebx
     cmp eax, 8
@@ -202,10 +239,44 @@ dpmi_bridge_real_vector:
     cmp [esi], edx
     jne .done
     lea esi, [ebp+dpmi_bridge_vectors+eax*4]
+    jmp .done
+.soft_vector:
+    mov edx, [ebp+mon_real_base]
+    shl edx, 12
+    mov dx, [ebp+dpmi_bridge_soft_stubs+ebx*2]
+    cmp [esi], edx
+    jne .done
+    lea esi, [ebp+dpmi_bridge_soft_vectors+ebx*4]
 .done:
     pop edx
     pop ebx
     pop eax
+    ret
+
+; A reflected IRQ must finish the real chain that entered this bridge.
+dpmi_bridge_chained_vector:
+    call dpmi_bridge_real_vector
+    push ebx
+    push edx
+    mov edx, [ebp+dpmi_bridge_context]
+    test edx, edx
+    jz .done
+    cmp byte [edx+bridge_frame.software], 0
+    jne .done
+    movzx ebx, word [edx+bridge_frame.entry+2]
+    shl ebx, 4
+    movzx edx, word [edx+bridge_frame.entry]
+    add edx, ebx
+    movzx ebx, word [edx+44]
+    cmp ebx, 16
+    jae .done
+    call dpmi_bridge_vector
+    cmp al, dl
+    jne .done
+    lea esi, [ebp+dpmi_bridge_vectors+ebx*4]
+.done:
+    pop edx
+    pop ebx
     ret
 
 dpmi_bridge_update:
@@ -236,6 +307,30 @@ dpmi_bridge_update:
     cmp ebx, 16
     jb .irq
     mov [ebp+dpmi_bridge_mask], cx
+    xor ebx, ebx
+    xor ecx, ecx
+.software:
+    movzx edx, byte [ebp+dpmi_bridge_soft_numbers+ebx]
+    imul esi, edx, 6
+    lea esi, [ebp+mon_vectors+esi]
+    cmp word [esi+4], 0
+    je .soft_next
+    cmp word [esi+4], 3bh
+    je .soft_default
+    cmp word [esi+4], DPMI_STUB16
+    jne .soft_enable
+.soft_default:
+    imul eax, edx, 3
+    add eax, dpmi_default_vectors
+    cmp [esi], eax
+    je .soft_next
+.soft_enable:
+    bts ecx, ebx
+.soft_next:
+    inc ebx
+    cmp ebx, BRIDGE_SOFT_COUNT
+    jb .software
+    mov [ebp+dpmi_bridge_soft_mask], cl
     popad
     ret
 
@@ -291,6 +386,11 @@ dpmi_bridge_pm:
     mov eax, [esi]
     mov [edi+bridge_frame.switch], eax
     movzx ebx, word [esi+44]
+    mov byte [edi+bridge_frame.software], 0
+    test bx, 200h
+    jz .entry_ready
+    mov byte [edi+bridge_frame.software], 1
+.entry_ready:
     mov [ebp+dpmi_bridge_context], edi
     mov [ebp+dpmi_bridge_stack], edi
     mov [ebp+mon_tss+4], edi
@@ -307,6 +407,8 @@ dpmi_bridge_pm:
     mov [ebp+mon_return+12], eax
     movzx eax, word [ebp+dpmi_bridge_real_segment]
     mov [ebp+mon_return+16], eax
+    test bh, 2
+    jnz dpmi_bridge_soft_enter
     ; The interrupted real-mode code had interrupts enabled.
     mov byte [ebp+dpmi_vif], 1
     mov byte [ebp+dpmi_step_active], 0
@@ -327,6 +429,43 @@ dpmi_bridge_pm:
     mov es, ax
     mov ds, dx
     MON_IRETD
+
+dpmi_bridge_soft_enter:
+    and ebx, 0ffh
+    imul ebx, 6
+    lea ebx, [ebp+mon_vectors+ebx]
+    mov edx, [ebx]
+    mov ax, [ebx+4]
+    call dpmi_code_target
+    jc dpmi_locked_abort
+    push ebx
+    sub esp, 60
+    mov dword [esp+40], dpmi_bridge_return
+    mov dword [esp+44], 3bh
+    mov eax, 202h
+    call dpmi_virtual_flags
+    mov [esp+48], eax
+    mov eax, [ebp+dpmi_locked_cursor]
+    mov [esp+52], eax
+    mov dword [esp+56], DPMI_IRQ_SS
+    call dpmi_client_segments
+    movzx eax, ax
+    mov [esp], eax
+    movzx edx, dx
+    mov [esp+4], edx
+    mov ebx, [ebp+dpmi_bridge_context]
+    movzx esi, word [ebx+bridge_frame.entry+2]
+    shl esi, 4
+    movzx eax, word [ebx+bridge_frame.entry]
+    add esi, eax
+    add esi, 12
+    lea edi, [esp+8]
+    mov ecx, 8
+    cld
+    rep movsd
+    mov esi, [esp+60]
+    mov ebx, esp
+    jmp dpmi_deliver_software
 
 dpmi_bridge_return:
     int 0f5h
@@ -355,9 +494,26 @@ dpmi_bridge_done:
     jne dpmi_locked_abort
     cmp word [esp+56], DPMI_IRQ_SS
     jne dpmi_locked_abort
+    cmp byte [ebx+bridge_frame.software], 0
+    je .hardware_stack
+    movzx edi, word [ebx+bridge_frame.entry+2]
+    shl edi, 4
+    movzx eax, word [ebx+bridge_frame.entry]
+    add edi, eax
+    mov byte [ebp+dpmi_bridge_soft_active], 0
+%assign soft_reg 0
+%rep 8
+%if soft_reg != 12
+    mov eax, [esp+8+soft_reg]
+    mov [edi+12+soft_reg], eax
+%endif
+%assign soft_reg soft_reg+4
+%endrep
+.hardware_stack:
     mov eax, [ebx+bridge_frame.locked_cursor]
     cmp [esp+52], eax
     jne dpmi_locked_abort
+    mov eax, [ebx+bridge_frame.locked_cursor]
     cmp [ebp+dpmi_locked_cursor], eax
     jne dpmi_locked_abort
     mov eax, [ebx+bridge_frame.locked_depth]
@@ -433,6 +589,36 @@ dpmi_bridge_context dd 0
 dpmi_bridge_depth dd 0
 
 HOST_REAL
+dpmi_bridge_soft_numbers db 1ch
+dpmi_bridge_soft_stubs dw dpmi_bridge_soft_0
+dpmi_bridge_soft_vectors times BRIDGE_SOFT_COUNT dd 0
+dpmi_bridge_soft_mask db 0
+dpmi_bridge_soft_active db 0
+
+%assign soft 0
+%rep BRIDGE_SOFT_COUNT
+dpmi_bridge_soft_%+soft:
+    pushf
+    test byte [cs:dpmi_bridge_soft_mask], 1<<soft
+    jz .chain
+    test byte [cs:dpmi_bridge_soft_active], 1<<soft
+    jnz .chain
+%if soft = 0
+%ifdef RESIDENT_HOST
+    cmp byte [cs:resident_refill_busy], 0
+    jne .chain
+%endif
+%endif
+    or byte [cs:dpmi_bridge_soft_active], 1<<soft
+    popf
+    push strict word 21ch
+    jmp dpmi_bridge_enter
+.chain:
+    popf
+    jmp far [cs:dpmi_bridge_soft_vectors+soft*4]
+%assign soft soft+1
+%endrep
+
 dpmi_bridge_stubs:
 %assign irq 0
 %rep 16
@@ -512,6 +698,9 @@ dpmi_bridge_defer:
 .eoi:
     out 20h, al
     bts word [cs:dpmi_pending_irqs], bx
+%ifdef RESIDENT_HOST
+    bts word [cs:dpmi_physical_pending], bx
+%endif
     pop bx
     pop ax
     pop bp

@@ -2,6 +2,84 @@
 ; SPDX-License-Identifier: GPL-3.0-only
 
 HOST_PROTECTED
+dpmi_vendor_query:
+    mov ax, [ebx+4]
+    mov edx, [ebx+12]
+    cmp byte [ebp+dpmi_client16], 0
+    je .offset
+    movzx edx, dx
+.offset:
+    mov ecx, 7
+    xor edi, edi
+    call dpmi_read_buffer
+    jc .unknown
+    cmp dword [eax], 'MS-D'
+    jne .unknown
+    cmp word [eax+4], 'OS'
+    jne .unknown
+    cmp byte [eax+6], 0
+    jne .unknown
+    call dpmi_stub_selector
+    mov [ebx], ax
+    mov dword [ebx+8], dpmi_vendor_pm
+    cmp byte [ebp+dpmi_client16], 0
+    je .entry_ready
+    mov dword [ebx+8], dpmi_vendor_pm16
+.entry_ready:
+    mov byte [ebx+36], 0
+.unknown:
+    jmp mon_dpmi.done
+
+dpmi_vendor_pm:
+    cmp ax, 0100h
+    jne .bad
+    mov ax, 0ff00h
+    int 31h
+.returned:
+    retf
+.bad:
+    stc
+    retf
+
+bits 16
+dpmi_vendor_pm16:
+    cmp ax, 0100h
+    jne .bad
+    mov ax, 0ff00h
+    int 31h
+.returned:
+    retf
+.bad:
+    stc
+    retf
+bits 32
+
+dpmi_vendor_ldt:
+    cmp word [ebx+44], 3bh
+    jne .client16
+    cmp dword [ebx+40], dpmi_vendor_pm.returned
+    je .allocate
+    jmp mon_dpmi.unsupported
+.client16:
+    cmp word [ebx+44], DPMI_STUB16
+    jne mon_dpmi.unsupported
+    cmp dword [ebx+40], dpmi_vendor_pm16.returned
+    jne mon_dpmi.unsupported
+.allocate:
+    mov ecx, 1
+    call dpmi_descriptor_allocate
+    jc mon_dpmi.unsupported
+    mov [ebx+36], ax
+    lea eax, [ebp+dpmi_ldt]
+    mov word [esi], DPMI_LDT_COUNT*8-1
+    mov [esi+2], ax
+    shr eax, 16
+    mov [esi+4], al
+    mov byte [esi+5], 0f0h
+    mov byte [esi+6], 0
+    mov [esi+7], ah
+    jmp mon_dpmi.success
+
 dpmi_state_addresses:
     mov word [ebx+36], 0
     mov eax, [ebp+mon_real_base]

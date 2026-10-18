@@ -612,15 +612,8 @@ usage_message db 'UCDD -install [-units n]'
 %endif
     db 13,10
     db 'UCDD -mount image [-drive d]',13,10
-    db 'UCDD -unmount [image] [-drive d]',13,10,13,10
-    db 'n: 1 to 4 drives; d: uCDD drive letter.',13,10
-%ifdef RESIDENT_AUDIO
-%ifdef EMS_QUEUE
-    db '-ems: EMS CD audio queue.',13,10
-%endif
-    db '-vcpi: VCPI programs bypass uCDD audio.',13,10
-%endif
-    db 'image: ISO, CUE, BIN, or MDM (up to 10 discs).',13,10,'$'
+    db 'UCDD -unmount [image] [-drive d]',13,10
+    db 'n: 1 to 4; d: drive letter.',13,10,'$'
 no_drives_message db 'No uCDD drive is available.',13,10,'$'
 full_message db 'No free uCDD drives.',13,10,'$'
 empty_message db 'No image is mounted on this drive.',13,10,'$'

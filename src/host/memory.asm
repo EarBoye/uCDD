@@ -8,21 +8,46 @@ dpmi_memory_init:
     ret
 %endif
     pushad
+    xor eax, eax
+    mov [ebp+dpmi_block_count], eax
+    mov [ebp+dpmi_block_pages], eax
+    lea edi, [ebp+dpmi_blocks_page]
+    mov ecx, DPMI_BLOCK_PAGES*2
+    cld
+    rep stosd
+    call dpmi_blocks_grow
+.done:
+    popad
+    ret
+
+; Grow the block table below the locked-stack window.
+dpmi_blocks_grow:
+    pushad
+    mov ebx, [ebp+dpmi_block_pages]
+    cmp ebx, DPMI_BLOCK_PAGES
+    jae .full
     call dpmi_page_allocate
-    jc .done
-    mov [ebp+dpmi_blocks_page], edx
-    mov eax, [0ffc00ff4h]
-    mov [ebp+dpmi_blocks_pte], eax
+    jc .full
+    mov [ebp+dpmi_blocks_page+ebx*4], edx
+    mov eax, [DPMI_BLOCK_PTE+ebx*4]
+    mov [ebp+dpmi_blocks_pte+ebx*4], eax
     or edx, 3
-    mov [0ffc00ff4h], edx
+    mov [DPMI_BLOCK_PTE+ebx*4], edx
     call dpmi_flush
-    mov edi, dpmi_blocks
+    mov edi, ebx
+    shl edi, 12
+    add edi, dpmi_blocks
     xor eax, eax
     mov ecx, 1024
     cld
     rep stosd
+    inc dword [ebp+dpmi_block_pages]
+    add dword [ebp+dpmi_block_count], 256
     clc
-.done:
+    popad
+    ret
+.full:
+    stc
     popad
     ret
 
@@ -156,14 +181,15 @@ dpmi_memory_allocate:
     and eax, 0fffff000h
     mov ecx, eax
     mov esi, dpmi_blocks
-    mov edi, DPMI_BLOCK_COUNT
+    mov edi, [ebp+dpmi_block_count]
 .slot:
     cmp dword [esi], 0
     je .found
     add esi, 16
     dec edi
     jnz .slot
-    jmp .full
+    call dpmi_blocks_grow
+    jc .full
 .found:
     mov [esi+8], edx
     cmp dword [ebp+dpmi_map_source], 0
@@ -181,7 +207,7 @@ dpmi_memory_allocate:
     lea eax, [edx+ecx]
     cmp eax, 10000000h
     ja .full
-    mov ebx, DPMI_BLOCK_COUNT
+    mov ebx, [ebp+dpmi_block_count]
 .range:
     cmp dword [edi], 0
     je .next
@@ -329,7 +355,7 @@ dpmi_memory_grow:
 
 dpmi_memory_find:
     mov esi, dpmi_blocks
-    mov ecx, DPMI_BLOCK_COUNT
+    mov ecx, [ebp+dpmi_block_count]
 .scan:
     cmp dword [esi], 0
     je .next
@@ -346,18 +372,6 @@ dpmi_memory_find:
 
 dpmi_memory_release:
     pushad
-    ; Freed code can come back at the same address. Forget its CLI sites.
-    mov ecx, DPMI_CLI_SITES
-.site:
-    mov eax, [ebp+dpmi_cli_linear+ecx*4-4]
-    sub eax, [esi]
-    shr eax, 12
-    cmp eax, [esi+4]
-    jae .site_next
-    mov dword [ebp+dpmi_cli_linear+ecx*4-4], 0
-    mov byte [ebp+dpmi_cli_score+ecx-1], 0
-.site_next:
-    loop .site
     mov edi, [esi]
     mov ecx, [esi+4]
     jecxz .empty
@@ -415,7 +429,7 @@ dpmi_memory_cleanup:
     cmp dword [ebp+dpmi_blocks_page], 0
     je .done
     mov esi, dpmi_blocks
-    mov ecx, DPMI_BLOCK_COUNT
+    mov ecx, [ebp+dpmi_block_count]
 .block:
     cmp dword [esi], 0
     je .next
@@ -430,12 +444,19 @@ dpmi_memory_cleanup:
     call dpmi_page_free
     jmp .pool
 .metadata:
+    mov ebx, [ebp+dpmi_block_pages]
+.metadata_page:
+    dec ebx
     xor edx, edx
-    xchg edx, [ebp+dpmi_blocks_page]
-    mov eax, [ebp+dpmi_blocks_pte]
-    mov [0ffc00ff4h], eax
+    xchg edx, [ebp+dpmi_blocks_page+ebx*4]
+    mov eax, [ebp+dpmi_blocks_pte+ebx*4]
+    mov [DPMI_BLOCK_PTE+ebx*4], eax
     call dpmi_flush
     call dpmi_page_free
+    test ebx, ebx
+    jnz .metadata_page
+    mov [ebp+dpmi_block_count], ebx
+    mov [ebp+dpmi_block_pages], ebx
 %ifdef DPMI_CLEANUP_FAULT
     ud2
 %endif
@@ -452,7 +473,7 @@ dpmi_largest_gap:
 .gap:
     mov ecx, 10000000h
     mov esi, dpmi_blocks
-    mov eax, DPMI_BLOCK_COUNT
+    mov eax, [ebp+dpmi_block_count]
 .scan:
     cmp dword [esi], 0
     jne .occupied
@@ -490,6 +511,8 @@ dpmi_largest_gap:
 .done:
     test edi, edi
     jnz .result
+    cmp dword [ebp+dpmi_block_pages], DPMI_BLOCK_PAGES
+    jb .result
     xor ebx, ebx
 .result:
     mov [esp+28], ebx
@@ -527,13 +550,13 @@ dpmi_page_allocate:
     mov edx, [ebp+dpmi_pool_head]
     test edx, edx
     jz .vcpi
-    ; Borrow the metadata mapping while interrupts are disabled.
+    ; Use a temporary mapping for a pooled page.
     mov ebx, [0ffc00ff4h]
     mov eax, edx
     or eax, 3
     mov [0ffc00ff4h], eax
     call dpmi_flush
-    mov eax, [dpmi_blocks]
+    mov eax, [DPMI_PAGE_SCRATCH]
     mov [ebp+dpmi_pool_head], eax
     dec dword [ebp+dpmi_pool_count]
     mov [0ffc00ff4h], ebx
@@ -580,10 +603,14 @@ dpmi_flush:
 
 align 4
 dpmi_next_handle dd 0
-dpmi_blocks equ 3fd000h
-DPMI_BLOCK_COUNT equ 256
-dpmi_blocks_page dd 0
-dpmi_blocks_pte dd 0
+dpmi_blocks equ 3d0000h
+DPMI_BLOCK_PAGES equ 16
+DPMI_BLOCK_PTE equ 0ffc00000h+(dpmi_blocks >> 12)*4
+DPMI_PAGE_SCRATCH equ 3fd000h
+dpmi_block_count dd 0
+dpmi_block_pages dd 0
+dpmi_blocks_page times DPMI_BLOCK_PAGES dd 0
+dpmi_blocks_pte times DPMI_BLOCK_PAGES dd 0
 dpmi_pool_head dd 0
 dpmi_pool_count dd 0
 dpmi_map_source dd 0
@@ -623,7 +650,7 @@ dpmi_physical_unmap:
     mov ax, [ebx+32]
     and eax, 0fffff000h
     mov esi, dpmi_blocks
-    mov ecx, DPMI_BLOCK_COUNT
+    mov ecx, [ebp+dpmi_block_count]
 .find:
     cmp dword [esi], 0
     je .next

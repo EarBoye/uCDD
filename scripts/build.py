@@ -11,6 +11,8 @@ import subprocess
 
 ROOT = Path(__file__).resolve().parent.parent
 BUILD = ROOT / 'build'
+HOST_OVERLAY_OFFSET = 65536 + 32
+DRIVER_ENTRY_IP = 32
 
 
 def assemble(source, name, defines=(), exe=False, listing=False):
@@ -19,6 +21,10 @@ def assemble(source, name, defines=(), exe=False, listing=False):
     if not nasm:
         raise SystemExit('NASM is required.')
     output = BUILD / name
+    entry_ip = 0
+    if (ROOT / source).resolve() == (ROOT / 'src/ucdd.asm').resolve():
+        entry_ip = DRIVER_ENTRY_IP
+        defines = (*defines, f'UCDD_ENTRY_IP={entry_ip}')
     subprocess.run([nasm, '-f', 'bin', '-I', str(ROOT / 'src') + '/',
                     *(['-l', str(output.with_suffix('.lst'))] if listing else []),
                     *['-D' + value for value in defines], str(ROOT / source),
@@ -30,7 +36,7 @@ def assemble(source, name, defines=(), exe=False, listing=False):
             raise ValueError('The program exceeds one DOS segment.')
         size = 32 + len(payload)
         header = struct.pack('<14H', 0x5a4d, size % 512, (size + 511) // 512,
-                             0, 2, 64, 64, stack_segment, 1024, 0, 0, 0, 28, 0)
+                             0, 2, 64, 64, stack_segment, 1024, 0, entry_ip, 0, 28, 0)
         output.write_bytes(header.ljust(32, b'\0') + payload)
     print(f'{name}: {output.stat().st_size} bytes')
 
@@ -79,12 +85,12 @@ def assemble_resident_host(defines=(), profile=False):
     if len(host) > 65535:
         raise ValueError('The host exceeds one segment.')
     resident_defines = ('RESIDENT_AUDIO=1', 'OWN_HOST=1', f'OWN_HOST_SIZE={len(host)}', *defines)
-    assemble('src/ucdd.asm', 'UCDD.EXE', (*resident_defines, 'OWN_HOST_OFFSET=65536'), exe=True, listing=True)
+    assemble('src/ucdd.asm', 'UCDD.EXE', (*resident_defines, f'OWN_HOST_OFFSET={HOST_OVERLAY_OFFSET}'), exe=True, listing=True)
     program = (BUILD / 'UCDD.EXE').read_bytes()
-    if len(program) > 65536:
+    if len(program) > HOST_OVERLAY_OFFSET:
         raise ValueError('The driver overlaps its host overlay.')
-    (BUILD / 'UCDD.EXE').write_bytes(program.ljust(65536, b'\0') + host)
-    print(f'UCDD.EXE with internal host: {65536 + len(host)} bytes')
+    (BUILD / 'UCDD.EXE').write_bytes(program.ljust(HOST_OVERLAY_OFFSET, b'\0') + host)
+    print(f'UCDD.EXE with internal host: {HOST_OVERLAY_OFFSET + len(host)} bytes')
 
 
 def assemble_player():

@@ -1,3 +1,43 @@
+# Beta 0.9.4
+
+## Changes in 0.9.4
+
+- Add a Cubes visualization to UCDDPLAY. Eight rotating wireframe cubes change size with the frequency levels.
+
+- Support the Borland runtime used by Super Street Fighter II Turbo. Translate its protected-mode DOS buffers and PSP queries, supply its vendor API, and accept unchanged CR0 writes.
+- Clear the direction flag before preparing DOS register frames and preserve interrupted registers across protected-mode hardware handlers. This fixes startup and gameplay crashes in Super Street Fighter II Turbo.
+- Add Super Street Fighter II Turbo to the list of working Redbook-audio games. Start SF2TURBO directly to bypass MAKESWP.
+- Grow the DPMI memory-block table in extended memory when needed. This fixes false out-of-memory errors in Carmageddon's high-resolution and 3dfx modes when the game needs more than 256 memory blocks.
+- Add MechWarrior 2: 31st Century Combat and MechWarrior 2: Mercenaries to the list of working Redbook-audio games.
+- Forward real-mode BIOS timer callbacks to protected-mode DPMI handlers.
+- Support demand-mode DMA and PIC special mask mode used by Wipeout. Use a specific EOI for the output IRQ so that the mixer can run when the game masks an interrupt.
+- Accept word and dword PIC acknowledgements used by the Wipeout intro. Keep the interrupt mask unchanged and preserve real IRQ acknowledgement ownership.
+- Preserve deferred physical IRQs when a protected-mode program ends. Complete them on the restored real-mode interrupt chain, and keep pending IRQs when a child returns to its parent. This fixes ignored keyboard input after the Wipeout intro.
+- Decode simple 16-bit register instructions in bounded groups, and read the code size again for each instruction.
+- Add The Settlers II: Veni, Vidi, Vici (DOS Gold Edition 1.51) to the list of working Redbook-audio games.
+- Add Wipeout to the list of working Redbook-audio games.
+- Preserve the saved real-mode interrupt chain when a protected-mode handler returns through the same hardware interrupt bridge. This fixes the Fatal Racing intro startup freeze.
+- Hide VCPI detection from child programs while a protected-mode parent is active. This keeps movie sound inside the audio host and fixes the return from movies in Fatal Racing and Worms United.
+- Accept Sound Blaster playback requests made before the game programs its masked DMA channel. Read the selected DMA mode port through the physical backend. This fixes missing sound effects and the sound setup error in Manic Karts.
+- Add Fatal Racing and Manic Karts to the list of working Redbook-audio games.
+- Add Hyper 3-D Pinball to the list of working Redbook-audio games.
+- Add Earthworm Jim to the list of working Redbook-audio games.
+- Add Earthworm Jim 2 to the list of working Redbook-audio games.
+- Put the CD-ROM device header at offset zero. This fixes the driver entry address used by Mortal Kombat 3 during startup.
+- Add Mortal Kombat 3 to the list of working Redbook-audio games.
+- Add Worms United to the list of working Redbook-audio games.
+- Add World Rally Fever: Born on the Road to the list of working Redbook-audio games.
+- Add Rise 2: Resurrection (Director's Cut DOS edition) to the list of working Redbook-audio games.
+- Add Eradicator (DOS Release Version 1.0) to the list of working Redbook-audio games.
+- Add Shattered Steel (DOS 1.14) to the list of working Redbook-audio games.
+- Accept a CLTS instruction in virtual-8086 mode when the task-switched bit is already clear. This fixes the first startup fault in the DOS4GW 1.6 runtime used by Diggers 2.
+- Hide VCPI detection through simulated real-mode interrupts. Keep VCPI access available for the host's own startup query.
+- Preserve virtual interrupt flags when a CLI call uses different return paths. This fixes the timer wait during Diggers 2 startup.
+- Accept stereo DMA blocks with an odd number of 16-bit samples. This fixes missing sound effects in Surface Tension.
+- Add Surface Tension to the list of working Redbook-audio games.
+- Add Heroes of Might and Magic II: The Succession Wars (DOS base game from Deluxe Edition) to the list of working Redbook-audio games.
+- Add Diggers 2: Extractors to the list of working Redbook-audio games.
+
 # Beta 0.9.3d
 
 ## Changes in 0.9.3d

@@ -127,7 +127,7 @@ dpmi_dos16:
 
 .path:
     mov ax, [ebx+4]
-    movzx edx, word [ebx+28]
+    call .offset_dx
     xor ecx, ecx
     call .string_in
     jc .bad_pointer
@@ -139,6 +139,10 @@ dpmi_dos16:
 .open_extended:
     mov ax, [ebx+4]
     movzx edx, word [ebx+12]
+    cmp byte [ebp+dpmi_client16], 0
+    jne .open_offset
+    mov edx, [ebx+12]
+.open_offset:
     xor ecx, ecx
     call .string_in
     jc .bad_pointer
@@ -234,16 +238,16 @@ dpmi_dos16:
     jmp .keep_dx
 
 .read:
-    movzx ecx, word [ebx+32]
+    call .count_cx
     test ecx, ecx
     jz .write_empty
     mov ax, [ebx+4]
-    movzx edx, word [ebx+28]
+    call .offset_dx
     call .write_ptr
     jc .bad_pointer
     mov [ebp+dpmi_dos16_target], eax
     mov dword [ebp+dpmi_dos16_done], 0
-    movzx eax, word [ebx+32]
+    mov eax, ecx
     mov [ebp+dpmi_dos16_left], eax
 .read_chunk:
     call .chunk
@@ -263,16 +267,16 @@ dpmi_dos16:
     jmp .transfer_next
 
 .write:
-    movzx ecx, word [ebx+32]
+    call .count_cx
     test ecx, ecx
     jz .write_empty
     mov ax, [ebx+4]
-    movzx edx, word [ebx+28]
+    call .offset_dx
     call .read_ptr
     jc .bad_pointer
     mov [ebp+dpmi_dos16_target], eax
     mov dword [ebp+dpmi_dos16_done], 0
-    movzx eax, word [ebx+32]
+    mov eax, ecx
     mov [ebp+dpmi_dos16_left], eax
 .write_chunk:
     call .chunk
@@ -296,7 +300,13 @@ dpmi_dos16:
     jne .transfer_more
 .transfer_done:
     mov eax, [ebp+dpmi_dos16_done]
+    cmp byte [ebp+dpmi_client16], 0
+    jne .transfer_word
+    mov [ebx+36], eax
+    jmp .transfer_flags
+.transfer_word:
     mov [ebx+36], ax
+.transfer_flags:
     and byte [ebx+48], 0feh
     jmp mon_dpmi.done
 .transfer_more:
@@ -683,6 +693,20 @@ dpmi_dos16:
     xor edi, edi
     call dpmi_buffer
     pop edi
+    ret
+.offset_dx:
+    movzx edx, word [ebx+28]
+    cmp byte [ebp+dpmi_client16], 0
+    jne .offset_done
+    mov edx, [ebx+28]
+.offset_done:
+    ret
+.count_cx:
+    movzx ecx, word [ebx+32]
+    cmp byte [ebp+dpmi_client16], 0
+    jne .count_done
+    mov ecx, [ebx+32]
+.count_done:
     ret
 .write_ptr:
     push edi

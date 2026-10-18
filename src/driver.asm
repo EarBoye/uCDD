@@ -1,8 +1,6 @@
 ; SPDX-FileCopyrightText: 2026 vorvek
 ; SPDX-License-Identifier: GPL-3.0-only
 
-    jmp command_entry
-
 header:
     dd 0ffffffffh
     dw 0c800h
@@ -14,6 +12,13 @@ unit_count db 1
     db 'uCDD'
     dw 2
     dw control, 0
+%ifndef UCDD_ENTRY_IP
+%define UCDD_ENTRY_IP 32
+%endif
+%if ($-$$) != UCDD_ENTRY_IP
+%error The driver header size does not match the EXE entry point.
+%endif
+    jmp command_entry
 
 request dd 0
 active_request dd 0

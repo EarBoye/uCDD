@@ -377,7 +377,8 @@ audio_irq:
 %endif
 %endif
 .eoi:
-    mov al, 20h
+    mov al, [sb_irq]
+    or al, 60h
     mov dx, 20h
     call physical_write
 %ifdef OWN_HOST

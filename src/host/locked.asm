@@ -4,6 +4,7 @@
 HOST_PROTECTED
 %define DPMI_LOCK_BASE 3e0000h
 %define DPMI_LOCK_LEVELS 4
+%define DPMI_HARDWARE_FRAME 68
 dpmi_locked_init:
     pushad
     xor ebx, ebx
@@ -158,6 +159,13 @@ dpmi_client_segs times 4 dw 0
 dpmi_raw_segs dd 0
 
 dpmi_deliver_hardware:
+    push dword 48495251h
+    jmp dpmi_deliver_locked
+
+dpmi_deliver_software:
+    push dword 53495251h
+
+dpmi_deliver_locked:
     call dpmi_locked_capture
     call dpmi_stack_acquire
     push esi
@@ -168,11 +176,19 @@ dpmi_deliver_hardware:
     jc dpmi_locked_abort
     mov edi, [ebp+dpmi_locked_cursor]
     mov edx, edi
-    sub edi, 28
+    sub edi, DPMI_HARDWARE_FRAME
     mov [ebp+dpmi_locked_cursor], edi
     add edi, DPMI_LOCK_BASE
     mov [edi+20], edx
-    mov dword [edi+24], 48495251h
+    pop dword [edi+24]
+    push dword [edi+24]
+    ; Keep the interrupted registers across the client handler.
+%assign saved_reg 0
+%rep 10
+    mov eax, [ebx+saved_reg]
+    mov [edi+28+saved_reg], eax
+%assign saved_reg saved_reg+4
+%endrep
     mov eax, [ebx+40]
     mov [edi], eax
     mov eax, [ebx+44]
@@ -207,7 +223,11 @@ dpmi_deliver_hardware:
     mov [ebx+44], eax
     and word [ebx+48], 0feffh
     or word [ebx+48], 200h
+    pop eax
+    cmp eax, 53495251h
+    je .software_flags
     mov word [ebp+dpmi_vif], 0
+.software_flags:
     inc dword [ebp+dpmi_locked_depth]
     jmp mon_dpmi.done
 
@@ -243,18 +263,21 @@ dpmi_locked_done:
     test eax, eax
     jz dpmi_locked_abort
     shl eax, 12
-    sub eax, 28
+    sub eax, DPMI_HARDWARE_FRAME
     cmp esi, eax
     ja dpmi_locked_abort
-    sub eax, 4096-28
+    sub eax, 4096-DPMI_HARDWARE_FRAME
     cmp esi, eax
     jb dpmi_locked_abort
     add esi, DPMI_LOCK_BASE
     cmp dword [esi+24], 48495251h
+    je .marker_ready
+    cmp dword [esi+24], 53495251h
     jne dpmi_locked_abort
+.marker_ready:
     mov eax, [esi+20]
     mov edx, [esp+52]
-    add edx, 28
+    add edx, DPMI_HARDWARE_FRAME
     cmp eax, edx
     jne dpmi_locked_abort
     push esi
@@ -267,6 +290,15 @@ dpmi_locked_done:
     mov ax, [esi+16]
     call dpmi_stack_target
     jc dpmi_locked_abort
+    cmp dword [esi+24], 53495251h
+    je .registers_ready
+%assign saved_reg 0
+%rep 10
+    mov eax, [esi+28+saved_reg]
+    mov [esp+saved_reg], eax
+%assign saved_reg saved_reg+4
+%endrep
+.registers_ready:
     lea edi, [esp+40]
     mov ecx, 5
     cld

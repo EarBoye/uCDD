@@ -116,6 +116,7 @@ monitor_init:
     jz .bad
     mov ax, 0de00h
     int 67h
+.vcpi_query_return:
     test ah, ah
     jnz .bad
 %ifndef RESIDENT_HOST
@@ -792,6 +793,15 @@ mon_dpmi:
     MON_IRETD
 
 ; Ring 0, EBP=module base, EDI=flat register frame, AX=real interrupt.
+%ifdef HOST_DPMI
+mon_real_irq:
+    push dword 0
+    mov byte [ebp+mon_rm_kind], 0
+    mov [ebp+mon_int_opcode+1], al
+    push esi
+    call dpmi_bridge_chained_vector
+    jmp mon_real_int_vector
+%endif
 mon_real_int:
     push dword 0
     jmp mon_real_int_start
@@ -803,6 +813,7 @@ mon_real_int_start:
 %ifdef HOST_DPMI
     push esi
     call dpmi_bridge_real_vector
+mon_real_int_vector:
     cmp esi, 1024
     jb .ordinary
     push eax
@@ -1028,8 +1039,6 @@ mon_exception:
     jz .ordinary_exception
     mov ebx, esp
     cld
-    call dpmi_quiet_limit
-    jc .step_full
     HOST_SAMPLE_STEP
     call dpmi_step_check
     ; VIF stays clear: skip IRQ/refill checks, but retain stack repair.
@@ -1215,6 +1224,8 @@ mon_exception:
     jc .fault
     cmp al, 20h
     je .control_read
+    cmp al, 22h
+    je .control_write
     call dpmi_debug_move
     jc .fault
     cmp byte [ebp+dpmi_debug_pending], 0
@@ -1224,6 +1235,10 @@ mon_exception:
     jmp .fault
 .control_read:
     call dpmi_cr0_read
+    jc .fault
+    jmp .advance
+.control_write:
+    call dpmi_cr0_write
     jc .fault
     jmp .advance
 %endif
@@ -1253,10 +1268,7 @@ mon_exception:
     je .cli_quiet
     mov ebx, esp
     call dpmi_tf_inject
-    jnc .cli_unstepped
-    call dpmi_cli_site_check
-    jnc .step_cli
-.cli_unstepped:
+    jc .step_cli
     mov byte [ebp+dpmi_step_active], 0
 .cli_quiet:
     and word [esp+56], 0feffh
@@ -1355,7 +1367,31 @@ mon_exception:
     jmp mon_leave
 
 %ifdef HOST_DPMI
-; CPU detection can read CR0. Control-register writes remain privileged.
+; Permit CR0 reads and unchanged writes from client runtimes.
+dpmi_cr0_write:
+    pushad
+    inc edi
+    call mon_gp_fetch
+    jc .bad
+    cmp al, 0c0h
+    jb .bad
+    cmp al, 0c7h
+    ja .bad
+    inc edi
+    and eax, 7
+    movzx esi, byte [ebp+dpmi_full_registers+eax]
+    mov eax, cr0
+    cmp [ebx+esi], eax
+    jne .bad
+    mov [esp], edi
+    popad
+    clc
+    ret
+.bad:
+    popad
+    stc
+    ret
+
 dpmi_cr0_read:
     pushad
     inc edi

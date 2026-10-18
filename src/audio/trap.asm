@@ -315,6 +315,7 @@ port_callback:
 %endif
     jmp .done
 .reset:
+    mov byte [dma_pending_command], 0
     mov byte [sb_id_value], 0aah
     mov byte [sb_id_phase], 0
     mov byte [sb_dac_enabled], 0
@@ -477,8 +478,8 @@ port_callback:
 .mode_channel:
     cmp ah, bl
     jne .unowned_dma
-    and al, 0fch
-    or al, 1
+    and al, 0bch
+    or al, 41h
     cmp al, 49h
     je .set_mode
     cmp al, 59h
@@ -748,6 +749,7 @@ port_callback:
     mov byte [arguments], 2
     jmp .done
 .play:
+    mov byte [dma_pending_command], 0
     ; Both FIFO modes use the same PCM conversion and block interrupts.
     or byte [dsp_command], 2
     mov byte [arguments], 3
@@ -756,6 +758,7 @@ port_callback:
     mov byte [arguments], 1
     jmp .done
 .legacy_start:
+    mov byte [dma_pending_command], 0
     mov ax, [legacy_block]
 .legacy_format:
     push ax
@@ -951,6 +954,17 @@ port_callback:
     jne .dma_selected
     mov si, dma16
 .dma_selected:
+    cmp byte [si+DMA_MASK], 0
+    je .dma_ready
+    cmp byte [arguments], 1
+    jne .dma_ready
+    mov [dma_pending_count], ax
+    mov [dma_pending_state], si
+    mov al, [dsp_command]
+    mov [dma_pending_command], al
+    mov byte [game_active], 0
+    jmp .argument_done
+.dma_ready:
 %ifdef RESIDENT_AUDIO
     cmp byte [host_backend], 2
     jne .dma_state_ready
@@ -1018,10 +1032,6 @@ port_callback:
     dec eax
     test ebx, eax
     jnz .unsupported
-    test edx, eax
-    jz .block_aligned
-    jmp .unsupported
-.block_aligned:
     cmp edx, ebx
     je .buffer_address
 %ifdef WSS_INPUT
@@ -1259,9 +1269,18 @@ port_callback:
     je .dma_read
     cmp dx, 2
     je .dma_read
+    cmp dx, 0bh
+    je .dma_mode_read
     cmp dx, 83h
     jne .unsupported
     mov al, [si+DMA_PAGE]
+    jmp .result
+.dma_mode_read:
+    cmp si, dma16
+    jne .dma_mode_physical
+    mov dl, 0d6h
+.dma_mode_physical:
+    call physical_read
     jmp .result
 .reset_read:
     mov al, 0ffh
@@ -1419,6 +1438,20 @@ port_callback:
 %endif
     mov [ss:bp+28], al
 .done:
+    cmp byte [dma_pending_command], 0
+    je .pending_done
+    cmp byte [arguments], 0
+    jne .pending_done
+    mov si, [dma_pending_state]
+    cmp byte [si+DMA_MASK], 0
+    jne .pending_done
+    mov ax, [dma_pending_count]
+    mov bl, [dma_pending_command]
+    mov [dsp_command], bl
+    mov byte [arguments], 1
+    mov byte [dma_pending_command], 0
+    jmp .validate_start
+.pending_done:
 %ifdef RESIDENT_AUDIO
     cmp dword [ss:ebp+12], 1
     jne .restore
@@ -1683,6 +1716,9 @@ old_callback dd 0
 port_calls dd 0
 last_clock dd 0
 game_start_pending db 0 ; 1: wait for mixing, 2: wait for output.
+dma_pending_command db 0
+dma_pending_count dw 0
+dma_pending_state dw 0
 game_dma dw dma8
 game_frame_shift db 0
 game_source db 0

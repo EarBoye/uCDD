@@ -79,11 +79,18 @@ dpmi_ems_name times 8 db 0
 dpmi_ems:
     cmp ax, 0de00h
     jne .chain
-    push ds
-    mov ds, [cs:dpmi_ems_gateway-dpmi_ems_base]
-    cmp byte [dpmi_active], 0
-    pop ds
-    jne .chain
+    push bp
+    mov bp, sp
+    push bx
+    mov bx, [cs:dpmi_ems_gateway-dpmi_ems_base]
+    ; Keep VCPI available to the host gateway, including nested clients.
+    cmp [ss:bp+4], bx
+    jne .checked
+    cmp word [ss:bp+2], monitor_init.vcpi_query_return
+.checked:
+    pop bx
+    pop bp
+    je .chain
     mov ah, 84h
     iret
 .chain:
@@ -167,6 +174,9 @@ dpmi_entry:
     mov [dpmi_client_ss], ax
     mov byte [dpmi_callback_active], 0
     mov dword [dpmi_pending_irqs], 0
+%ifdef RESIDENT_HOST
+    mov dword [dpmi_physical_pending], 0
+%endif
     call dpmi_ivt_snapshot
     mov ah, 51h
     int 21h
@@ -194,8 +204,6 @@ dpmi_entry:
     je .stack_ready
     mov ax, [dpmi_bridge_real_segment]
     add ax, 128
-    cmp byte [dpmi_client16], 0
-    je .stack_ready
     add ax, DPMI_XFER_PARAS
 .stack_ready:
     mov ss, ax
@@ -206,9 +214,20 @@ dpmi_entry:
     mov sp, 2048
 %endif
     sti
+%ifdef RESIDENT_HOST
+    pushf
+    cli
+%endif
     call monitor_run
+%ifdef RESIDENT_HOST
+    call dpmi_physical_handoff
+    cmp byte [dpmi_nested_depth], 0
+    je .complete_ready
+%endif
     mov byte [dpmi_active], 0
 %ifdef RESIDENT_HOST
+.complete_ready:
+    popf
     cmp byte [dpmi_nested_depth], 0
     je .free_stack
     cli
@@ -232,6 +251,7 @@ dpmi_entry:
     je .terminate
     call dpmi_nested_restore
 .terminate:
+    call dpmi_physical_complete
 %endif
     mov ah, 4ch
     int 21h
@@ -439,14 +459,6 @@ mon_iret:
 dpmi_client_init:
     call dpmi_debug_reset
     mov byte [ebp+dpmi_tf_armed], 0
-    mov dword [ebp+dpmi_cli_site], -1
-    lea edi, [ebp+dpmi_cli_linear]
-    xor eax, eax
-    mov ecx, DPMI_CLI_SITES
-    rep stosd
-    lea edi, [ebp+dpmi_cli_score]
-    mov ecx, DPMI_CLI_SITES
-    rep stosb
     mov byte [ebp+dpmi_sti_shadow], 0
     mov byte [ebp+dpmi_callback_sti], 0
     mov byte [ebp+dpmi_sti_sb_held], 0
@@ -628,6 +640,8 @@ dpmi_dispatch:
     je dpmi_raw_addresses
     cmp eax, 0400h
     je .version
+    cmp eax, 0ff00h
+    je dpmi_vendor_ldt
     cmp eax, 0501h
     je dpmi_allocate
     cmp eax, 0500h
@@ -952,12 +966,16 @@ dpmi_audio_irq db 0ffh
 dpmi_guest_irq db 5
 dpmi_guest_vector db 0dh
 dpmi_pending_irqs dd 0
+%ifdef RESIDENT_HOST
+dpmi_physical_pending dd 0
+%endif
 dpmi_sti_sb_held db 0
 dpmi_active db 0
 dpmi_audio_pm_handler db 0
 dpmi_virtual_entry dw dpmi_bridge_virtual
 dpmi_real_eoi db 0
-%if dpmi_audio_pm_handler-dpmi_active != 1 || dpmi_virtual_entry-dpmi_active != 2 || dpmi_real_eoi-dpmi_active != 4
+dpmi_real_priority db 0ffh
+%if dpmi_audio_pm_handler-dpmi_active != 1 || dpmi_virtual_entry-dpmi_active != 2 || dpmi_real_eoi-dpmi_active != 4 || dpmi_real_priority-dpmi_active != 5
     %error Invalid resident IRQ state layout
 %endif
 dpmi_psp dw 0

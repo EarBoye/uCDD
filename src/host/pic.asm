@@ -5,6 +5,8 @@ HOST_PROTECTED
 dpmi_pic_reset:
     mov word [ebp+dpmi_pic_service], 0
     mov byte [ebp+dpmi_real_eoi], 0
+    mov byte [ebp+dpmi_real_priority], 0ffh
+    mov word [ebp+dpmi_pic_special], 0
     mov word [ebp+dpmi_pic_read_mode], 0a0ah
     in al, 21h
     mov [ebp+dpmi_pic_mask], al
@@ -16,6 +18,9 @@ dpmi_pic_queue:
     push eax
     push edx
     bts [ebp+dpmi_pending_irqs], ebx
+%ifdef RESIDENT_HOST
+    bts [ebp+dpmi_physical_pending], ebx
+%endif
     mov eax, ebx
     mov dx, 20h
     cmp al, 8
@@ -43,6 +48,7 @@ dpmi_pic_next:
     movzx ebx, al
     or bl, [ebp+dpmi_pic_service]
     or bl, [ebp+dpmi_real_eoi]
+    and bl, [ebp+dpmi_real_priority]
     movzx ecx, word [ebp+dpmi_pic_mask]
     not ecx
     and ecx, [ebp+dpmi_pending_irqs]
@@ -55,6 +61,12 @@ dpmi_pic_next:
     mov dx, 0a0h
     call dpmi_pic_read_isr
     or al, [ebp+dpmi_pic_service+1]
+    cmp byte [ebp+dpmi_pic_special+1], 0
+    je .slave_priority
+    mov ah, [ebp+dpmi_pic_mask+1]
+    not ah
+    and al, ah
+.slave_priority:
     movzx eax, al
     bsf edi, esi
     bsf eax, eax
@@ -79,6 +91,9 @@ dpmi_pic_next:
     bts [ebp+dpmi_pic_service], eax
 .request:
     btr [ebp+dpmi_pending_irqs], eax
+%ifdef RESIDENT_HOST
+    btr [ebp+dpmi_physical_pending], eax
+%endif
     mov [esp+28], eax
     popad
     clc
@@ -170,6 +185,7 @@ dpmi_pic_audio_allowed:
     push eax
     mov al, [ebp+dpmi_pic_service]
     or al, [ebp+dpmi_real_eoi]
+    and al, [ebp+dpmi_real_priority]
     test al, cl
     pop eax
     jnz .blocked
@@ -207,7 +223,7 @@ dpmi_pic_io:
     jne .other
 .pic:
     cmp cl, 1
-    jne .bad
+    jne dpmi_pic_wide
     pushad
     xor ebx, ebx
     test dl, 80h
@@ -218,6 +234,10 @@ dpmi_pic_io:
     jz .read
     test dl, 1
     jnz .mask
+    cmp al, 48h
+    je .special_mode
+    cmp al, 68h
+    je .special_mode
     cmp al, 0ah
     je .mode
     cmp al, 0bh
@@ -230,6 +250,12 @@ dpmi_pic_io:
     jne .failure
     call dpmi_pic_read_isr
     or al, [ebp+dpmi_pic_service+ebx]
+    cmp byte [ebp+dpmi_pic_special+ebx], 0
+    je .eoi_priority
+    mov ah, [ebp+dpmi_pic_mask+ebx]
+    not ah
+    and al, ah
+.eoi_priority:
     movzx eax, al
     bsf eax, eax
     jz .forward
@@ -248,6 +274,13 @@ dpmi_pic_io:
     jmp .forward
 .mask:
     mov [ebp+dpmi_pic_mask+ebx], al
+    call dpmi_pic_priority
+    jmp .forward
+.special_mode:
+    mov ah, al
+    and ah, 20h
+    mov [ebp+dpmi_pic_special+ebx], ah
+    call dpmi_pic_priority
 .forward:
     popad
     jmp dpmi_pic_backend
@@ -285,6 +318,65 @@ dpmi_pic_io:
     ret
 .other:
     jmp [ebp+mon_callback]
+
+dpmi_pic_wide:
+    test ch, ch
+    jz dpmi_pic_io.bad
+    test dl, 1
+    jnz dpmi_pic_io.bad
+    cmp cl, 2
+    je .start
+    cmp cl, 4
+    jne dpmi_pic_io.bad
+.start:
+    cmp al, 20h
+    je .eoi
+    push ax
+    and al, 0f8h
+    cmp al, 60h
+    pop ax
+    jne dpmi_pic_io.bad
+.eoi:
+    push ecx
+    mov cl, 1
+    call dpmi_pic_io
+    pop ecx
+    ret
+
+dpmi_pic_priority:
+    push eax
+    mov al, 0ffh
+    cmp byte [ebp+dpmi_pic_special], 0
+    je .ready
+    mov al, [ebp+dpmi_pic_mask]
+    not al
+.ready:
+    mov [ebp+dpmi_real_priority], al
+    pop eax
+    ret
+
+dpmi_pic_restore:
+    pushad
+    xor ebx, ebx
+.controller:
+    cmp byte [ebp+dpmi_pic_special+ebx], 0
+    je .next
+    mov dx, 20h
+    test ebx, ebx
+    jz .port_ready
+    mov dx, 0a0h
+.port_ready:
+    mov al, 48h
+    mov ecx, 0101h
+    call dpmi_pic_backend
+    mov byte [ebp+dpmi_pic_special+ebx], 0
+.next:
+    inc ebx
+    cmp ebx, 2
+    jb .controller
+    call dpmi_pic_priority
+    popad
+    ret
 
 ; DX=command port, AL=backend ISR. Preserve controller read selection.
 dpmi_pic_read_isr:
@@ -371,3 +463,4 @@ dpmi_pic_backend:
 dpmi_pic_service dd 0
 dpmi_pic_mask dw 0ffffh
 dpmi_pic_read_mode dw 0a0ah
+dpmi_pic_special dw 0

@@ -85,6 +85,7 @@ resident_host_init:
 .slot_ready:
     and ah, 1
     mov [cs:mon_vcpi_flags_slot], ah
+    call host_v86_prepare
     mov [cs:resident_traps], cx
     mov [cs:resident_traps+2], ds
     movzx eax, bp
@@ -94,8 +95,11 @@ resident_host_init:
     add eax, ecx
     mov [cs:resident_game_vector], eax
     push edx
+    cmp dword [ds:bp+8], 34464443h
+    je .version3
     cmp dword [ds:bp+8], 33464443h
     jne .version2
+.version3:
     movzx edx, word [ds:bp+18]
     add edx, ecx
     mov [cs:resident_refill_clock], edx
@@ -179,6 +183,7 @@ resident_host_init:
     pop ds
 .vcpi_ready:
     pop ds
+    call host_v86_install
     popad
     pop es
     pop ds
@@ -960,7 +965,9 @@ resident_io:
     stc
     ret
 
+%include "host/v86.asm"
 %include "host/monitor.asm"
+%include "host/handoff.asm"
 
 HOST_REAL
 dpmi_sti_shadow db 0

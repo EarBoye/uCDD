@@ -3,6 +3,7 @@
 
 HOST_PROTECTED
 dpmi_dos_frame:
+    cld
     lea edi, [ebp+dpmi_dos_regs]
     push edi
     xor eax, eax
@@ -260,8 +261,22 @@ dpmi_dos_tile_room:
     ret
 
 dpmi_dos_translate:
+    cmp byte [ebp+dpmi_reflect_vector], 2fh
+    jne .dos
+    cmp word [ebx+36], 168ah
+    je dpmi_vendor_query
+.dos:
     cmp byte [ebp+dpmi_reflect_vector], 21h
     jne .ordinary
+    cmp byte [ebx+37], 51h
+    je .psp
+    cmp byte [ebx+37], 62h
+    je .psp
+    cmp byte [ebp+dpmi_client16], 0
+    jne .dos_memory
+    cmp byte [ebx+37], 09h
+    je .print
+.dos_memory:
     mov byte [ebp+dpmi_dos_via21], 1
     movzx eax, word [ebx+28]
     or eax, 10000h
@@ -282,6 +297,60 @@ dpmi_dos_translate:
 .dos16:
     cmp byte [ebp+dpmi_client16], 0
     jne dpmi_dos16
+    cmp byte [ebx+37], 3dh
+    je dpmi_dos16
+    cmp byte [ebx+37], 3fh
+    je dpmi_dos16
+    cmp byte [ebx+37], 40h
+    je dpmi_dos16
+    jmp .ordinary
+.psp:
+    call dpmi_dos_frame
+    mov eax, [ebx+36]
+    mov [edi+28], eax
+    mov word [edi+32], 202h
+    mov eax, 21h
+    call mon_real_int
+    mov ax, [edi+16]
+    cmp ax, [ebp+dpmi_psp]
+    jne .other_psp
+    mov ax, 27h
+    jmp .psp_result
+.other_psp:
+    call dpmi_segment_descriptor
+    jc .descriptor_full
+.psp_result:
+    mov [ebx+24], ax
+    jmp mon_dpmi.done
+.print:
+    mov edx, [ebx+28]
+    mov ecx, 65535
+.print_next:
+    push ecx
+    mov ax, [ebx+4]
+    mov ecx, 1
+    xor edi, edi
+    call dpmi_read_buffer
+    pop ecx
+    jc dpmi_error
+    cmp byte [eax], '$'
+    je .printed
+    pushad
+    movzx edx, byte [eax]
+    call dpmi_dos_frame
+    mov [edi+20], edx
+    mov word [edi+28], 0200h
+    mov word [edi+32], 202h
+    mov eax, 21h
+    call mon_real_int
+    popad
+    inc edx
+    loop .print_next
+    mov ax, 8021h
+    jmp dpmi_error
+.printed:
+    mov byte [ebx+36], '$'
+    jmp mon_dpmi.done
 .ordinary:
     call dpmi_dos_frame
     mov al, [ebp+dpmi_reflect_vector]
@@ -321,6 +390,9 @@ dpmi_dos_translate:
 .es_ready:
     mov [edi+34], ax
 .reflect:
+    lea esi, [ebp+mon_real_int]
+.reflect_call:
+    push esi
     push edi
     lea esi, [ebx+8]
     mov ecx, 8
@@ -328,7 +400,8 @@ dpmi_dos_translate:
     pop edi
     mov word [edi+32], 202h
     movzx eax, byte [ebp+dpmi_reflect_vector]
-    call mon_real_int
+    call [esp]
+    add esp, 4
     cmp byte [ebp+dpmi_reflect_vector], 10h
     jne .registers
     cmp word [ebx+36], 1130h
@@ -353,7 +426,8 @@ dpmi_dos_translate:
 .hardware:
     call dpmi_pic_reflect
     mov dword [edi+34], 0
-    jmp .reflect
+    lea esi, [ebp+mon_real_irq]
+    jmp .reflect_call
 
 ; Carry clear if the supported service has no segment-pointer inputs.
 dpmi_register_interrupt:
@@ -383,6 +457,8 @@ dpmi_register_interrupt:
     jne .no
     mov al, [ebx+37]
     cmp al, 30h
+    je .yes
+    cmp al, 02h
     je .yes
     cmp al, 19h
     je .yes

@@ -273,6 +273,7 @@ error_exit:
 %include "play/fft.asm"
 %include "play/vis.asm"
 %include "play/landscape.asm"
+%include "play/cubes.asm"
 %include "play/ui.asm"
 %include "play/input.asm"
 %include "play/text.asm"
@@ -470,6 +471,13 @@ tunnel_right dw 0
 tunnel_top dw 0
 tunnel_bottom dw 0
 tunnel_step dw 0
+cube_vertices times 8*6 db 0
+cube_index dw 0
+cube_radius dw 0
+cube_yaw_s dw 0
+cube_yaw_c dw 0
+cube_pitch_s dw 0
+cube_pitch_c dw 0
 time_minus db 0
 needle_x dw 0
 button_flash times BUTTON_COUNT db 0
