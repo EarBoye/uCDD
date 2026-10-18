@@ -164,7 +164,8 @@ it tables) and, when there is room, the 64000-byte screen copy.
 
 ## 6. How it was checked
 
-An emulator harness (Unicorn) loads UCDDPLAY.EXE's image as DOS would and
+With scripts/playcheck (its README says how to run it). An emulator
+harness (Unicorn) loads UCDDPLAY.EXE's image as DOS would and
 runs the player's own routines over a scripted session of 1500 frames: CD
 audio through `eq_hook` in driver-sized pieces (64 frames mostly, odd sizes
 too, and full-scale square waves), every bottom display, the scroller, the

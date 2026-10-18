@@ -19,6 +19,10 @@ again, install Blender and Pillow. Render `faceplate.py` and `logo.py` with
 Blender. `faceplate.py` writes the faceplate and a mask of its corner shells.
 Then run `assets.py` with the three images.
 
+`scripts/playcheck` runs the player's own routines in an emulator to check a
+change against an earlier build, frame by frame, and to profile it. It needs
+the Python packages listed in its README; the build does not.
+
 ## Size limits and what takes the room
 
 The resident driver is one 64 KB segment and the host image must fit a
