@@ -151,6 +151,13 @@ changed volumes.
   uCDD (runs on 86Box's own CD drive). Not yet on the PC. Open beside it:
   CD music in MKT's logos shows a ~80 ms repeat then 20 ms catch-up steps
   around the restarts, in D7 too; to be looked at.
+  A family fault, not MKT's (86Box, 28 games traced without and with the
+  fix): Theme Hospital, Dungeon Keeper, Redguard, Little Big Adventure 2,
+  Motor Mash, Time Commando, X-Men: Children of the Atom, GTA, Bust-A-Move
+  2, System Shock and Jagged Alliance had 15-77% of their blocks overrun,
+  and Heroes II, Oddworld, Test Drive Off-Road, Star Command Revolution,
+  Warcraft, Albion, Caesar II, The Settlers II and X-COM (DigPak) had their
+  EOIs swallowed without audible harm; with the fix all 0% (Motor Mash 1%).
 - Inca II's "not enough extended memory" is its Phar Lap 286 extender
   above 16 MB of free DPMI memory; not ours.
 - Super Street Fighter II Turbo: dropped (Michael, 18 Oct). Its 32RTM
