@@ -176,10 +176,20 @@ a block (23.2 ms) or more late. Michael's recording on the PC: x2.22
 game has it (18 and 19 Oct captures); the runs without uCDD do not. The
 CD music in the same recordings is exact. Not the stereo block length:
 B6h mode 30h with length 1024 interrupts every 23.2 ms under D7, as on
-the card [trace]. Suspects: the handler runs late through the DPMI host
-(compare F10), and F9 (the CT2290 stops at an unacknowledged block end,
-so a late game would pause there rather than hear stale data). Hexen
-(DOS/4GW too) chops some sounds on the PC: perhaps the same.
+the card [trace].
+
+**Cause [trace, 19 Oct]:** DOS/4GW passes IRQ 5 down to the Miles
+driver's real-mode handler with an INT to the hardware vector, and the
+DPMI host marked the next EOI as a stray one for every hardware vector it
+reflected so, as if it had queued the IRQ and sent its EOI itself. For
+the virtual interrupt it had not: the game's EOI was swallowed, the
+virtual interrupt stayed in service, and block after block ended with the
+previous interrupt unacknowledged (58% of them; none of the game's EOIs
+ended it) until some other EOI did. **Fixed** on branch `stray-eoi`: the
+mark only when the host held the IRQ in service. 86Box: no block ends
+over an unacknowledged one, the sounds x1.00 against the run without
+uCDD. Hexen (DOS/4GW too) chops some sounds on the PC: to check with the
+fix.
 
 F5's confirmation is above. The card also settles three things the
 virtual card already does right: no lockout during 90h on the 4.13 (D0h,

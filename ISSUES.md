@@ -191,8 +191,9 @@ changed volumes.
   pitch: the auto-init buffer halves are replayed before the game's
   handler refills them (the refill is a block or more late). PC x2.22,
   86Box D7 x2.38; every uCDD build that ran the game; the CD music is
-  exact. Hexen may share it (choppy helicopter on the PC). Open; top of
-  the list.
+  exact. Cause: the host swallowed the game's EOI as a stray one (a
+  reflected hardware vector); fixed on `stray-eoi` (86Box: x1.00). Hexen
+  may share it (choppy helicopter on the PC). PC test pending.
 - Super Street Fighter II Turbo: dropped (Michael, 18 Oct). Its 32RTM
   loader writes CR0 and then needs DOS translation for 32-bit programs, a
   host feature of its own for one game; runs without the driver.
