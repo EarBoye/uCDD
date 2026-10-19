@@ -183,12 +183,14 @@ virtual_irq_tick:
     jne .signalled
     mov [virtual_dsp_irq], al
 .raise:
+    inc dword [irq_raised]
     mov byte [virtual_irq_stale], 0
     mov al, [guest_irq_bit]
     mov [virtual_pic_request], al
 .done:
     ret
 .signalled:
+    inc dword [irq_overrun]
     or [virtual_dsp_irq], al
     ; The interrupt was delivered and ended but never acknowledged (no 22Eh
     ; or 22Fh read): a handler that took it for a spurious one. A card holds
@@ -200,7 +202,10 @@ virtual_irq_tick:
     jnz .fresh
     inc byte [virtual_irq_stale]
     cmp byte [virtual_irq_stale], 2
-    jae .raise
+    jb .stale_wait
+    inc dword [irq_reraised]
+    jmp .raise
+.stale_wait:
     ret
 .fresh:
     mov byte [virtual_irq_stale], 0
@@ -238,6 +243,7 @@ virtual_dsp_raise_line:
     call virtual_mpu_refresh
     cmp byte [virtual_dsp_irq], 0
     jne .held
+    inc dword [irq_raised]
     or [virtual_dsp_irq], al
     mov al, [guest_irq_bit]
     mov [virtual_pic_request], al
@@ -371,6 +377,7 @@ virtual_irq_take:
     mov byte [virtual_pic_delivered], 0
     mov al, [guest_irq_bit]
     mov [virtual_pic_service], al
+    inc dword [irq_taken]
     inc bx
 .done:
     mov ax, bx
@@ -501,6 +508,7 @@ virtual_pic_write:
     cmp byte [sb_stray_eoi], 0
     je .eoi_live
     mov byte [sb_stray_eoi], 0
+    inc dword [irq_stray]
     ret
 .eoi_live:
 %endif
@@ -521,6 +529,7 @@ virtual_pic_write:
 .virtual_eoi:
     mov byte [virtual_pic_service], 0
     mov byte [virtual_pic_delivered], 0
+    inc dword [irq_ended]
     ret
 .guest_eoi:
     ; A specific EOI for the guest line ends the virtual interrupt once it
@@ -558,6 +567,24 @@ f2h_seen db 0
 virtual_pic_mask db 0ffh
 ; ICW bytes still to come on port 21h after an ICW1.
 pic_icw_pending db 0
+; The interrupt counters UCDD -STATUS prints (driver.asm, control 10): the
+; virtual interrupt's whole life, so a fault shows on the PC with the
+; release build (an EOI swallowed as the game's, a handler never reached,
+; blocks ending unacknowledged). Dwords in this order, from installation or
+; the last UCDD -STATUS -RESET. Each count is one INC where it happens.
+align 4
+irq_counters:
+irq_periods_base dd 0  ; [periods] at the reset (reported: the periods since)
+irq_spurious dd 0      ; IRQ 7 entries with nothing in service (sb16.asm)
+irq_raised dd 0        ; requests to the virtual PIC: an edge on the line
+irq_taken dd 0         ; virtual interrupts given to a handler
+irq_ended dd 0         ; virtual interrupts ended by the game's EOI
+irq_overrun dd 0       ; block ends with the line still high (unacknowledged)
+irq_reraised dd 0      ; requests raised again after a whole period with
+                       ; nothing acknowledged, requested or in service
+irq_stray dd 0         ; EOIs swallowed as stray: the DPMI host had ended
+                       ; the IRQ at the controller (here and host/pic.asm)
+IRQ_COUNTERS equ ($-irq_counters)/4
 %ifdef RESIDENT_AUDIO
 sb_stray_eoi db 0
 %endif
@@ -580,6 +607,10 @@ DRV_PROFILE_DATA
 
 
 ; CDF2 exposes these offsets to the protected host.
+%ifdef RESIDENT_AUDIO
+; The host counts the stray EOIs it swallows at the CDF5 byte less 4.
+cdf5_count_check equ 1 / ((sb_stray_eoi-irq_stray) = 4)
+%endif
 cdf2_service_check equ 1 / ((virtual_pic_service-virtual_pic_request) = 1)
 cdf2_visible_check equ 1 / ((pic_visible_bits-virtual_pic_request) = 8)
 cdf2_mode_check equ 1 / ((physical_pic_read-virtual_pic_request) = 9)

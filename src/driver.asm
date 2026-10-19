@@ -773,7 +773,10 @@ request_not_ready:
 ; AX: 0 query, 1 mount, 2 eject, 3 describe, 4 attach, 5 detach. BL: unit.
 ; AX: 7 mount MDM, 8 copy its name (128 bytes). See MDM_INPUT_SIZE.
 ; AX: 9 set the CD sample filter of the caller, or remove it with 0:0.
-; DS:DX points to image info (1/3), the audio callback (4/5), or the filter (9).
+; AX: 10 copy the interrupt counters (UCDD -STATUS), 11 the same and then
+; start them again from 0. See .status.
+; DS:DX points to image info (1/3), the audio callback (4/5), the filter (9),
+; or the counters' buffer (10/11).
 ; AX returns 0/1 for empty/loaded, or 8001h..8007h for an error.
 control:
     pushf
@@ -819,6 +822,10 @@ control:
     je .audio_report
     cmp word [control_op], 9
     je .filter
+    cmp word [control_op], 10
+    je .status
+    cmp word [control_op], 11
+    je .status
 %endif
     mov word [control_result], 8002h
     cmp byte [si+LOCKED], 0
@@ -924,6 +931,48 @@ control:
 %else
     xor ax, ax
 %endif
+    stosw
+    mov word [control_result], 0
+    jmp .done
+; The interrupt counters (audio/irq.asm, irq_counters) to DS:DX: a word 1
+; (this layout), a word with the number of dwords that follow the header,
+; the output periods since the counters started, the other counters in
+; their order, then the fault bytes (fault, cd_error, pm_bridge_fault,
+; pm_cleanup_fault) as one dword. Copied with interrupts off, so that the
+; counts belong together; control 11 then starts them again from 0.
+STATUS_BYTES equ 4+IRQ_COUNTERS*4+4
+.status:
+    les di, [path_pointer]
+    cmp di, 10000h-STATUS_BYTES
+    ja .done
+    mov ax, 1
+    stosw
+    mov ax, IRQ_COUNTERS+1
+    stosw
+    cli
+    mov eax, [periods]
+    sub eax, [irq_periods_base]
+    stosd
+    mov si, irq_counters+4
+    mov cx, IRQ_COUNTERS-1
+    rep movsd
+    cmp word [control_op], 11
+    jne .status_faults
+    mov eax, [periods]
+    mov [irq_periods_base], eax
+    mov si, irq_counters+4
+    mov cx, IRQ_COUNTERS-1
+.status_clear:
+    mov dword [si], 0
+    add si, 4
+    loop .status_clear
+.status_faults:
+    sti
+    mov al, [fault]
+    mov ah, [cd_error]
+    stosw
+    mov al, [pm_bridge_fault]
+    mov ah, [pm_cleanup_fault]
     stosw
     mov word [control_result], 0
     jmp .done

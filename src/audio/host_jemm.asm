@@ -272,6 +272,7 @@ host_io_irq:
     mov byte [ebx+virtual_pic_request], 0
     mov al, [ebx+guest_irq_bit]
     mov [ebx+virtual_pic_service], al
+    inc dword [ebx+irq_taken]
     movzx ecx, word [ebp+56]
     shl ecx, 4
     movzx edx, word [ebp+52]

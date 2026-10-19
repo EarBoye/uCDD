@@ -588,6 +588,9 @@ audio_irq.spurious:
     call audio_irq_reflected
     jz audio_irq_to_game
 %endif
+%ifdef VIRTUAL_IRQ
+    inc dword [cs:irq_spurious]
+%endif
     iret
 
 %ifdef OWN_HOST

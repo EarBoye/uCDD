@@ -65,6 +65,12 @@ command_entry:
     mov di, vcpi_option
     call option_equal
     je .vcpi
+    mov di, status_option
+    call option_equal
+    je .status
+    mov di, reset_option
+    call option_equal
+    je .reset
 %ifdef EMS_QUEUE
     mov di, ems_option
     call option_equal
@@ -96,6 +102,16 @@ command_entry:
     cmp byte [keep_vcpi], 0
     jne usage
     mov byte [keep_vcpi], 1
+    jmp .parse
+.status:
+    cmp byte [operation], 0
+    jne usage
+    mov byte [operation], 4
+    jmp .parse
+.reset:
+    cmp byte [status_reset], 0
+    jne usage
+    mov byte [status_reset], 1
     jmp .parse
 %ifdef EMS_QUEUE
 .ems:
@@ -155,6 +171,10 @@ command_entry:
     jne .image_command
     cmp byte [wanted_drive], 0ffh
     jne usage
+%ifdef RESIDENT_AUDIO
+    cmp byte [status_reset], 0
+    jne usage
+%endif
     mov al, [requested_units]
     test al, al
     jz install
@@ -168,6 +188,10 @@ command_entry:
 %endif
     cmp byte [keep_vcpi], 0
     jne usage
+    cmp byte [operation], 4
+    je .status_command
+    cmp byte [status_reset], 0
+    jne usage
 %endif
     cmp byte [requested_units], 0
     jne usage
@@ -177,6 +201,16 @@ command_entry:
     jne .enumerate
     cmp word [image_path], 0
     je .enumerate
+%ifdef RESIDENT_AUDIO
+    jmp .image_name
+.status_command:
+    cmp byte [requested_units], 0
+    jne usage
+    cmp byte [wanted_drive], 0ffh
+    jne usage
+    jmp .enumerate
+.image_name:
+%endif
     mov si, [image_path]
     mov di, named_path
     mov ax, 6000h
@@ -219,6 +253,10 @@ command_entry:
     pop si
     jc .next
     mov byte [found_ucdd], 1
+%ifdef RESIDENT_AUDIO
+    cmp byte [operation], 4
+    je status_report
+%endif
     cmp byte [operation], 2
     jne .name_ok
     cmp word [image_path], 0
@@ -426,6 +464,73 @@ command_entry:
     mov ax, 4c00h
     int 21h
 
+%ifdef RESIDENT_AUDIO
+; UCDD -STATUS: the interrupt counters from the resident driver (driver.asm,
+; control 10, or 11 with -RESET), one line each, then the fault codes. BL
+; is the unit device_at_index returned.
+status_report:
+    mov ax, 10
+    add al, [status_reset]
+    mov dx, status_buffer
+    call far [control_entry]
+    test ax, ax
+    jnz driver_error
+    mov dx, status_title
+    mov ah, 9
+    int 21h
+    mov si, status_buffer+4
+    mov bx, status_labels
+.line:
+    mov dx, [bx]
+    mov ah, 9
+    int 21h
+    cmp bx, status_labels_end-2
+    je .faults
+    lodsd
+    call print_decimal
+    mov dx, line_end
+    mov ah, 9
+    int 21h
+    add bx, 2
+    jmp .line
+.faults:
+    mov cx, 4
+.fault:
+    mov dl, ' '
+    mov ah, 2
+    int 21h
+    lodsb
+    movzx eax, al
+    call print_decimal
+    loop .fault
+    mov dx, status_note
+    mov ah, 9
+    int 21h
+    mov ax, 4c00h
+    int 21h
+
+; EAX written in decimal. Every register is kept.
+print_decimal:
+    pushad
+    mov ebx, 10
+    xor cx, cx
+.divide:
+    xor edx, edx
+    div ebx
+    push dx
+    inc cx
+    test eax, eax
+    jnz .divide
+.digit:
+    pop dx
+    add dl, '0'
+    mov ah, 2
+    int 21h
+    loop .digit
+    popad
+    ret
+%endif
+
 ; SI selects the paired MSCDEX device and letter lists. Return BL and entry.
 device_at_index:
     push si
@@ -603,6 +708,9 @@ install_option db '-INSTALL',0
 units_option db '-UNITS',0
 %ifdef RESIDENT_AUDIO
 vcpi_option db '-VCPI',0
+status_option db '-STATUS',0
+reset_option db '-RESET',0
+status_reset db 0
 %ifdef EMS_QUEUE
 ems_option db '-EMS',0
 %endif
@@ -625,16 +733,42 @@ usage_message db 'UCDD mounts CD images as CD-ROM drives.',13,10,13,10
 %endif
     db 13,10
     db 'UCDD -mount image [-drive d]',13,10
-    db 'UCDD -unmount [image] [-drive d]',13,10,13,10
+    db 'UCDD -unmount [image] [-drive d]',13,10
+%ifdef RESIDENT_AUDIO
+    db 'UCDD -status [-reset]',13,10
+%endif
+    db 13,10
     db '  -units n   Number of drives, 1 to 4.',13,10
 %ifdef RESIDENT_AUDIO
 %ifdef EMS_QUEUE
     db '  -ems       Keep the CD audio queue in EMS, not in XMS.',13,10
 %endif
     db '  -vcpi      Keep VCPI. The sound of VCPI programs bypasses uCDD.',13,10
+    db '  -status    Show the sound interrupt counts; -reset starts them from 0.',13,10
 %endif
     db '  image      ISO, CUE, BIN, or MDM file. An MDM file lists up to 10 discs.',13,10
     db '  -drive d   uCDD drive letter.',13,10,'$'
+%ifdef RESIDENT_AUDIO
+; In the order of the counters (audio/irq.asm, irq_counters).
+status_labels dw status_periods, status_spurious, status_raised, status_taken
+    dw status_ended, status_overrun, status_reraised, status_stray, status_faults
+status_labels_end:
+status_title db 'Sound interrupts since uCDD started (or the last -status -reset):',13,10,'$'
+status_periods db '  Output periods (card interrupts)   $'
+status_spurious db '  Spurious IRQ 7                     $'
+status_raised db '  Virtual card interrupts raised     $'
+status_taken db '    taken by the game', 39, 's handler        $'
+status_ended db '    ended by the game', 39, 's EOI            $'
+status_overrun db '    blocks ended unacknowledged      $'
+status_reraised db '    raised again, no acknowledge     $'
+status_stray db '    EOIs taken as stray              $'
+status_faults db '  Fault codes                       $'
+status_note db 13,10,13,10
+    db 'Healthy: taken and ended close to raised; the four below them and',13,10
+    db 'the fault codes near 0.',13,10,'$'
+line_end db 13,10,'$'
+status_buffer times 4+4*IRQ_COUNTERS+4 db 0
+%endif
 no_drives_message db 'No uCDD drive is available.',13,10,'$'
 full_message db 'All uCDD drives are in use.',13,10,'$'
 empty_message db 'No image is mounted on the selected drive.',13,10,'$'

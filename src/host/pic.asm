@@ -324,6 +324,8 @@ dpmi_pic_io:
     cmp byte [ecx], 0
     je .delivered_check
     mov byte [ecx], 0
+    ; The driver's stray EOI count, the dword before the byte (irq.asm).
+    inc dword [ecx-4]
     jmp .success
 .delivered_check:
     cmp byte [esi+1], 0
