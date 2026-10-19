@@ -439,13 +439,9 @@ cd_request:
     mov byte [cd_started], 1
     jmp .ok
 .play:
+    ; Tunnel B1 sends a length of 0 with a complete request.
     cmp bp, 10000h-22
     ja .done
-    cmp byte [fs:bp], 13
-    je .play_header
-    cmp byte [fs:bp], 22
-    jb .done
-.play_header:
     mov eax, [fs:bp+14]
     call cd_address
     jc .done

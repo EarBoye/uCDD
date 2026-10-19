@@ -28,6 +28,16 @@ virtual_irq_reset:
     ret
 
 virtual_irq_tick:
+    cmp byte [silence_active], 0
+    je .silence_done
+    mov eax, [periods]
+    sub eax, [silence_deadline]
+    js .silence_done
+    mov byte [silence_active], 0
+    or byte [virtual_dsp_irq], 1
+    mov al, [guest_irq_bit]
+    mov [virtual_pic_request], al
+.silence_done:
     cmp byte [game_active], 0
     je .done
     mov si, [game_dma]

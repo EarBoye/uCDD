@@ -935,10 +935,9 @@ resident_io:
 .regular:
     cmp cl, 1
     je .callback
+    ; Word input and output at the mixer ports go to the audio callback.
     cmp cl, 2
     jne .bad
-    test ch, ch
-    jz .bad
     cmp dx, [ebp+resident_mixer_ports]
     jne .bad
 .callback:

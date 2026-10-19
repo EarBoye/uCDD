@@ -5,6 +5,16 @@
 
 sb_mono_left dd 0
 
+; FS:SI addresses the DMA source. A high source maps SI to its page copy.
+%macro sb_source 0
+%ifdef OWN_HOST
+    cmp dword [game_physical], 0
+    je %%low
+    call sb_high_map
+%%low:
+%endif
+%endmacro
+
 ; ES:DI is one output half. Sources use the current virtual playback state.
 mix_half:
 %ifdef SPEAKER_TEST
@@ -678,19 +688,9 @@ sb_dma_sample:
     cmp byte [game_frame_shift], 0
     jne .stereo
     mov si, ax
-%ifdef OWN_HOST
-    cmp dword [game_physical], 0
-    je .mono_low
-    call sb_high_sample
-    movzx edx, al
-    jmp .mono_value
-.mono_low:
-%endif
     add si, [sb_tail_read_offset]
+    sb_source
     movzx edx, byte [fs:si]
-%ifdef OWN_HOST
-.mono_value:
-%endif
     sub edx, 128
     shl edx, 7
     mov esi, edx
@@ -715,8 +715,11 @@ sb_dma_sample:
 .single16_address:
     add dx, [game_offset]
     push eax
+    push dx
     mov si, dx
+    sb_source
     movsx edx, word [fs:si]
+    pop si
     sar edx, 1
     pop eax
     add eax, 2
@@ -735,6 +738,7 @@ sb_dma_sample:
 .single16_right:
     add ax, [game_offset]
     mov si, ax
+    sb_source
     movsx esi, word [fs:si]
     pop edx
     sar esi, 1
@@ -745,6 +749,7 @@ sb_dma_sample:
 .stereo16_normal:
     add ax, [sb_tail_read_offset]
     mov si, ax
+    sb_source
     movsx edx, word [fs:si]
     movsx esi, word [fs:si+2]
     test byte [game_format], 2
@@ -763,6 +768,7 @@ sb_dma_sample:
     shl eax, 1
     add ax, [sb_tail_read_offset]
     mov si, ax
+    sb_source
     movsx edx, word [fs:si]
     test byte [game_format], 2
     jz .mono16_scale
@@ -797,8 +803,11 @@ sb_dma_sample:
 .single8_address:
     add dx, [game_offset]
     push eax
+    push dx
     mov si, dx
+    sb_source
     movzx edx, byte [fs:si]
+    pop si
     sub edx, 128
     shl edx, 7
     pop eax
@@ -817,6 +826,7 @@ sb_dma_sample:
 .single8_right:
     add ax, [game_offset]
     mov si, ax
+    sb_source
     movzx esi, byte [fs:si]
     sub esi, 128
     shl esi, 7
@@ -825,6 +835,7 @@ sb_dma_sample:
 .stereo8_normal:
     add ax, [sb_tail_read_offset]
     mov si, ax
+    sb_source
     movzx edx, byte [fs:si]
     movzx esi, byte [fs:si+1]
     sub edx, 128
@@ -955,6 +966,11 @@ sb_tail_prepare:
     jne .done
     cmp byte [sb_single], 0
     jne .done
+%ifdef OWN_HOST
+    ; The tail copy reads the source in conventional memory.
+    cmp dword [game_physical], 0
+    jne .done
+%endif
     mov si, [game_dma]
     cmp byte [si+DMA_MASK], 0
     jne .done

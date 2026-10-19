@@ -446,11 +446,26 @@ dpmi_register_interrupt:
 .video:
     cmp al, 10h
     jne .dos
-    cmp word [ebx+36], 1130h
+    mov ax, [ebx+36]
+    cmp ax, 1130h
     je .yes
-    mov al, [ebx+37]
-    cmp al, 0fh
+    cmp ah, 0fh
     jbe .yes
+    ; Palette, display configuration, and VBE mode and window calls pass no pointers.
+    cmp ax, 1001h
+    jbe .yes
+    cmp ax, 1003h
+    je .yes
+    cmp ah, 12h
+    je .yes
+    cmp ah, 1ah
+    je .yes
+    cmp ax, 4f02h
+    je .yes
+    cmp ax, 4f03h
+    je .yes
+    cmp ax, 4f05h
+    je .yes
     jmp .no
 .dos:
     cmp al, 21h

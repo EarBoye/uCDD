@@ -74,7 +74,7 @@ Install once per boot, before the redirector. `UCDD -install -units 2` creates t
 
 It is recommended to load your mouse driver before μCDD.
 
-With one drive, JEMMEX, and free UMBs, a sample installation used 560 bytes of conventional memory with `LH UCDD -install`. When loaded low and moved to upper memory, it used 848 bytes.
+With one drive, JEMMEX, and free UMBs, a sample installation used 2,096 bytes of conventional memory with `LH UCDD -install`. When loaded low and moved to upper memory, it used 2,384 bytes.
 
 ```dos
 UCDD -mount C:\IMAGES\GAME.CUE

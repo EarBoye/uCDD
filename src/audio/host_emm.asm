@@ -4,6 +4,7 @@
 host_emm_ports_full:
     dw 002h, emm_port_callback
     dw 003h, emm_port_callback
+    dw 008h, emm_port_callback
     dw 00ah, emm_port_callback
     dw 00bh, emm_port_callback
     dw 00ch, emm_port_callback
@@ -17,6 +18,7 @@ host_emm_ports_full:
     dw 08bh, emm_port_callback
     dw 0c4h, emm_port_callback
     dw 0c6h, emm_port_callback
+    dw 0d0h, emm_port_callback
     dw 0d4h, emm_port_callback
     dw 0d6h, emm_port_callback
     dw 0d8h, emm_port_callback

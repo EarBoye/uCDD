@@ -1,18 +1,19 @@
 ; SPDX-FileCopyrightText: 2026 vorvek
 ; SPDX-License-Identifier: GPL-3.0-only
 
-; Jemm maps the physical source for INT 15h/87h. Single-cycle mono only.
-sb_high_sample:
+; SI: source offset of a high source. Points FS:SI at a copy of its 256-byte page and the next
+; 8 bytes, so a frame can cross the page end. Jemm maps the physical source for
+; INT 15h/87h.
+sb_high_map:
     pushf
     pushad
     push ds
     push es
-    push fs
     push gs
     movzx edi, si
     add edi, [game_physical]
     mov ebx, edi
-    and ebx, 0ffffff00h
+    xor bl, bl
     cmp ebx, [sb_high_tag]
     je .cached
     mov [sb_high_source], bx
@@ -29,40 +30,32 @@ sb_high_sample:
     push ds
     pop es
     mov si, sb_high_table
-    mov cx, 128
+    mov cx, 132
     mov ax, 8700h
     push ebx
-    push edi
     int 15h
     push cs
     pop ds
-    pop edi
     pop ebx
     jc .failed
     mov [sb_high_tag], ebx
-.cached:
-    mov es, [sb_high_segment]
-    and di, 255
-    mov al, [es:di]
-    mov [sb_high_value], al
-    jmp .done
+    jmp .cached
 .failed:
     mov byte [fault], 3
     mov byte [game_active], 0
-    mov byte [sb_high_value], 128
-.done:
+.cached:
     pop gs
-    pop fs
     pop es
     pop ds
     popad
     popf
-    mov al, [sb_high_value]
+    mov fs, [sb_high_segment]
+    add si, [game_physical]
+    and si, 255
     ret
 
 sb_high_tag dd -1
 sb_high_segment dw 0
-sb_high_value db 128
 sb_high_table:
     times 16 db 0
     dw 0ffffh

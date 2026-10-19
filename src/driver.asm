@@ -89,11 +89,13 @@ interrupt:
     ja .return_only_status
     cmp byte [fs:bp], 13
     jae .length_ok
-    cmp byte [fs:bp], 7
-    jne .bad_length
+    ; Tunnel B1 sends lengths of 0 and 5. Handlers check the bounds of the fields they read.
     cmp byte [fs:bp+2], 3
-    je .length_ok
+    je .short_ioctl
     cmp byte [fs:bp+2], 0ch
+    jne .length_ok
+.short_ioctl:
+    cmp byte [fs:bp], 7
     jne .bad_length
 .length_ok:
     movzx eax, byte [fs:bp]
@@ -1070,10 +1072,7 @@ mount_image:
     jne .reject
     cmp eax, 18
     jb .reject
-    mov edx, [candidate_file_total]
-    sub edx, [candidate_file_origin]
-    cmp eax, edx
-    ja .reject
+    ; The City of Lost Children states a volume larger than its image.
     ; Limit directory validation, not sector reads, to the ISO volume.
     cmp eax, [candidate_sectors]
     jbe .volume_limit
@@ -1082,12 +1081,9 @@ mount_image:
     mov [candidate_limit], eax
     cmp byte [pvd+156], 34
     jb .reject
+    ; FX Fighter and Hexen have nonstandard root record name bytes.
     test byte [pvd+181], 2
     jz .reject
-    cmp byte [pvd+188], 1
-    jne .reject
-    cmp byte [pvd+189], 0
-    jne .reject
     mov si, pvd+158
     call both_endian
     jne .reject

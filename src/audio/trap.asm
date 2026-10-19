@@ -185,6 +185,22 @@ game_elapsed:
 .done:
     ret
 
+; AL: value of the selected virtual mixer register.
+mixer_read:
+    movzx bx, byte [virtual_mixer_index]
+    ; Reserved on the SB16. Writable storage here causes false mixer detection.
+    mov al, 0ffh
+    cmp bx, 0fh
+    je .done
+%ifdef VIRTUAL_IRQ
+    mov al, [virtual_dsp_irq]
+    cmp bx, 82h
+    je .done
+%endif
+    mov al, [virtual_mixer+bx]
+.done:
+    ret
+
 port_callback:
 %ifdef RESIDENT_AUDIO
     cmp byte [cs:callback_set], 0
@@ -294,10 +310,14 @@ port_callback:
     je .address
     cmp dx, 3
     je .count
+    cmp dx, 8
+    je .dma_command
     jmp .unsupported
 .wide:
     mov bl, cl
     and bl, 1ch
+    cmp bl, 8
+    je .wide_read
     cmp bl, 0ch
     jne .unsupported
     mov bx, dx
@@ -307,6 +327,24 @@ port_callback:
     mov [virtual_mixer_index], al
     mov al, ah
     jmp .mixer_data
+.wide_read:
+    ; Hexen reads the mixer index and data ports with one word input.
+    mov bx, dx
+    sub bx, [guest_base]
+    cmp bx, 4
+    jne .unsupported
+    call mixer_read
+    mov ah, al
+    mov al, [virtual_mixer_index]
+%ifdef RESIDENT_AUDIO
+    cmp dword [ss:ebp+12], 1
+    jne .real_wide_result
+    mov [ss:ebp+28], ax
+    jmp .done
+.real_wide_result:
+%endif
+    mov [ss:bp+28], ax
+    jmp .done
 .unsupported:
 %ifdef MOUNTED_AUDIO
     mov byte [fault], 3
@@ -315,6 +353,7 @@ port_callback:
 %endif
     jmp .done
 .reset:
+    mov byte [silence_active], 0
     mov byte [dma_pending_command], 0
     mov byte [sb_id_value], 0aah
     mov byte [sb_id_phase], 0
@@ -445,6 +484,7 @@ port_callback:
     jmp .volume_update
 .flip_reset:
     mov byte [si+DMA_FLIP], 0
+.dma_command:
     call dma_shared_write
     jmp .done
 .mask:
@@ -524,6 +564,13 @@ port_callback:
 .dma_word:
     mov dword [si+DMA_POSITION], 0
     mov byte [si+3], 0
+    cmp si, dma16
+    je .tc_rearm16
+    and byte [dma_tc_reported], 0feh
+    jmp .tc_rearmed
+.tc_rearm16:
+    and byte [dma_tc_reported], 0fdh
+.tc_rearmed:
     mov byte [sb_finished], 0
     movzx cx, byte [si+DMA_FLIP]
     add bx, cx
@@ -547,6 +594,8 @@ port_callback:
     cmp al, 14h
     je .rate
     cmp al, 24h
+    je .rate
+    cmp al, 80h
     je .rate
     cmp al, 1ch
     je .legacy_start
@@ -646,10 +695,14 @@ port_callback:
     mov byte [game_active], 1
     jmp .done
 .exit8:
+    mov si, dma8
+    call pending_stop
     cmp byte [game_irq_bit], 2
     je .done
     jmp .exit_block
 .exit16:
+    mov si, dma16
+    call pending_stop
     cmp byte [game_irq_bit], 2
     jne .done
 .exit_block:
@@ -812,6 +865,8 @@ port_callback:
     mov [sb_test_register], al
     jmp .argument_done
 .pcm_argument:
+    cmp byte [dsp_command], 80h
+    je .silence
     cmp byte [dsp_command], 14h
     je .length
     cmp byte [dsp_command], 24h
@@ -907,6 +962,24 @@ port_callback:
 .legacy_high:
     mov [legacy_block+1], al
     jmp .argument_done
+.silence:
+    ; The Varginha Incident waits for the IRQ after a silence block.
+    cmp byte [arguments], 2
+    je .length
+    mov ah, al
+    mov al, [block_low]
+    movzx eax, ax
+    inc eax
+    mov ecx, OUTPUT_RATE
+    mul ecx
+    movzx ecx, word [legacy_rate]
+    div ecx
+    shr eax, OUTPUT_SHIFT
+    inc eax
+    add eax, [periods]
+    mov [silence_deadline], eax
+    mov byte [silence_active], 1
+    jmp .argument_done
 .length:
     cmp byte [arguments], 2
     jne .start
@@ -987,6 +1060,9 @@ port_callback:
 .direction_ready:
     cmp byte [sb_single], 0
     je .block_length
+    ; MadSpace plays a single-cycle block longer than its auto-init DMA buffer.
+    test byte [si+DMA_MODE], 10h
+    jnz .block_length
     cmp ax, [si+DMA_COUNT]
     ja .argument_rejected
 .block_length:
@@ -1004,9 +1080,9 @@ port_callback:
 .buffer_units:
     cmp edx, 512
     jae .large_block
-    ; Detection code loops one short block over the whole buffer.
+    ; Detection code loops one short block over the buffer, or a longer block (MadSpace).
     cmp edx, ebx
-    jne .short_block
+    jb .short_block
     mov cl, [pending_frame_shift]
     mov eax, 1
     shl eax, cl
@@ -1123,13 +1199,12 @@ port_callback:
     jb .argument_rejected
     cmp eax, 1000000h
     ja .argument_rejected
-    cmp byte [sb_single], 1
-    jne .argument_rejected
-    cmp byte [pending_frame_shift], 0
-    jne .argument_rejected
     cmp byte [sb_input], 0
     jne .argument_rejected
-    mov [game_physical], ecx
+    ; Source offsets include game_offset.
+    mov eax, ecx
+    and al, 0f0h
+    mov [game_physical], eax
     jmp .source_ready
 .low_source:
     mov dword [game_physical], 0
@@ -1166,6 +1241,11 @@ port_callback:
     mov [game_origin], eax
 .origin_ready:
     shr ebx, cl
+    ; A buffer shorter than one frame still wraps at one frame.
+    test ebx, ebx
+    jnz .limit_frames
+    inc ebx
+.limit_frames:
     shl ebx, 16
     mov [game_limit], ebx
     cmp byte [sb_single], 0
@@ -1276,12 +1356,17 @@ port_callback:
     je .reply
     cmp dx, 225h
     je .mixer_read
+    mov al, [virtual_mixer_index]
+    cmp dx, 224h
+    je .result
     cmp dx, 3
     je .dma_read
     cmp dx, 2
     je .dma_read
     cmp dx, 0bh
     je .dma_mode_read
+    cmp dx, 8
+    je .dma_status
     cmp dx, 83h
     jne .unsupported
     mov al, [si+DMA_PAGE]
@@ -1292,6 +1377,43 @@ port_callback:
     mov dl, 0d6h
 .dma_mode_physical:
     call physical_read
+    jmp .result
+.dma_status:
+    ; Earth 2140 waits for the request of a DSP transfer on a masked channel.
+    mov bx, [guest_dma8]
+    cmp si, dma16
+    jne .dma_status_read
+    mov dl, 0d0h
+    mov bx, [guest_dma16]
+    sub bl, 4
+.dma_status_read:
+    call physical_read
+    mov cl, bl
+    mov bl, 11h
+    shl bl, cl
+    not bl
+    and al, bl
+    mov bl, 1
+    shl bl, cl
+    ; A status read clears the terminal count.
+    cmp byte [si+3], 0
+    je .dma_request
+    mov ah, 1
+    cmp si, dma16
+    jne .tc_bit
+    mov ah, 2
+.tc_bit:
+    test [dma_tc_reported], ah
+    jnz .dma_request
+    or [dma_tc_reported], ah
+    or al, bl
+.dma_request:
+    cmp byte [dma_pending_command], 0
+    je .result
+    cmp si, [dma_pending_state]
+    jne .result
+    shl bl, 4
+    or al, bl
     jmp .result
 .reset_read:
     mov al, 0ffh
@@ -1328,19 +1450,7 @@ port_callback:
     dec byte [reply_count]
     jmp .result
 .mixer_read:
-    movzx bx, byte [virtual_mixer_index]
-    ; Reserved on the SB16. Writable storage here causes false mixer detection.
-    cmp bx, 0fh
-    mov al, 0ffh
-    je .result
-%ifdef VIRTUAL_IRQ
-    cmp bx, 82h
-    jne .mixer_value
-    mov al, [virtual_dsp_irq]
-    jmp .result
-.mixer_value:
-%endif
-    mov al, [virtual_mixer+bx]
+    call mixer_read
     jmp .result
 .dma_read:
     cmp byte [si+DMA_FLIP], 0
@@ -1537,6 +1647,14 @@ sb_identify:
     ret
 .masks db 96h,0a5h,69h,5ah
 
+; An exit command stops a transfer that waits for unmask.
+pending_stop:
+    cmp si, [dma_pending_state]
+    jne .done
+    mov byte [dma_pending_command], 0
+.done:
+    ret
+
 dma_unowned_write:
 %ifdef RESIDENT_AUDIO
     cmp byte [sb_running], 0
@@ -1590,6 +1708,8 @@ dma_port:
     je .address
     cmp dx, [guest_dma_ports+8]
     je .count
+    cmp dx, 0d0h
+    je .status
     cmp dx, 0d4h
     jb .done
     cmp dx, 0dch
@@ -1602,6 +1722,9 @@ dma_port:
 .low_page:
     mov dx, 83h
     ret
+.status:
+    mov dx, 8
+    jmp .high
 .low_address:
     mov dx, 2
     ret
@@ -1730,6 +1853,9 @@ game_start_pending db 0 ; 1: wait for mixing, 2: wait for output.
 dma_pending_command db 0
 dma_pending_count dw 0
 dma_pending_state dw 0
+silence_active db 0
+dma_tc_reported db 0
+silence_deadline dd 0
 game_dma dw dma8
 game_frame_shift db 0
 game_source db 0

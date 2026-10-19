@@ -65,9 +65,9 @@ def main():
     parser.add_argument('--profile-host', action='store_true',
                         help='Build host counters in build/profile. Use with --resident-audio.')
     parser.add_argument('--audio-period-frames', type=int, choices=(32, 64, 128, 256),
-                        default=32, help='Set the resident audio output period for testing.')
+                        default=128, help='Set the resident audio output period for testing.')
     args = parser.parse_args()
-    if args.audio_period_frames != 32 and not args.resident_audio:
+    if args.audio_period_frames != 128 and not args.resident_audio:
         parser.error('--audio-period-frames requires --resident-audio.')
     if args.profile_host:
         if not args.resident_audio:
