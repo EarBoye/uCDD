@@ -197,8 +197,10 @@ changed volumes.
 - Mortal Kombat Trilogy's CD music paused for 0.3-0.5 s every 5.5 s
   during the logos (Michael's recording from the real PC, 19 Oct; 86Box
   the same). Fixed on `cd-restart` (M-12): the host's CD refill waited for
-  the game's end of interrupt on the virtual Sound Blaster, which its
-  Miles driver leaves unsent for about 3 s after each sound. The same
+  the game's end of interrupt on the virtual Sound Blaster, which looked
+  unsent for about 3 s after each sound. Corrected 20 Oct: the game sent
+  it; the host swallowed it as a stray EOI (the stray-eoi entry above).
+  The fix stands: a drive's audio does not wait for a game's EOI. The same
   branch makes PLAY AUDIO return after a short fill (M-11). 86Box only so
   far.
 - Hexen: the machine sometimes freezes after the game exits. The launcher

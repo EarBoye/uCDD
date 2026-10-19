@@ -111,9 +111,11 @@ cd_deferred_refill:
     ; with the game outside its interrupt handlers (resident_refill_schedule:
     ; no locked stack, callback, exception or bridge in use), and a drive
     ; plays its audio whatever the game does with its sound card's
-    ; interrupt. Mortal Kombat Trilogy's Miles driver leaves its last
-    ; interrupt unacknowledged for about 3 s after each sound; refills held
-    ; for that emptied the 448 KB queue every 5.5 s.
+    ; interrupt. Refills held for it emptied the 448 KB queue every 5.5 s in
+    ; Mortal Kombat Trilogy's logos, where the virtual interrupt stayed in
+    ; service for seconds. That looked like its Miles driver holding back
+    ; its EOI; it was the host swallowing that EOI as a stray one
+    ; (dos.asm .hardware, fixed with this note).
     cmp byte [virtual_pic_service], 0
     je .controller_free
     cmp byte [virtual_pic_delivered], 0
