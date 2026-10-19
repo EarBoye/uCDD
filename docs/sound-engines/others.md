@@ -28,7 +28,7 @@ as 41h.
 
 ## MIDAS Sound System (Sahara Surfers)
 
-Star Dust [trace]: E1h, 41h 22050 Hz, **B4h mode 10h** (16-bit mono,
+Super Stardust [trace]: E1h, 41h 22050 Hz, **B4h mode 10h** (16-bit mono,
 **FIFO off**) with a block of 65521 samples, DMA 5; mixer registers
 30h-47h all written (levels, 41h/42h input/output gain 80h, 44h-47h
 treble and bass 80h); **176 reads of the reset port 2x6h** (a delay
@@ -81,7 +81,7 @@ each read back.
 
 ## DiamondWare Sound Toolkit
 
-Found in Carmageddon, GTA, Twinsen's Odyssey and SHCRT [file].
+Found in Carmageddon, GTA, Twinsen's Odyssey and The Case of the Rose Tattoo [file].
 GTA's trace shows Miles 3.5's SB16 sequence (the one-sample probe, B6h
 mode 10h, 1024 samples) [trace], so GTA plays its digital sound through
 Miles; DiamondWare's part was not seen. Carmageddon and Twinsen did not

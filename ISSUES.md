@@ -145,8 +145,8 @@ changed volumes.
     game runs without digital sound. Physical 5 with virtual 7: 3 of 3
     pass. Miles 3.5 passes on 7/7. Open.
   - F2: the polled DMA count reads higher than the read before it, without
-    a wrap, by about one to two output periods (Hexen, Dark Forces, Star
-    Dust, King's Quest V, Cyberdogs, Raptor). A real 8237's count only
+    a wrap, by about one to two output periods (Hexen, Dark Forces, Super
+    Stardust, King's Quest V, Cyberdogs, Raptor). A real 8237's count only
     falls. Timing-sensitive: Dark Forces repeats it on the same build, at
     its block end, and shows none on a build with a few more instructions
     in output_clock. Open.

@@ -112,3 +112,38 @@ status again (C0h expected), reset. Miles and LBA add 26 writes to
 06h-1Fh (clearing the registers) and 4 to the second bank's timers, the
 OPL3 test (an OPL2 reads 06h at 388h after a reset, an OPL3 00h,
 SBG:450-454).
+
+## MIDI on the MPU-401
+
+A third build also passed 330h and 331h through and counted them: the
+commands to 331h, the reads of each port, and every byte written to 330h
+by kind (status bytes by type, data bytes). The games below were already
+configured for a MIDI device. Several others whose files name one played
+FM instead: their launcher uses another configuration (King's Quest VI's
+CD folder names SBPRO.DRV, its floppy folder GENMIDI.DRV) [file].
+
+| Engine | Game | Set-up | Status reads per byte written | Traffic in the run |
+|---|---|---|---|---|
+| HMI SOS | Battle Arena Toshinden, X-Car (Sound Canvas) | FFh, 3Fh, FEh read back | 486 | 45 controller messages (a reset of every channel), then nothing |
+| HMI SOS | Amulets & Armor (MPU-401) | FFh, 3Fh | 40 | 379 note, 101 aftertouch, 75 controller, 11 program messages |
+| HMI SOS | Anvil of Dawn (MPU-401) | FFh, 3Fh | 19.5 | 496 note, 451 pitch bend, 221 controller messages |
+| Miles MSS 3 (MT32MPU.MDI) | Theme Hospital (MT-32) | FFh twice, 3Fh | **1.0** | 160 controller, 16 program, 16 bend, 8 system exclusive (the MT-32 set-up) |
+| Sierra (GENMIDI.DRV) | Sid & Al's Incredible Toons | FFh, 3Fh three times | 104 | 837 note messages; timer 236.7 Hz |
+
+- **UART mode only.** Every engine sends FFh (reset) and 3Fh (UART) and
+  reads the FEh acknowledge at 330h (2 to 4 reads); no other command,
+  so none uses the MPU's intelligent mode.
+- **No running status**: the data bytes are twice the status bytes (less
+  for program changes), so every message carries its status byte.
+- **Status polling**: Miles checks 331h once per byte; HMI and Sierra
+  poll it 20 to 490 times per byte. On a real MPU or a wavetable board
+  (the X2GS on the CT2290's header) the port is ready at once, so this
+  is CPU time, not lost data.
+- **The interrupt.** On an SB16 the MPU-401's interrupt is the card's
+  line, raised for each byte the MPU sends back (the FEh after each
+  command). uCDD passes it to the game as the virtual SB16's (82h bit 2;
+  ISSUES.md `sb16-mpu`). Every engine here read its acknowledge by
+  polling; none was seen to take the interrupt.
+
+Not seen sending MIDI in the 35 s: Mortal Kombat Trilogy, Shadow
+Warrior, Redneck Rampage (music started later or from CD).

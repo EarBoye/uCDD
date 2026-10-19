@@ -41,7 +41,7 @@ it, without a wrap [trace]:
 | Game | Engine | Steps back | Size |
 |---|---|---|---|
 | King's Quest V | Sierra AUDBLAST | 166 of 260 | 16-17 bytes (single-cycle) |
-| Star Dust | MIDAS | 28 of 203 | 68-69 words, once 529 |
+| Super Stardust | MIDAS | 28 of 203 | 68-69 words, once 529 |
 | Dark Forces | iMUSE | 19 of 235 | 104 bytes |
 | Hexen | DMX | 14 of 135 | 98 bytes |
 | Cyberdogs | DSMI | 13 of 234 | 146-220 words (reads far apart: less sure) |
@@ -61,7 +61,7 @@ runs of Dark Forces, three of Hexen and one under full host CPU load. So
 the output clock is not shown to go back, the fault is timing-sensitive
 (a race: a few added instructions hide it), and the per-block position
 path (the mix position and its block start) is the next place to look.
-Star Dust's two repeat runs had no real step (the one each was the game
+Super Stardust's two repeat runs had no real step (the one each was the game
 reprogramming its buffer from 0378h to 0500h words) where the first run
 had 28 small ones. Open.
 Engines that mix up to the position they read (HMI, iMUSE, MIDAS, DSMI)

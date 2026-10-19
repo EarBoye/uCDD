@@ -114,9 +114,11 @@ each engine does: [music-and-timers.md](music-and-timers.md).
 
 Data at 330h, status/command at 331h. Engines send FFh (reset) then 3Fh
 (UART mode) and read FEh (acknowledge); after that every MIDI byte goes to
-330h after waiting for bit 6 of 331h to clear. Intelligent mode (the MPU's
-own sequencer) is used by a few early drivers (Sierra's MT32.DRV era); most
-engines in this library use UART mode [recall; the MPU-401 was not traced].
+330h after waiting for bit 6 of 331h to clear. Every engine traced (HMI,
+Miles, Sierra's GENMIDI.DRV) does exactly that and no more: UART mode
+only, no running status [trace]. Intelligent mode (the MPU's own
+sequencer) belongs to some early drivers (Sierra's MT32.DRV era) [recall].
+Detail: [music-and-timers.md](music-and-timers.md#midi-on-the-mpu-401).
 
 ## The timer (PIT channel 0)
 

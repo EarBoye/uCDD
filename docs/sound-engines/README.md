@@ -25,7 +25,7 @@ Built 19 Oct 2026 from a scan of every game's files and port traces of
 | [lucasarts.md](lucasarts.md) | iMUSE and LucasArts' digital drivers |
 | [others.md](others.md) | DSMI, MIDAS, Allegro, Loudness, MicroProse, Sound Images, Melodix, Vision, DiamondWare, AdLib's driver, CMS/Tandy/Covox |
 | [own-code.md](own-code.md) | The games with their own sound code, by class |
-| [music-and-timers.md](music-and-timers.md) | The timer rate each engine sets and how it writes the FM chip (OPL2/OPL3, delays) |
+| [music-and-timers.md](music-and-timers.md) | The timer rate each engine sets, how it writes the FM chip (OPL2/OPL3, delays) and the MPU-401 |
 | [symptoms.md](symptoms.md) | **Start here for a fault**: from what you hear or see to the engine habit or finding behind it |
 | [findings.md](findings.md) | What the traces showed about uCDD: faults, behaviour to copy, questions for the CT2290 |
 | [inventory.md](inventory.md) | Every game: its engine, the devices it names, whether it was traced |
@@ -91,8 +91,8 @@ Every statement carries one:
 4. **The limits.** uCDD does not trap the OPL (388h) or the PIT, so the
    first traces have no FM music and no timer rates; a second build passed
    those ports through and counted them for 38 games
-   ([music-and-timers.md](music-and-timers.md)). The MPU-401 was not
-   traced. 35 s often ends in a
+   ([music-and-timers.md](music-and-timers.md)); a third added the
+   MPU-401 for 16 games set for MIDI. 35 s often ends in a
    menu: a game that plays its digital sound only in play shows only its
    detection. A trace can miss the steady state between the first 448
    and the last 192 accesses. A long log print holds interrupts off and
