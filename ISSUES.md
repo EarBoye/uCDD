@@ -186,6 +186,13 @@ changed volumes.
     byte and in 46% of idle reads, E1h 31 us); the virtual DSP answers in
     6-12 us and never shows busy.
   All open.
+- F14 (19 Oct, hardware and 86Box): Mortal Kombat Trilogy's own sounds
+  (Miles 3.5 SB16, DOS/4GW) play about 2.3x long under uCDD at the right
+  pitch: the auto-init buffer halves are replayed before the game's
+  handler refills them (the refill is a block or more late). PC x2.22,
+  86Box D7 x2.38; every uCDD build that ran the game; the CD music is
+  exact. Hexen may share it (choppy helicopter on the PC). Open; top of
+  the list.
 - Super Street Fighter II Turbo: dropped (Michael, 18 Oct). Its 32RTM
   loader writes CR0 and then needs DOS translation for 32-bit programs, a
   host feature of its own for one game; runs without the driver.

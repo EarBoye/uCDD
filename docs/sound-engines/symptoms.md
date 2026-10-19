@@ -28,6 +28,7 @@ gives where the evidence is. Find the game's engine first in the
 |---|---|---|
 | HMI games (Descent 2) | the engine mixes up to the DMA count it reads; a count ahead of what is heard lets it overwrite unplayed frames | [hmi-sos.md](hmi-sos.md), ISSUES.md `ess-position`, `virtual-timing` |
 | iMUSE, DMX, MIDAS, DSMI games | a polled count that steps back (seen in 86Box, timing-sensitive) | [findings.md](findings.md) F2 |
+| Game sounds in slow motion: the right pitch, but each sound about twice as long, grainy (Mortal Kombat Trilogy's logos, Miles 3.5 SB16 under DOS/4GW; perhaps Hexen's chopped helicopter) | the card replays its auto-init buffer halves before the game's handler refills them: the refill comes a block or more late | [findings.md](findings.md) F14 |
 | Games that read the count twice until they agree (Battle Race 95) | the virtual count moves between the two reads, so they never agree: a hang, not a click | [others.md](others.md), host-cdrom-spec.md section 10 |
 
 ## Sound stops after a while
@@ -76,3 +77,18 @@ gives where the evidence is. Find the game's engine first in the
 3. Trace it: the method is in the [README](README.md#how-these-notes-were-made).
 4. Rule 1: if the game breaks the specification, the real card's answer
    is the answer; no special case.
+
+## Checking a recording
+
+A recording from the real PC (a phone near the speakers is enough) can be
+judged against a recording of the same moment in 86Box without uCDD (the
+game on 86Box's own CD drive). Separate the parts first: when a CD track
+plays, take it out of the recording (it is known to the sample), then
+compare the CD music and the game's own sound each on its own. The CD
+music checks pauses, skips and speed; the game's sound, cut into 40 ms
+pieces and each placed where it fits best in the reference, shows speed
+(how long a sound takes against the reference), repeats (pieces placed
+earlier than the one before) and losses. Look at the spectrograms as
+well as the numbers. Mortal Kombat Trilogy's CD music was exact on the PC
+while its game sounds ran 2.2x long (F14): checking only the music missed
+it.

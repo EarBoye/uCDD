@@ -143,7 +143,8 @@ both [hw]; the numbers are in [ct2290.md](ct2290.md).
 - **F8.** At a block's interrupt the card's 8237 count sits exactly on the
   block boundary; the virtual count is about 7Dh short of it. The card's
   FIFO (16 samples) brings the first interrupt 0.7 ms forward; the virtual
-  card shows no such difference.
+  card shows no such difference. In stereo (B6h mode 30h) the virtual
+  count is FCh words short [trace].
 - **F9.** A block never acknowledged: the card raises one interrupt and
   stops the DMA within about two blocks until the acknowledge; the virtual
   card raises 7 interrupts in 300 ms and never stops.
@@ -160,6 +161,25 @@ both [hw]; the numbers are in [ct2290.md](ct2290.md).
 - **F13.** The card's DSP takes 61 us to reset, shows busy for 26 us after
   each command byte and in 46% of idle reads, and answers E1h in 31 us;
   the virtual DSP answers in 6-12 us and never shows busy.
+
+### F14. Mortal Kombat Trilogy's game sounds play about 2.3x long
+
+Under uCDD the logo sounds of Mortal Kombat Trilogy (Miles 3.5, the SB16
+driver shared with Dungeon Keeper: B6h mode 30h, 22050 Hz, 1024-word
+blocks in a 2048-word auto-init buffer, DOS/4GW) last about 2.3 times as
+long as without uCDD, at the right pitch. Placed piece by piece against a
+run on 86Box's own CD drive, each 40 ms of the uCDD sound covers about
+17 ms of the true sound and keeps stepping back: the card plays a buffer
+half again before the game's handler has refilled it, so the refill comes
+a block (23.2 ms) or more late. Michael's recording on the PC: x2.22
+[hw, 19 Oct]; 86Box with D7: x2.38 [trace]. Every uCDD build that ran the
+game has it (18 and 19 Oct captures); the runs without uCDD do not. The
+CD music in the same recordings is exact. Not the stereo block length:
+B6h mode 30h with length 1024 interrupts every 23.2 ms under D7, as on
+the card [trace]. Suspects: the handler runs late through the DPMI host
+(compare F10), and F9 (the CT2290 stops at an unacknowledged block end,
+so a late game would pause there rather than hear stale data). Hexen
+(DOS/4GW too) chops some sounds on the PC: perhaps the same.
 
 F5's confirmation is above. The card also settles three things the
 virtual card already does right: no lockout during 90h on the 4.13 (D0h,
