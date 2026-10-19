@@ -29,7 +29,7 @@ interrupt once per period.
 | HMI SOS | Descent | 2, 9943 | **120.0 Hz** | 256 latches (counter reads) |
 | HMI SOS | Tomb Raider | 3, 9943 | 120.0 Hz | |
 | HMI SOS | Screamer | 3, 11931 | 100.0 Hz | |
-| Miles MSS 3 | Albion, Dungeon Keeper | 2, 5966 | **200.0 Hz** | 31246 and 3514 latches: Albion reads the counter about 500 times a second |
+| Miles MSS 3 | Albion, Dungeon Keeper | 2, 5966 | **200.0 Hz** | at least 31246 and 3514 latches (counted in the kept part of the log): Albion latches the counter some 500 times a second |
 | Miles MSS 3 | Warcraft | 3, 5966 | 200.0 Hz | |
 | Miles MSS 3 | System Shock | 3, 4261 | 280.0 Hz | |
 | Miles (LBA) | Little Big Adventure | 3, 9943 | 120.0 Hz | |
@@ -99,7 +99,8 @@ IMUSE.INI), Castles II, SimCity, 7th Guest (no music in 35 s), C-Dogs.
   bus time every second, in the game's timer handler.
 - **OPL3 games** (HMI, Apogee, Miles 3, SCI1.1, MicroProse) switch the chip
   into OPL3 mode with 105h and write both banks; the SB Pro 2 and SB16 have
-  an OPL3, the SB 1.x/2.0 one OPL2 and the SB Pro 1 two [recall]. A game
+  an OPL3, the SB 1.x/2.0 one OPL2 and the SB Pro 1 two (SBG:450-454,
+  4234-4239, 4263-4268). A game
   set for OPL3 on an OPL2 card loses the notes it sends to the second bank.
 
 ## Detection of the FM chip
@@ -109,4 +110,5 @@ writes at the start of each run]: reset both timers (04h=60h, 04h=80h),
 read the status, start timer 1 with 02h=FFh and 04h=21h, wait, read the
 status again (C0h expected), reset. Miles and LBA add 26 writes to
 06h-1Fh (clearing the registers) and 4 to the second bank's timers, the
-OPL3 test.
+OPL3 test (an OPL2 reads 06h at 388h after a reset, an OPL3 00h,
+SBG:450-454).

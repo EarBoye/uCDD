@@ -4,7 +4,7 @@ DigPak plays digital sound, MidPak music; both 1992-1995, both resident
 drivers loaded by the game, both called through a software interrupt.
 About 35 games here: X-COM UFO Defense and Terror from the Deep, Pizza
 Tycoon, Capitalism, Simon the Sorcerer 1 and 2, The 7th Guest, Eye of the
-Beholder III, Ultima I-V (the eXo patches), Caesar. See
+Beholder III, Ultima II-V, Caesar. See
 [inventory](inventory.md).
 
 Grades as in the [README](README.md#evidence-grades).

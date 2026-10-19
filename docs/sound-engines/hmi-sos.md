@@ -1,7 +1,7 @@
 # HMI Sound Operating System (SOS)
 
 Human Machine Interfaces' SOS, 1992-1997: digital audio and MIDI for
-protected-mode games, the second largest family here (about 70 games:
+protected-mode games, the second largest family here (about 80 games:
 Descent 1 and 2, Tomb Raider, MDK, Screamer, Rayman, Abuse, Shellshock,
 Carmageddon, Command & Conquer). See [inventory](inventory.md).
 
@@ -68,11 +68,12 @@ Command & Conquer. In order:
    The length is the whole DMA buffer: one interrupt per buffer.
 8. From then on the engine **polls the DMA count**: clear the flip-flop,
    read the low and the high byte, over and over from its timer handler
-   (Descent: 406 count reads in the last 640 accesses, against 2
-   acknowledges). It mixes ahead of the position it reads. The card's
-   interrupt is acknowledged (2xEh) but not needed: Descent, configured
-   for IRQ 5 on a card at IRQ 7, played its sound effects with the
-   interrupt never reaching it.
+   (Descent: about 200 count reads in the last 640 accesses, against a
+   handful of acknowledges). It mixes ahead of the position it reads. The
+   card's interrupt is acknowledged (2xEh) once per buffer, at the wrap;
+   the mixing follows the count. In the traces HMI's count never read
+   higher than the read before it ([findings.md](findings.md) F2 was not
+   seen in any HMI game).
 
 Format by game (all at 220h):
 
@@ -103,7 +104,7 @@ bytes.
 | Item | What HMI does | What it needs | Where |
 |---|---|---|---|
 | Position by count | reads the DMA count hundreds of times a second | a count that moves with the output clock, not in whole mix periods | ISSUES.md `virtual-timing`, `ess-position` |
-| Descent 2 clicks | the count was one output period behind the mix | count never ahead of what has been mixed | ISSUES.md `ess-position` |
+| Descent 2 clicks | rewrites the buffer right up to the count it reads; a virtual count at the mix position (ahead of what is heard) let it overwrite frames not yet played | the count follows the output clock and never passes the mix | ISSUES.md `ess-position`, `virtual-timing` |
 | No version check | goes straight to 83h and 41h | the configured card must accept 41h (an SB16 or ESS command) | |
 | 0Ch before D8h | wrong controller's flip-flop | channel 5's flip-flop must survive 0Ch writes | host-cdrom-spec.md D5 |
 | No acknowledge needed | plays on with its interrupt lost | the output must keep running when the game never acknowledges | see below |
@@ -139,4 +140,4 @@ of them to the sustain/release registers. Detail in
 | Rate | 41h in Hz (SB16, ESS); time constant on the SB/SB Pro modules |
 | Acknowledge | 2xEh (or 2xFh), once per buffer |
 | Position | **the 8237 count, polled** |
-| Timer | its own handler on IRQ 0, swapped in with IRQ 0 masked |
+| Timer | its own handler on IRQ 0 at 120 Hz (Screamer 100 Hz), swapped in with IRQ 0 masked |

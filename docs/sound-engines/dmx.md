@@ -1,8 +1,8 @@
 # DMX (Digital Expressions)
 
 Paul Radek's DMX library, licensed by id Software and Raven: Doom, Doom II,
-Final Doom, Heretic, Hexen, Strife, Raptor. Eight games here, every one a
-protected-mode (DOS/4GW) game. See [inventory](inventory.md).
+Final Doom, Heretic, Hexen, Strife, Raptor. Eight games here, and four
+more carry it on their discs. See [inventory](inventory.md).
 
 Grades as in the [README](README.md#evidence-grades).
 

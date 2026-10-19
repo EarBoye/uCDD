@@ -11,14 +11,15 @@ own branch and test.
 
 ### F1. Shared IRQ 7: the 1994 Miles probe interrupt is lost
 
-Warcraft and System Shock (Miles Sound System 3.0x, SB16.DIG) send their
-one-sample probe (B0h, length 0) and wait for its interrupt. With the
+Warcraft and System Shock carry the same SB16.DIG (2756 bytes, identical
+files, no version string: the 1994 Miles Sound System) [file]. Both send
+its one-sample probe (B0h, length 0) and wait for the interrupt. With the
 physical card and the virtual card **both on IRQ 7**, the game's handler
 never ran in 5 of 6 runs: four probes, then the driver gives up and the
 game has no digital sound. With the physical card on IRQ 5 and the
 virtual on IRQ 7, 3 of 3 runs passed; with both on IRQ 5,
-1 of 1. Theme Hospital, Dungeon Keeper and Time Commando (Miles 3.5)
-pass the same probe on 7/7. System Shock on 86Box's own SB16 without
+1 of 1. Time Commando (3.04, a 2836-byte SB16.DIG), Theme Hospital and
+Dungeon Keeper (3.50E, 2923 bytes) pass the same probe on 7/7. System Shock on 86Box's own SB16 without
 uCDD recorded three to five times the audio level of the
 uCDD run after its intro started.
 
@@ -46,10 +47,13 @@ it, without a wrap [trace]:
 | Cyberdogs | DSMI | 13 of 234 | 146-220 words (reads far apart: less sure) |
 | Raptor | DMX | 1 of 106 | 356 bytes |
 
-The count is the smaller of the output clock and the mix position
-(trap.asm, `.dma_read`), so the output clock itself moves back by about
-one to two output periods at times. A suspect, not shown: the clock read
-between the physical position's wrap and the period counter's advance.
+For an auto-init transfer the count is the smaller of the output clock
+and the mix position; for a single-cycle one (King's Quest V) it is the
+mix position alone (trap.asm, `.dma_read`). So in the auto-init games
+the output clock itself moved back, by about one to two output periods,
+and in King's Quest V the mix position did. A suspect for the clock, not
+shown: a read between the physical position's wrap and the period
+counter's advance.
 Engines that mix up to the position they read (HMI, iMUSE, MIDAS, DSMI)
 can then mix over frames already played; the "two reads agree" loop of
 Battle Race 95 (host-cdrom-spec.md section 10) is the same field. The
@@ -77,8 +81,8 @@ have ended about 1.5 s after it started.
 | B7 | DSMI, MIDAS, Battle Race | one block of 60000+ samples over a small DMA buffer | the interrupt almost never comes; the count must be right |
 | B8 | DMX, Sierra, Creative, Loudness, Tyrian | find the IRQ by F2h, a 1-byte 14h, or an 80h silence, with several lines open | one interrupt per test, on the card's line, after the command |
 | B9 | DigPak SB16, Cool Spot, Sound Images | write the master PIC mask 00h (every line open) | nothing; the driver's own handlers must cope |
-| B10 | Castles II | toggles IRQ 1's mask about 15 times a second | cheap mask writes |
-| B11 | Miles MSS 3 | latches the PIT's counter about 500 times a second (Albion: 31246 latches in a run) | with the host's retrace hint on (it traps 40h and 43h), that is about 1500 traps a second; the hint is off in the 128-frame builds ([music-and-timers.md](music-and-timers.md)) |
+| B10 | Castles II | writes IRQ 1's mask bit about 15 times a second | cheap mask writes |
+| B11 | Miles MSS 3 | latches the PIT's counter some 500 times a second (Albion: at least 31246 latches in a run of about a minute) | with the host's retrace hint on (it traps 40h and 43h), that is about 1500 traps a second; the usual builds (`--no-refill-hint`) do not trap them ([music-and-timers.md](music-and-timers.md)) |
 
 ## To measure on the CT2290
 
@@ -86,16 +90,16 @@ have ended about 1.5 s after it started.
 |---|---|---|
 | M1 | What does mixer register 83h do (HMI writes 0Bh)? | read 83h after a reset, write 0Bh, read back; play a block with 83h 00h and 0Bh |
 | M2 | Is mixer 81h writable on the CT2290? | read 81h, write 02h, read back, restore |
-| M3 | Does an auto-init transfer keep running when its interrupt is never acknowledged? | DMACNT-style: start C6h, never read 2xEh, read the count over 2 s |
+| M3 | Does an auto-init transfer keep running when its interrupt is never acknowledged? | as DMACNT: start DSP C6h (8-bit auto-init), never read 2xEh, read the count over 2 s |
 | M4 | Does channel 5's current address register move with the transfer, and does 8Bh read back? | read C4h and 8Bh during a B6h transfer |
-| M5 | Does a 0Ch write disturb channel 5's flip-flop? | write 0Ch between the two bytes of a C6h read |
+| M5 | Does a 0Ch write disturb channel 5's flip-flop? | write port 0Ch between the two byte reads of port 0C6h |
 
 ## Not engine faults, seen on the way
 
-- Inca II ("Not enough extended memory", a negative free size), Star
-  Trail (negative free XMS), Death Rally ("Stack Overflow" at loading):
-  three games that read the test machine's large memory wrongly; Inca II is the
-  Phar Lap case in host-cdrom-spec.md section 10.
+- Inca II ("Not enough extended memory", a negative free size) and Star
+  Trail (negative free XMS) read the test machine's large memory wrongly;
+  Inca II is the Phar Lap case in host-cdrom-spec.md section 10. Death
+  Rally stopped with "Stack Overflow" while loading; not looked at.
 - Ultima VII refuses to run with an expanded memory manager: it needs a
   boot entry without JemmEx.
 - System Shock and Warcraft are F1, not their own fault.

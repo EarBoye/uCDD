@@ -37,8 +37,9 @@ itself.
 2. **The IRQ test**: opens IRQ 3, then 5, then 7 at the PIC (mask B0h,
    90h, 10h) with a handler on each, programs a **one-byte single-cycle
    transfer** (8237 mode 49h, count 0), time constant 64h (6410 Hz),
-   **14h with length 0**; the handler that runs reads 2xEh. The other
-   lines are masked again.
+   **14h with length 0**; the handler that runs reads 2xEh. The mask then
+   reads 90h (IRQ 7 masked again, IRQ 3 and 5 left open) until playback
+   opens IRQ 7 once more (10h).
 3. D1h, time constant A6h (11111 Hz) three times, **48h 4000h** (a block
    size, which single-cycle transfers do not use), then the 8237 and
    **14h with length 3FFFh**: 16 KB single-cycle blocks.
@@ -70,8 +71,9 @@ AUDBLAST uses the SB16's rate command when E1h says 4.xx. Mixer 26h=FFh
 Larry 2's RESOURCE.CFG names ADL.DRV (FM music only), yet its run shows
 the same one-byte probe (E0h, E1h, time constant 64h, 14h length 0, the
 mask stepping A0h, 20h) [trace]; which program sent it is not known.
-Police Quest 3 (SCI1): E0h, E1h, the probe, mask A8h, A0h, 80h, 00h:
-IRQ 3, 5 and 7 opened one by one, then all [trace].
+Police Quest 3 (SCI1): E0h, E1h, the probe, the mask stepping A8h, A0h,
+80h, 00h: IRQ 3, 5 and 7 opened one after another (IRQ 4 was already
+open for the mouse) [trace].
 
 ## What uCDD needs for Sierra
 

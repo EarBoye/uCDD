@@ -14,8 +14,8 @@ C-Dogs, SB Pro path on the virtual SB16 [trace]: E1h, D1h, mixer 0Eh=22h
 (stereo, output filter off), **time constant E9h** (43478 Hz, so 21739 Hz
 per channel), **48h with 61440 and 90h**: high-speed auto-init with one
 huge block; the DMA buffer is much smaller, so the card's interrupt
-almost never comes. The engine **polls the 8237 count**, 1121 reads in
-640 accesses, clearing the flip-flop with FFh.
+almost never comes. The engine **polls the 8237 count**: 1121 byte reads
+(about 560 counts) in 640 accesses, the flip-flop cleared with FFh.
 
 Cyberdogs, SB16 path [trace]: E1h twice, D1h, **42h** (the input-rate
 command, 22222 Hz) as its only rate command, then **B6h mode 30h with a
@@ -32,7 +32,7 @@ Star Dust [trace]: E1h, 41h 22050 Hz, **B4h mode 10h** (16-bit mono,
 **FIFO off**) with a block of 65521 samples, DMA 5; mixer registers
 30h-47h all written (levels, 41h/42h input/output gain 80h, 44h-47h
 treble and bass 80h); **176 reads of the reset port 2x6h** (a delay
-loop); the position by polling channel 5's count (409 reads), D8h
+loop); the position by polling channel 5's count (409 byte reads), D8h
 cleared before each. Like DSMI, the interrupt is almost unused.
 
 ## Allegro (Shawn Hargreaves)

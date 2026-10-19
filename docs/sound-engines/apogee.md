@@ -2,10 +2,12 @@
 
 Jim Dosé's library for Apogee and 3D Realms, versions 1.0 to 1.1x
 (1994-1997): Duke Nukem 3D, Rise of the Triad, Shadow Warrior, Blood,
-Hocus Pocus, Realms of Chaos, Boppin', Raptor, Redneck Rampage, KKND.
-Thirteen games found by the scan, plus Hocus Pocus, whose packed
-executable hides the strings but whose trace is this engine's. Its source was published later and grew into the
-jfaudiolib of the source ports [recall]. See [inventory](inventory.md).
+Hocus Pocus, Realms of Chaos, Boppin', Redneck Rampage, KKND. Thirteen
+games found by the scan, plus Hocus Pocus, whose packed executable hides
+the strings but whose trace is this engine's. Raptor carries both this
+and DMX; its trace shows DMX. The source was published later and grew
+into the jfaudiolib of the source ports [recall]. See
+[inventory](inventory.md).
 
 Grades as in the [README](README.md#evidence-grades).
 
@@ -47,7 +49,8 @@ Duke Nukem 3D, Rise of the Triad, Shadow Warrior, Blood and Boppin', at
 4. The 8237: DMA 5, mode 59h, a buffer of 2048 words.
 5. **B6h mode 30h, length 511**: 16-bit stereo, auto-init, FIFO on,
    512 samples (256 frames) per block: four blocks in the buffer.
-   At 22000 Hz a block is 11.6 ms; Blood's 44000 Hz makes it 5.8 ms.
+   At 22000 Hz a block is 11.6 ms; at Blood's 44000 Hz the same block
+   would be 5.8 ms (Blood's trace stopped before its B6h).
 6. **The handler**: mixer 82h, 2xFh (acknowledge), then **reads the 8237's
    current address** of channel 5 (C4h, low and high) **and the page
    register** 8Bh, not the count. The position in the ring comes from the
@@ -60,13 +63,13 @@ Older versions, smaller blocks [trace]:
 | Hocus Pocus | 1994 | 41h 10000 Hz, B6h mode 10h, length 63 | 16-bit mono | 64 samples: **6.4 ms** |
 | Realms of Chaos | 1995 | 41h 10980 Hz, C6h mode 00h, length 127 | 8-bit mono | 128 samples: 11.7 ms |
 | Duke Nukem 3D | 1996 | 41h 22000 Hz, B6h mode 30h, length 511 | 16-bit stereo | 256 frames: 11.6 ms |
-| Blood | 1997 | 41h 44000 Hz | 16-bit stereo | 256 frames: 5.8 ms |
+| Blood | 1997 | 41h 44000 Hz (the trace ends there) | | 5.8 ms if its blocks are Duke's 256 frames |
 
 ## What uCDD needs for the Apogee Sound System
 
 | Item | What it does | What it needs | Where |
 |---|---|---|---|
-| Very short blocks | 5.8 ms (Blood at 44 kHz), 6.4 ms (Hocus Pocus) | the output period at most half the block: 128 frames (2.9 ms) just covers 5.8 ms; 256 frames does not | ISSUES.md, output period table |
+| Very short blocks | 6.4 ms (Hocus Pocus), probably 5.8 ms (Blood at 44 kHz) | the output period at most half the block: 128 frames (2.9 ms) just covers 5.8 ms; 256 frames does not | ISSUES.md, output period table |
 | Address, not count | reads channel 5's current address and its page | the 8237's address register must move with the output, as the count does, and the page register must read back | host-cdrom-spec.md section 5 |
 | 42h | sets the input rate too | on the 4.xx one rate register serves 40h and 41h-43h, so 42h sets the output rate as well; the virtual SB16 takes 42h as 41h | vsb-spec.md section 13 |
 | D0h then D3h at set-up | pause, speaker off | harmless with no transfer running | |

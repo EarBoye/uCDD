@@ -99,11 +99,16 @@ the masks stepping B0h, A0h, 80h, 00h. IRQ 2 on an SB means IRQ 9 (vector
 
 ## FM synthesis (OPL2 / OPL3)
 
-AdLib-compatible FM at 388h/389h (index, data), duplicated at base+8/base+9
-on Sound Blasters; the SB Pro and SB16 have a second bank at base+0/1 (left)
-and base+2/3 (right) for OPL3. Detection: timer 1 and timer 2 tricks through
-register 04h, read the status port. Music engines write register pairs
-directly, many times per timer tick; no DMA and no interrupt from the chip.
+AdLib-compatible FM at 388h/389h (status or index, data), duplicated at
+base+8/base+9 on every Sound Blaster (SBG:4100-4113). The first SB Pro
+has two OPL2 chips: base+0/1 the left, base+2/3 the right (SBG:4234-4239).
+The SB Pro 2 and the SB16 have one OPL3: base+0/1 (and 388h/389h) its
+first register bank, base+2/3 (and 38Ah/38Bh) the second, the "advanced
+FM" (SBG:4263-4268, 4308-4313). An OPL2 reads 06h at 388h after a reset,
+an OPL3 00h (SBG:450-454). Detection: the timer test through registers
+02h-04h and the status port. Music engines write register pairs directly,
+many times per timer tick; no DMA and no interrupt from the chip. What
+each engine does: [music-and-timers.md](music-and-timers.md).
 
 ## MIDI: MPU-401
 
@@ -111,11 +116,13 @@ Data at 330h, status/command at 331h. Engines send FFh (reset) then 3Fh
 (UART mode) and read FEh (acknowledge); after that every MIDI byte goes to
 330h after waiting for bit 6 of 331h to clear. Intelligent mode (the MPU's
 own sequencer) is used by a few early drivers (Sierra's MT32.DRV era); most
-engines in this library use UART mode.
+engines in this library use UART mode [recall; the MPU-401 was not traced].
 
 ## The timer (PIT channel 0)
 
 Port 40h (counter 0), 43h (control). Engines reprogram channel 0 to a faster
-rate (70 Hz to over 1 kHz) to drive music and mixing, keep calling the
+rate to drive music and mixing (35 Hz to 701 Hz in the traces: Sierra 60,
+HMI and Apogee 120, DMX 140, Miles 3 200, DSMI 560), keep calling the
 BIOS's 18.2 Hz handler at the right moments, and read the counter (latch
-with 00h to 43h, then two reads of 40h) to build fine clocks.
+with 00h to 43h, then two reads of 40h) to build fine clocks; Miles 3 does
+so some 500 times a second. Detail: [music-and-timers.md](music-and-timers.md).

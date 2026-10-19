@@ -2,7 +2,7 @@
 
 John Miles' Audio Interface Library (Miles Design, from 1991) and its
 successor, the Miles Sound System (from 1994, RAD Game Tools from 1996).
-The largest family in the libraries: about 120 games (see
+The largest family in the libraries: about 130 games (see
 [inventory](inventory.md)). Two generations that look alike from a
 distance and work differently up close.
 
@@ -12,10 +12,10 @@ distance and work differently up close.
 | Configuration | the game's own file, often binary (CASTLES2.CFG: ten bytes) [file] | `DIG.INI` and `MDI.INI`, plain text, written by SETSOUND or the game's setup [file] |
 | Runs in | real mode; a protected-mode game calls it through the extender | real mode too: the .DIG is a 16-bit driver called through a real-mode thunk from the 32-bit library [recall] |
 | Music data | XMIDI (`.XMI`), the AIL's extended MIDI | XMIDI, also MIDI through the same .MDI drivers |
-| Games here | Castles II, SimCity Enhanced, Wing Commander, Serf City, Lemmings 2, Ultima VII... | Theme Hospital, System Shock, Mortal Kombat 1, Albion, Dungeon Keeper, Warcraft, Heroes 2... |
+| Games here | Castles II, SimCity Enhanced, Wing Commander Armada, Serf City (AIL/32), Lemmings 2, Ultima VII; Kyrandia and Dune II have its SB Pro driver built in ([own-code.md](own-code.md)) | Theme Hospital, System Shock, Mortal Kombat, Albion, Dungeon Keeper, Warcraft, Heroes 2... |
 
 Grades: **[trace]** an 86Box trace through uCDD's port trap (emulator);
-**[file]** read from the game's own files; **[ref]** a cited document;
+**[file]** read from the game's own files; **[doc]** a cited document;
 **[hw]** Michael's PC; **[recall]** background knowledge not checked here.
 See [README](README.md#evidence-grades).
 
@@ -102,7 +102,12 @@ Revolution, recorded in host-cdrom-spec.md section 10]:
    in DIG.INI these decide; BLASTER is read as well.
 3. **A one-sample 16-bit probe**: DMA 5 mode 49h single-cycle, DSP B0h
    (16-bit output, single-cycle) mode 30h, length 0; then the interrupt,
-   82h read, 2xFh read (the 16-bit acknowledge).
+   82h read, 2xFh read (the 16-bit acknowledge). The driver tries four
+   times before it gives up and the game runs without digital sound. The
+   1994 SB16.DIG (2756 bytes, the same file in Warcraft and System Shock)
+   loses this interrupt under uCDD when the physical card shares IRQ 7
+   with the virtual one ([findings.md](findings.md), F1); 3.04 (Time
+   Commando) and 3.50E (Theme Hospital, Dungeon Keeper) do not.
 4. Volumes: reads then writes 30h-3Ch (LBA writes 3Ch=1Eh, 3Bh=00h,
    32h-39h, 30h/31h).
 5. Playback, auto-init:
@@ -118,8 +123,8 @@ Revolution, recorded in host-cdrom-spec.md section 10]:
    16-bit, 2xEh for 8-bit), mixes the next block, and sends the EOI. One
    82h read and one acknowledge per interrupt, nothing else [trace].
 
-Version 3.5's SB Pro and ESS drivers are documented in
-[miles-ess.md](../miles-ess.md): the ESS driver identifies the chip by
+Version 3.5's ESS driver (AUDIODRV.DIG) is documented in
+[miles-ess.md](../miles-ess.md): it identifies the chip by
 E7h, takes IRQ and DMA from ESS registers B1h/B2h, and tests the interrupt
 with F2h.
 
@@ -142,6 +147,7 @@ test fail and the game run silent. uCDD holds an F2h that comes within
 | Delivery through its own vector | hooks the IRQ through INT 21h AH=25h | the interrupt must reach the game's vector, also when card and game share IRQ 7 | miles-ess.md, fault 2 |
 | End of interrupt held for seconds | Mortal Kombat Trilogy's driver leaves its last interrupt without an EOI for about 3 s after a sound | nothing else may wait for that EOI (uCDD's CD refill did, M-12) | host-cdrom-spec.md M-12 |
 | One-sample probe | B0h with length 0 at set-up | a 1-sample single-cycle 16-bit transfer must complete and interrupt | traces above |
+| Shared IRQ 7 | the 1994 drivers' probe interrupt | delivery to the game's handler with the physical card on the same line | [findings.md](findings.md) F1, open |
 | 80h/81h | trusted for IRQ and DMA | the card's real IRQ and DMA in 80h/81h | vsb-spec.md 9.4 |
 | Smacker video with Miles | Star Command's intro stalls under the DPMI host (timer delivered 20000 times a second) | open | host-cdrom-spec.md section 10 |
 
@@ -149,7 +155,7 @@ test fail and the game run silent. uCDD holds an F2h that comes within
 
 MSS 3 sets the PIT to **200 Hz** (Albion and Dungeon Keeper in mode 2,
 Warcraft in mode 3; System Shock 280 Hz) and reads the counter often
-(Albion: about 500 latches a second). Its OPL3.MDI, AIL 2's OPL drivers
+(Albion: some 500 latches a second). Its OPL3.MDI, AIL 2's OPL drivers
 inside MidPak (Capitalism) and LBA's linked-in code write the FM chip the
 same way: **OPL3 with both banks, 14 status reads per register write**,
 and the same start (the timer test, 26 writes to 06h-1Fh). Detail in
@@ -165,4 +171,4 @@ and the same start (the timer test, 26 writes to 06h-1Fh). Detail in
 | Rate | 40h time constant | 41h in Hz |
 | Acknowledge | 2xEh | 82h, then 2xFh or 2xEh |
 | Position | interrupts only | interrupts only (no count reads seen) |
-| Timer | the music driver's serve call | the same, from the library's timer |
+| Timer | the music driver's serve call (function 103) | 200 Hz (280 Hz in System Shock) |
