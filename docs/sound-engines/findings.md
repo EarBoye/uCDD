@@ -49,11 +49,21 @@ it, without a wrap [trace]:
 
 For an auto-init transfer the count is the smaller of the output clock
 and the mix position; for a single-cycle one (King's Quest V) it is the
-mix position alone (trap.asm, `.dma_read`). So in the auto-init games
-the output clock itself moved back, by about one to two output periods,
-and in King's Quest V the mix position did. A suspect for the clock, not
-shown: a read between the physical position's wrap and the period
-counter's advance.
+mix position alone (trap.asm, `.dma_read`).
+
+Follow-up the same afternoon [trace, 86Box]: Dark Forces stepped back
+again on the same trace build (20 steps in a repeat run), and its steps
+sit where the count crosses 400h, the end of the first 1024-byte block
+of its 2048-byte buffer: the block end, not the DMA lap. A build that
+only added a check of the output clock (log any clock below the last
+one) showed **no** step in the clock and none in the count, in three
+runs of Dark Forces, three of Hexen and one under full host CPU load. So
+the output clock is not shown to go back, the fault is timing-sensitive
+(a race: a few added instructions hide it), and the per-block position
+path (the mix position and its block start) is the next place to look.
+Star Dust's two repeat runs had no real step (the one each was the game
+reprogramming its buffer from 0378h to 0500h words) where the first run
+had 28 small ones. Open.
 Engines that mix up to the position they read (HMI, iMUSE, MIDAS, DSMI)
 can then mix over frames already played; the "two reads agree" loop of
 Battle Race 95 (host-cdrom-spec.md section 10) is the same field. The
