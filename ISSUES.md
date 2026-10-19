@@ -3,6 +3,10 @@
 What was tested, how, and what is still open. RELEASE-NOTES.md lists the
 changes themselves.
 
+Branch names below that are no longer on the fork (they were folded into
+`fixes` or into `vcpi-children`, the current line) live on as tags:
+`archive/<name>` points at the commit the branch had (19 Oct 2026).
+
 ## How things were tested
 
 **Real hardware:** Pentium MMX 233, ECS P5HX-A (430HX), 64 MB, ESS ES1868
