@@ -10,9 +10,10 @@ game can be matched to its engine's habits before anything is patched.
 Built 19 Oct 2026 from a scan of every game's files and port traces of
 74 games in 86Box.
 
-## Fix by family, not by game
+## Fix by family, not by game (mantra rule 10)
 
-The reason this library exists. When a game's sound misbehaves under
+The reason this library exists, and since 20 Oct 2026 rule 10 of the
+project's mantra (docs/spec-first.md section 12 on `spec-first`). When a game's sound misbehaves under
 uCDD, find its engine and driver version ([inventory.md](inventory.md),
 [census.md](census.md)) and test every game that shares them before the
 fault is called that game's own. Fix the shared cause once, and check the
