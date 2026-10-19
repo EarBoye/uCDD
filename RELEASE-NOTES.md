@@ -52,6 +52,7 @@ JemmEx).
 - The interpolation of the last CD frame of a half no longer reads one frame past the data loaded at output rates above 44.1 kHz.
 - More interrupt-flag patterns recognised (the flags image in a register), and a larger, hashed table of learned sites. Hardware, benefit partly confirmed.
 - The ESS build (`--virtual-ess`) over a card that is not an ESS (an SB16, SB Pro, SB 2.0) played silence, CD audio included: its virtual ESS copied its starting mixer from the physical card's registers. It now copies them only from a physical ESS, and starts at the ESS sheet's reset levels over any other card.
+- `UCDD -status` prints the sound interrupt counts since installation, and `-reset` starts them again from 0: the output periods, spurious IRQ 7 entries, and the virtual card's interrupts raised, taken by the game's handler, ended by its EOI, block ends while unacknowledged, raised again after no acknowledge, and EOIs taken as stray. A fault of the virtual interrupt shows on the PC after one game, with the release build. Emulator.
 
 ## DPMI host
 

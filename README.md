@@ -221,6 +221,15 @@ The internal host runs 32-bit and 16-bit DPMI programs. A DPMI program can start
 
 If a program supports only VCPI, install with `UCDD -install -vcpi`. VCPI then stays visible, but the sound of these programs bypasses μCDD.
 
+### Sound interrupt counts
+
+```
+UCDD -status
+UCDD -status -reset
+```
+
+`-status` prints how the virtual Sound Blaster's interrupts went since installation: raised, taken by the game's handler, ended by the game's EOI, block ends while the previous one was unacknowledged, raised again after no acknowledge, and EOIs taken as stray, with the output periods and spurious IRQ 7 entries. In a healthy run taken and ended are close to raised and the other counts are near 0. `-reset` prints them and starts them again from 0, so `UCDD -status -reset` before a game and `UCDD -status` after it give that game's counts. Like `-mount`, it finds the driver through MSCDEX or SHSUCDX.
+
 ### Images
 
 Use DOS 8.3 names on a local hard disk. Image files must be smaller than 2 GiB. Images on CD, floppy, or network drives are not supported.
