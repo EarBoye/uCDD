@@ -381,6 +381,15 @@ night on a D: with 255 heads, with and without the driver:
 - Battle Race 95 stays on its loading screen (not run again: no launcher
   of that name in the current libraries).
 
+A fifth sweep (19 Oct, `vcpi-children`, all 97 games, the screens against
+each game's latest earlier sweep): nothing worse. Further than before:
+Chasm: The Rift (in its level), Time Warriors, Tomb Raider, Whiplash,
+Lollypop, Star Command Revolution (D-16), Battle Arena Toshinden as
+before. The ones that differed on the first look were the test setup
+(Warcraft II CD's disc list, Assault Rigs' drive letter: the same on
+`locked-stack` under the same sweep), a screen caught at a level change
+(Rayman Forever: plays), or known (Inca II). Battle Race 95 still stops on
+its loading screen, as on `locked-stack`.
 A third batch, early on 18 Oct: 17 games had stopped at "Bad command or
 file name" because their launchers carry a number (BLOOD01.BAT,
 GTA01.BAT) and the test setup looked for GAME.BAT. It now takes the first
