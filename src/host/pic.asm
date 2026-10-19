@@ -90,6 +90,8 @@ dpmi_pic_next:
     ret
 
 ; The real-mode handler will own its EOI after a default-vector chain.
+; Carry set when the host had the IRQ in service (it queued the IRQ and sent
+; its EOI then), clear when not or when the vector is no IRQ's.
 dpmi_pic_reflect:
     pushad
     movzx eax, byte [ebp+dpmi_reflect_vector]

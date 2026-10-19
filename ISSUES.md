@@ -135,6 +135,22 @@ changed volumes.
   count with interrupts off until two reads agree, and under the host the
   reads are too slow for the moving virtual count (spec section 10).
   DMACNT.COM measures the real card's count to copy; open.
+- Mortal Kombat Trilogy's sounds 2.3x long (F14 on `sound-engine-library`),
+  found 19 Oct (hardware: Michael's recording x2.22; 86Box x2.38). Cause:
+  DOS/4GW passes IRQ 5 down to the Miles driver's real-mode handler with an
+  INT to the hardware vector. The host's reflection (dos.asm .hardware)
+  marked the next EOI stray for every hardware vector, on the belief that
+  it had queued the IRQ and sent its EOI. For the virtual Sound Blaster
+  interrupt it had not: the handler's EOI was swallowed, the virtual
+  interrupt stayed in service, and the card replayed its buffer halves
+  until another EOI ended it two to five blocks later (traced: 58% of
+  block ends overran, 0 of the game's protected-mode EOIs reached the
+  driver). Fixed on `stray-eoi`: stray only when the host held that IRQ in
+  service (dpmi_pic_reflect's carry). 86Box: overruns 0, every block
+  acknowledged within one period, the sounds x1.00 against a run without
+  uCDD (runs on 86Box's own CD drive). Not yet on the PC. Open beside it:
+  CD music in MKT's logos shows a ~80 ms repeat then 20 ms catch-up steps
+  around the restarts, in D7 too; to be looked at.
 - Inca II's "not enough extended memory" is its Phar Lap 286 extender
   above 16 MB of free DPMI memory; not ours.
 - Super Street Fighter II Turbo: dropped (Michael, 18 Oct). Its 32RTM

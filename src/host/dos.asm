@@ -435,7 +435,15 @@ dpmi_dos_translate:
     ; The EOI went out when the IRQ was queued. The handler's own is stray.
     ; Only for a hardware vector: a BIOS or DOS service reflected with its
     ; registers alone joins below, and a real-mode handler that runs during
-    ; it owes the controller its EOI.
+    ; it owes the controller its EOI. And only when the host held that IRQ
+    ; in service for the client (carry from dpmi_pic_reflect): the virtual
+    ; Sound Blaster interrupt reaches the client without that, and the EOI
+    ; of the real-mode handler it is passed down to is the one the virtual
+    ; PIC waits for. Marked stray, it was swallowed and the virtual
+    ; interrupt stayed in service for blocks on end (Mortal Kombat
+    ; Trilogy's DOS/4GW passes IRQ 5 down to the Miles driver's real-mode
+    ; handler: every sound played about 2.3 times as long, F14).
+    jnc .registers_only
     mov al, 1
     call resident_stray_eoi_mark
 ; Joined from .hardware (an IRQ vector, its EOI marked) and from the services
