@@ -4,8 +4,8 @@ What the 74 traced games showed that matters for uCDD: faults in the
 driver, things the specification does not settle, and what to measure on
 the CT2290. Every item is [trace] (86Box, the engine-trace build of the
 `vcpi-children` line, 128-frame period, a virtual SB16 at 220h, DMA 1 and
-5) unless it says otherwise. Nothing here is fixed yet; each needs its
-own branch and test.
+5) unless it says otherwise. Fixed so far: F14 (branch `stray-eoi`); the
+rest are open, each for its own branch and a family check.
 
 ## Faults in uCDD
 

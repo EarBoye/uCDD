@@ -38,7 +38,6 @@ gives where the evidence is. Find the game's engine first in the
 
 | Seen with | Likely cause | Where |
 |---|---|---|
-| A game that leaves its interrupt unacknowledged for seconds (Mortal Kombat Trilogy's Miles driver) | something else waiting for that EOI (uCDD's CD refill did, fixed as M-12) | [miles.md](miles.md); host-cdrom-spec.md M-12 |
 | A game whose IRQ setting does not match the card | the virtual interrupt is raised on a line the game keeps masked; Descent's count stalled that way, but only with the trace build and a shared IRQ 7 | [hmi-sos.md](hmi-sos.md), "Not settled" |
 | A game using the MPU-401 on an SB16 | the MPU's interrupt shares the card's line (fixed in `sb16-mpu`) | ISSUES.md `sb16-mpu` |
 

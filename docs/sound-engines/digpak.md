@@ -77,7 +77,7 @@ before each block.
 
 | Item | What DigPak does | What it needs |
 |---|---|---|
-| 81h written | sets DMA select to 02h | a card that ignores it keeps working; the CT2290 should be checked (read 81h before and after X-COM) |
+| 81h written | sets DMA select to 02h | the CT2290 takes it: its 80h and 81h are writable (software-configured) [hw, 19 Oct, [ct2290.md](ct2290.md)]; the virtual card ignores the write (F12) |
 | Both acknowledges | reads 2xFh and 2xEh on every interrupt | a 2xFh read with no 16-bit request must not disturb the 8-bit one |
 | Channel unmasked after the start | DSP first, DMA unmask second | the virtual DSP must wait for the channel, not fail |
 | 21h = 00h | opens every line | the driver's own IRQ handlers must cope with a line opened behind their back |

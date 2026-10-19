@@ -57,8 +57,9 @@ Command & Conquer. In order:
 2. Reset (01h, 00h, AAh). **No E1h**: the version is never read; the
    configuration's device ID is trusted.
 3. **Mixer register 83h = 0Bh.** Creative's guide lists no register 83h
-   (SBG and SBK, checked), and the CT2290 has none: it reads FFh from 83h
-   up [hw, vsb-spec.md 9.4], so the write goes nowhere on it. Capitalism (DigPak/AIL 2) writes the same, so it may come
+   (SBG and SBK, checked). The CT2290 keeps bits 0-3 of it (0Bh reads back
+   FBh; FFh before), and an 8-bit transfer runs the same with 0Bh in it
+   [hw, 19 Oct, [ct2290.md](ct2290.md)]; what the bits do is not known. Capitalism (DigPak/AIL 2) writes the same, so it may come
    from a shared piece of detection code rather than from HMI alone.
 4. 41h: the rate in Hz (11025 or 22050 here).
 5. The 8237: mode 59h (auto-init, single, read), page, address, count;
@@ -119,8 +120,10 @@ the virtual one. With card and game both on IRQ 5 the count kept moving
 through the same dumps (197 reads, every one different, an acknowledge
 at each wrap). So this is the trace build and the shared line, not HMI.
 Whether a real SB16 keeps an auto-init transfer running while its
-interrupt goes unacknowledged is not in Creative's guide; the CT2290 can
-answer it.
+interrupt goes unacknowledged is not in Creative's guide. The CT2290
+answers it [hw, 19 Oct]: one interrupt, then the DMA stops within about two
+blocks until the acknowledge ([ct2290.md](ct2290.md); the virtual card
+differs, F9).
 
 ## Music and timer [trace]
 

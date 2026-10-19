@@ -30,7 +30,9 @@ OPL3 (SBG:450-454 for the difference) [doc].
 48 games, each run on a virtual SB Pro (T4) and a virtual SB 2.0 (T3) in
 86Box, with their library configuration unchanged (eXo set most of them
 up for an SB16). "Plays" means the DMA count moved or block interrupts
-came; the runs were at IRQ 7 unless stated (see F4 below).
+came; the runs were at IRQ 7 unless stated (see F4 below). That pass mark
+says nothing about whether the sound was right: F14 passed it
+([methods.md](methods.md), what the first passes missed).
 
 | Engine (games) | On the SB Pro | On the SB 2.0 |
 |---|---|---|
