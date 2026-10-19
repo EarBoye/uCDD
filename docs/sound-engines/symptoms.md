@@ -15,6 +15,10 @@ gives where the evidence is. Find the game's engine first in the
 | An HMI game whose config names a different IRQ or card than the BLASTER line | HMI never detects: it uses the config's device ID and IRQ as written | [hmi-sos.md](hmi-sos.md), files and configuration |
 | King's Quest V and other Sierra SCI1 games | AUDBLAST's fixed 2048-pass wait for its test interrupt is too short on a fast CPU (the library carries a patched driver) | [sierra-sci.md](sierra-sci.md) |
 | A game that finds the IRQ with F2h (Miles counts the interrupts one by one) | an F2h whose interrupt comes inside the write, or two at once, fails the count (seen and fixed on the virtual ESS, 15 Oct) | [miles.md](miles.md), the F2h test |
+| A game set up for an SB16 (most of the library: eXo's default) on a virtual SB Pro or SB 2.0 | its engine was given an SB16 driver by its configuration (HMI device ID, Miles DIG.INI, DigPak SOUNDRV.COM): it sends SB16 commands or gives up, as on a real older card. Run the game's own setup for the card | [pre-sb16.md](pre-sb16.md) |
+| SB Pro stereo games on a virtual SB Pro (Doom, Hexen, Rayman, Stargunner) with both cards on IRQ 7 | the stereo transfer never starts | [findings.md](findings.md) F4 |
+| C-Dogs, on any card | it sends 90h before setting up the DMA channel; uCDD never starts that transfer | [findings.md](findings.md) F5 |
+| A game whose AIL 2, Westwood or own SB Pro code tests the mixer, on a virtual SB 2.0 | the SB 2.0 has no mixer, so the game finds no card | [pre-sb16.md](pre-sb16.md) |
 | A DigPak game where the loader says "Load Failed" | not shown to be the card: Simon the Sorcerer's loader failed so in 86Box; cause not looked at | [digpak.md](digpak.md) |
 
 ## Clicks, crackle, repeats

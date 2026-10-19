@@ -130,6 +130,10 @@ The timer at **120 Hz** (Descent mode 2, Tomb Raider mode 3; Screamer
 of them to the sustain/release registers. Detail in
 [music-and-timers.md](music-and-timers.md).
 
+## On the cards before the SB16 [trace]
+
+On an SB Pro or SB 2.0 the configured SB16 module sends SB16 commands anyway and stays silent; only the setup's device ID decides. The SB Pro module (Rayman) plays stereo high speed. See [pre-sb16.md](pre-sb16.md).
+
 ## Quick reference
 
 | | HMI SOS (SB16 modules) |

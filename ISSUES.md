@@ -152,6 +152,13 @@ changed volumes.
     in output_clock. Open.
   - F3: King's Quest V's 16 KB single-cycle block: the count hovered in a
     64-byte window for 120 reads where the block should have ended. Open.
+  - F4: on the virtual SB Pro with both cards on IRQ 7, SB Pro stereo
+    output (0Eh bit 1, then 14h priming or 90h) never starts: Doom, Hexen,
+    Raptor, Rayman, Stargunner; all play at IRQ 5. Mono SB Pro output plays
+    at IRQ 7. Open; probably F1's root.
+  - F5: a transfer whose DSP command comes before the 8237's mode, count
+    and unmask (C-Dogs: 48h, 90h, then the DMA) never starts, on every
+    virtual card and at IRQ 5 too; a real DSP waits for the DMA. Open.
 - Super Street Fighter II Turbo: dropped (Michael, 18 Oct). Its 32RTM
   loader writes CR0 and then needs DOS translation for 32-bit programs, a
   host feature of its own for one game; runs without the driver.

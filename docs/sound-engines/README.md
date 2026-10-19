@@ -25,6 +25,7 @@ Built 19 Oct 2026 from a scan of every game's files and port traces of
 | [lucasarts.md](lucasarts.md) | iMUSE and LucasArts' digital drivers |
 | [others.md](others.md) | DSMI, MIDAS, Allegro, Loudness, MicroProse, Sound Images, Melodix, Vision, DiamondWare, Origin, AdLib's driver, CMS/Tandy/Covox |
 | [own-code.md](own-code.md) | The games with their own sound code, by class |
+| [pre-sb16.md](pre-sb16.md) | The SB 1.x/2.0 and SB Pro: what each engine does when it meets one, from runs on uCDD's virtual SB Pro and SB 2.0 |
 | [music-and-timers.md](music-and-timers.md) | The timer rate each engine sets, how it writes the FM chip (OPL2/OPL3, delays) and the MPU-401 |
 | [symptoms.md](symptoms.md) | **Start here for a fault**: from what you hear or see to the engine habit or finding behind it |
 | [findings.md](findings.md) | What the traces showed about uCDD: faults, behaviour to copy, questions for the CT2290 |
@@ -47,7 +48,9 @@ Built 19 Oct 2026 from a scan of every game's files and port traces of
 | Own code | about 475 | 6 | BLASTER, F2h, 14h or 80h | mostly 14h single-cycle | time constant | 2xEh | interrupts |
 
 Games are counted once per family they carry (a game with Miles and HMI
-counts in both); "Traced" counts games with a usable port trace.
+counts in both); "Traced" counts games with a usable port trace. The
+table is the SB16's; what each engine does on an SB Pro or SB 2.0 is in
+[pre-sb16.md](pre-sb16.md).
 
 **Four ways to know where the card is**, and each asks something
 different of an emulated card: the interrupt alone (Miles, Sierra,

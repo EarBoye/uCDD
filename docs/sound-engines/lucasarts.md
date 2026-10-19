@@ -59,6 +59,10 @@ repeatedly and writes the OPL2 with no status reads (800 writes in a
 one-second burst). TIE Fighter's run used General MIDI (no FM). Detail in
 [music-and-timers.md](music-and-timers.md).
 
+## On the cards before the SB16 [trace]
+
+On an SB Pro or SB 2.0 the iMUSE games read mixer 80h/81h and then make no card traffic at all. See [pre-sb16.md](pre-sb16.md).
+
 ## Quick reference
 
 | | LucasArts digital (SB16) |

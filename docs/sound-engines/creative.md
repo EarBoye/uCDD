@@ -76,6 +76,10 @@ Jill, Pizza Tycoon and Monkey Island write it **with no status reads at
 all**, Xargon with 77 per write. Detail in
 [music-and-timers.md](music-and-timers.md).
 
+## On the cards before the SB16 [trace]
+
+Written for the 1.x and 2.0, these games behave the same on every card. See [pre-sb16.md](pre-sb16.md).
+
 ## Quick reference
 
 | | CT-VOICE era |

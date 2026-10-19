@@ -91,6 +91,10 @@ ADL.DRV writes the OPL2 with 38 status reads per write (43 in SCI0's
 Larry 2); King's Quest VI CD's driver uses the OPL3 and writes **both
 banks identically**. Detail in [music-and-timers.md](music-and-timers.md).
 
+## On the cards before the SB16 [trace]
+
+AUDBLAST behaves the same on the SB 2.0, SB Pro and SB16. See [pre-sb16.md](pre-sb16.md).
+
 ## Quick reference
 
 | | AUDBLAST (SCI1) | AUDBLAST (SCI1.1, SCI32) |

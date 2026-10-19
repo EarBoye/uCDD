@@ -176,6 +176,10 @@ same way: **OPL3 with both banks, 14 status reads per register write**,
 and the same start (the timer test, 26 writes to 06h-1Fh). Detail in
 [music-and-timers.md](music-and-timers.md).
 
+## On the cards before the SB16 [trace]
+
+On an SB Pro or SB 2.0 the MSS 3 SB16 driver checks the version and gives up; the AIL 2 SB Pro driver needs the SB Pro's mixer and finds no SB 2.0. See [pre-sb16.md](pre-sb16.md).
+
 ## Quick reference
 
 | | AIL 2 SB Pro | MSS 3 SB16 |

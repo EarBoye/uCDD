@@ -78,6 +78,32 @@ the transfer had stalled and the count wobbles around the stall point,
 or the transfer runs on and the count runs backwards. The block should
 have ended about 1.5 s after it started.
 
+### F4. SB Pro stereo never starts with the cards sharing IRQ 7
+
+Found on the pre-SB16 pass ([pre-sb16.md](pre-sb16.md)). With the
+virtual card an SB Pro and both cards on IRQ 7, every game that turns on
+SB Pro stereo (mixer 0Eh bit 1) and starts a transfer saw its DMA count
+stay at the start value: Doom, Hexen and Raptor (DMX: a 12-byte priming
+14h, then 90h), Rayman (HMI's SB Pro module: 90h), Stargunner (90h).
+With both cards on IRQ 5, Doom, Rayman and Stargunner all play (the
+count moves through 105-123 values). Mono output on the virtual SB Pro at
+IRQ 7 plays (King's Quest V, Capitalism, Hocus Pocus), and DMX and
+Stargunner play on the virtual SB 2.0 at IRQ 7. A transfer starts only
+at the driver's next mixing period (game_start_pending); what stops it
+on this path is not known. Probably the same root as F1. Not on the
+planned set-up (both cards on IRQ 5).
+
+### F5. A transfer started before the 8237 is set never starts
+
+C-Dogs (DSMI) programs the DMA channel's page and address, sends 48h and
+**90h**, and only then writes the 8237's mode and count and unmasks the
+channel. A real DSP holds its DMA request until the controller serves
+it, so on hardware the transfer runs once the channel is unmasked. Under
+uCDD the count never moved: on the virtual SB16, SB Pro and SB 2.0, and
+at IRQ 5 as at 7 (464 reads, one value). DigPak, which unmasks after its
+DSP command but sets mode and count before it, plays. Not settled: which
+of mode, count or mask the virtual card latches at the command.
+
 ## Behaviour to copy (rule 1: as the real hardware would)
 
 | # | Engine | What it does | What the card must do |

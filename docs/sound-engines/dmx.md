@@ -82,6 +82,10 @@ Hexen. Music on the **OPL2 only** (no second bank, even on an OPL3), 30
 status reads per write, the whole instrument rewritten for every note.
 Detail in [music-and-timers.md](music-and-timers.md).
 
+## On the cards before the SB16 [trace]
+
+On an SB Pro DMX switches to stereo high speed after a 12-byte priming transfer, on an SB 2.0 to mono 1Ch; under uCDD its SB Pro stereo stalls when both cards share IRQ 7 (findings F4). See [pre-sb16.md](pre-sb16.md).
+
 ## Quick reference
 
 | | DMX (SB16 path) |

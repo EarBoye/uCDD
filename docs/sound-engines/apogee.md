@@ -84,6 +84,10 @@ banks, 33 status reads per write. Rise of the Triad: 35 Hz, then 240 and
 320 Hz as the game runs, OPL2 only. Detail in
 [music-and-timers.md](music-and-timers.md).
 
+## On the cards before the SB16 [trace]
+
+On an SB Pro Duke Nukem 3D adapts to mono high speed (90h, 43.5 kHz); Rise of the Triad keeps the 16-bit DMA channel its SB16 setting names and stays silent; Hocus Pocus and Realms of Chaos use 1Ch. See [pre-sb16.md](pre-sb16.md).
+
 ## Quick reference
 
 | | Apogee Sound System (SB16) |

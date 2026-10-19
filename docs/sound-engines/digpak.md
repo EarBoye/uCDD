@@ -89,6 +89,10 @@ reads per write. MidPak in Capitalism carries an AIL 2 OPL3 driver and
 writes exactly like Miles: both banks, 14 status reads per write.
 Detail in [music-and-timers.md](music-and-timers.md).
 
+## On the cards before the SB16 [trace]
+
+On an SB Pro or SB 2.0 the SB16 SOUNDRV.COM sends SB16 commands anyway; the SB Pro driver (Capitalism) plays on all three. See [pre-sb16.md](pre-sb16.md).
+
 ## Quick reference
 
 | | DigPak SB16 (1994) | DigPak SB Pro (1993) |
