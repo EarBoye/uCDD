@@ -508,3 +508,21 @@ poll turns them on, as INT 16h does when DOS/4GW is its own host. Michael:
 "Spec first, unless games specifically require otherwise." Held to the
 bar above, the fix covers INT 16h alone (docs/host-cdrom-spec.md on
 `host-gauntlet`, D-7).
+
+## 13. Working method: fix by family, not by game (19 Oct 2026)
+
+Beside the mantra, at Michael's request. When a game shows a fault, its
+sound engine and driver version are found first (branch
+`sound-engine-library`, docs/sound-engines: inventory and census) and
+every game that shares them is tested before the fault is called that
+game's own. The shared cause is fixed once, and the fix is checked across
+the family, and on one game of each other family, before it ships. A fix
+for one game alone is the last resort, and rule 1 allows no special cases.
+
+Fixing one game at a time had the same fault coming back in the next
+game; the sound engine library was built to stop that. The first fault
+after it proved the point: Mortal Kombat Trilogy's sounds played about
+2.3 times as long, which looked like one game's problem, and a survey of
+the families in the census found 21 more games with the same fault (Theme
+Hospital, Dungeon Keeper, GTA, Little Big Adventure 2, X-COM, ...). One
+fix in the DPMI host cleared all of them (branch `stray-eoi`).
