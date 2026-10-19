@@ -389,7 +389,17 @@ before. The ones that differed on the first look were the test setup
 (Warcraft II CD's disc list, Assault Rigs' drive letter: the same on
 `locked-stack` under the same sweep), a screen caught at a level change
 (Rayman Forever: plays), or known (Inca II). Battle Race 95 still stops on
-its loading screen, as on `locked-stack`.
+its loading screen, as on `locked-stack`. Traced (19 Oct, 86Box): after
+its SB16 driver's "Init done" it reads the 16-bit channel's current count
+with interrupts off (flip-flop cleared once, then low and high byte twice)
+until two reads agree. Each read is a trapped port access, a switch to the
+driver under the host, and the region is single-stepped (D-8), so one pass
+takes far longer than the 23 to 45 us the virtual count, which follows the
+output clock, stays on one value: the reads never agree. Without the
+driver (86Box's SB16) a read takes 2.7 us and the first pass agrees. A real
+SB16 fetches through its FIFO and may hold the count still between bursts;
+DMACNT.COM (CKIT) measures the CT2290 for that. Open: copy the card's
+measured count steps, or answer the count read in protected mode.
 A third batch, early on 18 Oct: 17 games had stopped at "Bad command or
 file name" because their launchers carry a number (BLOOD01.BAT,
 GTA01.BAT) and the test setup looked for GAME.BAT. It now takes the first
