@@ -9,6 +9,7 @@
 - Pass display configuration, palette, and VBE mode and window calls (INT 10h) from 16-bit protected-mode programs to the BIOS. This fixes the "not VGA" error in MadSpace.
 - Report a pending DMA request and the terminal count in the DMA status registers. This fixes the sound initialization error in Earth 2140.
 - Support the DSP silence command (80h). This fixes the stopped sound effects in The Varginha Incident.
+- Add a Vector Balls visualization to UCDDPLAY. A gold and a chrome strand of shaded balls turn as a double helix. Louder frequency bands make the helix wider and the balls larger.
 - Use a 128-frame audio output period instead of 32 frames. Sound no longer crackles or stops while a mouse driver holds the mouse interrupt for several milliseconds. The resident driver uses about 1.5 KB more conventional memory.
 - Add Earth 2140, Extreme Assault, Grand Theft Auto, Hexen: Beyond Heretic, Ignition, Iron Man and X-O Manowar in Heavy Metal, MadSpace, Mass Destruction, Network Q RAC Rally Championship, Nihilist, Nitro Racers, Power F1, Redneck Rampage, Roketz, Shadow Warrior, Star General, Syndicate Wars, Tempest 2000, The City of Lost Children, The Varginha Incident, Tunnel B1, X-Men: The Ravages of Apocalypse, XS, Z.A.R., and the English edition of Dráscula to the list of working Redbook-audio games.
 
