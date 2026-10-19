@@ -78,6 +78,7 @@ have ended about 1.5 s after it started.
 | B8 | DMX, Sierra, Creative, Loudness, Tyrian | find the IRQ by F2h, a 1-byte 14h, or an 80h silence, with several lines open | one interrupt per test, on the card's line, after the command |
 | B9 | DigPak SB16, Cool Spot, Sound Images | write the master PIC mask 00h (every line open) | nothing; the driver's own handlers must cope |
 | B10 | Castles II | toggles IRQ 1's mask about 15 times a second | cheap mask writes |
+| B11 | Miles MSS 3 | latches the PIT's counter about 500 times a second (Albion: 31246 latches in a run) | with the host's retrace hint on (it traps 40h and 43h), that is about 1500 traps a second; the hint is off in the 128-frame builds ([music-and-timers.md](music-and-timers.md)) |
 
 ## To measure on the CT2290
 

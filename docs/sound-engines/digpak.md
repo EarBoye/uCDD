@@ -82,6 +82,13 @@ before each block.
 | Channel unmasked after the start | DSP first, DMA unmask second | the virtual DSP must wait for the channel, not fail |
 | 21h = 00h | opens every line | the driver's own IRQ handlers must cope with a line opened behind their back |
 
+## Music and timer [trace]
+
+MidPak in X-COM: the timer at 140.0 Hz (mode 3), OPL2 only, 40 status
+reads per write. MidPak in Capitalism carries an AIL 2 OPL3 driver and
+writes exactly like Miles: both banks, 14 status reads per write.
+Detail in [music-and-timers.md](music-and-timers.md).
+
 ## Quick reference
 
 | | DigPak SB16 (1994) | DigPak SB Pro (1993) |

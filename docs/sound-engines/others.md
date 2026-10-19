@@ -21,7 +21,8 @@ Cyberdogs, SB16 path [trace]: E1h twice, D1h, **42h** (the input-rate
 command, 22222 Hz) as its only rate command, then **B6h mode 30h with a
 block of 60001 samples** against a DMA buffer of 1024 words: again one
 interrupt in a long while, the position from the count (D8h written FFh,
-C6h read). On a 4.xx, 42h sets the same rate register as 41h, so this
+C6h read). C-Dogs sets the timer to 100 Hz and then 560 Hz, its mixing
+rate [trace]. On a 4.xx, 42h sets the same rate register as 41h, so this
 works on a real SB16 (vsb-spec.md section 13); the virtual SB16 takes 42h
 as 41h.
 
@@ -48,14 +49,18 @@ constant C4h, **80h with length 0010h**: a 17-sample silence whose
 interrupt names the IRQ (the line then opened alone: 28h). Then time
 constant A5h (10989 Hz) and **single-cycle 14h blocks of 384 bytes**
 (35 ms), chained from the handler, with an occasional long block (5248
-bytes).
+bytes). Music: the timer at 69.6 Hz, the OPL2 written about 300 times a
+second with no status reads, mostly levels and pitches (software
+envelopes) [trace].
 
 ## MicroProse
 
 Darklands, Pirates! Gold [trace]: D3h, E1h, time constant BDh (14925 Hz),
 a **2-byte 14h probe** for the IRQ, then single-cycle 14h blocks of 614
 and 756 bytes chained from the handler. The 8237 mode is written 59h
-(auto-init) once, then 49h (single) per block.
+(auto-init) once, then 49h (single) per block. Music (Darklands): the
+timer at 70.1 Hz (mode 2), OPL3 with the second bank mostly levels, 25
+status reads per write [trace].
 
 ## Sound Images
 

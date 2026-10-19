@@ -75,6 +75,13 @@ the preamble (the game's voice code or a launcher) is not known.
 | Count read in the handler | twice, to find the block | a count that is not ahead of the mix | ISSUES.md `virtual-timing` |
 | IRQ 7 timing | Doom's timedemo, used as uCDD's speed check | | 1807/1787 realtics on the PC (ES22), about 1640 in 86Box |
 
+## Music and timer [trace]
+
+The timer at **140.0 Hz** (mode 3, reload 8522), the same in Doom and
+Hexen. Music on the **OPL2 only** (no second bank, even on an OPL3), 30
+status reads per write, the whole instrument rewritten for every note.
+Detail in [music-and-timers.md](music-and-timers.md).
+
 ## Quick reference
 
 | | DMX (SB16 path) |

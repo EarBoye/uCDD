@@ -41,10 +41,11 @@ The traced own-code games use the same pieces as Creative's own drivers
 | Kyrandia 1, 2, Dune II (Westwood) | the AIL 2 SB Pro driver's exact sequence, built into the game: D3h, the 0Ah mixer test, a 4-byte probe from address 0, 14h blocks up to 55 KB at 21739 Hz with D0h between |
 | Hocus Pocus | the Apogee Sound System's sequence (packed executable) |
 
-The FM side (388h/389h, or 2x8h/2x9h) is not in the traces: uCDD passes
-the OPL ports straight to the card. Music engines write the OPL's
-registers many times per timer tick; the timer is the PIT's channel 0,
-usually raised from 18.2 Hz to 70-140 Hz.
+The FM side and the timer are on [music-and-timers.md](music-and-timers.md):
+Kyrandia and Dune II set the timer to 60 and then 72 Hz and write the
+OPL2 with 27 status reads per write; Blake Stone 140 Hz and then 701 Hz
+(its digital mixing), 41 reads per write; Wing Commander (Origin) 60 Hz
+and about 1200 register writes a second with no status reads [trace].
 
 ## Games that ran without touching the card
 

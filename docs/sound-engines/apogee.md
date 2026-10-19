@@ -74,6 +74,13 @@ Older versions, smaller blocks [trace]:
 **Open:** Blood's trace stopped at 150 accesses, just after D1h: whether
 its 44 kHz output then started on the virtual card is not in the trace.
 
+## Music and timer [trace]
+
+Duke Nukem 3D: the timer at **120.1 Hz** (mode 3, 9933), OPL3 with both
+banks, 33 status reads per write. Rise of the Triad: 35 Hz, then 240 and
+320 Hz as the game runs, OPL2 only. Detail in
+[music-and-timers.md](music-and-timers.md).
+
 ## Quick reference
 
 | | Apogee Sound System (SB16) |

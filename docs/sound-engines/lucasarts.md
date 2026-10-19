@@ -52,6 +52,13 @@ FEh), D3h, E0h AAh, E1h [trace].
 | Count read twice | compares two counts | a count that never moves backwards (see [findings](findings.md), F2: Dark Forces' count rose by 104 bytes 19 times) |
 | Mask FEh during F2h | only the timer open | the F2h interrupt must wait for the game to open the line, as a real PIC holds the request |
 
+## Music and timer [trace]
+
+Monkey Island 1 switches the timer between 170.5 Hz and 18.2 Hz
+repeatedly and writes the OPL2 with no status reads (800 writes in a
+one-second burst). TIE Fighter's run used General MIDI (no FM). Detail in
+[music-and-timers.md](music-and-timers.md).
+
 ## Quick reference
 
 | | LucasArts digital (SB16) |

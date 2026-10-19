@@ -121,6 +121,14 @@ Whether a real SB16 keeps an auto-init transfer running while its
 interrupt goes unacknowledged is not in Creative's guide; the CT2290 can
 answer it.
 
+## Music and timer [trace]
+
+The timer at **120 Hz** (Descent mode 2, Tomb Raider mode 3; Screamer
+100 Hz). HMI's OPL3 driver (fmmidi3, ID A009h) writes both banks alike,
+31.5 status reads per write, 834 writes a second in Descent's menu, most
+of them to the sustain/release registers. Detail in
+[music-and-timers.md](music-and-timers.md).
+
 ## Quick reference
 
 | | HMI SOS (SB16 modules) |

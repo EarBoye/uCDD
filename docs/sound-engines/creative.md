@@ -59,6 +59,16 @@ from the interrupt handler, with the time constant from the VOC header
 | 80h silence | interrupt after a silence, no DMA | a timed interrupt from 80h | irq.asm sb_silence_tick |
 | VOC chains | single-cycle blocks with pauses | 14h chaining from the handler without a gap | vsb-spec.md 7.1 |
 
+## Music and timer [trace]
+
+Every game here that carries Creative's drivers sets the timer to
+**170.5 Hz** first (reload 7000): Monkey Island, Xargon, Jill of the
+Jungle, Pizza Tycoon. Then their own: Xargon and Jill 96 Hz, Pizza
+Tycoon 192 and 64 Hz. FM on the OPL2 only, often with rhythm mode (BDh);
+Jill, Pizza Tycoon and Monkey Island write it **with no status reads at
+all**, Xargon with 77 per write. Detail in
+[music-and-timers.md](music-and-timers.md).
+
 ## Quick reference
 
 | | CT-VOICE era |

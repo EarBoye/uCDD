@@ -145,6 +145,16 @@ test fail and the game run silent. uCDD holds an F2h that comes within
 | 80h/81h | trusted for IRQ and DMA | the card's real IRQ and DMA in 80h/81h | vsb-spec.md 9.4 |
 | Smacker video with Miles | Star Command's intro stalls under the DPMI host (timer delivered 20000 times a second) | open | host-cdrom-spec.md section 10 |
 
+## Music and timer [trace]
+
+MSS 3 sets the PIT to **200 Hz** (Albion and Dungeon Keeper in mode 2,
+Warcraft in mode 3; System Shock 280 Hz) and reads the counter often
+(Albion: about 500 latches a second). Its OPL3.MDI, AIL 2's OPL drivers
+inside MidPak (Capitalism) and LBA's linked-in code write the FM chip the
+same way: **OPL3 with both banks, 14 status reads per register write**,
+and the same start (the timer test, 26 writes to 06h-1Fh). Detail in
+[music-and-timers.md](music-and-timers.md).
+
 ## Quick reference
 
 | | AIL 2 SB Pro | MSS 3 SB16 |

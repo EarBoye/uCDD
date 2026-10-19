@@ -82,6 +82,13 @@ IRQ 3, 5 and 7 opened one by one, then all [trace].
 | 48h before 14h | sets a block size it does not use | 48h stored, not acted on |
 | 16 KB single-cycle blocks | 1.5 s each at 11111 Hz | chained by the handler; the count must fall steadily |
 
+## Music and timer [trace]
+
+Every SCI interpreter sets the timer to **60.0 Hz** (mode 3, 19886).
+ADL.DRV writes the OPL2 with 38 status reads per write (43 in SCI0's
+Larry 2); King's Quest VI CD's driver uses the OPL3 and writes **both
+banks identically**. Detail in [music-and-timers.md](music-and-timers.md).
+
 ## Quick reference
 
 | | AUDBLAST (SCI1) | AUDBLAST (SCI1.1, SCI32) |
