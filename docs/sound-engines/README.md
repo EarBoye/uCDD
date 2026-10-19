@@ -27,6 +27,31 @@ problem, and a survey of the families in the census found 21 more games
 with the same fault, all cleared by one fix in the DPMI host
 ([findings.md](findings.md), F14).
 
+## Checking a game with this library (20 Oct 2026)
+
+1. Before running it, look the game up here: its engine, its driver
+   version, its family page. Note what they predict: commands, block
+   size, rate, where its interrupt handler runs, known faults.
+2. Run it and compare. What the notes explain is expected; what they do
+   not explain is a finding, about uCDD or about these notes.
+3. A behaviour belongs to the game or its engine only if it also shows
+   without uCDD (86Box with its own drive and card, or DOSBox-X). A run
+   under uCDD alone shows uCDD's behaviour as much as the game's: the
+   withdrawn "Miles holds its EOI for 3 s" in [miles.md](miles.md) was
+   uCDD's fault F14.
+4. The pass mark is that it works right: the sound against a recording
+   without uCDD ([methods.md](methods.md), recording comparison: same
+   speed, no repeats, no gaps), and the interrupt's whole life clean
+   (raised, delivered, acknowledged, ended in step with the blocks). "The
+   DMA count moved" is not a pass.
+5. What is learned goes back here, to the family page, and is tested on
+   the family before anything is fixed.
+
+Interrupt checks need two views that cannot disturb each other: counters
+inside the driver, and the sound from outside. A heavy trace changes the
+timing it measures; it can explain a fault, but the verdict comes from a
+build without it and from the recording.
+
 ## The pages
 
 | Page | What it covers |
