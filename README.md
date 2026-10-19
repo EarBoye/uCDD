@@ -212,26 +212,39 @@ These are games known to work, not a list of every game that may work.
 - Destruction Derby
 - Destruction Derby 2
 - Diggers 2: Extractors
+- Dráscula: The Vampire Strikes Back (English edition)
+- Earth 2140
 - Earthworm Jim
 - Earthworm Jim 2
 - Eradicator (DOS Release Version 1.0)
+- Extreme Assault
 - Fascination
 - Fatal Racing / Whiplash
 - Future Wars
 - Gobliiins
 - Gobliins 2: The Prince Buffoon
 - Goblins Quest 3
+- Grand Theft Auto (start through the K.EXE launcher)
 - Heroes of Might and Magic II: The Succession Wars (DOS base game from Deluxe Edition)
+- Hexen: Beyond Heretic
 - Hyper 3-D Pinball
+- Ignition
 - Inferno
+- Iron Man and X-O Manowar in Heavy Metal
 - Little Big Adventure
 - Little Big Adventure 2
 - Loom
 - Lost in Time
+- MadSpace: To Hell and Beyond
 - Manic Karts
+- Mass Destruction
 - MechWarrior 2: 31st Century Combat
 - MechWarrior 2: Mercenaries
 - Mortal Kombat 3
+- Network Q RAC Rally Championship
+- Nihilist
+- Nitro Racers (set Link Mode to Single in Options)
+- Power F1
 - Pro Pinball: The Web
 - Pro Pinball: Timeshock!
 - Quake
@@ -244,25 +257,37 @@ These are games known to work, not a list of every game that may work.
 - Realms of Arkania III: Shadows over Riva
 - Realms of Arkania: Blade of Destiny (German CD edition)
 - Realms of Arkania: Star Trail (German CD edition)
+- Redneck Rampage
 - Return to Zork
 - Rise 2: Resurrection (Director's Cut DOS edition)
+- Roketz
 - Screamer
 - Screamer 2
 - Screamer Rally
+- Shadow Warrior
 - ShadowCaster
 - Shattered Steel (DOS 1.14)
+- Star General
 - Super Street Fighter II Turbo (start SF2TURBO directly; bypass MAKESWP)
 - SuperKarts
 - Surface Tension
+- Syndicate Wars
+- Tempest 2000
+- The City of Lost Children
 - The Horde
 - The Manhole
 - The Secret of Monkey Island
 - The Settlers II: Veni, Vidi, Vici (DOS Gold Edition 1.51; mission loading is slow)
+- The Varginha Incident
 - Tomb Raider
+- Tunnel B1
 - Warcraft II: Tides of Darkness
 - Wipeout
 - World Rally Fever: Born on the Road
 - Worms United
+- X-Men: The Ravages of Apocalypse
+- XS
+- Z.A.R.
 
 † **Carmageddon:** Use SHSUCDX with μCDD for European editions. Affected editions check disc files while CD audio plays; MSCDEX can reject these checks.
 

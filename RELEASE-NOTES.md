@@ -1,3 +1,17 @@
+# Beta 0.9.4-a2
+
+## Changes in 0.9.4-a2
+
+- Accept CD-ROM requests with a short or zero length field when the command uses only the static header, and accept play requests with a zero length field. This fixes the missing CD music in Tunnel B1.
+- Mount CD images whose ISO volume descriptor states a volume larger than the image or has a nonstandard root directory record. This fixes the mount of The City of Lost Children, FX Fighter, and Hexen.
+- Support word reads of the Sound Blaster mixer index and data ports, and byte reads of the mixer index port. This fixes the startup crash in Hexen.
+- Play Sound Blaster PCM from DMA buffers above 1 MB for 8-bit and 16-bit, mono and stereo, single-cycle and auto-initialize transfers. Accept detection blocks that are longer than their DMA buffer. This fixes the sound initialization error in MadSpace.
+- Pass display configuration, palette, and VBE mode and window calls (INT 10h) from 16-bit protected-mode programs to the BIOS. This fixes the "not VGA" error in MadSpace.
+- Report a pending DMA request and the terminal count in the DMA status registers. This fixes the sound initialization error in Earth 2140.
+- Support the DSP silence command (80h). This fixes the stopped sound effects in The Varginha Incident.
+- Use a 128-frame audio output period instead of 32 frames. Sound no longer crackles or stops while a mouse driver holds the mouse interrupt for several milliseconds. The resident driver uses about 1.5 KB more conventional memory.
+- Add Earth 2140, Extreme Assault, Grand Theft Auto, Hexen: Beyond Heretic, Ignition, Iron Man and X-O Manowar in Heavy Metal, MadSpace, Mass Destruction, Network Q RAC Rally Championship, Nihilist, Nitro Racers, Power F1, Redneck Rampage, Roketz, Shadow Warrior, Star General, Syndicate Wars, Tempest 2000, The City of Lost Children, The Varginha Incident, Tunnel B1, X-Men: The Ravages of Apocalypse, XS, Z.A.R., and the English edition of Dráscula to the list of working Redbook-audio games.
+
 # Beta 0.9.4-a1
 
 ## Changes in 0.9.4-a1
