@@ -12,7 +12,7 @@ distance and work differently up close.
 | Configuration | the game's own file, often binary (CASTLES2.CFG: ten bytes) [file] | `DIG.INI` and `MDI.INI`, plain text, written by SETSOUND or the game's setup [file] |
 | Runs in | real mode; a protected-mode game calls it through the extender | real mode too: the .DIG is a 16-bit driver called through a real-mode thunk from the 32-bit library [recall] |
 | Music data | XMIDI (`.XMI`), the AIL's extended MIDI | XMIDI, also MIDI through the same .MDI drivers |
-| Games here | Castles II, SimCity Enhanced, Wing Commander Armada, Serf City (AIL/32), Lemmings 2, Ultima VII; Kyrandia and Dune II have its SB Pro driver built in ([own-code.md](own-code.md)) | Theme Hospital, System Shock, Mortal Kombat, Albion, Dungeon Keeper, Warcraft, Heroes 2... |
+| Games here | Castles II, SimCity Enhanced, Wing Commander Armada, Lemmings 2, Ultima VII; Kyrandia and Dune II have its SB Pro driver built in ([own-code.md](own-code.md)); the 32-bit AIL/32 below (LBA, Serf City) | Theme Hospital, System Shock, Mortal Kombat, Albion, Dungeon Keeper, Warcraft, Heroes 2... |
 
 Grades: **[trace]** an 86Box trace through uCDD's port trap (emulator);
 **[file]** read from the game's own files; **[doc]** a cited document;
@@ -91,9 +91,10 @@ MPU-401, 388h for OPL).
 
 ### What the SB16 digital driver does
 
-Three SB16 traces agree on the shape [trace: Albion; LBA, whose Miles
-code is linked into the game with no separate driver file; Star Command
-Revolution, recorded in host-cdrom-spec.md section 10]:
+Three SB16 traces agree on the shape [trace: Albion and Star Command
+Revolution (MSS 3, the latter recorded in host-cdrom-spec.md section 10);
+LBA, whose SB16 driver is AIL/32's (see below) and follows the same
+steps]:
 
 1. Reset, E1h (version 4.xx expected).
 2. **IRQ and DMA from the card itself**: reads mixer 80h (IRQ select:
@@ -122,6 +123,20 @@ Revolution, recorded in host-cdrom-spec.md section 10]:
 6. **The handler** reads 82h, then the acknowledge that matches (2xFh for
    16-bit, 2xEh for 8-bit), mixes the next block, and sends the EOI. One
    82h read and one acknowledge per interrupt, nothing else [trace].
+
+## AIL/32
+
+The 32-bit edition of AIL 2 for DOS-extended games (1993-1994) [file]:
+drivers named `A32*.ADV` (Serf City: A32SBDG.ADV, A32SBFM.ADV, A32MT32.ADV
+and so on) or `A32*.DLL` (LBA, Ravenloft 1 and 2, SimCity 2000, Al-Qadim,
+Shadow Caster). Eight games here. The same function-number interface as
+AIL 2 [recall]. LBA's SB16 driver [trace]: mixer 80h/81h read, 41h 22000
+Hz, a 4096-word DMA buffer on DMA 5, **B6h** mode 30h (16-bit stereo) with
+2048-sample blocks, and a handler that reads 82h then 2xFh: the same
+shape as MSS 3's above. Its FM driver writes the
+chip as MSS 3 does (music-and-timers.md).
+
+## Notes on version 3.5
 
 Version 3.5's ESS driver (AUDIODRV.DIG) is documented in
 [miles-ess.md](../miles-ess.md): it identifies the chip by
@@ -156,7 +171,7 @@ test fail and the game run silent. uCDD holds an F2h that comes within
 MSS 3 sets the PIT to **200 Hz** (Albion and Dungeon Keeper in mode 2,
 Warcraft in mode 3; System Shock 280 Hz) and reads the counter often
 (Albion: some 500 latches a second). Its OPL3.MDI, AIL 2's OPL drivers
-inside MidPak (Capitalism) and LBA's linked-in code write the FM chip the
+inside MidPak (Capitalism) and LBA's AIL/32 driver write the FM chip the
 same way: **OPL3 with both banks, 14 status reads per register write**,
 and the same start (the timer test, 26 writes to 06h-1Fh). Detail in
 [music-and-timers.md](music-and-timers.md).

@@ -57,8 +57,8 @@ Command & Conquer. In order:
 2. Reset (01h, 00h, AAh). **No E1h**: the version is never read; the
    configuration's device ID is trusted.
 3. **Mixer register 83h = 0Bh.** Creative's guide lists no register 83h
-   (SBG and SBK, checked); on the CT2290 the effect is unknown [to
-   measure]. Capitalism (DigPak/AIL 2) writes the same, so it may come
+   (SBG and SBK, checked), and the CT2290 has none: it reads FFh from 83h
+   up [hw, vsb-spec.md 9.4], so the write goes nowhere on it. Capitalism (DigPak/AIL 2) writes the same, so it may come
    from a shared piece of detection code rather than from HMI alone.
 4. 41h: the rate in Hz (11025 or 22050 here).
 5. The 8237: mode 59h (auto-init, single, read), page, address, count;
@@ -85,7 +85,7 @@ Format by game (all at 220h):
 | Screamer | | C4h | 8-bit stereo | 11025 Hz | DMA 1, 8192 bytes |
 | Shellshock, Abuse | | C4h | 8-bit mono | 22050 / 11025 Hz | DMA 1, 4096 bytes |
 | Command & Conquer | | B4h | 16-bit mono | 22050 Hz | DMA 5, 4096 words |
-| Rayman (SB Pro module) | | 48h + 90h | 8-bit stereo, mixer 0Eh=02h | TC CDh | DMA 1, 8192 bytes |
+| Rayman (SB Pro module) | E001h | 48h + 90h | 8-bit stereo through mixer 0Eh=02h, so mono on an SB16 (no 0Eh there) | TC CDh | DMA 1, 8192 bytes |
 
 ### The wrong flip-flop
 

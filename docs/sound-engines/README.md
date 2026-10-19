@@ -15,7 +15,7 @@ Built 19 Oct 2026 from a scan of every game's files and port traces of
 | Page | What it covers |
 |---|---|
 | [hardware.md](hardware.md) | The DSP, mixer, 8237, 8259, OPL, MPU-401 and PIT, as the engines use them |
-| [miles.md](miles.md) | Miles AIL 2 (.ADV) and the Miles Sound System 3 (.DIG/.MDI) |
+| [miles.md](miles.md) | Miles AIL 2 (.ADV), AIL/32 (A32*.ADV/.DLL) and the Miles Sound System 3 (.DIG/.MDI) |
 | [hmi-sos.md](hmi-sos.md) | HMI's Sound Operating System, its driver library and device IDs |
 | [dmx.md](dmx.md) | DMX (Doom, Heretic, Hexen, Strife, Raptor) |
 | [apogee.md](apogee.md) | The Apogee Sound System (Duke 3D, ROTT, Shadow Warrior, Blood) |
@@ -23,7 +23,7 @@ Built 19 Oct 2026 from a scan of every game's files and port traces of
 | [sierra-sci.md](sierra-sci.md) | Sierra's SCI drivers (AUDBLAST, SNDBLAST, ADL) |
 | [creative.md](creative.md) | Creative's CT-VOICE, CTVDSK, SBFMDRV, and the detection code games copied from them |
 | [lucasarts.md](lucasarts.md) | iMUSE and LucasArts' digital drivers |
-| [others.md](others.md) | DSMI, MIDAS, Allegro, Loudness, MicroProse, Sound Images, Melodix, Vision, DiamondWare, AdLib's driver, CMS/Tandy/Covox |
+| [others.md](others.md) | DSMI, MIDAS, Allegro, Loudness, MicroProse, Sound Images, Melodix, Vision, DiamondWare, Origin, AdLib's driver, CMS/Tandy/Covox |
 | [own-code.md](own-code.md) | The games with their own sound code, by class |
 | [music-and-timers.md](music-and-timers.md) | The timer rate each engine sets, how it writes the FM chip (OPL2/OPL3, delays) and the MPU-401 |
 | [symptoms.md](symptoms.md) | **Start here for a fault**: from what you hear or see to the engine habit or finding behind it |
@@ -34,7 +34,7 @@ Built 19 Oct 2026 from a scan of every game's files and port traces of
 
 | Family | Games | Traced | Finds the IRQ by | Transfer | Rate | Acknowledge | Position from |
 |---|---|---|---|---|---|---|---|
-| Miles MSS 3 (SB16) | 134 with AIL 2 | 23 | mixer 80h, a one-sample B0h probe | B6h/C6h auto-init, 2 blocks | 41h | 82h, 2xFh/2xEh | interrupts |
+| Miles MSS 3 and AIL/32 (SB16) | 134 in all | 23 | mixer 80h, a one-sample B0h probe | B6h/C6h auto-init, 2 blocks | 41h | 82h, 2xFh/2xEh | interrupts |
 | Miles AIL 2 (SB Pro) | (above) | | a 4-byte 14h probe | 14h single-cycle | time constant | 2xEh | interrupts |
 | HMI SOS | 83 | 8 | the config file | C4h/B4h auto-init, **FIFO off**, one block | 41h | 2xEh | **8237 count, polled** |
 | Sierra SCI | 55 | 6 | a 1-byte 14h probe, IRQ 3/5/7 opened in turn | 14h, 16 KB blocks | time constant (41h on SCI1.1+) | 2xEh | interrupts; count read a byte at a time |

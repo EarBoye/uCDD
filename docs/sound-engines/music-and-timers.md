@@ -32,7 +32,7 @@ interrupt once per period.
 | Miles MSS 3 | Albion, Dungeon Keeper | 2, 5966 | **200.0 Hz** | at least 31246 and 3514 latches (counted in the kept part of the log): Albion latches the counter some 500 times a second |
 | Miles MSS 3 | Warcraft | 3, 5966 | 200.0 Hz | |
 | Miles MSS 3 | System Shock | 3, 4261 | 280.0 Hz | |
-| Miles (LBA) | Little Big Adventure | 3, 9943 | 120.0 Hz | |
+| Miles AIL/32 | Little Big Adventure | 3, 9943 | 120.0 Hz | |
 | DigPak/MidPak | X-COM UFO Defense | 3, 8522 | 140.0 Hz, then 18.2 Hz | 512 latches |
 | Sierra SCI | King's Quest V, VI, Police Quest 3, Larry 2 | 3, 19886 | **60.0 Hz** | the same in SCI0, SCI1 and SCI1.1 |
 | Westwood | Kyrandia, Dune II | 3, 19887, then 16572 | 60.0, then 72.0 Hz | |
@@ -65,7 +65,7 @@ register bank (38Ah/38Bh) and to register 105h (the OPL3 enable).
 | Apogee SS | Rise of the Triad | 44 | 33 | OPL2 only | |
 | Miles (MSS 3 OPL3.MDI) | System Shock, Warcraft | 211-439 | **14** | **OPL3**, both banks | 26 writes to 06h-1Fh and 9 to the timers at start (the detection) |
 | Miles (AIL 2 via MidPak) | Capitalism | 100 | 14 | OPL3, both banks | the same start as MSS 3: the same FM code |
-| Miles (LBA) | Little Big Adventure | 131 | 14.5 | OPL3, both banks | |
+| Miles AIL/32 | Little Big Adventure | 131 | 14.5 | OPL3, both banks | |
 | DigPak/MidPak | X-COM UFO Defense | 138 | 40 | OPL2 only | |
 | Sierra SCI1 | King's Quest V, Police Quest 3 | 65 | 38 | OPL2 only | |
 | Sierra SCI1.1 | King's Quest VI CD | 408 | 38 | OPL3, **both banks identical** (the same counts in every group) | |
@@ -84,6 +84,11 @@ register bank (38Ah/38Bh) and to register 105h (the OPL3 enable).
 No FM in these runs: Albion, Dungeon Keeper, Tomb Raider, Screamer,
 Hexen (CD music: `snd_musicdevice 10`), TIE Fighter (General MIDI in its
 IMUSE.INI), Castles II, SimCity, 7th Guest (no music in 35 s), C-Dogs.
+
+Own-code games, from a random sample of 75 ([own-code.md](own-code.md)):
+11 of 38 FM users write with no status reads (Star Control 3 and Worlds
+of Ultima over 1100 writes a second), 10 use exactly 41 reads, AdLib's
+documented delay, and the Koei games 27, like Westwood's.
 
 ### What it means for a card
 

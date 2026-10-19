@@ -8,7 +8,7 @@ for the games.
 ## DSMI (Digital Sound and Music Interface, Otto Chrons)
 
 A module (MOD/S3M) player library, 1993-1995: C-Dogs, Cyberdogs,
-Screamer 2, Screamer Rally, Disney's Sound Source titles.
+Screamer 2, Screamer Rally, and Disney's Aladdin (its SDI variant).
 
 C-Dogs, SB Pro path on the virtual SB16 [trace]: E1h, D1h, mixer 0Eh=22h
 (stereo, output filter off), **time constant E9h** (43478 Hz, so 21739 Hz
@@ -30,8 +30,8 @@ as 41h.
 
 Super Stardust [trace]: E1h, 41h 22050 Hz, **B4h mode 10h** (16-bit mono,
 **FIFO off**) with a block of 65521 samples, DMA 5; mixer registers
-30h-47h all written (levels, 41h/42h input/output gain 80h, 44h-47h
-treble and bass 80h); **176 reads of the reset port 2x6h** (a delay
+30h-47h all written (levels; registers 41h/42h, the gains, 80h;
+44h-47h, treble and bass, 80h); **176 reads of the reset port 2x6h** (a delay
 loop); the position by polling channel 5's count (409 byte reads), D8h
 cleared before each. Like DSMI, the interrupt is almost unused.
 
@@ -39,8 +39,10 @@ cleared before each. Like DSMI, the interrupt is almost unused.
 
 A-Pac [trace]: E1h, D1h, **41h with 22727 Hz** (Allegro's SB16 rate),
 DMA 5 mode 59h; reads mixer 22h, 04h, 26h first. The run ended before
-the transfer. Guild of Thieves' "Allegro" match is a false hit of the
-scan (a 1987 game).
+the transfer. Guild of Thieves and Wonderland (Magnetic Scrolls, 1987
+and 1990) also show Allegro: the libraries run them in the Magnetic
+interpreter, a later DOS build made with Allegro 4.2.1 and DJGPP
+(MAGNETIC.EXE) [file].
 
 ## Loudness Sound System (Tyrian)
 
@@ -82,17 +84,35 @@ each read back.
 ## DiamondWare Sound Toolkit
 
 Found in Carmageddon, GTA, Twinsen's Odyssey and The Case of the Rose Tattoo [file].
-GTA's trace shows Miles 3.5's SB16 sequence (the one-sample probe, B6h
+GTA's trace shows Miles 3's SB16 sequence (the one-sample probe, B6h
 mode 10h, 1024 samples) [trace], so GTA plays its digital sound through
 Miles; DiamondWare's part was not seen. Carmageddon and Twinsen did not
 run in the 86Box tests.
 
+## Origin
+
+Origin's games (Wing Commander 1 and 2, Privateer, Strike Commander era,
+Ultima VI-VIII, BioForge, Crusader) carry their own music code built on
+XMIDI, Miles' music format; several name Miles in their files or carry
+AIL drivers, others only the format (the inventory's "Miles (XMIDI
+only)") [file]. Wing Commander's run [trace]: the timer at 60 Hz, back to
+18.2 Hz and to 60 Hz again several times, and about 1200 FM register
+writes a second with **no status reads**, nearly all to the pitch
+registers (A0h-B8h): every channel's pitch rewritten every tick
+([music-and-timers.md](music-and-timers.md)). No digital sound in 35 s.
+Ultima VII refuses to run with an expanded memory manager loaded.
+
 ## AdLib's driver (SOUND.COM, "SOUND-DRIVER-AD-LIB")
 
 Golden Axe, Ghostbusters II, Scorched Earth, Monty Python, Rick Dangerous
-2 and others [file]. FM music only, at 388h/389h, which the trace build
-does not capture (uCDD passes the OPL straight to the card); no digital
-traffic in the runs.
+2, the Koei games (Celtic Tales, Gemfire, Genghis Khan II) and others
+[file]. FM music only, at 388h/389h; uCDD passes the FM ports straight
+to the card. With the timer-and-FM build [trace]: the three Koei games
+set the timer to 291.3 Hz and write the OPL2 with **27 status reads per
+register write**, the same count as Westwood's Kyrandia and Dune II
+(perhaps the same AdLib driver code; a correlation only); Monty Python
+41 (AdLib's documented delay); MechWarrior about 5. No digital traffic in
+the runs.
 
 ## CMS, Tandy, Covox
 

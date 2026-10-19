@@ -16,7 +16,7 @@ Grades as in the [README](README.md#evidence-grades).
 
 | File | What it is |
 |---|---|
-| `IMUSE.INI` / `SETMUSE.INI` | Binary: driver file names and settings: `FM4.MDR` (OPL3), `FM2.MDR` (OPL2), `GMIDI.MDR` (General MIDI), `AWEMID.MDR`, and `SB16.WDR` (the digital driver) with port 0330h and an IRQ byte [file, TIE Fighter CD] |
+| `IMUSE.INI` / `SETMUSE.INI` | Binary: driver file names and settings: `FM4.MDR` (OPL3), `FM2.MDR` (OPL2), `GMIDI.MDR` (General MIDI), `AWEMID.MDR`, each with a settings word (0330h after GMIDI.MDR, the MPU-401's port), and `SB16.WDR` (the digital driver) followed by a word whose meaning is not known (0Fh, 0Bh) [file, TIE Fighter CD and floppy] |
 | `*.MDR` | Music drivers |
 | `*.WDR` | Wave (digital) drivers |
 | `TIE2.ADV` | TIE Fighter's floppy edition carries a Miles AIL 2 driver as well [file] |
@@ -28,7 +28,7 @@ Dark Forces, TIE Fighter CD [trace]:
 1. **Mixer 80h and 81h read before anything else**, even before the
    reset: the IRQ and DMA come from the card (F4h: IRQ 7; 22h: DMA 1
    and 5).
-2. Reset, AAh, E1h (4.13), D1h.
+2. Reset, AAh, E1h (4.13), D1h (Dark Forces; TIE Fighter's kept trace starts at D1h).
 3. The 8237: DMA 1, mode 59h, 2048 bytes (Dark Forces) or 1024 (TIE
    Fighter).
 4. **A time constant (40h A5h, 10989 Hz) with the SB16's C6h**: 8-bit

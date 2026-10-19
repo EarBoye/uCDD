@@ -27,15 +27,22 @@ free interrupt from 80h up [recall].
 The games differ in order but use the same pieces, all from the 1.x/2.0
 era of the guide:
 
-| Step | Ports | Games |
+| Step | What is sent and read | Games |
 |---|---|---|
-| Speaker off, reset, AAh | D3h; 2x6h 1/0; 2xAh | all |
-| **Identify**: E0h with a byte, the inverse comes back | E0h 55h then AAh read (Xargon); E0h AAh then 55h (Prehistorik 2, Epic Pinball); **E0h C6h, expecting 39h** (Jill of the Jungle, Monkey Island, X-Wing) | |
-| **Test register**: E4h writes a byte, E8h reads it back | E4h 1Bh / E8h (Xargon, Pizza Tycoon); E4h AAh / E8h (Monkey Island) | |
-| **DMA identification**: E2h with a byte, the DSP writes one byte by DMA (8237 mode 45h: write to memory) | E2h 06h, then E2h 6Bh (Prehistorik 2, Epic Pinball, Monkey Island); E2h BAh (Cool Spot); E2h 98h, F6h (Alien Breed) | |
-| **Read flush**: 256 reads of 2xAh after a reset | Xargon | |
-| **SB Pro mixer test**: reset the mixer (00h), write 55h to 22h, read it back | Xargon, Dark Seed; then 22h, 26h, 04h set to FFh | |
-| **IRQ test** | F2h (Jill of the Jungle, Monkey Island); a short 14h transfer (Xargon: 8 bytes at time constant A0h); **80h**, a DMA-less silence (Dark Seed, length 0101h at time constant 7Fh) | |
+| Speaker off, reset | D3h; 2x6h 1 then 0; AAh read at 2xAh | all |
+| **Identify** (the inverse comes back) | E0h 55h, AAh read | Xargon |
+| | E0h AAh, 55h read | Prehistorik 2, Epic Pinball |
+| | **E0h C6h, 39h read** | Jill of the Jungle, Monkey Island, X-Wing |
+| **Test register** (a byte written and read back) | E4h 1Bh, then E8h | Xargon, Pizza Tycoon |
+| | E4h AAh, then E8h | Monkey Island |
+| **DMA identification** (the DSP writes one byte by DMA; 8237 mode 45h, write to memory) | E2h 06h, then E2h 6Bh | Prehistorik 2, Epic Pinball, Monkey Island |
+| | E2h BAh | Cool Spot |
+| | E2h 98h, then E2h F6h | Alien Breed (Melodix) |
+| **Read flush** | 256 reads of 2xAh after a reset | Xargon |
+| **SB Pro mixer test** | mixer 00h=00h (reset), 22h=55h written and read back; then 22h, 26h, 04h set to FFh | Xargon, Dark Seed |
+| **IRQ test** | F2h | Jill of the Jungle, Monkey Island |
+| | a short 14h transfer (8 bytes at time constant A0h) | Xargon |
+| | **80h**, a silence with no DMA (length 0101h at time constant 7Fh) | Dark Seed |
 
 Playback is 8-bit single-cycle **14h**, one block per VOC block, chained
 from the interrupt handler, with the time constant from the VOC header

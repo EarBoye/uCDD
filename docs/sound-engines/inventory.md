@@ -30,18 +30,20 @@ Pocus: Apogee; Kyrandia 1 and 2, Dune II: the AIL 2 SB Pro driver built in).
 | Sierra SCI | 52 |
 | Creative drv | 26 |
 | own: runs from its disc | 19 |
-| Miles AIL 2 | 18 |
-| Miles | 15 |
-| Miles AIL 2, DigPak/MidPak | 14 |
+| Miles AIL 2 | 16 |
+| Miles AIL 2, DigPak/MidPak | 13 |
 | AdLib driver | 11 |
 | Apogee SS | 10 |
 | DigPak/MidPak | 10 |
+| Miles AIL/32 | 8 |
 | DMX | 7 |
 | MicroProse | 6 |
 | Sound Images | 6 |
+| Miles (XMIDI only) | 5 |
 | HMI SOS (on its disc) | 5 |
+| Miles | 4 |
 | CMS | 4 |
-| Miles, HMI SOS | 4 |
+| Miles, HMI SOS | 3 |
 | Miles MSS 3, DiamondWare | 3 |
 | Miles, DigPak/MidPak | 3 |
 | iMUSE | 3 |
@@ -75,11 +77,13 @@ Pocus: Apogee; Kyrandia 1 and 2, Dune II: the AIL 2 SB Pro driver built in).
 | AdLib driver, CMS, Tandy | 1 |
 | Miles MSS 3, DigPak/MidPak, Creative drv | 1 |
 | HMI SOS, iMUSE (on its disc) | 1 |
+| Miles AIL/32, DigPak/MidPak | 1 |
 | Creative drv, iMUSE (on its disc) | 1 |
 | Miles AIL 2, DigPak/MidPak, Sierra SCI | 1 |
 | Tandy | 1 |
 | HMI SOS, DMX, DSMI (on its disc) | 1 |
 | DigPak/MidPak, Creative drv | 1 |
+| Miles (XMIDI only), HMI SOS | 1 |
 | DigPak/MidPak, Sierra SCI | 1 |
 | Miles AIL 2, HMI SOS | 1 |
 
@@ -101,7 +105,7 @@ Pocus: Apogee; Kyrandia 1 and 2, Dune II: the AIL 2 SB Pro driver built in).
 | AFTERTHE | own: SB |  |  |  |
 | AGE2 | own: SB + AdLib | SB AdLib |  |  |
 | AIRBORNE | own: speaker | Tandy |  |  |
-| AJACK | own: SB + AdLib | SB AdLib GUS Tandy Covox | GUS |  |
+| AJACK | own: SB + AdLib | SB AdLib GUS Tandy Covox | GUS | yes, music |
 | ALIENBRE | Melodix | SB AdLib MT-32 |  | yes |
 | ALIENBRT | own: runs from its disc |  |  |  |
 | ALIENCAR | own: speaker |  |  |  |
@@ -123,32 +127,32 @@ Pocus: Apogee; Kyrandia 1 and 2, Dune II: the AIL 2 SB Pro driver built in).
 | ARKANOI2 | CMS, Tandy | AdLib Tandy CMS |  |  |
 | ARKANOID | own: nothing visible |  |  |  |
 | ARMYMOVE | own: nothing visible |  |  |  |
-| ASSAULTR | own: SB | SB GUS | GUS |  |
+| ASSAULTR | own: SB | SB GUS | GUS | no card traffic |
 | ASTERIXG | own: speaker |  |  |  |
 | ASTROFIR | own: speaker |  |  |  |
 | AXEOFRAG | own: speaker | Tandy |  |  |
-| BAAL | own: SB |  |  |  |
+| BAAL | own: SB |  |  | no card traffic |
 | BABYJOIN | own: AdLib | AdLib Tandy |  |  |
 | BACKLASH | own: SB + AdLib | SB AdLib Speaker |  |  |
 | BADBLOOD | CMS | AdLib MT-32 Tandy CMS Covox |  |  |
 | BALLISTI | own: nothing visible |  |  |  |
 | BANANOID | own: speaker |  |  |  |
-| BARONBAL | own: SB + AdLib | SB |  |  |
-| BARYON | own: SB | SB GM |  |  |
-| BATMANCC | own: SB |  |  |  |
+| BARONBAL | own: SB + AdLib | SB |  | yes, music |
+| BARYON | own: SB | SB GM |  | no card traffic |
+| BATMANCC | own: SB |  |  | no card traffic |
 | BATRAC95 | own: SB | SB |  | yes |
 | BATRET | Creative drv | SB AdLib |  |  |
-| BATTLEAR | HMI SOS | SB AdLib MT-32 GUS PAS Speaker Tandy Covox | GUS |  |
+| BATTLEAR | HMI SOS | SB AdLib MT-32 GUS PAS Speaker Tandy Covox | GUS | yes, music |
 | BCRACERS | HMI SOS | SB AdLib MT-32 GUS PAS Speaker Tandy Covox | GUS |  |
 | BCSQUEST | Sierra SCI |  |  |  |
 | BEETLEJU | own: speaker | Tandy |  |  |
 | BEYONDCA | own: SB |  |  |  |
 | BIGREDRA | Miles MSS 3 | SB AdLib MT-32 GUS PAS | GUS |  |
-| BIOFORGE | Miles | SB AdLib MT-32 GM | Origin | no card traffic |
+| BIOFORGE | Miles (XMIDI only) | SB AdLib MT-32 GM | Origin | no card traffic |
 | BIOMENAC | own: AdLib | AdLib |  |  |
 | BLACKTHO | Miles | SB AdLib MT-32 GM GUS PAS |  |  |
 | BLAKESTA | own: SB + AdLib | SB AdLib |  | music |
-| BLAKESTP | own: SB + AdLib | SB AdLib |  |  |
+| BLAKESTP | own: SB + AdLib | SB AdLib |  | yes, music |
 | BLASTER! | Miles MSS 3 | SB MT-32 GUS PAS Speaker Tandy | Smacker video, GUS |  |
 | BLOOD | Apogee SS | SB AdLib MT-32 GM GUS PAS Speaker Tandy Covox | Smacker video, GUS | yes |
 | BLOODMON | own: speaker |  |  |  |
@@ -164,13 +168,13 @@ Pocus: Apogee; Kyrandia 1 and 2, Dune II: the AIL 2 SB Pro driver built in).
 | CARDRIVE | DigPak/MidPak | SB AdLib MT-32 Speaker |  |  |
 | CARMAGED | Miles, HMI SOS, DiamondWare | SB AdLib MT-32 GUS PAS Speaker Tandy Covox | Smacker video, GUS | no card traffic |
 | CASTLE91 | own: nothing visible |  |  |  |
-| CASTLEVA | own: SB + AdLib | AdLib Tandy |  |  |
+| CASTLEVA | own: SB + AdLib | AdLib Tandy |  | no card traffic |
 | CASTLEWO | own: speaker |  |  |  |
 | CATACO2 | own: speaker |  |  |  |
 | CATACO3D | own: AdLib | AdLib |  |  |
 | CATACOMB | own: SB |  |  | no card traffic |
 | CDOGS | DSMI |  |  | yes, music |
-| CHASMTHE | own: SB + AdLib | SB AdLib GUS CMS | GUS |  |
+| CHASMTHE | own: SB + AdLib | SB AdLib GUS CMS | GUS | yes, music |
 | CKEEN1 | own: nothing visible |  |  |  |
 | CKEEN2 | own: speaker |  |  |  |
 | CKEEN3 | own: SB |  |  |  |
@@ -179,13 +183,13 @@ Pocus: Apogee; Kyrandia 1 and 2, Dune II: the AIL 2 SB Pro driver built in).
 | CKEEN6 | own: AdLib | AdLib |  |  |
 | CKEENDR | own: AdLib | AdLib |  |  |
 | CONANTHE | own: runs from its disc |  |  |  |
-| CONTINUU | own: SB | Tandy |  |  |
+| CONTINUU | own: SB | Tandy |  | no card traffic |
 | CONTRA | own: speaker |  |  |  |
 | COOLSPOT | Creative drv | SB AdLib PAS Speaker |  | yes |
 | COSMOSCO | own: AdLib | Covox |  |  |
 | COVERTAC | MicroProse | AdLib MT-32 Tandy |  | no card traffic |
 | CRAZYCAR | own: nothing visible |  |  |  |
-| CREATURE | own: SB | SB MT-32 GM GUS | GUS |  |
+| CREATURE | own: SB | SB MT-32 GM GUS | GUS | yes, music |
 | CRIMEPAT | DMX (on its disc) |  |  |  |
 | CRUSREGR | own: SB | SB GUS | Origin, GUS |  |
 | CRUSREMO | own: SB | SB GUS | Origin | no card traffic |
@@ -193,7 +197,7 @@ Pocus: Apogee; Kyrandia 1 and 2, Dune II: the AIL 2 SB Pro driver built in).
 | CRYSTALC | own: speaker |  |  |  |
 | CURSEOFT | own: AdLib |  |  |  |
 | CYBERDOG | DSMI | SB GUS PAS | GUS | yes |
-| CYBERIA | own: SB | SB |  |  |
+| CYBERIA | own: SB | SB |  | yes, music |
 | CYBERIA2 | Miles, HMI SOS, DiamondWare, DSMI (on its disc) |  |  |  |
 | CYBERMAG | HMI SOS | SB AdLib MT-32 GM GUS PAS Speaker Tandy Covox | GUS |  |
 | CYCLONES | HMI SOS | SB AdLib MT-32 GUS PAS Speaker Tandy Covox | GUS |  |
@@ -204,7 +208,7 @@ Pocus: Apogee; Kyrandia 1 and 2, Dune II: the AIL 2 SB Pro driver built in).
 | DAVEGOES | own: speaker | Covox |  |  |
 | DAVIDWOL | own: AdLib | AdLib MT-32 Tandy |  |  |
 | DDRAGON | own: speaker | Tandy |  |  |
-| DDRAGON2 | own: SB | Tandy |  |  |
+| DDRAGON2 | own: SB | Tandy |  | no card traffic |
 | DDRAGON3 | own: SB + AdLib | SB AdLib MT-32 Speaker |  |  |
 | DEATHRAL | own: SB + AdLib | SB |  | no card traffic |
 | DEATHSWO | own: speaker |  |  |  |
@@ -213,11 +217,11 @@ Pocus: Apogee; Kyrandia 1 and 2, Dune II: the AIL 2 SB Pro driver built in).
 | DEDERBY2 | Miles MSS 3 | SB MT-32 GUS PAS | GUS |  |
 | DESCENT | HMI SOS | SB AdLib MT-32 GM GUS PAS Speaker | GUS | yes, music |
 | DESCNT2V | Miles, HMI SOS | SB AdLib MT-32 GM GUS PAS Speaker Tandy Covox | GUS |  |
-| DESERT | own: SB + AdLib | SB AdLib MT-32 Speaker Tandy |  |  |
+| DESERT | own: SB + AdLib | SB AdLib MT-32 Speaker Tandy |  | yes, music |
 | DESSTR | HMI SOS (on its disc) |  |  |  |
 | DIEHARD | own: AdLib |  |  |  |
 | DISNEYSA | DSMI/SDI | SB PAS Speaker Covox |  | no card traffic |
-| DIZZYPRI | own: SB |  |  |  |
+| DIZZYPRI | own: SB |  |  | yes, music |
 | DONKEY81 | own: speaker |  |  |  |
 | DONKEYKO | own: nothing visible |  |  |  |
 | DOOM | DMX | SB AdLib GUS PAS | GUS | yes, music |
@@ -229,26 +233,26 @@ Pocus: Apogee; Kyrandia 1 and 2, Dune II: the AIL 2 SB Pro driver built in).
 | DWARS | Miles, DiamondWare (on its disc) |  |  |  |
 | ECSTATI2 | own: SB | SB MT-32 GM GUS | GUS |  |
 | ECSTATIC | own: SB | SB MT-32 GM GUS | GUS |  |
-| ELF | own: SB + AdLib | SB AdLib MT-32 Tandy |  |  |
+| ELF | own: SB + AdLib | SB AdLib MT-32 Tandy |  | no card traffic |
 | ENIGMA96 | own: SB | SB |  |  |
 | EPIC | Creative drv | SB AdLib MT-32 Speaker |  | yes, music |
 | EWJ | own: SB + AdLib | SB GUS PAS CMS | GUS |  |
 | EWJ2 | HMI SOS (on its disc) |  |  |  |
-| EXTERMIN | own: AdLib | AdLib MT-32 |  |  |
+| EXTERMIN | own: AdLib | AdLib MT-32 |  | yes, music |
 | EXTREMEA | Miles MSS 3, HMI SOS | SB AdLib MT-32 GM GUS PAS Speaker Tandy | GUS |  |
 | EXTREMER | Apogee SS | SB AdLib GM GUS PAS Speaker Tandy Covox | GUS |  |
 | F40PURSU | own: speaker |  |  |  |
 | FADETOBL | Miles MSS 3 | SB AdLib MT-32 GM GUS PAS Speaker | GUS |  |
 | FANTASYW | own: speaker |  |  |  |
 | FINALDOO | DMX | SB AdLib GUS PAS | GUS |  |
-| FIREAICE | own: speaker |  |  |  |
+| FIREAICE | own: speaker |  |  | no card traffic |
 | FIREHAWK | Sierra SCI | SB AdLib MT-32 Speaker Tandy CMS |  |  |
 | FIREPOWE | own: speaker |  |  |  |
 | FIROKLAW | Miles MSS 3 | SB AdLib MT-32 GM GUS PAS Speaker Tandy | Smacker video, GUS |  |
 | FIRSTSAM | own: SB + AdLib | SB AdLib Speaker |  |  |
 | FLASHBAC | own: SB + AdLib | SB MT-32 Speaker |  | no card traffic |
 | FLY1984 | own: nothing visible |  |  |  |
-| FLYINGT2 | own: SB + AdLib | SB GUS PAS | GUS |  |
+| FLYINGT2 | own: SB + AdLib | SB GUS PAS | GUS | yes, music |
 | FLYINGTI | own: SB + AdLib | SB GUS PAS | GUS |  |
 | FRANKOTH | own: SB | SB GUS | GUS |  |
 | FUTUREDI | own: speaker |  |  |  |
@@ -262,7 +266,7 @@ Pocus: Apogee; Kyrandia 1 and 2, Dune II: the AIL 2 SB Pro driver built in).
 | GOLDENAX | AdLib driver | AdLib |  | no card traffic |
 | GREATESC | own: nothing visible |  |  |  |
 | GTA | Miles MSS 3, DiamondWare | SB AdLib MT-32 GUS PAS Speaker Tandy | Smacker video, GUS | yes |
-| GTRACING | own: SB |  |  |  |
+| GTRACING | own: SB |  |  | yes, music |
 | HARLEY-D | own: SB + AdLib |  |  |  |
 | HERETICS | DMX | SB AdLib GUS PAS | GUS |  |
 | HEXENBEY | DMX | SB AdLib GUS PAS | GUS | yes, music |
@@ -271,7 +275,7 @@ Pocus: Apogee; Kyrandia 1 and 2, Dune II: the AIL 2 SB Pro driver built in).
 | HORRORZO | own: nothing visible |  |  |  |
 | HYPERSPE | own: SB + AdLib | SB AdLib |  |  |
 | IAS | own: speaker |  |  |  |
-| IGNITION | own: SB | SB |  |  |
+| IGNITION | own: SB | SB |  | yes, music |
 | INCA1 | own: SB + AdLib | SB |  |  |
 | INCA2 | own: SB + AdLib | SB AdLib |  | no card traffic |
 | INFERNO | Miles, DigPak/MidPak | SB AdLib MT-32 GUS PAS Speaker Tandy Covox |  |  |
@@ -293,10 +297,10 @@ Pocus: Apogee; Kyrandia 1 and 2, Dune II: the AIL 2 SB Pro driver built in).
 | KARATEKA | own: nothing visible |  |  |  |
 | LAMBORGH | own: AdLib |  |  |  |
 | LASTNINJ | own: speaker | Tandy |  |  |
-| LBA | Miles | SB AdLib MT-32 GUS PAS Tandy | GUS | yes, music |
+| LBA | Miles AIL/32 | SB AdLib MT-32 GUS PAS Tandy | GUS | yes, music |
 | LEGENDS | own: runs from its disc |  |  |  |
 | LETHALWE | own: SB + AdLib | AdLib MT-32 |  |  |
-| LEWLEON | own: SB | SB GUS Covox | GUS |  |
+| LEWLEON | own: SB | SB GUS Covox | GUS | no card traffic |
 | LIERO | own: SB | SB |  | yes |
 | LIGHTSPE | MicroProse | SB AdLib MT-32 Tandy |  |  |
 | LOLLYPOP | own: AdLib | AdLib MT-32 |  |  |
@@ -311,27 +315,27 @@ Pocus: Apogee; Kyrandia 1 and 2, Dune II: the AIL 2 SB Pro driver built in).
 | MAGICLAN | own: SB |  |  |  |
 | MANICKAR | own: nothing visible |  |  |  |
 | MASSDEST | Miles MSS 3 | SB MT-32 GUS PAS Speaker | GUS |  |
-| MCKIDS | own: SB + AdLib | AdLib CMS |  |  |
+| MCKIDS | own: SB + AdLib | AdLib CMS |  | yes, music |
 | MDK | HMI SOS | SB AdLib GUS PAS Speaker Tandy Covox | GUS | yes |
 | MECHW2 | Miles MSS 3, DigPak/MidPak | SB AdLib MT-32 GM GUS PAS Speaker Tandy CMS | Smacker video, GUS |  |
 | MECHW2M | Miles MSS 3 | SB AdLib MT-32 GUS PAS Speaker CMS | Smacker video, GUS |  |
 | MEGAMANX | Miles MSS 3 | SB AdLib MT-32 GM GUS PAS Speaker Tandy | GUS |  |
 | MEGARAC2 | Miles MSS 3 | SB MT-32 GUS PAS Speaker Tandy | GUS |  |
 | MEGARACE | DSMI (on its disc) |  |  |  |
-| METALGEA | own: SB + AdLib |  |  |  |
+| METALGEA | own: SB + AdLib |  |  | yes, music |
 | METALMUT | own: AdLib |  |  |  |
 | METLTECB | HMI SOS, Sierra SCI | SB AdLib MT-32 GUS PAS Speaker Tandy Covox | GUS |  |
 | METLTECE | HMI SOS | SB AdLib MT-32 GUS PAS Speaker Tandy Covox | GUS |  |
 | MICROMA2 | own: SB | SB GUS | GUS |  |
-| MICROMAC | Sound Images |  |  |  |
+| MICROMAC | Sound Images |  |  | yes, music |
 | MK | Miles MSS 3 | SB AdLib MT-32 GUS PAS | GUS | no card traffic |
 | MK2 | Sound Images | SB MT-32 GUS |  | no card traffic |
-| MKTRIL | Miles MSS 3, HMI SOS | SB AdLib MT-32 GM GUS PAS Speaker Tandy | Smacker video, GUS |  |
+| MKTRIL | Miles MSS 3, HMI SOS | SB AdLib MT-32 GM GUS PAS Speaker Tandy | Smacker video, GUS | yes, music |
 | MONSTERB | own: SB + AdLib | AdLib |  |  |
-| MONTYPYT | AdLib driver | AdLib |  |  |
+| MONTYPYT | AdLib driver | AdLib |  | yes, music |
 | MONUMENT | own: speaker |  |  |  |
 | MOTORMA | Miles MSS 3 | SB MT-32 GUS PAS Speaker Tandy | Smacker video, GUS |  |
-| MWARRIOR | AdLib driver | AdLib MT-32 Speaker Tandy |  |  |
+| MWARRIOR | AdLib driver | AdLib MT-32 Speaker Tandy |  | yes, music |
 | MYSTMIDP | own: runs from its disc |  |  |  |
 | MYSTMIDR | own: runs from its disc |  |  |  |
 | MYSTTOW | own: SB | SB Speaker |  |  |
@@ -340,7 +344,7 @@ Pocus: Apogee; Kyrandia 1 and 2, Dune II: the AIL 2 SB Pro driver built in).
 | NINJA | own: speaker |  |  |  |
 | NINJAGA2 | own: AdLib | AdLib |  |  |
 | NINJAGAI | own: speaker |  |  |  |
-| NOVA9RET | own: SB + AdLib | SB AdLib MT-32 Tandy |  |  |
+| NOVA9RET | own: SB + AdLib | SB AdLib MT-32 Tandy |  | yes, music |
 | NOVASTOR | own: runs from its disc |  |  |  |
 | ONEMUSTF | own: SB | SB GUS | GUS |  |
 | OPWOLF | own: AdLib | AdLib Tandy CMS |  |  |
@@ -374,12 +378,12 @@ Pocus: Apogee; Kyrandia 1 and 2, Dune II: the AIL 2 SB Pro driver built in).
 | RAYMAN | HMI SOS | SB AdLib GUS PAS Speaker Tandy Covox | GUS | yes |
 | RAYMANF | HMI SOS | SB AdLib GUS PAS Speaker Tandy CMS Covox | GUS |  |
 | REALMSOF | Apogee SS | SB AdLib MT-32 GM GUS PAS Speaker Covox | GUS | yes |
-| REDRAM | Apogee SS | SB AdLib MT-32 GM GUS PAS Speaker Tandy Covox | GUS |  |
+| REDRAM | Apogee SS | SB AdLib MT-32 GM GUS PAS Speaker Tandy Covox | GUS | yes, music |
 | REDRAMRA | HMI SOS, Apogee SS | SB AdLib MT-32 GM GUS PAS Speaker Tandy Covox | GUS |  |
 | RENBFJS | Miles AIL 2 | SB MT-32 GUS PAS Speaker Covox | GUS |  |
-| RICKDAN2 | AdLib driver | AdLib Tandy |  |  |
+| RICKDAN2 | AdLib driver | AdLib Tandy |  | no card traffic |
 | RICKDANG | own: nothing visible | Tandy |  |  |
-| RISKYWOO | own: SB + AdLib | SB AdLib MT-32 Speaker |  |  |
+| RISKYWOO | own: SB + AdLib | SB AdLib MT-32 Speaker |  | yes, music |
 | ROBOCOP | own: SB | Tandy |  |  |
 | ROBOCOP3 | Creative drv | SB AdLib MT-32 Speaker |  |  |
 | ROTH | HMI SOS | SB AdLib MT-32 GUS PAS Speaker Tandy Covox | GUS |  |
@@ -395,12 +399,12 @@ Pocus: Apogee; Kyrandia 1 and 2, Dune II: the AIL 2 SB Pro driver built in).
 | SEEKANDD | Vision SL | SB GUS PAS |  | yes |
 | SF | own: speaker | CMS |  |  |
 | SF2 | own: SB + AdLib | SB AdLib MT-32 |  |  |
-| SHADCAST | Miles | SB MT-32 |  |  |
-| SHADOWWA | Apogee SS | SB AdLib MT-32 GM GUS PAS Speaker Tandy Covox | GUS | yes |
+| SHADCAST | Miles AIL/32 | SB MT-32 |  |  |
+| SHADOWWA | Apogee SS | SB AdLib MT-32 GM GUS PAS Speaker Tandy Covox | GUS | yes, music |
 | SHATTERE | HMI SOS | SB AdLib MT-32 GUS PAS Speaker Tandy CMS Covox | GUS |  |
 | SHELLSHO | HMI SOS | SB AdLib MT-32 GUS PAS Speaker Tandy Covox | GUS | yes |
 | SHINOBI | own: speaker | Tandy |  |  |
-| SHUTTLET | own: SB | MT-32 |  |  |
+| SHUTTLET | own: SB | MT-32 |  | yes, music |
 | SILPHEED | Sierra SCI | SB MT-32 Speaker Tandy CMS |  |  |
 | SKYNET | HMI SOS | SB AdLib MT-32 GUS PAS Speaker Tandy Covox | GUS |  |
 | SKYRDS | own: speaker |  |  |  |
@@ -418,7 +422,7 @@ Pocus: Apogee; Kyrandia 1 and 2, Dune II: the AIL 2 SB Pro driver built in).
 | SSF2T | HMI SOS | SB AdLib MT-32 GUS PAS Speaker Tandy Covox | GUS |  |
 | SSTRDUST | MIDAS | SB GUS PAS | GUS | yes |
 | STARCRUS | own: nothing visible |  |  |  |
-| STARGUNN | own: SB | SB GUS PAS | GUS |  |
+| STARGUNN | own: SB | SB GUS PAS | GUS | yes, music |
 | STDS9HAR | Miles MSS 3 | SB AdLib MT-32 GUS PAS Speaker Tandy | Smacker video, GUS |  |
 | STELLAR7 | own: runs from its disc |  |  |  |
 | STORM96 | HMI SOS | SB AdLib MT-32 GUS PAS Speaker Tandy Covox | GUS |  |
@@ -442,8 +446,8 @@ Pocus: Apogee; Kyrandia 1 and 2, Dune II: the AIL 2 SB Pro driver built in).
 | TERMFS | HMI SOS | SB AdLib MT-32 GUS PAS Speaker Tandy Covox | GUS |  |
 | TERMRAMP | Miles (on its disc) |  |  |  |
 | TERMVEL | Miles AIL 2, DigPak/MidPak | SB AdLib GM GUS PAS Speaker Tandy Covox | GUS |  |
-| THECATAC | own: AdLib |  |  |  |
-| THECYCLE | own: SB + AdLib | AdLib Tandy |  |  |
+| THECATAC | own: AdLib |  |  | no card traffic |
+| THECYCLE | own: SB + AdLib | AdLib Tandy |  | yes, music |
 | THEFANTA | own: SB + AdLib | SB AdLib Speaker |  |  |
 | THELASTB | own: runs from its disc |  |  |  |
 | THELASTN | own: speaker | Tandy |  |  |
@@ -477,14 +481,14 @@ Pocus: Apogee; Kyrandia 1 and 2, Dune II: the AIL 2 SB Pro driver built in).
 | VETTE! | own: SB + AdLib |  |  |  |
 | VINYLGOD | own: AdLib | AdLib |  |  |
 | WACKYWHE | own: SB + AdLib | SB AdLib GM GUS PAS Speaker Covox | GUS |  |
-| WALTDISN | own: SB + AdLib | SB AdLib GUS Covox |  |  |
+| WALTDISN | own: SB + AdLib | SB AdLib GUS Covox |  | yes, music |
 | WC | own: SB + AdLib | SB AdLib MT-32 Speaker Tandy | Origin | music |
 | WC2DLX | own: SB + AdLib | SB AdLib MT-32 Speaker Tandy | Origin | no card traffic |
 | WC3HOTT | Miles, HMI SOS, DMX (on its disc) |  |  |  |
 | WC4POF | Miles, HMI SOS | SB AdLib GUS PAS Covox | Origin, GUS |  |
 | WCACAD | Miles AIL 2 | SB AdLib MT-32 | Origin |  |
-| WCPRIV | Miles | SB AdLib MT-32 GM PAS | Origin |  |
-| WDREAMS | own: AdLib | AdLib Tandy |  |  |
+| WCPRIV | Miles (XMIDI only) | SB AdLib MT-32 GM PAS | Origin |  |
+| WDREAMS | own: AdLib | AdLib Tandy |  | no card traffic |
 | WETLANDS | Miles MSS 3 | SB MT-32 GUS PAS Speaker | GUS |  |
 | WHIPLASH | HMI SOS | SB AdLib MT-32 GUS PAS Speaker Tandy CMS Covox | GUS |  |
 | WINGCOMM | Miles AIL 2 | SB AdLib MT-32 GM | Origin | no card traffic |
@@ -497,13 +501,13 @@ Pocus: Apogee; Kyrandia 1 and 2, Dune II: the AIL 2 SB Pro driver built in).
 | WOLF3D | own: AdLib | AdLib |  |  |
 | WORLDRAL | own: SB |  |  |  |
 | XARGON | Creative drv | SB |  | yes, music |
-| XCAREXPE | HMI SOS | SB AdLib MT-32 GUS PAS Speaker Tandy Covox | GUS |  |
+| XCAREXPE | HMI SOS | SB AdLib MT-32 GUS PAS Speaker Tandy Covox | GUS | yes, music |
 | XENON | own: nothing visible | Tandy |  |  |
 | XENON2ME | own: speaker | Tandy |  |  |
 | XIYOUJI | own: speaker |  |  |  |
 | XMENCHI | Miles MSS 3 | SB MT-32 GUS PAS Speaker Tandy | GUS |  |
 | YO!JOE!B | own: SB | SB Covox |  |  |
-| ZONE66 | own: SB + AdLib | SB AdLib GUS |  |  |
+| ZONE66 | own: SB + AdLib | SB AdLib GUS |  | no card traffic |
 | ZOOL2 | own: nothing visible |  |  |  |
 | ZOOL93 | own: nothing visible |  |  |  |
 
@@ -512,10 +516,10 @@ Pocus: Apogee; Kyrandia 1 and 2, Dune II: the AIL 2 SB Pro driver built in).
 | Game folder | Engine | Names | Also | Traced |
 |---|---|---|---|---|
 | 1869 | own: nothing visible |  |  |  |
-| 4CRYSTR | Sound Images | MT-32 Tandy |  |  |
+| 4CRYSTR | Sound Images | MT-32 Tandy |  | no card traffic |
 | 7THGUEST | Miles AIL 2, DigPak/MidPak | SB AdLib MT-32 GUS PAS Tandy Covox | GUS | yes, music |
 | A-PAC | Allegro | SB AdLib GUS | GUS | yes |
-| A-TRAIN | own: SB + AdLib | SB AdLib MT-32 Speaker Tandy Covox |  |  |
+| A-TRAIN | own: SB + AdLib | SB AdLib MT-32 Speaker Tandy Covox |  | yes, music |
 | ADOM | own: speaker |  |  |  |
 | AEGO | own: speaker |  |  |  |
 | AFAB1985 | own: speaker |  |  |  |
@@ -523,13 +527,13 @@ Pocus: Apogee; Kyrandia 1 and 2, Dune II: the AIL 2 SB Pro driver built in).
 | ALBION | Miles MSS 3 | SB AdLib MT-32 GM GUS PAS Speaker Tandy | GUS | yes, music |
 | ALIELOGI | own: SB + AdLib | SB AdLib GUS | GUS |  |
 | ALIENLEG | Miles MSS 3 | SB AdLib MT-32 GM GUS PAS | GUS |  |
-| ALQADIM | Miles | SB AdLib MT-32 GUS PAS Speaker Tandy Covox | GUS | yes |
+| ALQADIM | Miles AIL/32 | SB AdLib MT-32 GUS PAS Speaker Tandy Covox | GUS | yes |
 | ALTREAL | own: speaker |  |  |  |
 | AMBRSTAR | own: AdLib |  |  |  |
 | AMBSORI | DigPak/MidPak | SB AdLib Speaker |  |  |
 | AMONRA | Sierra SCI | SB AdLib MT-32 GM PAS Speaker Tandy CMS Covox |  |  |
-| AMULARM | HMI SOS | SB AdLib MT-32 GUS PAS Speaker Tandy Covox | GUS |  |
-| ANVLDAWN | HMI SOS | SB AdLib MT-32 GM GUS PAS Speaker Tandy Covox | GUS |  |
+| AMULARM | HMI SOS | SB AdLib MT-32 GUS PAS Speaker Tandy Covox | GUS | yes, music |
+| ANVLDAWN | HMI SOS | SB AdLib MT-32 GM GUS PAS Speaker Tandy Covox | GUS | yes, music |
 | ARCHIPEL | own: SB |  |  |  |
 | ARTHURQE | own: speaker |  |  |  |
 | ASCENDY | Miles MSS 3 | SB MT-32 GUS PAS | GUS |  |
@@ -539,9 +543,9 @@ Pocus: Apogee; Kyrandia 1 and 2, Dune II: the AIL 2 SB Pro driver built in).
 | BANDKING | own: nothing visible |  |  |  |
 | BARDTAL1 | own: speaker | Tandy |  |  |
 | BARDTAL2 | own: speaker | Tandy |  |  |
-| BARDTAL3 | own: AdLib | AdLib MT-32 Tandy |  |  |
+| BARDTAL3 | own: AdLib | AdLib MT-32 Tandy |  | yes, music |
 | BASS | own: nothing visible |  |  |  |
-| BAT | own: SB |  |  |  |
+| BAT | own: SB |  |  | yes, music |
 | BATLBUGS | own: SB + AdLib | SB AdLib PAS Speaker Tandy Covox |  |  |
 | BATLTEC2 | AdLib driver, CMS, Tandy | SB AdLib MT-32 Speaker Tandy CMS Covox |  |  |
 | BATLTECH | own: SB | Tandy |  |  |
@@ -553,19 +557,19 @@ Pocus: Apogee; Kyrandia 1 and 2, Dune II: the AIL 2 SB Pro driver built in).
 | BISLE2 | Miles AIL 2 | SB AdLib MT-32 GM PAS Speaker Tandy |  |  |
 | BLDWYCH | own: SB + AdLib | AdLib MT-32 Tandy |  |  |
 | BLSTDWAR | DigPak/MidPak | SB AdLib Speaker |  |  |
-| BOMBERMA | own: SB | SB |  |  |
+| BOMBERMA | own: SB | SB |  | yes, music |
 | BOP1990 | own: SB + AdLib | AdLib |  |  |
 | BOPPIN | Apogee SS | SB AdLib GM GUS PAS Tandy Covox | GUS | yes |
 | BRCDOOM | own: AdLib | AdLib Speaker Tandy |  |  |
 | BRIX93 | Creative drv | SB |  |  |
-| BRMATRIX | own: SB + AdLib | SB AdLib MT-32 Speaker Tandy |  |  |
+| BRMATRIX | own: SB + AdLib | SB AdLib MT-32 Speaker Tandy |  | yes, music |
 | BSWORD1 | Miles MSS 3 | SB MT-32 GUS PAS Speaker | Smacker video, GUS |  |
 | BUBBBRI | Miles MSS 3 | SB AdLib MT-32 GM GUS PAS Speaker Tandy | GUS |  |
 | BUREAUC | own: speaker | Tandy |  |  |
 | BURNTIME | Creative drv | SB |  |  |
 | BUSTMOV2 | Miles MSS 3 | SB MT-32 GUS PAS Speaker Tandy CMS | GUS |  |
 | CADAVER | Sound Images | SB AdLib MT-32 |  | yes |
-| CADAVPAY | Sound Images | SB AdLib MT-32 Tandy |  |  |
+| CADAVPAY | Sound Images | SB AdLib MT-32 Tandy |  | yes, music |
 | CAESAR | Miles MSS 3, DigPak/MidPak, Creative drv | SB AdLib Speaker |  | yes |
 | CAESAR2 | Miles MSS 3 | SB AdLib MT-32 GM GUS PAS Speaker Tandy | GUS |  |
 | CAMELOT | Sierra SCI | SB AdLib MT-32 Speaker Tandy CMS |  |  |
@@ -579,7 +583,7 @@ Pocus: Apogee; Kyrandia 1 and 2, Dune II: the AIL 2 SB Pro driver built in).
 | CASTLES2 | Miles AIL 2 | SB AdLib MT-32 GM PAS Speaker Tandy |  | yes, music |
 | CBLOOD | HMI SOS (on its disc) |  |  |  |
 | CCORPSE | own: speaker |  |  |  |
-| CELTTALE | AdLib driver | SB AdLib MT-32 |  |  |
+| CELTTALE | AdLib driver | SB AdLib MT-32 |  | yes, music |
 | CENTDOR | own: SB + AdLib | AdLib MT-32 Tandy |  |  |
 | CEO | own: SB | SB MT-32 |  |  |
 | CHIPCHAL | own: SB + AdLib |  |  |  |
@@ -589,12 +593,12 @@ Pocus: Apogee; Kyrandia 1 and 2, Dune II: the AIL 2 SB Pro driver built in).
 | CONQESTN | HMI SOS | SB AdLib MT-32 GUS PAS Speaker Tandy Covox | GUS |  |
 | CONSTRUC | HMI SOS | SB AdLib MT-32 GUS PAS Speaker Tandy Covox | GUS |  |
 | CONTZACK | Miles AIL 2, DigPak/MidPak | SB AdLib MT-32 Speaker Tandy Covox |  |  |
-| COUNTDWN | own: SB + AdLib | SB AdLib Covox |  |  |
+| COUNTDWN | own: SB + AdLib | SB AdLib Covox |  | no card traffic |
 | CREEPRS | own: speaker |  |  |  |
 | CRYARBOR | own: SB + AdLib | SB AdLib Speaker |  |  |
-| CURSE | own: SB | Tandy |  |  |
+| CURSE | own: SB | Tandy |  | no card traffic |
 | DARKLAND | MicroProse | SB AdLib MT-32 PAS Covox |  | yes, music |
-| DARKNESS | own: SB + AdLib | SB AdLib |  |  |
+| DARKNESS | own: SB + AdLib | SB AdLib |  | yes, music |
 | DARKSEED | Creative drv | SB AdLib Speaker |  | yes |
 | DEADLINE | own: SB | SB Tandy |  |  |
 | DEATH | Miles MSS 3 | SB AdLib MT-32 GM GUS PAS Tandy | GUS |  |
@@ -604,13 +608,13 @@ Pocus: Apogee; Kyrandia 1 and 2, Dune II: the AIL 2 SB Pro driver built in).
 | DIG | HMI SOS, iMUSE (on its disc) |  |  |  |
 | DKKRYNN | own: AdLib | AdLib Tandy CMS |  |  |
 | DOTT | Creative drv | AdLib MT-32 |  |  |
-| DRAGONLO | own: AdLib | AdLib Tandy |  |  |
+| DRAGONLO | own: AdLib | AdLib Tandy |  | yes, music |
 | DRAGONST | own: speaker | Tandy |  |  |
 | DRFLAME | own: speaker | Tandy |  |  |
 | DRKHRTUU | own: nothing visible | Tandy |  |  |
-| DRKQUEEN | own: SB + AdLib | SB AdLib MT-32 Speaker Tandy |  |  |
+| DRKQUEEN | own: SB + AdLib | SB AdLib MT-32 Speaker Tandy |  | yes, music |
 | DRUGLORD | own: speaker |  |  |  |
-| DSUN | own: SB + AdLib | SB AdLib MT-32 GUS | GUS |  |
+| DSUN | own: SB + AdLib | SB AdLib MT-32 GUS | GUS | yes, music |
 | DUMAST1 | own: nothing visible | Tandy |  |  |
 | DUMAST2 | HMI SOS | SB AdLib MT-32 GUS PAS Speaker Tandy Covox | GUS |  |
 | DUNE | own: AdLib | MT-32 |  |  |
@@ -620,34 +624,34 @@ Pocus: Apogee; Kyrandia 1 and 2, Dune II: the AIL 2 SB Pro driver built in).
 | DW2 | Miles MSS 3 | SB MT-32 GM GUS PAS Speaker | GUS |  |
 | ELITE | own: speaker |  |  |  |
 | ELITEP | own: AdLib | AdLib MT-32 Speaker |  |  |
-| ELVIRA1 | own: SB + AdLib | SB AdLib MT-32 Speaker Tandy CMS |  |  |
+| ELVIRA1 | own: SB + AdLib | SB AdLib MT-32 Speaker Tandy CMS |  | yes, music |
 | ELVIRA2 | own: SB + AdLib | SB AdLib MT-32 Speaker Tandy |  |  |
 | ENCHA | own: SB | SB Tandy |  |  |
 | EOB1 | own: SB + AdLib | SB AdLib Tandy |  |  |
 | EOB2 | own: SB + AdLib | SB AdLib Tandy |  |  |
-| EOB3 | Miles AIL 2, DigPak/MidPak | SB AdLib MT-32 Speaker |  | yes |
+| EOB3 | Miles AIL/32, DigPak/MidPak | SB AdLib MT-32 Speaker |  | yes |
 | ERICUN | own: SB + AdLib | SB AdLib MT-32 Speaker |  |  |
 | ESARENA | Miles AIL 2 | SB AdLib MT-32 GM GUS PAS | GUS |  |
-| ESDAGGER | HMI SOS | SB AdLib MT-32 GUS PAS Speaker Tandy CMS Covox | GUS |  |
+| ESDAGGER | HMI SOS | SB AdLib MT-32 GUS PAS Speaker Tandy CMS Covox | GUS | yes, music |
 | ETERNAM | own: SB + AdLib | SB AdLib Tandy Covox |  |  |
 | EXTASE | own: AdLib | AdLib Tandy |  |  |
 | FALLOUT1 | HMI SOS | SB AdLib GM GUS PAS Speaker Tandy Covox | GUS |  |
-| FANTEMPI | Miles AIL 2 | SB AdLib MT-32 GM GUS PAS Speaker Tandy Covox |  | yes |
+| FANTEMPI | Miles AIL/32 | SB AdLib MT-32 GM GUS PAS Speaker Tandy Covox |  | yes |
 | FANTGEN | Miles MSS 3 | SB MT-32 GUS PAS Speaker CMS | GUS |  |
-| FLAMFREE | own: SB + AdLib | AdLib MT-32 |  |  |
+| FLAMFREE | own: SB + AdLib | AdLib MT-32 |  | no card traffic |
 | FOUNDREA | own: speaker |  |  |  |
 | FQUEEN | own: runs from its disc |  |  |  |
 | FREDDY | Sierra SCI | SB AdLib MT-32 GM PAS Speaker Tandy CMS Covox |  |  |
 | FRONTIER | HMI SOS | SB AdLib MT-32 GUS PAS Speaker Tandy Covox | GUS |  |
-| FRONTIR2 | own: AdLib | AdLib |  |  |
+| FRONTIR2 | own: AdLib | AdLib |  | no card traffic |
 | FULLT | own: SB + AdLib | SB AdLib GUS | GUS |  |
 | FWARS | own: SB |  |  |  |
 | GATESF | DigPak/MidPak | SB AdLib Speaker Tandy |  |  |
 | GATEWAY | own: nothing visible |  |  |  |
-| GATEWAY2 | own: SB + AdLib | SB AdLib MT-32 |  |  |
-| GEMFIRE | AdLib driver | MT-32 |  |  |
+| GATEWAY2 | own: SB + AdLib | SB AdLib MT-32 |  | yes, music |
+| GEMFIRE | AdLib driver | MT-32 |  | yes, music |
 | GHENKHN | own: nothing visible |  |  |  |
-| GHENKHN2 | AdLib driver |  |  |  |
+| GHENKHN2 | AdLib driver |  |  | yes, music |
 | GK1 | Sierra SCI | SB AdLib MT-32 GM PAS Speaker CMS |  | yes |
 | GK2 | own: SB + AdLib | SB AdLib MT-32 GM PAS CMS |  |  |
 | GOB1 | own: AdLib | AdLib |  |  |
@@ -661,7 +665,7 @@ Pocus: Apogee; Kyrandia 1 and 2, Dune II: the AIL 2 SB Pro driver built in).
 | HEIMDALL | own: SB + AdLib | SB AdLib MT-32 |  |  |
 | HEROLANC | own: speaker | Tandy |  |  |
 | HEROMM | Miles MSS 3 | SB MT-32 GUS PAS Speaker | GUS |  |
-| HEROMM2D | Miles MSS 3 | SB AdLib MT-32 GM GUS PAS Speaker Tandy | Smacker video, GUS | yes |
+| HEROMM2D | Miles MSS 3 | SB AdLib MT-32 GM GUS PAS Speaker Tandy | Smacker video, GUS | yes, music |
 | HEROQUES | Sierra SCI | AdLib MT-32 Tandy |  |  |
 | HGG | own: SB | SB Tandy |  |  |
 | HHIJINX | own: SB | SB Tandy |  |  |
@@ -733,22 +737,22 @@ Pocus: Apogee; Kyrandia 1 and 2, Dune II: the AIL 2 SB Pro driver built in).
 | MANSIOND | own: speaker | Tandy |  |  |
 | MARBMAST | Miles MSS 3 | SB AdLib MT-32 GUS PAS Speaker Tandy | GUS |  |
 | MARTIANM | own: SB + AdLib | SB AdLib MT-32 |  |  |
-| MASTMAGI | Miles | SB MT-32 |  |  |
-| MASTORI | Miles | SB AdLib MT-32 GM PAS |  |  |
+| MASTMAGI | Miles (XMIDI only) | SB MT-32 |  |  |
+| MASTORI | Miles (XMIDI only) | SB AdLib MT-32 GM PAS |  |  |
 | MASTORI2 | Miles MSS 3 | SB AdLib MT-32 GM GUS PAS Speaker Tandy | Smacker video, GUS |  |
 | MAX | HMI SOS | SB AdLib MT-32 GM GUS PAS Speaker Tandy Covox | GUS |  |
 | MCRITIC | Miles MSS 3 | SB AdLib MT-32 GM GUS PAS Speaker | GUS |  |
-| MEGALOMA | own: SB + AdLib | SB AdLib MT-32 |  |  |
+| MEGALOMA | own: SB + AdLib | SB AdLib MT-32 |  | no card traffic |
 | MI1 | Creative drv | SB AdLib MT-32 Speaker Tandy CMS |  | yes, music |
 | MI2 | own: SB + AdLib | SB AdLib MT-32 Speaker |  |  |
 | MIDWINTE | own: AdLib | AdLib MT-32 Tandy |  |  |
 | MINDVOY | own: SB | SB Tandy |  |  |
 | MM1 | own: SB | SB Tandy |  |  |
-| MM2 | own: SB | SB Tandy |  |  |
+| MM2 | own: SB | SB Tandy |  | no card traffic |
 | MM3 | own: speaker |  |  |  |
 | MM4 | own: nothing visible |  |  |  |
-| MM5 | own: SB |  |  |  |
-| MM6 | own: SB |  |  |  |
+| MM5 | own: SB |  |  | yes, music |
+| MM6 | own: SB |  |  | yes, music |
 | MOONAHDK | Creative drv | SB AdLib MT-32 Tandy |  |  |
 | MOTORCIT | own: AdLib |  |  |  |
 | MSTREETS | own: speaker | Tandy |  |  |
@@ -757,7 +761,7 @@ Pocus: Apogee; Kyrandia 1 and 2, Dune II: the AIL 2 SB Pro driver built in).
 | NORMAL | HMI SOS | SB AdLib MT-32 GUS PAS Speaker Tandy CMS Covox | GUS |  |
 | NORSEBYN | HMI SOS | SB AdLib MT-32 GUS PAS Speaker Tandy Covox | GUS |  |
 | ODDWORLD | Miles MSS 3 | SB AdLib MT-32 GM GUS PAS Speaker Tandy | GUS |  |
-| OVERLORD | own: SB + AdLib | AdLib MT-32 Speaker Tandy CMS |  |  |
+| OVERLORD | own: SB + AdLib | AdLib MT-32 Speaker Tandy CMS |  | yes, music |
 | PANDORA | HMI SOS | SB AdLib MT-32 GUS PAS Speaker Tandy Covox | GUS |  |
 | PERFECTG | Miles AIL 2, DigPak/MidPak | SB AdLib MT-32 GM GUS PAS |  |  |
 | PERFGEN | Sierra SCI | SB AdLib Speaker Covox | Origin |  |
@@ -767,16 +771,16 @@ Pocus: Apogee; Kyrandia 1 and 2, Dune II: the AIL 2 SB Pro driver built in).
 | PIRATES | MicroProse | MT-32 |  | yes |
 | PIZZATYC | DigPak/MidPak, Creative drv | SB AdLib PAS |  | yes, music |
 | PLANEDGE | own: SB + AdLib | SB AdLib MT-32 Tandy |  |  |
-| PLANETF | own: SB | SB Tandy |  |  |
+| PLANETF | own: SB | SB Tandy |  | no card traffic |
 | PNITE | own: speaker | Tandy |  |  |
 | POOLDARK | DigPak/MidPak | SB AdLib Speaker Tandy CMS Covox |  |  |
-| POOLRAD | own: SB |  |  |  |
+| POOLRAD | own: SB |  |  | no card traffic |
 | POPULOUS | own: nothing visible |  |  |  |
 | POPULS2 | own: SB + AdLib | AdLib |  |  |
 | POWERMON | Miles | AdLib MT-32 Tandy |  |  |
 | PQ1 | Sierra SCI |  |  |  |
 | PQ1_VGA | Sierra SCI | SB AdLib MT-32 GM PAS Speaker CMS Covox |  |  |
-| PQ2 | Sierra SCI | SB AdLib MT-32 Speaker Tandy CMS |  |  |
+| PQ2 | Sierra SCI | SB AdLib MT-32 Speaker Tandy CMS |  | yes, music |
 | PQ3 | Sierra SCI | SB AdLib MT-32 PAS Speaker Tandy CMS |  | yes, music |
 | PQ4 | Sierra SCI | SB AdLib MT-32 GM PAS Speaker CMS | Smacker video |  |
 | PUSHOVER | own: nothing visible |  |  |  |
@@ -790,8 +794,8 @@ Pocus: Apogee; Kyrandia 1 and 2, Dune II: the AIL 2 SB Pro driver built in).
 | RARKANI1 | Miles AIL 2 | SB AdLib MT-32 PAS Speaker Tandy |  |  |
 | RARKANI3 | HMI SOS | SB AdLib GUS PAS Speaker Tandy Covox | GUS |  |
 | RAVAGER | Miles AIL 2 | SB AdLib MT-32 GUS PAS Speaker Tandy Covox | GUS |  |
-| RAVENLO2 | Miles | SB AdLib MT-32 GUS PAS Speaker Tandy Covox | GUS |  |
-| RAVENLOF | Miles | SB AdLib MT-32 GM GUS PAS Speaker Tandy Covox | GUS |  |
+| RAVENLO2 | Miles AIL/32 | SB AdLib MT-32 GUS PAS Speaker Tandy Covox | GUS |  |
+| RAVENLOF | Miles AIL/32 | SB AdLib MT-32 GM GUS PAS Speaker Tandy Covox | GUS |  |
 | RDRAGON | own: SB + AdLib | SB AdLib MT-32 Speaker Tandy |  |  |
 | REDGUARD | Miles MSS 3 | SB AdLib MT-32 GM GUS PAS Speaker Tandy | Smacker video, GUS |  |
 | REUNION | own: runs from its disc |  |  |  |
@@ -805,19 +809,19 @@ Pocus: Apogee; Kyrandia 1 and 2, Dune II: the AIL 2 SB Pro driver built in).
 | SCORCHED | AdLib driver | AdLib |  | no card traffic |
 | SECSILBL | own: AdLib | AdLib Speaker Tandy |  |  |
 | SENTW1FM | own: SB | SB |  |  |
-| SERFCITY | Miles AIL 2 | SB AdLib MT-32 GM GUS PAS Speaker Tandy | GUS | yes |
+| SERFCITY | Miles AIL/32 | SB AdLib MT-32 GM GUS PAS Speaker Tandy | GUS | yes |
 | SETTLR2G | Miles MSS 3 | SB AdLib MT-32 GM GUS PAS Speaker Tandy | GUS |  |
-| SHADLAND | own: SB + AdLib | SB AdLib MT-32 |  |  |
+| SHADLAND | own: SB + AdLib | SB AdLib MT-32 |  | no card traffic |
 | SHADWORL | Creative drv (on its disc) |  |  |  |
 | SHCRT | Miles MSS 3, DiamondWare | SB AdLib MT-32 GM GUS PAS | GUS | no card traffic |
 | SHCSS | own: SB + AdLib | SB AdLib MT-32 Tandy Covox |  |  |
 | SHRCJ | own: SB | SB Tandy |  |  |
-| SIDALS | Sierra SCI | SB AdLib MT-32 GM PAS Speaker Tandy CMS |  |  |
+| SIDALS | Sierra SCI | SB AdLib MT-32 GM PAS Speaker Tandy CMS |  | yes, music |
 | SIDMP! | own: nothing visible |  |  |  |
 | SIEGE92 | Creative drv | SB AdLib MT-32 Speaker |  |  |
 | SIMANT | own: SB + AdLib | Tandy Covox |  |  |
 | SIMCITY | own: speaker | Speaker Tandy Covox |  |  |
-| SIMCITY2 | Miles | SB AdLib MT-32 PAS Speaker | Smacker video |  |
+| SIMCITY2 | Miles AIL/32 | SB AdLib MT-32 PAS Speaker | Smacker video |  |
 | SIMCITYE | Miles AIL 2 | SB AdLib PAS |  | yes, music |
 | SIMFARM | Miles AIL 2 | SB AdLib MT-32 PAS Speaker Tandy |  | yes |
 | SIMISLE | Miles MSS 3 | SB MT-32 GUS PAS | GUS |  |
@@ -834,20 +838,20 @@ Pocus: Apogee; Kyrandia 1 and 2, Dune II: the AIL 2 SB Pro driver built in).
 | SORCERIA | Sierra SCI | SB AdLib MT-32 Speaker CMS |  |  |
 | SPACEMAX | own: AdLib | AdLib |  |  |
 | SPECIALF | own: SB + AdLib | SB AdLib MT-32 |  |  |
-| SPELBREK | own: SB | SB Tandy |  |  |
+| SPELBREK | own: SB | SB Tandy |  | no card traffic |
 | SPIREXC | own: SB |  |  |  |
-| SPYCRAFT | Miles, HMI SOS | SB AdLib MT-32 GUS PAS Speaker Tandy Covox | GUS |  |
+| SPYCRAFT | Miles (XMIDI only), HMI SOS | SB AdLib MT-32 GUS PAS Speaker Tandy Covox | GUS |  |
 | SQ1 | Sierra SCI |  |  |  |
 | SQ1VGA | Sierra SCI | SB AdLib MT-32 GM PAS Speaker Tandy CMS |  |  |
 | SQ2 | Sierra SCI |  |  |  |
 | SQ3 | Sierra SCI | SB AdLib MT-32 Speaker Tandy CMS |  |  |
-| SQ4 | Sierra SCI | SB AdLib MT-32 GM PAS Speaker Tandy CMS Covox |  |  |
+| SQ4 | Sierra SCI | SB AdLib MT-32 GM PAS Speaker Tandy CMS Covox |  | yes, music |
 | SQ5 | Sierra SCI | SB AdLib MT-32 GM PAS Speaker Tandy CMS Covox |  |  |
-| SQ6 | Sierra SCI | SB AdLib MT-32 GM PAS Speaker CMS |  |  |
+| SQ6 | Sierra SCI | SB AdLib MT-32 GM PAS Speaker CMS |  | yes, music |
 | ST25 | own: SB + AdLib | SB AdLib MT-32 PAS Speaker Tandy |  |  |
 | STAR | Miles AIL 2 | SB AdLib MT-32 GM GUS PAS Speaker Tandy | GUS | no card traffic |
 | STARCOMM | Miles MSS 3 | SB MT-32 GUS PAS Speaker Tandy | GUS |  |
-| STARCON | own: SB + AdLib | AdLib MT-32 Tandy CMS |  |  |
+| STARCON | own: SB + AdLib | AdLib MT-32 Tandy CMS |  | yes, music |
 | STARCON2 | own: SB + AdLib | SB AdLib GUS Covox | GUS |  |
 | STARCON3 | Miles MSS 3 | SB AdLib MT-32 GM GUS PAS Speaker | GUS |  |
 | STARFLY | own: speaker |  |  |  |
@@ -862,7 +866,7 @@ Pocus: Apogee; Kyrandia 1 and 2, Dune II: the AIL 2 SB Pro driver built in).
 | STRONGHO | Miles, DigPak/MidPak | SB AdLib MT-32 PAS Speaker |  |  |
 | STRTRODS | own: speaker | Tandy |  |  |
 | STUNITY | HMI SOS | SB AdLib GUS PAS Speaker Tandy Covox | GUS |  |
-| SUBTRADE | own: SB + AdLib | SB AdLib |  |  |
+| SUBTRADE | own: SB + AdLib | SB AdLib |  | yes, music |
 | SUPAPLEX | own: SB + AdLib | SB AdLib MT-32 |  |  |
 | SUSPECT | own: SB | SB Tandy |  |  |
 | SWORDOFA | own: SB | MT-32 |  |  |
@@ -874,20 +878,20 @@ Pocus: Apogee; Kyrandia 1 and 2, Dune II: the AIL 2 SB Pro driver built in).
 | THECLUE | Creative drv | SB |  |  |
 | THEEVENM | Sierra SCI | SB AdLib MT-32 GM PAS Speaker Tandy CMS Covox |  |  |
 | THEHORDE | own: SB | GUS | GUS |  |
-| THELOSTV | own: SB + AdLib | SB AdLib MT-32 GM PAS Speaker |  |  |
-| THEMHOSP | Miles MSS 3, DigPak/MidPak | SB AdLib MT-32 GM GUS PAS Speaker Tandy | Smacker video, GUS | yes |
+| THELOSTV | own: SB + AdLib | SB AdLib MT-32 GM PAS Speaker |  | yes, music |
+| THEMHOSP | Miles MSS 3, DigPak/MidPak | SB AdLib MT-32 GM GUS PAS Speaker Tandy | Smacker video, GUS | yes, music |
 | THEMPARK | Miles, HMI SOS (on its disc) |  |  |  |
 | THEPATRI | Creative drv | SB AdLib |  |  |
 | TIMECOMM | Miles MSS 3 | SB AdLib MT-32 GM GUS PAS Speaker Tandy | GUS | yes |
 | TIMELORE | own: AdLib | AdLib Tandy | Origin |  |
-| TINCM1 | own: SB + AdLib | SB AdLib MT-32 GM PAS Speaker Tandy CMS |  |  |
+| TINCM1 | own: SB + AdLib | SB AdLib MT-32 GM PAS Speaker Tandy CMS |  | yes, music |
 | TINCM2 | Sierra SCI | SB AdLib MT-32 GM PAS Speaker Tandy CMS |  |  |
 | TOONSTRK | HMI SOS | SB AdLib GUS PAS Speaker Tandy Covox | Smacker video, GUS |  |
 | TQUEST | own: SB + AdLib | SB AdLib MT-32 |  |  |
 | TRANSPOR | DigPak/MidPak | SB AdLib |  | no card traffic |
 | TRANTDLX | DigPak/MidPak | SB AdLib MT-32 |  |  |
 | TREASSAV | DigPak/MidPak | SB AdLib Speaker Tandy |  |  |
-| TRINITY | own: SB | SB Tandy |  |  |
+| TRINITY | own: SB | SB Tandy |  | no card traffic |
 | TUNNTROL | own: speaker |  |  |  |
 | ULTIDOMA | own: SB + AdLib | SB |  |  |
 | ULTIMA0 | own: SB + AdLib | SB AdLib GUS |  |  |
@@ -899,8 +903,8 @@ Pocus: Apogee; Kyrandia 1 and 2, Dune II: the AIL 2 SB Pro driver built in).
 | ULTIMA6 | CMS | AdLib MT-32 Speaker Tandy CMS Covox |  | no card traffic |
 | ULTIMA71 | Miles AIL 2 | SB AdLib MT-32 | Origin | no card traffic |
 | ULTIMA72 | Miles AIL 2, HMI SOS | SB AdLib MT-32 | Origin |  |
-| ULTIMA8 | Miles | SB AdLib MT-32 GM | Origin | no card traffic |
-| ULTIMAU1 | own: SB + AdLib | SB AdLib MT-32 PAS Speaker Tandy |  |  |
+| ULTIMA8 | Miles (XMIDI only) | SB AdLib MT-32 GM | Origin | no card traffic |
+| ULTIMAU1 | own: SB + AdLib | SB AdLib MT-32 PAS Speaker Tandy |  | yes, music |
 | ULTIMAU2 | Miles AIL 2 | SB AdLib MT-32 PAS Speaker |  |  |
 | UTOPTCON | Sierra SCI | AdLib MT-32 |  |  |
 | VEILDARK | own: SB + AdLib | SB AdLib MT-32 Speaker Tandy CMS |  |  |
@@ -912,14 +916,14 @@ Pocus: Apogee; Kyrandia 1 and 2, Dune II: the AIL 2 SB Pro driver built in).
 | WHALVOY2 | Creative drv | SB GUS |  |  |
 | WISHBRIN | own: SB | SB Tandy |  |  |
 | WIZAR1 | own: speaker |  |  |  |
-| WIZAR3 | own: speaker |  |  |  |
+| WIZAR3 | own: speaker |  |  | no card traffic |
 | WIZAR5 | own: speaker |  |  |  |
 | WIZAR6 | own: SB + AdLib | SB AdLib Speaker Tandy Covox |  |  |
 | WIZAR7 | own: SB + AdLib | SB AdLib MT-32 Speaker Tandy Covox |  |  |
 | WLAND | Allegro | AdLib MT-32 Tandy |  | no card traffic |
 | WLSONEMP | Sound Images | AdLib MT-32 |  |  |
 | WORMSRE | own: SB | SB GUS | GUS |  |
-| WULTIMA | own: SB + AdLib | SB AdLib MT-32 Speaker Tandy | Origin |  |
+| WULTIMA | own: SB + AdLib | SB AdLib MT-32 Speaker Tandy | Origin | yes, music |
 | WULTIMA2 | own: SB + AdLib | SB AdLib MT-32 Speaker Tandy | Origin |  |
 | XANTH | own: SB + AdLib | SB AdLib MT-32 Speaker Covox |  |  |
 | XCOMAP | HMI SOS | SB AdLib MT-32 GUS PAS Speaker Tandy Covox | GUS |  |

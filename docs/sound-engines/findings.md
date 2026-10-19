@@ -86,19 +86,20 @@ have ended about 1.5 s after it started.
 | B2 | Sierra AUDBLAST | reads the count one byte per poll, no flip-flop clear | toggle the flip-flop on every read |
 | B3 | Apogee Sound System | reads channel 5's **current address** and the **page register** 8Bh | the address register moves with the output; page registers read back |
 | B4 | DigPak SB16 | writes mixer 81h = 02h | ignore it, as a jumpered card does, unless the CT2290 shows otherwise (M2) |
-| B5 | HMI SOS, DigPak SB Pro 1993 | write mixer 83h = 0Bh | nothing documented; see M1 |
+| B5 | HMI SOS, DigPak SB Pro 1993 | write mixer 83h = 0Bh | nothing: the CT2290 has no register there (reads FFh); the virtual SB16 reads the same (M1) |
+| B12 | games set for SB Pro on an SB16 (Rayman's HMI SB Pro module, Castles II, Kyrandia) | select stereo through mixer 0Eh bit 1 | nothing: 0Eh does not exist on the SB16 (the CT2290 reads 00h whatever is written), so they play mono; the virtual SB16 does the same [hw: vsb-spec.md 9.4] |
 | B6 | DSMI (Cyberdogs) | sets the output rate with 42h only | 42h sets the shared rate register (the virtual SB16 does) |
 | B7 | DSMI, MIDAS, Battle Race | one block of 60000+ samples over a small DMA buffer | the interrupt almost never comes; the count must be right |
 | B8 | DMX, Sierra, Creative, Loudness, Tyrian | find the IRQ by F2h, a 1-byte 14h, or an 80h silence, with several lines open | one interrupt per test, on the card's line, after the command |
 | B9 | DigPak SB16, Cool Spot, Sound Images | write the master PIC mask 00h (every line open) | nothing; the driver's own handlers must cope |
 | B10 | Castles II | writes IRQ 1's mask bit about 15 times a second | cheap mask writes |
-| B11 | Miles MSS 3 | latches the PIT's counter some 500 times a second (Albion: at least 31246 latches in a run of about a minute) | with the host's retrace hint on (it traps 40h and 43h), that is about 1500 traps a second; the usual builds (`--no-refill-hint`) do not trap them ([music-and-timers.md](music-and-timers.md)) |
+| B11 | Miles MSS 3; Gateway 2 | latch the PIT's counter often: Albion some 500 times a second (at least 31246 latches in a run of about a minute); Gateway 2 in a tight loop, alternating latch commands 00h and 01h (842000 in a run) | with the host's retrace hint on (it traps 40h and 43h) every latch and its two reads are traps: about 1500 a second for Albion, far more for Gateway 2; the usual builds (`--no-refill-hint`) do not trap them ([music-and-timers.md](music-and-timers.md)) |
 
 ## To measure on the CT2290
 
 | # | Question | How |
 |---|---|---|
-| M1 | What does mixer register 83h do (HMI writes 0Bh)? | read 83h after a reset, write 0Bh, read back; play a block with 83h 00h and 0Bh |
+| M1 | What does mixer register 83h do (HMI writes 0Bh)? | **Half answered [hw, SBKIT 17 Oct]:** the CT2290 reads FFh from 83h up, so it has no such register (vsb-spec.md 9.4); left: play a block with 0Bh written, to see it changes nothing |
 | M2 | Is mixer 81h writable on the CT2290? | read 81h, write 02h, read back, restore |
 | M3 | Does an auto-init transfer keep running when its interrupt is never acknowledged? | as DMACNT: start DSP C6h (8-bit auto-init), never read 2xEh, read the count over 2 s |
 | M4 | Does channel 5's current address register move with the transfer, and does 8Bh read back? | read C4h and 8Bh during a B6h transfer |
