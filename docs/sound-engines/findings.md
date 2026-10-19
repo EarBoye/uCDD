@@ -118,6 +118,14 @@ moves, on the virtual SB16 [hw] and SB Pro [trace]. The same holds for a
 
 ### F6. Duke Nukem 3D's SB Pro path never starts on the virtual SB Pro
 
+**Probably the same mistake as F16 (20 Oct).** These runs used Duke's
+config as eXo left it: `BlasterType = 6` (SB16) and `BlasterInterrupt = 7`,
+so at IRQ 5 the game hooked the wrong line. Set up as its setup program
+does for an SB Pro (BlasterType 4, 8 bits) on IRQ 7, Duke plays under uCDD's
+virtual SB Pro as on 86Box's own SB Pro 2 [86Box, D7, the sound check, 20
+Oct]. The IRQ 7 runs below came before that set-up and may be F4. Kept
+open until a trace on the right set-up shows 90h running.
+
 On the virtual SB Pro, Duke Nukem 3D (configured SBType 6, so it checks
 the DSP itself) sets time constant E9h (43.5 kHz), 48h 512 and 90h, mono,
 and gets no interrupt: its DMA address never moves, it sends D3h twice
@@ -207,7 +215,8 @@ stray ones.
 So the fault is the host's, not Miles': any game whose sound interrupt
 reaches a real-mode handler through an INT to the hardware vector, which
 DOS/4GW does for Miles' real-mode drivers and for DigPak's. Two games
-kept overruns with the fix and are separate faults (F15, F16).
+kept overruns with the fix: F15, and F16, which turned out to be the
+game's own config.
 
 ### F15. Fade to Black overruns with or without the F14 fix
 
@@ -219,9 +228,20 @@ traced before (0c12adc1). Not looked at yet.
 
 172 of 173 block ends overran, and no EOI ever ended a virtual interrupt,
 with or without the F14 fix [trace, 19 Oct]: the virtual interrupt
-appears never to reach the game. Related to F6 (its SB Pro path), perhaps.
-Not looked at yet; whether Duke has digital sound under uCDD on the PC is
-not known here.
+appears never to reach the game.
+
+**Not a uCDD fault (20 Oct).** The copy of Duke traced still had eXo's
+`BlasterInterrupt = 7` in DUKE3D.CFG while both cards were on IRQ 5: the
+Apogee Sound System takes the IRQ from its config file (apogee.md), so it
+hooked IRQ 7 and never saw the card's interrupts. On 86Box's own SB16
+without uCDD, set up the same way, Duke stops its sound with "Playback
+failed, possibly due to an invalid or conflicting IRQ" [86Box, 20 Oct]:
+the real card answers the same. With the config at 5, as Duke's setup
+writes it on Michael's PC (irq7_game_configs.txt lists the line), Duke
+plays under uCDD as without it on the SB16, the SB Pro and the SB 2.0
+[86Box, D7, the sound check, 20 Oct]. The lesson is the "checking a game"
+rule: a fault is uCDD's only if the game behaves otherwise without uCDD
+on the same set-up.
 
 F5's confirmation is above. The card also settles three things the
 virtual card already does right: no lockout during 90h on the 4.13 (D0h,

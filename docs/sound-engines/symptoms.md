@@ -20,7 +20,8 @@ gives where the evidence is. Find the game's engine first in the
 | A game that finds the IRQ with F2h (Miles counts the interrupts one by one) | an F2h whose interrupt comes inside the write, or two at once, fails the count (seen and fixed on the virtual ESS, 15 Oct) | [miles.md](miles.md), the F2h test |
 | A game set up for an SB16 (most of the library: eXo's default) on a virtual SB Pro or SB 2.0 | its engine was given an SB16 driver by its configuration (HMI device ID, Miles DIG.INI, DigPak SOUNDRV.COM): it sends SB16 commands or gives up, as on a real older card. Run the game's own setup for the card | [pre-sb16.md](pre-sb16.md) |
 | High-speed games on a virtual SB Pro or SB 2.0 (Doom, Hexen, Rayman, Stargunner) with both cards on IRQ 7 | the high-speed transfer never starts | [findings.md](findings.md) F4 |
-| Duke Nukem 3D on a virtual SB Pro | its 90h output never starts, at any IRQ | [findings.md](findings.md) F6 |
+| Duke Nukem 3D on a virtual SB Pro | its 90h output never starts, with eXo's SB16 and IRQ 7 settings; set up for an SB Pro on IRQ 7 it plays | [findings.md](findings.md) F6 |
+| No digital sound, or "Playback failed, possibly due to an invalid or conflicting IRQ" (Duke 3D), the same without uCDD | the game's own config names eXo's IRQ 7 while the card is on 5; engines that read their config (Apogee, HMI, DigPak) hook the wrong line | irq7_game_configs.txt on the Linux PC; [findings.md](findings.md) F16 |
 | C-Dogs, on any card | it sends 90h before setting up the DMA channel; uCDD never starts that transfer | [findings.md](findings.md) F5 |
 | A game whose AIL 2, Westwood or own SB Pro code tests the mixer, on a virtual SB 2.0 | the SB 2.0 has no mixer, so the game finds no card | [pre-sb16.md](pre-sb16.md) |
 | A DigPak game where the loader says "Load Failed" | not shown to be the card: Simon the Sorcerer's loader failed so in 86Box; cause not looked at | [digpak.md](digpak.md) |

@@ -201,7 +201,9 @@ changed volumes.
 - F15 (19 Oct, 86Box): Fade to Black overruns (79-84%) with or without the
   F14 fix. Open.
 - F16 (19 Oct, 86Box): Duke Nukem 3D on the virtual SB16: the interrupt is
-  never taken (172 of 173 block ends overran, nothing ended). Open.
+  never taken (172 of 173 block ends overran, nothing ended). Not uCDD's
+  (20 Oct): Duke's own config said IRQ 7 with the cards on 5; without uCDD
+  it fails the same way; set to 5 it plays under uCDD on all three models.
 - Super Street Fighter II Turbo: dropped (Michael, 18 Oct). Its 32RTM
   loader writes CR0 and then needs DOS translation for 32-bit programs, a
   host feature of its own for one game; runs without the driver.
