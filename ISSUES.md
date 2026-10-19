@@ -204,6 +204,9 @@ changed volumes.
   never taken (172 of 173 block ends overran, nothing ended). Not uCDD's
   (20 Oct): Duke's own config said IRQ 7 with the cards on 5; without uCDD
   it fails the same way; set to 5 it plays under uCDD on all three models.
+- F17 (20 Oct, 86Box): Jill of the Jungle (Creative's driver) on the
+  virtual SB Pro: a 1.4 s sound plays for about 6 s. Right on the virtual
+  SB16. Open; the family check first (rule 10).
 - Super Street Fighter II Turbo: dropped (Michael, 18 Oct). Its 32RTM
   loader writes CR0 and then needs DOS translation for 32-bit programs, a
   host feature of its own for one game; runs without the driver.

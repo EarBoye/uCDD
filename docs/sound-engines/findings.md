@@ -243,6 +243,19 @@ plays under uCDD as without it on the SB16, the SB Pro and the SB 2.0
 rule: a fault is uCDD's only if the game behaves otherwise without uCDD
 on the same set-up.
 
+### F17. Jill of the Jungle on the virtual SB Pro: sounds play too long
+
+Found by the sound check (20 Oct): Jill's demo, with Creative's driver
+(CT-VOICE, creative.md), on uCDD's virtual SB Pro at IRQ 7 against two
+runs on 86Box's own SB Pro 2 with no uCDD. A sound of 1.4 s in the
+reference lasts about 6 s under uCDD, another short one is stretched too,
+and the matched pieces fall off their places (0.27 on time against the
+control's 0.63) [86Box, D7 and D9 alike]. On the virtual SB16 the same
+demo plays right. Not looked at yet. By rule 10 the first step is the
+family: Creative's drivers on the virtual SB Pro across the games that
+use them (about 28, inventory.md), then the driver's transfer and
+interrupt habits there (14h per VOC block, single-cycle).
+
 F5's confirmation is above. The card also settles three things the
 virtual card already does right: no lockout during 90h on the 4.13 (D0h,
 D4h and E1h are taken), FAh has no reply and swallows what follows until
