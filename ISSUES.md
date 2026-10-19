@@ -147,7 +147,9 @@ changed volumes.
   - F2: the polled DMA count reads higher than the read before it, without
     a wrap, by about one to two output periods (Hexen, Dark Forces, Star
     Dust, King's Quest V, Cyberdogs, Raptor). A real 8237's count only
-    falls. Open.
+    falls. Timing-sensitive: Dark Forces repeats it on the same build, at
+    its block end, and shows none on a build with a few more instructions
+    in output_clock. Open.
   - F3: King's Quest V's 16 KB single-cycle block: the count hovered in a
     64-byte window for 120 reads where the block should have ended. Open.
 - Super Street Fighter II Turbo: dropped (Michael, 18 Oct). Its 32RTM
