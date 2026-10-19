@@ -266,6 +266,7 @@ error_exit:
 %include "play/vis.asm"
 %include "play/landscape.asm"
 %include "play/cubes.asm"
+%include "play/balls.asm"
 %include "play/ui.asm"
 %include "play/input.asm"
 %include "play/text.asm"
@@ -466,6 +467,13 @@ tunnel_step dw 0
 cube_vertices times 8*6 db 0
 cube_index dw 0
 cube_radius dw 0
+ball_pass db 0
+ball_strand dw 0
+ball_index dw 0
+ball_depth dw 0
+ball_left dw 0
+ball_base dw 0
+ball_row dw 0
 cube_yaw_s dw 0
 cube_yaw_c dw 0
 cube_pitch_s dw 0

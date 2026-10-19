@@ -194,8 +194,8 @@ request_buttons:
     dw REQ_X0+174, 60, browser_close, text_cancel
     dw 0
 
-visual_table dw draw_warp, draw_scope, draw_waterfall, draw_fire, draw_bubbles, draw_plasma, draw_tunnel, draw_lissajous, draw_landscape, draw_cubes
-visual_names dw name_warp, name_spectra, name_firebars, name_lavaflow, name_bubbles, name_plasma, name_tunnel, name_lissajous, name_landscape, name_cubes, name_random
+visual_table dw draw_warp, draw_scope, draw_waterfall, draw_fire, draw_bubbles, draw_plasma, draw_tunnel, draw_lissajous, draw_landscape, draw_cubes, draw_balls
+visual_names dw name_warp, name_spectra, name_firebars, name_lavaflow, name_bubbles, name_plasma, name_tunnel, name_lissajous, name_landscape, name_cubes, name_balls, name_random
 name_warp db 'WARP SPEED',0
 name_spectra db 'SPECTRA',0
 name_firebars db 'FIREBARS',0
@@ -206,7 +206,40 @@ name_tunnel db 'TUNNEL',0
 name_lissajous db 'LISSAJOUS',0
 name_landscape db 'LANDSCAPE',0
 name_cubes db 'CUBES',0
+name_balls db 'VECTOR BALLS',0
 name_random db 'RANDOM',0
+ball_colors db C_GOLD_LO, C_GOLD, C_GOLD_HI, C_WHITE, 0, 0, 0, 0
+    db C_KNOB+3, C_KNOB+2, C_KNOB+1, C_KNOB, 0, 0, 0, 0
+ball_shape_table dw 0, 49, 130
+; Shade levels from 1 (dark) to 4 (highlight) for radius 3, 4, and 5.
+ball_shapes:
+    db 0, 0, 3, 3, 2, 0, 0
+    db 0, 3, 4, 3, 2, 2, 0
+    db 3, 4, 4, 3, 2, 2, 1
+    db 3, 3, 3, 3, 2, 1, 1
+    db 2, 2, 2, 2, 2, 1, 1
+    db 0, 2, 2, 1, 1, 1, 0
+    db 0, 0, 1, 1, 1, 0, 0
+    db 0, 0, 0, 3, 3, 2, 0, 0, 0
+    db 0, 3, 3, 3, 3, 2, 2, 1, 0
+    db 0, 3, 4, 4, 3, 3, 2, 1, 0
+    db 3, 3, 4, 4, 3, 2, 2, 1, 1
+    db 3, 3, 3, 3, 3, 2, 2, 1, 1
+    db 2, 2, 3, 2, 2, 2, 1, 1, 1
+    db 0, 2, 2, 2, 2, 1, 1, 1, 0
+    db 0, 1, 1, 1, 1, 1, 1, 1, 0
+    db 0, 0, 0, 1, 1, 1, 0, 0, 0
+    db 0, 0, 0, 0, 3, 3, 2, 0, 0, 0, 0
+    db 0, 0, 3, 3, 3, 3, 2, 2, 2, 0, 0
+    db 0, 3, 4, 4, 4, 3, 3, 2, 2, 1, 0
+    db 0, 3, 4, 4, 4, 3, 3, 2, 2, 1, 0
+    db 3, 3, 4, 4, 3, 3, 3, 2, 2, 1, 1
+    db 3, 3, 3, 3, 3, 3, 2, 2, 2, 1, 1
+    db 2, 2, 3, 3, 3, 2, 2, 2, 1, 1, 1
+    db 0, 2, 2, 2, 2, 2, 2, 1, 1, 1, 0
+    db 0, 2, 2, 2, 2, 2, 1, 1, 1, 1, 0
+    db 0, 0, 1, 1, 1, 1, 1, 1, 1, 0, 0
+    db 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0
 cube_edges db 0,1, 1,3, 3,2, 2,0, 4,5, 5,7, 7,6, 6,4, 0,4, 1,5, 2,6, 3,7
 liss_colors db C_REFLECT+3, C_LCD_PRINT, C_LCD_MID, C_SPECTRUM+7
 bayer db 0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5
