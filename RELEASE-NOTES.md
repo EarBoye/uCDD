@@ -14,6 +14,8 @@
 - Apply the game volume once to direct DAC output. Reject invalid DSP sample rates and drop the remaining bytes of a rejected DSP command.
 - UCDDSET keeps the old UCDD.CFG when a save fails, ignores Ctrl+Break, and stops the capture of the key that started it.
 - UCDDPLAY: fix the calendar click on track 10, discs that start after track 1, and the READ LONG request length.
+- Show the version in the startup notice of UCDD, UCDDSET, and UCDDPLAY, and in the installation message.
+- Recommend that the mouse driver loads before uCDD.
 
 # Beta 0.9.4
 
