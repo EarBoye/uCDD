@@ -160,7 +160,7 @@ test fail and the game run silent. uCDD holds an F2h that comes within
 |---|---|---|---|
 | F2h counting | expects interrupts one by one | each F2h raises one interrupt, after the command | miles-ess.md, fault 1 |
 | Delivery through its own vector | hooks the IRQ through INT 21h AH=25h | the interrupt must reach the game's vector, also when card and game share IRQ 7 | miles-ess.md, fault 2 |
-| End of interrupt held for seconds | Mortal Kombat Trilogy's driver leaves its last interrupt without an EOI for about 3 s after a sound | nothing else may wait for that EOI (uCDD's CD refill did, M-12) | host-cdrom-spec.md M-12 |
+| ~~End of interrupt held for seconds~~ (WITHDRAWN 20 Oct) | Recorded here as Mortal Kombat Trilogy's driver leaving its interrupt without an EOI for about 3 s. Wrong: the driver sent its EOI and uCDD's host swallowed it (F14). A uCDD fault written down as an engine habit, without the run on the bare machine that would have shown it | under uCDD, F14's fix; nothing is asked of a card | [findings.md](findings.md) F14 |
 | One-sample probe | B0h with length 0 at set-up | a 1-sample single-cycle 16-bit transfer must complete and interrupt | traces above |
 | Shared IRQ 7 | the 1994 drivers' probe interrupt | delivery to the game's handler with the physical card on the same line | [findings.md](findings.md) F1, open |
 | 80h/81h | trusted for IRQ and DMA | the card's real IRQ and DMA in 80h/81h | vsb-spec.md 9.4 |
