@@ -191,6 +191,38 @@ over an unacknowledged one, the sounds x1.00 against the run without
 uCDD. Hexen (DOS/4GW too) chops some sounds on the PC: to check with the
 fix.
 
+**Not MKT alone [trace, 19 Oct]:** the same trace without and with the fix
+on 28 games for about 90 s each, every Miles SB16 driver version in the
+library among them. "Overruns" are block ends while the previous block's
+interrupt was unacknowledged; "swallowed" are the game's EOIs taken for
+stray ones.
+
+| Games | Without the fix | With it |
+|---|---|---|
+| Mortal Kombat Trilogy, Theme Hospital, Dungeon Keeper, Redguard, Little Big Adventure 2, Motor Mash, Time Commando, X-Men: Children of the Atom | 56-58% overruns | 0% (Motor Mash 1%) |
+| Grand Theft Auto 77%, Bust-A-Move 2 30%, System Shock 15%, Jagged Alliance 15% | overruns | 0% |
+| Heroes of Might and Magic II, Oddworld, Test Drive Off-Road, Star Command Revolution, Warcraft, Albion, Caesar II, The Settlers II, X-COM (DigPak) | EOIs swallowed as often as blocks end, no overruns (another EOI ended the interrupt in time) | swallowed 0-19 |
+| Doom, Hexen, Descent | clean (handlers in protected mode) | clean |
+
+So the fault is the host's, not Miles': any game whose sound interrupt
+reaches a real-mode handler through an INT to the hardware vector, which
+DOS/4GW does for Miles' real-mode drivers and for DigPak's. Two games
+kept overruns with the fix and are separate faults (F15, F16).
+
+### F15. Fade to Black overruns with or without the F14 fix
+
+84% of its block ends overran without the fix, 79% with it, with no EOI
+swallowed [trace, 19 Oct]. Its Miles SB16 driver is the one version not
+traced before (0c12adc1). Not looked at yet.
+
+### F16. Duke Nukem 3D on the virtual SB16: the interrupt is never taken
+
+172 of 173 block ends overran, and no EOI ever ended a virtual interrupt,
+with or without the F14 fix [trace, 19 Oct]: the virtual interrupt
+appears never to reach the game. Related to F6 (its SB Pro path), perhaps.
+Not looked at yet; whether Duke has digital sound under uCDD on the PC is
+not known here.
+
 F5's confirmation is above. The card also settles three things the
 virtual card already does right: no lockout during 90h on the 4.13 (D0h,
 D4h and E1h are taken), FAh has no reply and swallows what follows until

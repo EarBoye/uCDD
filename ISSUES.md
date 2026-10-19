@@ -193,7 +193,15 @@ changed volumes.
   86Box D7 x2.38; every uCDD build that ran the game; the CD music is
   exact. Cause: the host swallowed the game's EOI as a stray one (a
   reflected hardware vector); fixed on `stray-eoi` (86Box: x1.00). Hexen
-  may share it (choppy helicopter on the PC). PC test pending.
+  may share it (choppy helicopter on the PC). PC test pending. A survey of
+  28 games (findings.md F14): 12 more Miles games had the same overruns
+  (Theme Hospital, Dungeon Keeper, Redguard, LBA 2, GTA, Time Commando, ...)
+  and 9 more swallowed EOIs without audible harm (X-COM's DigPak among
+  them); all clean with the fix.
+- F15 (19 Oct, 86Box): Fade to Black overruns (79-84%) with or without the
+  F14 fix. Open.
+- F16 (19 Oct, 86Box): Duke Nukem 3D on the virtual SB16: the interrupt is
+  never taken (172 of 173 block ends overran, nothing ended). Open.
 - Super Street Fighter II Turbo: dropped (Michael, 18 Oct). Its 32RTM
   loader writes CR0 and then needs DOS translation for 32-bit programs, a
   host feature of its own for one game; runs without the driver.
