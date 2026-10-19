@@ -46,3 +46,35 @@ the strongest results come from two of them agreeing. Grades as in the
 - Count reads come in pairs after a flip-flop clear, except where the
   engine reads one byte per poll (Sierra's AUDBLAST): pair them before
   calling a count backwards.
+
+## What the first passes missed, and why (20 Oct 2026)
+
+F14 (Mortal Kombat Trilogy and 21 more games, sounds 2.3x long or EOIs
+swallowed) was in the library's own traces' blind spot:
+
+- **The pass mark was "plays"**: the DMA count moved or block interrupts
+  came. The affected games passed: their interrupts came, only two to five
+  blocks late, and the sound came out stretched. Nothing measured whether
+  what played was right.
+- **The layer between the extender and the host was not looked at.** The
+  engine pages say what each engine sends the card and what its handler
+  does, not where the handler runs (protected or real mode) or how its
+  interrupt and EOI travel: DOS/4GW passes Miles' and DigPak's interrupts
+  down to a real-mode handler, which is where uCDD's host misrouted the
+  EOI.
+- **The traces left out the evidence.** The engine-trace build logged no
+  EOIs (they filled the log), and it turned off the host's protected-mode
+  answers so that every access reached the log, which also changes timing.
+- **A clue was filed as an engine habit.** The long-held interrupt seen
+  while fixing MKT's CD music (M-12) went into miles.md as "the driver
+  leaves its interrupt without an EOI for about 3 s", with no run on the
+  bare machine to check it.
+- **Breadth before depth.** 838 games scanned and 74 traced for 35 s
+  each, many ending in a silent menu, and one family at a time never
+  surveyed for one fault.
+
+So a pass is done for an engine family when it has: the protocol trace;
+the interrupt path (handler mode, delivery, acknowledge, EOI); counters
+for the virtual line (block ends over an unacknowledged interrupt, EOIs
+swallowed); and the sound itself against a recording without uCDD
+(recording comparison above), on one game per driver version.
