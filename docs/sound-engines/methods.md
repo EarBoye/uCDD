@@ -19,6 +19,7 @@ the strongest results come from two of them agreeing. Grades as in the
 | **Compatibility perturbation** | which input the engine believes: BLASTER, the DSP version, the mixer, or its own configuration | DOSBox-X's SB16 with BLASTER claiming an older card or missing; the game's own configuration switched to another card's driver ([family.md](family.md)) | as the spy | one change at a time |
 | **Wavetable emulation** | how engines drive a General MIDI board on the SB16's header | 86Box's MPU-401 to FluidSynth with a GM soundfont under uCDD; DOSBox-X logging the MPU-401 bytes ([wavetable.md](wavetable.md)) | as the trace | a soft synth stands in for the X2GS |
 | **Random sampling** | whether the named engines cover the rest | 75 own-code games drawn at random ([own-code.md](own-code.md)) | one batch | 35 s often ends in a silent menu |
+| **Hardware probe** | what the real card does, with timing: rates, when interrupts come, the count at each, the DSP's response times, the mixer's writable bits, FM timers, the MPU-401 line rate ([ct2290.md](ct2290.md)) | HWPROBE: a silent DOS program, run on the bare card and again through uCDD with a disc mounted, TSC timed | 20 s a run | one card, one chipset; a game's own code still needs a game run |
 | **Driver file reading** | the driver's own tables and strings | HMI's device ID table, AIL 2's function table, DIG.INI, RESOURCE.CFG | minutes | says what is there, not what runs |
 
 ## Considered, not used yet

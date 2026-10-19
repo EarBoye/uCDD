@@ -33,6 +33,7 @@ Built 19 Oct 2026 from a scan of every game's files and port traces of
 | [music-and-timers.md](music-and-timers.md) | The timer rate each engine sets, how it writes the FM chip (OPL2/OPL3, delays) and the MPU-401 |
 | [symptoms.md](symptoms.md) | **Start here for a fault**: from what you hear or see to the engine habit or finding behind it |
 | [findings.md](findings.md) | What the traces showed about uCDD: faults, behaviour to copy, questions for the CT2290 |
+| [ct2290.md](ct2290.md) | The CT2290 measured: rates, interrupt and count timing, the DSP, mixer, FM and MPU-401, against uCDD and 86Box |
 | [inventory.md](inventory.md) | Every game: its engine, the devices it names, whether it was traced |
 
 ## The families at a glance

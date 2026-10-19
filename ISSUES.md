@@ -162,7 +162,30 @@ changed volumes.
   - F5: a transfer whose DSP command comes before the 8237's mode, count
     and unmask (C-Dogs: 48h, 90h, then the DMA) never starts, on every
     virtual card and at IRQ 5 too; a real DSP waits for the DMA. DOSBox-X
-    plays it. Open.
+    plays it. Confirmed on the CT2290 (19 Oct, hardware): the same order
+    starts at once on the bare card, and with the unmask 20 ms late. Open.
+  - F6 addendum (19 Oct, 86Box): Duke's DSP and 8237 sequence alone plays
+    on the virtual SB Pro at IRQ 5; the stall is in something else the
+    game does.
+- Found by measuring the CT2290 against the virtual SB16 under D7 on the
+  same PC (19 Oct, hardware; docs/sound-engines/ct2290.md, findings.md):
+  - F7: time constants A5h and E9h play 1.6% fast (11023 and 44092 Hz; the
+    card 10846 and 43383; D3h agrees at 22047).
+  - F8: at a block's interrupt the virtual count is about 7Dh short of the
+    boundary; the card's sits on it, and its FIFO (16 samples) brings the
+    first interrupt 0.7 ms forward.
+  - F9: never acknowledged, the card stops the DMA within two blocks and
+    raises one interrupt; the virtual card raises 7 in 300 ms and runs on.
+  - F10: an interrupt raised while the program has interrupts off reaches
+    its handler 0.47-0.81 ms after STI (the card: 2.1 us).
+  - F11: short transfers and a late unmask end at the next output period
+    (0.7-2.3 ms) instead of within about a sample (32-65 us).
+  - F12: mixer 80h and 81h are writable on the card and 83h keeps bits 0-3;
+    the virtual card reads fixed values.
+  - F13: the DSP's response times (reset 61 us, busy 26 us after a command
+    byte and in 46% of idle reads, E1h 31 us); the virtual DSP answers in
+    6-12 us and never shows busy.
+  All open.
 - Super Street Fighter II Turbo: dropped (Michael, 18 Oct). Its 32RTM
   loader writes CR0 and then needs DOS translation for 32-bit programs, a
   host feature of its own for one game; runs without the driver.
