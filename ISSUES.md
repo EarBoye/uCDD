@@ -3,7 +3,7 @@
 What was tested, how, and what is still open. RELEASE-NOTES.md lists the
 changes themselves.
 
-Working method (19 Oct 2026): fix by family, not by game. A fault seen in
+Mantra rule 10 (20 Oct 2026): fix by family, not by game. A fault seen in
 one game is tested across every game sharing its sound engine and driver
 version (branch `sound-engine-library`, docs/sound-engines: inventory and
 census) before it is called that game's own; the shared cause is fixed
