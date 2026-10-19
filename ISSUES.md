@@ -3,6 +3,14 @@
 What was tested, how, and what is still open. RELEASE-NOTES.md lists the
 changes themselves.
 
+Working method (19 Oct 2026): fix by family, not by game. A fault seen in
+one game is tested across every game sharing its sound engine and driver
+version (branch `sound-engine-library`, docs/sound-engines: inventory and
+census) before it is called that game's own; the shared cause is fixed
+once and the fix checked across the family before it ships. Mortal Kombat
+Trilogy's slow sounds were 22 games' fault, cleared by one host fix
+(stray-eoi, below).
+
 Branch names below that are no longer on the fork (they were folded into
 `fixes` or into `vcpi-children`, the current line) live on as tags:
 `archive/<name>` points at the commit the branch had (19 Oct 2026).
