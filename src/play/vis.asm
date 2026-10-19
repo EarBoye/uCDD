@@ -226,12 +226,12 @@ show_message:
     mov byte [label_active], 0
     ret
 
-; Return AX = the low word of the BIOS tick count.
+; Return EAX = the BIOS tick count.
 bios_ticks:
     push ds
     push 40h
     pop ds
-    mov ax, [6ch]
+    mov eax, [6ch]
     pop ds
     ret
 

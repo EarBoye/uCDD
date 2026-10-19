@@ -11,7 +11,6 @@ import subprocess
 
 ROOT = Path(__file__).resolve().parent.parent
 BUILD = ROOT / 'build'
-HOST_OVERLAY_OFFSET = 65536 + 32
 DRIVER_ENTRY_IP = 32
 
 
@@ -22,21 +21,38 @@ def assemble(source, name, defines=(), exe=False, listing=False):
         raise SystemExit('NASM is required.')
     output = BUILD / name
     entry_ip = 0
-    if (ROOT / source).resolve() == (ROOT / 'src/ucdd.asm').resolve():
+    driver = (ROOT / source).resolve() == (ROOT / 'src/ucdd.asm').resolve()
+    symbols = output.with_suffix('.map')
+    if driver:
         entry_ip = DRIVER_ENTRY_IP
         defines = (*defines, f'UCDD_ENTRY_IP={entry_ip}')
+        symbols.with_suffix('.inc').write_text(f'[map symbols {symbols.as_posix()}]\n')
     subprocess.run([nasm, '-f', 'bin', '-I', str(ROOT / 'src') + '/',
+                    *(['-P', str(symbols.with_suffix('.inc'))] if driver else []),
                     *(['-l', str(output.with_suffix('.lst'))] if listing else []),
                     *['-D' + value for value in defines], str(ROOT / source),
                     '-o', str(output)], check=True)
     if exe:
         payload = output.read_bytes()
         stack_segment = (len(payload) + 15) // 16
-        if len(payload) > 65536:
+        extra = 64
+        main_size = len(payload)
+        if driver:
+            # The stack is the 1 KB gap between the main segment and the helper.
+            symbols.with_suffix('.inc').unlink()
+            table = dict(line.split()[2:0:-1] for line in symbols.read_text().splitlines()
+                         if len(line.split()) == 3 and line.split()[0] != 'Real')
+            symbols.unlink()
+            stack_segment = int(table['program_end'], 16) // 16
+            main_size = stack_segment * 16 + 1024
+            extra = 1
+            if len(payload) - main_size > 65536:
+                raise ValueError('The command helper exceeds one DOS segment.')
+        if main_size > 65536:
             raise ValueError('The program exceeds one DOS segment.')
         size = 32 + len(payload)
         header = struct.pack('<14H', 0x5a4d, size % 512, (size + 511) // 512,
-                             0, 2, 64, 64, stack_segment, 1024, 0, entry_ip, 0, 28, 0)
+                             0, 2, extra, extra, stack_segment, 1024, 0, entry_ip, 0, 28, 0)
         output.write_bytes(header.ljust(32, b'\0') + payload)
     print(f'{name}: {output.stat().st_size} bytes')
 
@@ -85,12 +101,16 @@ def assemble_resident_host(defines=(), profile=False):
     if len(host) > 65535:
         raise ValueError('The host exceeds one segment.')
     resident_defines = ('RESIDENT_AUDIO=1', 'OWN_HOST=1', f'OWN_HOST_SIZE={len(host)}', *defines)
-    assemble('src/ucdd.asm', 'UCDD.EXE', (*resident_defines, f'OWN_HOST_OFFSET={HOST_OVERLAY_OFFSET}'), exe=True, listing=True)
-    program = (BUILD / 'UCDD.EXE').read_bytes()
-    if len(program) > HOST_OVERLAY_OFFSET:
-        raise ValueError('The driver overlaps its host overlay.')
-    (BUILD / 'UCDD.EXE').write_bytes(program.ljust(HOST_OVERLAY_OFFSET, b'\0') + host)
-    print(f'UCDD.EXE with internal host: {HOST_OVERLAY_OFFSET + len(host)} bytes')
+    # The host follows the program image in the file.
+    offset = 0
+    while True:
+        assemble('src/ucdd.asm', 'UCDD.EXE', (*resident_defines, f'OWN_HOST_OFFSET={offset}'), exe=True, listing=True)
+        program = (BUILD / 'UCDD.EXE').read_bytes()
+        if offset == (len(program) + 15) // 16 * 16:
+            break
+        offset = (len(program) + 15) // 16 * 16
+    (BUILD / 'UCDD.EXE').write_bytes(program.ljust(offset, b'\0') + host)
+    print(f'UCDD.EXE with internal host: {offset + len(host)} bytes')
 
 
 def assemble_player():

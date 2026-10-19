@@ -4,6 +4,8 @@
 %ifdef OWN_HOST
 CD_REFILL_URGENT equ CD_READ_BYTES*2
 %endif
+CD_TIMER_READS equ 4
+CD_TIMER_MAX_READS equ 32
 
 cd_timer:
     pushf
@@ -16,6 +18,22 @@ cd_timer:
     push cs
     pop ds
     cli
+    cmp byte [cd_started], 1
+    jne .done
+    cmp byte [cd_error], 0
+    jne .done
+    cmp dword [cd_remaining], 0
+    je .done
+    mov eax, [cd_produced]
+    sub eax, [cd_consumed]
+    cmp eax, CD_QUEUE_BYTES-65536
+    ja .done
+    ; Between refills the read limit is the timer budget. Each tick adds a
+    ; few reads, and a tick that cannot read keeps its share.
+    cmp byte [cd_background_reads], CD_TIMER_MAX_READS-CD_TIMER_READS
+    ja .budget
+    add byte [cd_background_reads], CD_TIMER_READS
+.budget:
     cmp byte [busy], 0
     jne .done
     cmp byte [cd_bios_busy], 0
@@ -23,19 +41,9 @@ cd_timer:
     call physical_pic_isr
     or al, [virtual_pic_service]
     jnz .done
-    cmp byte [cd_started], 1
-    jne .done
-    cmp byte [cd_error], 0
-    jne .done
-    cmp dword [cd_remaining], 0
-    je .done
     les bx, [cd_indos]
     cmp word [es:bx-1], 0
     jne .done
-    mov eax, [cd_produced]
-    sub eax, [cd_consumed]
-    cmp eax, CD_QUEUE_BYTES-65536
-    ja .done
 %ifdef OWN_HOST
     cmp byte [own_host_refill], 1
     jne .synchronous
@@ -56,7 +64,6 @@ cd_timer:
 %endif
     mov ss, ax
     mov sp, cd_stack_top
-    mov byte [cd_background_reads], 32
     sti
     cld
     call cd_foreground

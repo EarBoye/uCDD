@@ -42,7 +42,6 @@ start:
     rep stosb
     mov [psp_seg], dx
     call parse_arguments
-    mov es, [psp_seg]
     mov bx, cs
     sub bx, [psp_seg]
     add bx, (stack_top-$$+15)/16
@@ -91,11 +90,7 @@ start:
     jb no_vga
     cmp bl, 8
     ja no_vga
-    push ds
-    push 40h
-    pop ds
-    mov eax, [6ch]
-    pop ds
+    call bios_ticks
     mov [random_seed], eax
     call init_bitreverse
     call init_visuals
@@ -197,10 +192,9 @@ critical_handler:
     mov al, 3
     iret
 
-; ES = PSP. Read /? or a drive letter.
+; Read /? or a drive letter. Return ES = PSP.
 parse_arguments:
     mov byte [wanted_drive], 0ffh
-    push ds
     mov es, [psp_seg]
     mov si, 81h
     movzx cx, byte [es:80h]
@@ -237,10 +231,8 @@ parse_arguments:
     cmp byte [es:si], 13
     jne .usage
 .done:
-    pop ds
     ret
 .usage:
-    pop ds
     mov dx, usage_message
     mov ah, 9
     int 21h
@@ -327,7 +319,7 @@ unit_controls times 26 dd 0
 drive_count dw 0
 drive_list times 26 db 0
 device_list times 26*5 db 0
-request times 26 db 0
+request times 27 db 0
 control_block times 16 db 0
 disc_present db 0
 first_track db 0

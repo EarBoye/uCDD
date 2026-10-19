@@ -368,22 +368,17 @@ mon_iret:
 .pic_protected:
     mov ebx, esp
     jmp dpmi_deliver_hardware
-; An injected TF image is outstanding. A pending IRQ must not wait for the
-; POPF: step to find where the client sets IF again.
+; The client runs with the virtual IF off and NT (dpmi_quiet_exit). A pending
+; IRQ must not wait for a POPF: step to find where the client sets IF again.
 .armed_wait:
-    cmp byte [ebp+dpmi_tf_armed], 0
-    je .no_irq
     cmp byte [ebp+dpmi_step_active], 0
     jne .no_irq
     test byte [esp+44], 3
     jz .no_irq
-    ; The POPF already loaded the image: IF is on again.
-    test byte [esp+49], 1
-    jz .armed_pending
-    and word [esp+48], 0feffh
-    mov byte [ebp+dpmi_tf_armed], 0
-    mov byte [ebp+dpmi_vif], 1
-    jmp .shadow_done
+    test byte [esp+50], 2
+    jnz .no_irq
+    call dpmi_top_level
+    jc .no_irq
 .armed_pending:
     movzx eax, word [ebp+dpmi_pic_mask]
     not eax
@@ -403,9 +398,7 @@ mon_iret:
 .armed_step:
     call dpmi_hardware_room
     jc .no_irq
-    call dpmi_clear_vif
-    cmp byte [ebp+dpmi_step_active], 0
-    je .no_irq
+    mov byte [ebp+dpmi_step_active], 1
     ; Decode the instruction at the resume point: it can be the POPF.
     or word [esp+48], 300h
     DPMI_STEP_NORMAL
@@ -417,6 +410,8 @@ mon_iret:
 %ifdef RESIDENT_HOST
     call resident_refill_schedule
 %endif
+    mov ebx, esp
+    call dpmi_quiet_exit
     mov ax, [esp+44]
     call dpmi_debug_arm
     pop es
@@ -458,7 +453,6 @@ mon_iret:
 
 dpmi_client_init:
     call dpmi_debug_reset
-    mov byte [ebp+dpmi_tf_armed], 0
     mov byte [ebp+dpmi_sti_shadow], 0
     mov byte [ebp+dpmi_callback_sti], 0
     mov byte [ebp+dpmi_sti_sb_held], 0
@@ -688,7 +682,6 @@ dpmi_dispatch:
 .enable:
     call .interrupt_state_value
     mov byte [ebp+dpmi_vif], 1
-    call dpmi_tf_disarm
     mov byte [ebp+dpmi_step_active], 0
     and word [ebx+48], 0feffh
     or word [ebx+48], 200h
@@ -867,6 +860,7 @@ dpmi_dos:
     mov ebx, esp
     call dpmi_record_segments
     call dpmi_locked_capture
+    call dpmi_quiet_entry
     call dpmi_sti_arrival
     call dpmi_tf_entry
     ; Watcom DLL loaders keep the PSP selector and GS in vector E9h for the

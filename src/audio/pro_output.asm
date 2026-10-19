@@ -80,11 +80,17 @@ pro_start:
     xor al, al
     call dsp_write
     jc .stop_failed
-    mov cx, 65535
+    ; Wait at least two BIOS ticks for the priming IRQ.
+    push 40h
+    pop es
+    mov cx, [es:6ch]
 .prime:
     cmp byte [pro_priming], 0
     je .start
-    loop .prime
+    mov ax, [es:6ch]
+    sub ax, cx
+    cmp ax, 3
+    jb .prime
     call pro_stop
     stc
     ret

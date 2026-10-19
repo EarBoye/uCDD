@@ -5,6 +5,7 @@
 %define CD_QUEUE_BYTES 524288
 %define CD_READ_BYTES 4096
 %ifdef RESIDENT_AUDIO
+%define CD_REQUEST_READS 2
 %define EXTERNAL_CD_BUFFERS 1
 %define cd_half 0
 %define cd_stage 0
@@ -231,6 +232,10 @@ cd_request:
     mov sp, cd_stack_top
     sti
     cld
+%ifdef RESIDENT_AUDIO
+    ; The timer reads most of the queue, so a request reads only a few blocks.
+    mov byte [cd_background_reads], CD_REQUEST_READS
+%endif
 %ifdef OWN_HOST
     push es
     push bx
@@ -513,6 +518,10 @@ cd_request:
     shr edx, 8
     mov [cd_gap_total], edx
     mov byte [cd_seek], 1
+%ifdef RESIDENT_AUDIO
+    ; Play reads four times the request limit. 0FFh stays 0FFh.
+    rol byte [cd_background_reads], 2
+%endif
     call cd_foreground
     cmp byte [cd_error], 0
     jne .done
@@ -908,8 +917,6 @@ cd_pump:
     movzx eax, word [cd_read_size]
     add [cd_produced], eax
 %ifdef RESIDENT_AUDIO
-    cmp byte [cd_background_reads], 0
-    je cd_pump
     dec byte [cd_background_reads]
     jz .done
 %endif

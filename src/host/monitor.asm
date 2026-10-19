@@ -491,8 +491,8 @@ mon_exception_%+vector:
 %rep 24
 mon_shared_%+vector:
     push eax
-%if vector == 13
-    ; A ring-3 #GP has one more stack dword than IRQ5.
+%if vector == 13 || vector == 10
+    ; A ring-3 #GP or #TS has one more stack dword than the IRQ.
     call .base
 .base:
     pop eax
@@ -515,10 +515,10 @@ mon_shared_%+vector:
     push dword 0
     push dword (vector & 7)
     jmp mon_irq
-%if vector == 13
+%if vector == 13 || vector == 10
 .exception:
     pop eax
-    jmp mon_exception_13
+    jmp mon_exception_%+vector
 %endif
 %assign vector vector+1
 %endrep
@@ -576,6 +576,7 @@ mon_irq:
 %ifdef HOST_DPMI
     lea ebx, [esp+8]
     call dpmi_locked_capture
+    call dpmi_quiet_entry
 %endif
     mov ebx, [esp+40]
     movzx eax, byte [ebp+mon_master]
@@ -714,6 +715,7 @@ mon_dpmi:
     call dpmi_record_segments
     call dpmi_sti_arrival
     call dpmi_locked_capture
+    call dpmi_quiet_entry
     call dpmi_tf_entry
     cmp word [ebp+mon_vectors+31h*6+4], 0
     je .host_service
@@ -895,8 +897,8 @@ mon_real_transfer:
     mov ecx, 50
     cld
     rep movsb
-    ; A client flags image can carry an injected TF.
-    and byte [ebp+mon_rm_regs+33], 0feh
+    ; A client flags image can carry TF or the NT of dpmi_quiet_exit.
+    and byte [ebp+mon_rm_regs+33], 0beh
     mov dword [ebp+mon_return], mon_real_callback
     lea eax, [ebp+mon_resume]
     mov [ebp+mon_switch+16], eax
@@ -983,6 +985,7 @@ mon_exception:
 %ifdef HOST_DPMI
     lea ebx, [esp+8]
     call dpmi_locked_capture
+    call dpmi_quiet_entry
     cmp dword [esp+40], 16
     jb .cpu_exception
     mov ebx, esp
@@ -1062,6 +1065,12 @@ mon_exception:
     xor edi, edi
     jmp .advance
 .ordinary_exception:
+    mov ebx, esp
+    call dpmi_task_return
+    jc .not_task_return
+    xor edi, edi
+    jmp .advance
+.not_task_return:
 %endif
     cmp dword [esp+40], 13
     jne .fault
@@ -1244,8 +1253,8 @@ mon_exception:
 %endif
 .cli:
 %ifdef HOST_DPMI
-    ; A POPF just before this CLI loaded an injected TF image. Deliver
-    ; pending IRQs first; the CLI faults again.
+    ; A frame with a stale TF turns the virtual IF on first; the CLI faults
+    ; again.
     mov ebx, esp
     call dpmi_tf_loaded
     jnc .cli_state
@@ -1255,28 +1264,27 @@ mon_exception:
 .cli_state:
     cmp word [ebp+dpmi_vif], 0
     jne .trace_cli
-    and word [esp+56], 0feffh
-    or word [esp+56], 200h
-    jmp .advance
+    mov ebx, esp
+    mov ecx, 0fdffh
+    call dpmi_quiet_image
+    jmp .cli_quiet
 .trace_cli:
     HOST_COUNT cli, 0
     cmp byte [ebp+dpmi_vif], 0
     je .cli_stepping
-    call dpmi_tf_disarm
     call dpmi_clear_vif
-    cmp byte [ebp+dpmi_step_active], 0
+    cmp byte [ebp+dpmi_quiet_leak], 0
     je .cli_quiet
     mov ebx, esp
-    call dpmi_tf_inject
-    jc .step_cli
-    mov byte [ebp+dpmi_step_active], 0
+    mov ecx, 0bfffh
+    call dpmi_quiet_image
+    mov byte [ebp+dpmi_quiet_leak], 0
 .cli_quiet:
     and word [esp+56], 0feffh
     or word [esp+56], 200h
     jmp .advance
 .cli_stepping:
     call dpmi_clear_vif
-.step_cli:
     or word [esp+56], 300h
     add [esp+48], edi
     mov ebx, esp

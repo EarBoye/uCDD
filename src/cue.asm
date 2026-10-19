@@ -22,6 +22,9 @@ prepare_image:
     clc
     ret
 .cue:
+%ifdef QUOTE_ERROR
+    mov word [quote_error], bad_image
+%endif
     mov dx, full_path
     mov ax, 3d00h
     int 21h
@@ -50,7 +53,15 @@ prepare_image:
     inc si
     loop .nul_check
     mov byte [si], 0
-    mov word [cue_next], cue_text
+    ; Skip a UTF-8 byte order mark.
+    mov si, cue_text
+    cmp word [si], 0bbefh
+    jne .text
+    cmp byte [si+2], 0bfh
+    jne .text
+    add si, 3
+.text:
+    mov [cue_next], si
     mov word [cue_count], 0
     mov word [cue_payload], 16
     mov word [cue_stride], 2352
@@ -257,14 +268,19 @@ prepare_image:
     jc cue_bad
     call cue_number
     jc cue_bad
-    cmp ax, 1
-    ja cue_bad
     mov [cue_index_number], ax
     call token
     jc cue_bad
     call cue_time
     jc cue_bad
     mov di, [cue_current]
+    ; Check and ignore an index after INDEX 01.
+    cmp word [cue_index_number], 1
+    jbe .index_main
+    cmp byte [cue_have_index], 0
+    je cue_bad
+    jmp .index_done
+.index_main:
     cmp word [cue_index_number], 0
     jne .index_one
     cmp byte [cue_have_index], 0

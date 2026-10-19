@@ -18,7 +18,7 @@ unit_count db 1
 %if ($-$$) != UCDD_ENTRY_IP
 %error The driver header size does not match the EXE entry point.
 %endif
-    jmp command_entry
+    jmp helper_enter
 
 request dd 0
 active_request dd 0
@@ -28,9 +28,7 @@ old_sp dw 0
 resident_psp dw 0
 %ifdef RESIDENT_AUDIO
 memory_mode db 0
-%ifdef RESIDENT_AUDIO
 keep_vcpi db 0
-%endif
 %endif
 caller_psp dw 0
 sda_pointer dd 0
@@ -124,7 +122,7 @@ interrupt:
     cmp al, 82h
     je .success
     cmp al, 83h
-    je .audio
+    je .seek
     cmp al, 84h
     je .audio
     cmp al, 85h
@@ -156,6 +154,13 @@ interrupt:
     ja .restore
     mov ax, 810ch
     jmp .done
+.seek:
+    ; A data image has no head to move.
+    cmp dword [si+AUDIO_ENTRY], 0
+    jne .audio
+    mov ax, 8102h
+    cmp word [si+HANDLE], 0ffffh
+    je .done
 .success:
     mov ax, 0100h
 .done:
@@ -181,8 +186,7 @@ interrupt:
     mov [fs:bp+3], ax
 .restore:
     cli
-    mov ax, [old_ss]
-    mov ss, ax
+    mov ss, [cs:old_ss]
     mov sp, [cs:old_sp]
     mov byte [cs:busy], 0
 .return:
@@ -254,8 +258,6 @@ ioctl_input:
     call ioctl_buffer
     jc request_error
     movzx bx, byte [es:di]
-    cmp bl, 1
-    je audio_request
     cmp bl, 4
     je audio_request
     cmp bl, 12
@@ -286,10 +288,15 @@ ioctl_input:
     je .disc
     cmp bl, 11
     je .track
+    ; Only code 1 comes here. A data image reports its first sector.
+    cmp dword [si+AUDIO_ENTRY], 0
+    jne audio_request
     xor eax, eax
-    mov [es:di+1], ax
-    mov [es:di+3], eax
-    mov [es:di+7], eax
+    cmp [es:di+1], al
+    je .location
+    mov ah, 2
+.location:
+    mov [es:di+2], eax
     jmp request_ok
 .audio_status:
     cmp dword [si+AUDIO_ENTRY], 0
@@ -342,19 +349,8 @@ ioctl_input:
     mov al, [si+TRACK_COUNT]
     mov [es:di+2], al
     mov eax, [si+DISC_SECTORS]
-    sub eax, [si+ORIGIN]
-    add eax, 150
-    xor edx, edx
-    mov ecx, 4500
-    div ecx
-    mov [es:di+5], al
-    mov eax, edx
-    xor edx, edx
-    mov ecx, 75
-    div ecx
-    mov [es:di+3], dl
-    mov [es:di+4], al
-    mov byte [es:di+6], 0
+    call lba_msf
+    mov [es:di+3], eax
     jmp request_ok
 .track:
     movzx ax, byte [es:di+1]
@@ -368,21 +364,24 @@ ioctl_input:
     mov al, [bx+TRACKS+TRACK_CONTROL]
     mov [es:di+6], al
     mov eax, [bx+TRACKS+TRACK_START]
+    call lba_msf
+    mov [es:di+2], eax
+    jmp request_ok
+ioctl_sizes db 5,6,0,0,9,0,5,4,5,2,7,7,11,0,0,11
+
+; EAX: image sector. Return frame, second and minute in bytes 0 to 2 of EAX.
+lba_msf:
     sub eax, [si+ORIGIN]
     add eax, 150
     xor edx, edx
     mov ecx, 4500
     div ecx
-    mov [es:di+4], al
-    mov eax, edx
-    xor edx, edx
-    mov ecx, 75
-    div ecx
-    mov [es:di+2], dl
-    mov [es:di+3], al
-    mov byte [es:di+5], 0
-    jmp request_ok
-ioctl_sizes db 5,6,0,0,9,0,5,4,5,2,7,7,11,0,0,11
+    shl eax, 16
+    xchg ax, dx
+    mov cl, 75
+    div cl
+    xchg al, ah
+    ret
 
 ioctl_output:
     call ioctl_buffer
@@ -402,9 +401,17 @@ ioctl_output:
     jne request_error
     cmp dword [si+AUDIO_ENTRY], 0
     jne request_error
+    ; Keep the MDM set. Eject only the current disc, as the hotkey does.
+    cmp si, [mdm_unit]
+    jne .eject_image
+    mov byte [mdm_ejected], 1
+    call clear_unit
+    jmp .ejected
+.eject_image:
     call dos_enter
     call eject_unit
     call dos_leave
+.ejected:
     jc request_error
     jmp request_ok
 .lock:
@@ -436,8 +443,8 @@ read_sectors:
     mov word [fs:bp+18], 0
     cmp word [si+HANDLE], 0ffffh
     je request_not_ready
-    cmp byte [fs:bp+13], 0
-    jne request_unknown
+    cmp byte [fs:bp+13], 1
+    ja request_unknown
     cmp byte [fs:bp+24], 0
     jne request_unknown
     ; A zero skip is contiguous for any interleave size.
@@ -447,6 +454,19 @@ read_sectors:
     jne request_unknown
 .interleave_ok:
     mov eax, [fs:bp+20]
+    cmp byte [fs:bp+13], 0
+    je .hsg
+    ; Red Book: minute*4500 + second*75 + frame - 150. The range check
+    ; below also rejects a result under zero.
+    movzx edx, al
+    movzx ebx, ah
+    imul ebx, ebx, 75
+    add edx, ebx
+    movzx eax, byte [fs:bp+22]
+    imul eax, eax, 4500
+    add eax, edx
+    sub eax, 150
+.hsg:
     movzx edx, cx
     add edx, eax
     jc .range
@@ -836,8 +856,7 @@ control:
     mov word [control_result], 0
 .done:
     cli
-    mov ax, [old_ss]
-    mov ss, ax
+    mov ss, [cs:old_ss]
     mov sp, [cs:old_sp]
     mov byte [cs:busy], 0
     pop gs
@@ -887,8 +906,10 @@ mount_image:
     cmp cx, 2352
     jne .reject
     ; The helper sets payload 16 (MODE1) or 24 (MODE2 Form 1).
-    test byte [es:di+INFO_PAYLOAD], 0e7h
-    jnz .reject
+    mov dx, [es:di+INFO_PAYLOAD]
+    or dl, 8
+    cmp dx, 24
+    jne .reject
     jmp .format_ok
 .iso_format:
     cmp word [es:di+INFO_PAYLOAD], 0
@@ -1044,19 +1065,15 @@ mount_image:
 .primary:
     cmp dword [pvd+128], 00080800h
     jne .reject
-    mov eax, [pvd+80]
+    mov si, pvd+80
+    call both_endian
+    jne .reject
     cmp eax, 18
     jb .reject
     mov edx, [candidate_file_total]
     sub edx, [candidate_file_origin]
     cmp eax, edx
     ja .reject
-    mov edx, [pvd+84]
-    xchg dl, dh
-    rol edx, 16
-    xchg dl, dh
-    cmp eax, edx
-    jne .reject
     ; Limit directory validation, not sector reads, to the ISO volume.
     cmp eax, [candidate_sectors]
     jbe .volume_limit
@@ -1071,20 +1088,11 @@ mount_image:
     jne .reject
     cmp byte [pvd+189], 0
     jne .reject
-    mov eax, [pvd+158]
-    mov edx, [pvd+162]
-    xchg dl, dh
-    rol edx, 16
-    xchg dl, dh
-    cmp eax, edx
+    mov si, pvd+158
+    call both_endian
     jne .reject
     mov ebx, eax
-    mov eax, [pvd+166]
-    mov edx, [pvd+170]
-    xchg dl, dh
-    rol edx, 16
-    xchg dl, dh
-    cmp eax, edx
+    call both_endian
     jne .reject
     test eax, eax
     jz .reject
@@ -1148,6 +1156,18 @@ mount_image:
     mov ah, 3eh
     int 21h
 .return:
+    ret
+
+; DS:SI: an ISO both-endian dword. Return EAX, ZF set if both halves agree.
+both_endian:
+    lodsd
+    xchg eax, edx
+    lodsd
+    xchg al, ah
+    rol eax, 16
+    xchg al, ah
+    cmp eax, edx
+    xchg eax, edx
     ret
 
 eject_unit:
@@ -1277,23 +1297,26 @@ install:
     mov bx, 16+((program_end-$$+15)/16)+64
     mov ah, 4ah
     int 21h
-    jc install_dos_error
+    mov dx, resize_message
+    jc install_fail
     mov ah, 30h
     int 21h
     cmp al, 5
-    jb install_dos_error
+    mov dx, dos_message
+    jb install_fail
     mov ax, 5d06h
     clc
     int 21h
-    jc install_dos_error_restore
+    mov dx, sda_message
+    jc install_sda_error
     mov [cs:sda_pointer], si
     mov [cs:sda_pointer+2], ds
     push cs
     pop ds
     test cx, cx
-    jz install_dos_error
+    jz install_fail
     cmp cx, 4096
-    ja install_dos_error
+    ja install_fail
     mov [sda_size], cx
     mov di, sda_save+15
     add di, cx
@@ -1424,11 +1447,7 @@ install:
     mov ah, 9
     int 21h
 %endif
-    movzx dx, byte [unit_count]
-    imul dx, UNIT_SIZE
-    add dx, [units_base]
-    add dx, 15
-    shr dx, 4
+    call unit_paragraphs
     add dx, 16
 %ifdef RESIDENT_AUDIO
     mov [resident_paragraphs], dx
@@ -1436,13 +1455,18 @@ install:
 %endif
     mov ax, 3100h
     int 21h
-install_dos_error:
-    mov dx, dos_message
-    jmp install_fail
-install_dos_error_restore:
+; Return DX: paragraphs from the image start to the end of the units.
+unit_paragraphs:
+    movzx dx, byte [unit_count]
+    imul dx, UNIT_SIZE
+    add dx, [units_base]
+    add dx, 15
+    shr dx, 4
+    ret
+install_sda_error:
     push cs
     pop ds
-    jmp install_dos_error
+    jmp install_fail
 install_duplicate:
     mov dx, duplicate_message
 install_fail:
@@ -1450,18 +1474,20 @@ install_fail:
     int 21h
     mov ax, 4c01h
     int 21h
-installed_message db 'The uCDD driver is installed.',13,10,'$'
-dos_message db 'This DOS version is not supported.',13,10,'$'
+installed_message db 'uCDD ',UCDD_VERSION,' is installed.',13,10,'$'
+dos_message db 'uCDD cannot use this DOS version. Use DOS 5 or later.',13,10,'$'
+resize_message db 'uCDD cannot change its memory block size.',13,10,'$'
+sda_message db 'DOS did not supply its swappable data area.',13,10,'$'
 duplicate_message db 'The uCDD driver is already installed.',13,10,'$'
 %ifdef RESIDENT_AUDIO
 trap_resident_message db 'uCDD keeps its port-trap code in memory.',13,10,'$'
-audio_unit_message db 'CD audio currently requires one uCDD drive.',13,10,'$'
+audio_unit_message db 'For CD audio, use only one uCDD drive.',13,10,'$'
 dpmi_host_message db 'A compatible DPMI host is not available.',13,10,'$'
 port_trap_missing_message db 'No compatible port-trap service is available.',13,10
     db 'Use HIMEM with EMM386, JEMMEX, JEMM386, or 386MAX.',13,10,'$'
 port_trap_rejected_message db 'The memory manager rejected the port-trap request.',13,10
     db 'Check for another sound virtualizer.',13,10,'$'
-memory_control_message db 'DOS does not provide the required memory controls.',13,10,'$'
+memory_control_message db 'DOS does not supply the necessary memory functions.',13,10,'$'
 xms_memory_message db 'uCDD cannot allocate XMS memory for the CD audio queue.',13,10,'$'
 %ifdef EMS_QUEUE
 ems_memory_message db 'uCDD cannot allocate EMS memory for the CD audio queue.',13,10,'$'
@@ -1493,16 +1519,11 @@ install_audio_error:
     jmp .stay
 .in_place:
 %endif
-    movzx dx, byte [unit_count]
-    imul dx, UNIT_SIZE
-    add dx, [units_base]
-    add dx, 15
-    shr dx, 4
+    call unit_paragraphs
     add dx, 16
 .stay:
     mov ax, 3101h
     int 21h
-    jmp install_fail
 %include "audio/configure.asm"
 %include "audio/guest_config.asm"
 %include "config_path.asm"
@@ -1537,13 +1558,9 @@ resident_relocate:
     mov ax, cs
     cmp ax, 0a000h
     jae .in_place
-    movzx bx, byte [unit_count]
-    imul bx, UNIT_SIZE
-    add bx, [units_base]
-    add bx, 15
-    shr bx, 4
-    mov [resident_paragraphs], bx
-    push bx
+    call unit_paragraphs
+    mov [resident_paragraphs], dx
+    push dx
     call resident_allocate_high
     pop dx
     jc .in_place

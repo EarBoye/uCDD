@@ -1,7 +1,19 @@
-# Unreleased
+# Beta 0.9.4-a1
+
+## Changes in 0.9.4-a1
 
 - Extend bounded protected-mode instruction decoding for stack operations, address calculations, zero-extension loads, and register arithmetic.
 - Skip virtual debug-register scans when no client breakpoints are enabled.
+- Run protected-mode code with the virtual interrupt flag off at full speed. The host marks these regions with the NT flag and steps the program only while an interrupt waits. Settlers II missions load in about 19 seconds instead of about 115 seconds.
+- Start CD-Audio tracks faster. A play request reads 32 KB before it returns, and the timer fills the rest of the queue. A play request in Fascination takes about 34 ms instead of about 550 ms, and the mouse no longer stops at each track start.
+- Move the command parser, help text, and CUE and MDM code of UCDD.EXE into a second segment. This gives about 19.5 KB of room for resident code. The resident size does not change.
+- Keep the interrupted program's stack frame when a raw mode switch returns to protected mode during a host real-mode call. This fixes the crash on the table load in Absolute Pinball, a regression from 0.9.3a.
+- Seek and the location IOCTL now work on ISO images. Data reads accept Red Book addresses.
+- An application eject on a multi-disc set no longer releases the whole set.
+- `UCDD -unmount` accepts the CUE file name. CUE files with a UTF-8 byte-order mark or with INDEX 02 and higher now mount.
+- Apply the game volume once to direct DAC output. Reject invalid DSP sample rates and drop the remaining bytes of a rejected DSP command.
+- UCDDSET keeps the old UCDD.CFG when a save fails, ignores Ctrl+Break, and stops the capture of the key that started it.
+- UCDDPLAY: fix the calendar click on track 10, discs that start after track 1, and the READ LONG request length.
 
 # Beta 0.9.4
 

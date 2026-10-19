@@ -125,8 +125,6 @@ dpmi_step_check:
 .pop_word:
     mov dx, [esi]
 .pop_value:
-    mov eax, [ebx+60]
-    call .inner_image
     cmp byte [ebp+dpmi_sti_shadow], 0
     je .pop_tf_ready
     mov eax, edx
@@ -157,7 +155,6 @@ dpmi_step_check:
     call dpmi_sti_begin
     jmp .done
 .enable:
-    call dpmi_tf_disarm
     mov byte [ebp+dpmi_vif], 1
     mov byte [ebp+dpmi_step_active], 0
     and word [ebx+56], 0feffh
@@ -189,8 +186,6 @@ dpmi_step_check:
     call .stack
     pop ecx
     jc .done
-    mov eax, [ebx+60]
-    mov [ebp+dpmi_step_image], eax
     cmp ecx, 4
     jne .iret_word
     mov eax, [esi]
@@ -217,9 +212,6 @@ dpmi_step_check:
     mov [ebx+48], eax
     mov [ebx+52], edx
     mov edx, edi
-    mov eax, [ebp+dpmi_step_image]
-    lea eax, [eax+ecx*2]
-    call .inner_image
     cmp byte [ebp+dpmi_sti_shadow], 0
     je .iret_tf_ready
     shr edi, 8
@@ -242,26 +234,6 @@ dpmi_step_check:
     mov [ebx+56], edx
     xor edi, edi
     jmp .enable
-; An image pushed inside a region with an injected TF carries the physical
-; IF. EAX=stack offset of the image. Clear IF in EDX when the image is below
-; the armed stack slot.
-.inner_image:
-    cmp byte [ebp+dpmi_tf_armed], 0
-    je .outer
-    ; A copy of the injected image has TF and keeps its IF.
-    test dh, 1
-    jnz .outer
-    push ecx
-    mov cx, [ebx+64]
-    cmp cx, [ebp+dpmi_tf_ss]
-    pop ecx
-    jne .outer
-    and eax, [ebp+dpmi_tf_mask]
-    cmp eax, [ebp+dpmi_tf_esp]
-    jae .outer
-    and edx, 0fffffdffh
-.outer:
-    ret
 .iret_target:
     push eax
     push edx
@@ -1971,60 +1943,62 @@ dpmi_step_window:
     popad
     ret
 
-; EBX=frame of a CLI that turned the virtual IF off. When a PUSHF put the
-; current flags on the stack just before the CLI, set TF in that image and do
-; not step: the POPF or IRET that loads it traps once. CF when the code does
-; not match.
-dpmi_tf_inject:
+; EBX=frame of a CLI, CX=mask. When a PUSHF just before the CLI put the flags
+; on the stack, or PUSHF and POP reg did, AND that image with CX. With IF off,
+; PUSHF pushed the physical IF: clear IF. With IF on after an NT leak, the image
+; was pushed with IF on: clear NT.
+dpmi_quiet_image:
     pushad
-    test byte [ebx+57], 1
-    jnz .no
     mov ax, [ebx+52]
     mov edx, [ebx+48]
-    sub edx, 1
-    jc .no
-    mov ecx, 1
+    sub edx, 2
+    jc .done
+    mov ecx, 2
     mov edi, 2
     call dpmi_code_buffer
-    jc .no
+    jc .done
+    cmp byte [eax+1], 9ch
+    je .stack
     cmp byte [eax], 9ch
-    jne .no
+    jne .done
+    movzx eax, byte [eax+1]
+    sub al, 58h
+    cmp al, 7
+    ja .done
+    cmp al, 4
+    je .done
+    movzx eax, byte [ebp+dpmi_full_registers+eax]
+    add eax, ebx
+    jmp .image
+.stack:
     mov ax, [ebx+64]
     call dpmi_descriptor
-    jc .no
-    mov ecx, 0ffffffffh
+    jc .done
     mov edx, [ebx+60]
     test byte [esi+6], 40h
-    jnz .stack
-    mov ecx, 0ffffh
+    jnz .wide
     movzx edx, dx
-.stack:
-    push ecx
+.wide:
     mov ax, [ebx+64]
     mov ecx, 2
     mov edi, 1
     call dpmi_buffer
-    pop edi
-    jc .no
+    jc .done
+.image:
+    ; The frame has no NT here; the image has the physical NT.
     mov cx, [eax]
-    cmp cx, [ebx+56]
-    jne .no
-    or byte [eax+1], 1
-    mov [ebp+dpmi_tf_mask], edi
-    mov [ebp+dpmi_tf_esp], edx
-    mov ax, [ebx+64]
-    mov [ebp+dpmi_tf_ss], ax
-    mov byte [ebp+dpmi_tf_armed], 1
+    xor cx, [ebx+56]
+    test cx, 0bfffh
+    jnz .done
+    mov ecx, [esp+24]
+    and [eax], cx
+.done:
     popad
-    clc
-    ret
-.no:
-    popad
-    stc
     ret
 
-; EBX=frame. CF when the frame has TF from an injected image. Code can copy
-; an image and load it again later, so every such TF counts.
+; EBX=frame. CF when a ring-3 frame has TF outside stepping and the STI
+; shadow. Stepping that a handler stopped can leave this TF. 0.9.4 treated it
+; as IF on, and without that Settlers II loads about 7 s slower.
 dpmi_tf_loaded:
     test byte [ebx+57], 1
     jz .no
@@ -2038,6 +2012,23 @@ dpmi_tf_loaded:
     ret
 .no:
     clc
+    ret
+
+; EBX=frame of a host service entry (ES, DS, PUSHAD, EIP, CS, EFLAGS).
+dpmi_tf_entry:
+    push ebx
+    sub ebx, 8
+    call dpmi_tf_loaded
+    jnc .done
+    call dpmi_tf_fired
+.done:
+    pop ebx
+    ret
+
+; EBX=frame from dpmi_tf_loaded. Clear TF and turn the virtual IF on.
+dpmi_tf_fired:
+    and word [ebx+56], 0feffh
+    mov byte [ebp+dpmi_vif], 1
     ret
 
 ; CF when a handler runs: a bridged IRQ, a locked IRQ handler, an exception
@@ -2057,40 +2048,16 @@ dpmi_top_level:
     stc
     ret
 
-; The top-level region ended. A handler keeps the state of the region that
-; it interrupted.
-dpmi_tf_disarm:
-    call dpmi_top_level
-    jc .done
-    mov byte [ebp+dpmi_tf_armed], 0
-.done:
-    ret
-
-; EBX=frame of a host service entry (ES, DS, PUSHAD, EIP, CS, EFLAGS).
-; An injected image loaded just before the entry turns the virtual IF on.
-dpmi_tf_entry:
-    push ebx
-    sub ebx, 8
-    call dpmi_tf_loaded
-    jnc .done
-    call dpmi_tf_fired
-.done:
-    pop ebx
-    ret
-
-; EBX=frame with TF from an injected image. The client set its IF again.
-dpmi_tf_fired:
-    and word [ebx+56], 0feffh
-    mov byte [ebp+dpmi_tf_armed], 0
-    mov byte [ebp+dpmi_vif], 1
-    ret
-
-; EAX holds physical flags on entry and client flags on return.
+; EAX holds physical flags on entry and client flags on return. NT marks an
+; image with the virtual IF off: see dpmi_quiet_entry.
 dpmi_virtual_flags:
-    and eax, 0fffffdffh
+    and eax, 0ffffbdffh
     cmp byte [ebp+dpmi_vif], 0
-    je .trace
+    je .disabled
     or eax, 200h
+    jmp .trace
+.disabled:
+    or eax, 4000h
 .trace:
     cmp byte [ebp+dpmi_sti_shadow], 0
     je .ordinary_tf
@@ -2110,48 +2077,172 @@ dpmi_virtual_flags:
 dpmi_restore_flags:
     mov word [ebp+dpmi_vif], 1
     test eax, 200h
-    jz .disabled
-    call dpmi_tf_disarm
-    jmp .done
-.disabled:
+    jnz .done
     call dpmi_clear_vif
-    cmp byte [ebp+dpmi_step_active], 0
-    je .done
-    or eax, 100h
 .done:
     and eax, 0fffd8fffh
     or eax, 202h
     ret
 
-; Clear the virtual IF. Trace the client until it sets IF again, but not in a
-; handler: the host sees the return of the handler.
+; Clear the virtual IF. A handler does not step: the host sees its return.
 dpmi_clear_vif:
-    mov word [ebp+dpmi_vif], 0
+    mov byte [ebp+dpmi_vif], 0
     cmp dword [ebp+dpmi_locked_depth], 0
-    jne .done
+    jne .handler
     cmp byte [ebp+dpmi_exception_active], 0
-    jne .done
+    jne .handler
     cmp byte [ebp+dpmi_callback_active], 0
-    jne .done
-    mov byte [ebp+dpmi_step_active], 1
+    je .done
+.handler:
+    mov byte [ebp+dpmi_step_active], 0
 .done:
+    ret
+
+; A top-level client with the virtual IF off and no stepping runs with NT. IRET
+; then faults (dpmi_task_return), and PUSHF marks its image with NT. A POPF or
+; IRET that loads an image without NT clears NT: the next host entry turns the
+; virtual IF on. dpmi_virtual_flags marks host images the same way.
+
+; EBX is a five-dword protected frame minus 40 bytes, at entry from the client.
+dpmi_quiet_entry:
+    mov byte [ebp+dpmi_quiet_nt], 0
+    test byte [ebx+44], 3
+    jz .done
+    test byte [ebx+50], 2
+    jnz .done
+    test byte [ebx+49], 40h
+    jz .clear
+    and byte [ebx+49], 0bfh
+    mov byte [ebp+dpmi_quiet_nt], 1
+    ; With IF on, code loaded an image pushed with IF off.
+    cmp byte [ebp+dpmi_quiet], 2
+    jne .done
+    mov byte [ebp+dpmi_quiet_leak], 1
+    jmp .done
+.clear:
+    cmp byte [ebp+dpmi_quiet], 1
+    jne .done
+    cmp word [ebp+dpmi_vif], 0
+    jne .done
+    mov byte [ebp+dpmi_vif], 1
+.done:
+    ret
+
+; EBX is a five-dword protected frame minus 40 bytes, at return to the client.
+dpmi_quiet_exit:
+    test byte [ebx+44], 3
+    jz .done
+    test byte [ebx+50], 2
+    jnz .done
+    and byte [ebx+49], 0bfh
+    mov byte [ebp+dpmi_quiet], 0
+    call dpmi_top_level
+    jc .done
+    mov byte [ebp+dpmi_quiet], 2
+    cmp word [ebp+dpmi_vif], 0
+    jne .done
+    mov byte [ebp+dpmi_quiet], 1
+    or byte [ebx+49], 40h
+.done:
+    ret
+
+; EBX=frame of an exception. CF when it is not an IRET that faulted on NT. With
+; the virtual IF off, the decoder runs the IRET. Otherwise the code loaded an
+; image with NT: clear NT in the image that the IRET loads. The host then runs
+; the IRET without NT, and the IRET does not change the virtual IF. Another
+; #TS on NT is stepped once without NT.
+dpmi_task_return:
+    cmp byte [ebp+dpmi_quiet_nt], 0
+    je .no
+    cmp dword [ebx+40], 10
+    je .vector
+    cmp dword [ebx+40], 13
+    jne .no
+.vector:
+    pushad
+    mov esi, [ebx+48]
+.prefix:
+    mov ax, [ebx+52]
+    mov edx, esi
+    mov ecx, 1
+    mov edi, 2
+    call dpmi_code_buffer
+    jc .bad
+    cmp byte [eax], 66h
+    jne .opcode
+    inc esi
+    mov eax, esi
+    sub eax, [ebx+48]
+    cmp eax, 2
+    ja .bad
+    jmp .prefix
+.opcode:
+    cmp byte [eax], 0cfh
+    jne .bad
+    cmp word [ebp+dpmi_vif], 0
+    jne .image
+    mov esi, [ebx+48]
+    mov di, [ebx+52]
+    call dpmi_step_check
+    cmp esi, [ebx+48]
+    jne .handled
+    cmp di, [ebx+52]
+    jne .handled
+    ; The decoder rejected it.
+.step:
+    mov byte [ebp+dpmi_step_active], 1
+    or byte [ebx+57], 1
+    jmp .handled
+.image:
+    xor edx, edx
+    cmp esi, [ebx+48]
+    je .size
+    mov edx, 6
+.size:
+    mov ax, [ebx+52]
+    call dpmi_step_code_size
+    jc .handled
+    xor ecx, edx
+    mov ax, [ebx+64]
+    call dpmi_descriptor
+    jc .handled
+    mov edx, [ebx+60]
+    test byte [esi+6], 40h
+    jnz .wide
+    movzx edx, dx
+.wide:
+    lea edx, [edx+ecx*2]
+    mov ax, [ebx+64]
+    mov ecx, 2
+    mov edi, 1
+    call dpmi_buffer
+    jc .handled
+    and byte [eax+1], 0bfh
+.handled:
+    popad
+    clc
+    ret
+.bad:
+    cmp dword [ebx+40], 10
+    je .step
+    popad
+.no:
+    stc
     ret
 
 HOST_REAL
 dpmi_vif db 1
 dpmi_step_active db 0
 HOST_PROTECTED
+dpmi_quiet db 0
+dpmi_quiet_nt db 0
+dpmi_quiet_leak db 0
 dpmi_step_address_size db 0
 dpmi_step_segment dw 0
 dpmi_step_ea_segment dw 0
 dpmi_step_modrm db 0
 dpmi_step_code dd 0
 dpmi_step_code_ip dd 0
-dpmi_step_image dd 0
-dpmi_tf_esp dd 0
-dpmi_tf_mask dd 0
-dpmi_tf_ss dw 0
-dpmi_tf_armed db 0
 dpmi_page_generation dd 0
 dpmi_window_generation dd 0
 dpmi_window_descriptor dd 0
@@ -2168,7 +2259,6 @@ HOST_PROTECTED
 dpmi_sti_begin:
     cmp byte [ebp+dpmi_vif], 0
     jne .enabled
-    call dpmi_tf_disarm
     mov eax, [ebx+56]
     call dpmi_virtual_flags
     shr eax, 8

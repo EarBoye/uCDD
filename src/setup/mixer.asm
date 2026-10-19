@@ -103,9 +103,6 @@ step_list:
     mov si, step_values
     ret
 
-text_step:
-    jmp text_percent
-
 MIXER_ITEMS equ 6
 mixer_items:
     item 17,13,4,0, ADJUST,ADJUST,NONE,1, format_fader,no_action,adjust_volume,config_cd_volume
@@ -115,7 +112,7 @@ mixer_items:
     item 20,29,8,0, 0,NONE,3,5, format_label,page_ok,0,ok_label
     item 20,41,8,0, 0,NONE,4,NONE, format_label,page_cancel,0,cancel_label
 step_choice:
-    choice config_volume_step,1,step_list,text_step,0
+    choice config_volume_step,1,step_list,text_percent,0
 step_values db 4
     dw 5,10,20,25
 mixer_notes dw cd_note,0,master_note,0,0,0

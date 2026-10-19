@@ -72,6 +72,8 @@ Do not load the audio driver for games that use ADPCM sound. ADPCM is not suppor
 
 Install once per boot, before the redirector. `UCDD -install -units 2` creates two empty drives (1 to 4). Restart DOS to change the unit count. `LH` loads the resident driver into upper memory when UMBs are available. Allow about 64 KB of free upper memory for `LH`.
 
+It is recommended to load your mouse driver before μCDD.
+
 With one drive, JEMMEX, and free UMBs, a sample installation used 560 bytes of conventional memory with `LH UCDD -install`. When loaded low and moved to upper memory, it used 848 bytes.
 
 ```dos

@@ -2,7 +2,8 @@
 ; SPDX-License-Identifier: GPL-3.0-only
 
 ; Find the physical card. An SB16 wins over a WSS codec. A WSS codec wins
-; over an older Sound Blaster. BLASTER supplies a value only when a test fails.
+; over an older Sound Blaster. BLASTER supplies the first port to try, and the
+; IRQ or DMA channel of an older Sound Blaster when its test fails.
 
 %define DET_BYTES 32
 %define NOTE_BOARD 1
@@ -15,7 +16,7 @@
 detect_action:
     call resident_audio_present
     jnc .free
-    mov word [status], resident_detect_message
+    mov word [status], resident_test_message
     ret
 .free:
     mov si, detect_wait_message
@@ -152,11 +153,11 @@ detect_sb_legacy:
     je .model
     mov byte [sound_card], 3
 .model:
-    call det_hook
     mov ax, [sb_base]
     add ax, 0eh
     mov [det_ack], ax
     mov byte [det_wss], 0
+    call det_hook
     mov byte [det_hit], 0
     mov dx, [sb_base]
     mov al, 0f2h
@@ -261,11 +262,11 @@ detect_wss:
     clc
     ret
 .codec:
-    call det_hook
     mov ax, [sb_base]
     add ax, 6
     mov [det_ack], ax
     mov byte [det_wss], 1
+    call det_hook
     mov al, 1
     call det_wss_dma
     jnc .dma
@@ -671,10 +672,9 @@ at_port_text db ' found at port ',0
 found_end_text db 'h.',10,0
 board_note db 'Detect cannot read the IRQ and DMA of this card. ',0
 irq_hint_note db 'The IRQ is from BLASTER. ',0
-irq_missing_note db 'IRQ not found. ',0
+irq_missing_note db 'Detect did not find the IRQ. ',0
 dma_hint_note db 'The DMA channel is from BLASTER. ',0
-dma_missing_note db 'DMA channel not found. ',0
+dma_missing_note db 'Detect did not find the DMA channel. ',0
 unusable_note db 'The card uses an IRQ or DMA channel that uCDD does not support. ',0
-detect_wait_message db 'Detecting the sound card.',0
-detect_none_message db 'No sound card found.',0
-resident_detect_message db 'The uCDD audio driver uses the card. Start DOS without UCDD -install.',0
+detect_wait_message db 'UCDDSET looks for the sound card.',0
+detect_none_message db 'UCDDSET did not find a sound card.',0

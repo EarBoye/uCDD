@@ -21,23 +21,6 @@ host_emm_ports_full:
     dw 0d6h, emm_port_callback
     dw 0d8h, emm_port_callback
     dw 0dch, emm_port_callback
-    dw 224h, emm_port_callback
-    dw 225h, emm_port_callback
-    dw 226h, emm_port_callback
-    dw 22ah, emm_port_callback
-    dw 22ch, emm_port_callback
-    dw 22eh, emm_port_callback
-    dw 22fh, emm_port_callback
-    dw 530h, emm_port_callback
-    dw 531h, emm_port_callback
-    dw 532h, emm_port_callback
-    dw 533h, emm_port_callback
-    dw 534h, emm_port_callback
-    dw 535h, emm_port_callback
-    dw 536h, emm_port_callback
-    dw 537h, emm_port_callback
-host_emm_full_count equ ($-host_emm_ports_full)/4
-
 host_emm_ports_high:
     dw 224h, emm_port_callback
     dw 225h, emm_port_callback
@@ -54,6 +37,7 @@ host_emm_ports_high:
     dw 535h, emm_port_callback
     dw 536h, emm_port_callback
     dw 537h, emm_port_callback
+host_emm_full_count equ ($-host_emm_ports_full)/4
 host_emm_high_count equ ($-host_emm_ports_high)/4
 
 emm_port_callback:

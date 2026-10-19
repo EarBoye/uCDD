@@ -349,6 +349,7 @@ dpmi_reflect:
     sub ebp, .base
     mov ebx, esp
     call dpmi_locked_capture
+    call dpmi_quiet_entry
     cmp byte [ebp+dpmi_active], 1
     jne .bad_gate
     cmp word [ebx+44], 3bh

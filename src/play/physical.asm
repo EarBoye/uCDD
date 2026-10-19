@@ -104,7 +104,7 @@ physical_fill:
 .count:
     mov [phy_count], ax
     mov al, 80h
-    mov cl, 26
+    mov cl, 27
     call new_request
     mov ax, [phy_offset]
     mov [request+14], ax
@@ -151,11 +151,7 @@ physical_poll:
     cmp eax, 1
     ja .late
     jne .waiting
-    push es
-    mov ax, 40h
-    mov es, ax
-    mov eax, [es:6ch]
-    pop es
+    call bios_ticks
     mov [phy_tick], eax
     mov eax, [phy_refills]
     and ax, 1
@@ -172,11 +168,7 @@ physical_poll:
 .position:
     jmp physical_position
 .waiting:
-    push es
-    mov ax, 40h
-    mov es, ax
-    mov eax, [es:6ch]
-    pop es
+    call bios_ticks
     sub eax, [phy_tick]
     jnc .elapsed
     add eax, 1800b0h
@@ -490,9 +482,7 @@ physical_volume:
     ret
 
 physical_start:
-    mov ax, 40h
-    mov es, ax
-    mov eax, [es:6ch]
+    call bios_ticks
     mov [phy_tick], eax
     mov al, [phy_irq]
     add al, 8

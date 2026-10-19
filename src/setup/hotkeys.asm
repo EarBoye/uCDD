@@ -255,7 +255,7 @@ disc_keys_list:
     ret
 
 text_disc_keys:
-    mov si, disc_keys_off
+    mov si, off_text
     test al, al
     jz .copy
     mov si, disc_keys_numbers
@@ -265,8 +265,10 @@ text_disc_keys:
 .copy:
     jmp copy_text
 
-; Read a new key for the hotkey item in BX.
+; Read a new key for the hotkey item in BX. AH is the scan code of the key
+; that started the capture. Its typematic repeats are ignored.
 key_capture:
+    mov [capture_hold], ah
     mov si, press_message
     call status_now
     call capture_start
@@ -373,6 +375,14 @@ capture_read:
 .code:
     mov ah, [capture_prefix]
     mov byte [capture_prefix], 0
+    mov bl, al
+    xor bl, [capture_hold]
+    jz .none
+    cmp bl, 80h
+    jne .new
+    mov byte [capture_hold], 0
+    jmp .none
+.new:
     test al, 80h
     jnz .none
     test ah, ah
@@ -430,6 +440,7 @@ capture_head dw 0
 capture_tail dw 0
 capture_prefix db 0
 capture_skip db 0
+capture_hold db 0
 capture_buffer times 16 db 0
 modifier_keys db 1dh,38h,2ah,36h,9dh,0b8h,0dbh,0dch,0
 
@@ -454,7 +465,6 @@ disc_keys_note db 'KEYB also uses Ctrl+Alt+F1 and F2.',0
 key_note db 'Del turns this hotkey off.',0
 disc_keys_numbers db '1 to 0',0
 disc_keys_functions db 'F1 to F10',0
-disc_keys_off db 'Off',0
 off_text db 'Off',0
 unknown_key_text db '?',0
 press_message db 'Press the new key. Press Esc to cancel.',0

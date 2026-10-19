@@ -16,7 +16,6 @@
 %define BOX_WIDTH 76
 %define BOX_HEIGHT 22
 %define TITLE_ROW 3
-%define BUTTON_ROW 20
 %define TRACK_TOP 5
 %define TRACK_BOTTOM 16
 
@@ -659,6 +658,8 @@ choice_cycle:
 ; SI choice, AX new value. Check the change and keep the old value if the
 ; check fails.
 choice_apply:
+    cmp ax, [choice_old]
+    je .same
     call choice_store
     cmp word [si+CHOICE_CHANGED], 0
     je .done
@@ -667,9 +668,10 @@ choice_apply:
     pop si
     jnc .done
     mov ax, [choice_old]
-    call choice_store
+    jmp choice_store
 .done:
     mov byte [changed], 1
+.same:
     ret
 
 ; Open a list below the item. BX item.

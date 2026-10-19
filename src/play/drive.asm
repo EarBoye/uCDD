@@ -54,7 +54,6 @@ find_units:
     mov [unit_letters+bx], al
     mov [unit_subunits+bx], dl
     inc byte [unit_total]
-.next:
     inc si
     jmp .device
 .done:
@@ -117,8 +116,8 @@ new_request:
     mov di, request
     push ax
     xor ax, ax
-    mov cx, 13
-    rep stosw
+    mov cx, 27
+    rep stosb
     pop ax
     pop es
     pop di
@@ -418,8 +417,8 @@ play_range:
 play_track:
     cmp byte [disc_present], 0
     je .done
-    test al, al
-    jz .done
+    cmp al, [first_track]
+    jb .done
     cmp al, [last_track]
     ja .done
     movzx bx, al
@@ -687,13 +686,11 @@ build_order:
 
 ; Return AX = a random number.
 random:
-    push edx
     mov eax, [random_seed]
     imul eax, 1103515245
     add eax, 12345
     mov [random_seed], eax
     shr eax, 16
-    pop edx
     ret
 
 ; The current play request ended.
@@ -850,15 +847,24 @@ read_volume:
     ret
 
 next_unit:
-    call stop
-    call hook_remove
     mov al, [unit]
     inc al
     cmp al, [unit_total]
-    jb .select
+    jb switch_unit
     xor al, al
-.select:
+
+; AL = unit. Stop, select it and install the hook again.
+switch_unit:
+    push ax
+    call stop
+    call hook_remove
+    pop ax
     call select_unit
     call read_disc
     call read_volume
-    jmp hook_install
+    call hook_install
+    jnc .done
+    mov si, message_no_filter
+    jmp show_message
+.done:
+    ret

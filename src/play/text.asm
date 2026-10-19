@@ -9,7 +9,7 @@ usage_message db 'Use UCDDPLAY [<drive>] to play CD-Audio from a CD drive.',13,1
     db 'Use UCDDPLAY /? to show this information.',13,10,'$'
 no_drives_message db 'No CD drive is available.',13,10,'$'
 drive_error_message db 'The selected drive is not a CD drive.',13,10,'$'
-vga_message db 'UCDDPLAY needs a VGA display.',13,10,'$'
+vga_message db 'A VGA display is necessary for UCDDPLAY.',13,10,'$'
 memory_message db 'There is not sufficient memory.',13,10,'$'
 
 message_mounted db 'THE IMAGE IS MOUNTED.',0
@@ -26,14 +26,13 @@ message_no_disc db 'NO DISC. PUSH O TO SELECT A DISC.',0
 message_physical_output db 'SET THE UCDD VIRTUAL CARD TO SB16.|CHECK BLASTER AND THE AUDIO SETUP.',0
 message_physical_memory db 'THERE IS NOT SUFFICIENT MEMORY|FOR THE AUDIO BUFFER.',0
 message_physical_read db 'THE DRIVE CANNOT READ CD AUDIO.|CHECK THE DISC AND CD DRIVER.',0
-message_physical_slow db 'THE DRIVE OR CPU IS TOO SLOW.|PLAYBACK HAS STOPPED.',0
-message_physical_stalled db 'THE AUDIO OUTPUT HAS STOPPED.|CHECK BLASTER AND THE AUDIO SETUP.',0
+message_physical_slow db 'THE DRIVE OR CPU IS TOO SLOW.|PLAYBACK STOPPED.',0
+message_physical_stalled db 'THE AUDIO OUTPUT STOPPED.|CHECK BLASTER AND THE AUDIO SETUP.',0
 message_mount_drive db 'INSTALL UCDD TO MOUNT AN IMAGE.',0
 message_eject_error db 'THE DRIVE CANNOT EJECT THE DISC.',0
-message_no_hard_disk db 'NO LOCAL HARD DISK IS AVAILABLE.',0
 message_slow db 'THE CPU IS TOO SLOW FOR|THE EQUALIZER. IT STAYS OFF.',0
 message_no_audio db 'INSTALL UCDD WITH AUDIO SUPPORT.|CHECK THE DRIVER INSTALLATION.',0
-message_no_filter db 'THE EQUALIZER AND THE ANALYZER|NEED A NEWER UCDD.EXE.',0
+message_no_filter db 'A NEWER UCDD.EXE IS NECESSARY|FOR THE EQUALIZER AND ANALYZER.',0
 
 scroll_text db 'uCDD PLAY ... A CD PLAYER FOR IMAGES AND CD DRIVES ... '
     db 'PUSH O TO SELECT A DISC ... PUSH SPACE TO PLAY OR PAUSE ... '
@@ -181,7 +180,7 @@ click_regions:
     dw KNOB_X-12, KNOB_Y-11, KNOB_X+12, KNOB_Y+11, click_volume
     dw 10, 136, 29, 146, key_equalizer
     dw 30, 136, 58, 146, key_preset
-    dw CALENDAR_X-2, CALENDAR_Y-1, CALENDAR_X+139, CALENDAR_Y+10, click_calendar
+    dw CALENDAR_X-2, CALENDAR_Y-1, CALENDAR_X+137, CALENDAR_Y+10, click_calendar
     dw PROGRESS_X, PROGRESS_Y-2, PROGRESS_X+PROGRESS_CELLS*4-1, PROGRESS_Y+3, click_progress
     dw 118, 55, 157, 76, key_drive
     dw SCROLL_X0, SCROLL_Y0, SCROLL_X1, SCROLL_Y1, key_visual

@@ -5,9 +5,10 @@ LOAD_OK equ 0
 LOAD_MISSING equ 1
 LOAD_OLD equ 2
 LOAD_INVALID equ 3
+LOAD_UNREADABLE equ 4
 
-; Return AL: LOAD_OK, LOAD_MISSING, LOAD_OLD, or LOAD_INVALID. Every result
-; except LOAD_OK leaves settings that the user must examine.
+; Return AL: LOAD_OK, LOAD_MISSING, LOAD_OLD, LOAD_INVALID, or LOAD_UNREADABLE.
+; Every result except LOAD_OK leaves settings that the user must examine.
 config_load:
     mov dx, config_path
     mov ax, 3d00h
@@ -17,7 +18,7 @@ config_load:
     je .missing
     cmp ax, 3
     je .missing
-    jmp .invalid
+    jmp .unreadable
 .read:
     mov bx, ax
     mov dx, file_buffer
@@ -30,7 +31,7 @@ config_load:
     int 21h
     pop ax
     popf
-    jc .invalid
+    jc .unreadable
     cmp dword [file_buffer], 'uCDD'
     jne .invalid
     cmp ax, 12
@@ -69,6 +70,10 @@ config_load:
 .invalid:
     call config_defaults
     mov al, LOAD_INVALID
+    ret
+.unreadable:
+    call config_defaults
+    mov al, LOAD_UNREADABLE
     ret
 
 config_defaults:
@@ -237,10 +242,16 @@ config_derive:
 ; DSP version replies by model: 4.05, 3.02, unused, 2.01.
 dsp_versions dw 0504h,0203h,0,0102h
 
+; Write UCDD.CF$, then replace UCDD.CFG with it. A failed write keeps the
+; old file. status_buffer holds the temporary path.
 config_save:
     call config_derive
     mov byte [config_ready], 0
-    mov dx, config_path
+    mov si, config_path
+    mov di, status_buffer
+    call copy_text
+    mov byte [di-1], '$'
+    mov dx, status_buffer
     xor cx, cx
     mov ah, 3ch
     int 21h
@@ -256,16 +267,25 @@ config_save:
     int 21h
     pop dx
     pop cx
-    jc .done
-    test cx, 1
-    jnz .fail
+    jc .remove
+    test cl, 1
+    jnz .remove
     cmp dx, CONFIG_SIZE
-    jne .fail
-    clc
-.done:
+    jne .remove
+    mov dx, config_path
+    mov ah, 41h
+    int 21h
+    mov dx, status_buffer
+    mov di, config_path
+    mov ah, 56h
+    int 21h
     ret
-.fail:
+.remove:
+    mov dx, status_buffer
+    mov ah, 41h
+    int 21h
     stc
+.done:
     ret
 
 ; Return SI port list for the physical card.

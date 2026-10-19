@@ -132,6 +132,7 @@ dpmi_raw:
     mov [ebp+dpmi_raw_segs], fs
     mov [ebp+dpmi_raw_segs+2], gs
     call dpmi_locked_capture
+    call dpmi_quiet_entry
     mov eax, [esp+16]
     mov [ebp+dpmi_raw_bp], eax
     mov ax, [esp+8]
@@ -178,7 +179,6 @@ dpmi_raw_pm:
     mov ss, ax
     mov ebp, edi
     mov esp, [ebp+mon_tss+4]
-    call dpmi_debug_host_save
     mov eax, [ebp+dpmi_raw_switch]
     mov [ebp+mon_switch+16], eax
     lea edx, [ebp+mon_resume]
@@ -188,6 +188,8 @@ dpmi_raw_pm:
     mov esp, [ebp+mon_resume_sp]
     mov [ebp+mon_tss+4], esp
 .stack_ready:
+    ; Save after the stack is final: a call at the TSS stack top overwrites the frame.
+    call dpmi_debug_host_save
     cmp byte [ebp+dpmi_client16], 0
     je .offsets_ready
     movzx eax, word [ebp+dpmi_raw_regs]
@@ -235,7 +237,6 @@ dpmi_raw_pm:
     push dword [ebp+dpmi_raw_regs+16]
     movzx eax, word [ebp+dpmi_raw_flags]
     mov word [ebp+dpmi_vif], 1
-    call dpmi_tf_disarm
     test eax, 200h
     jnz .flags_ready
     call dpmi_clear_vif

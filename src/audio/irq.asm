@@ -61,7 +61,6 @@ virtual_irq_tick:
     mov byte [game_active], 0
     cmp byte [sb_single], 0
     je .position
-    push eax
     mov eax, [game_block_bytes]
     cmp si, dma16
     jne .single_units
@@ -85,7 +84,6 @@ virtual_irq_tick:
     mov byte [si+3], 1
 .single_done:
     mov byte [sb_finished], 1
-    pop eax
     mov eax, [game_block_bytes]
     jmp .byte_position
 .position:

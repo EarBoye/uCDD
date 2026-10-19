@@ -58,7 +58,7 @@ guest_ports_init:
     jmp .port
 .emm:
     mov si, host_emm_ports_full
-    mov cx, host_emm_full_count+host_emm_high_count
+    mov cx, host_emm_full_count
 .emm_port:
     mov ax, [si]
     call guest_port_translate
