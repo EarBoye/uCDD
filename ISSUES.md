@@ -137,6 +137,19 @@ changed volumes.
   DMACNT.COM measures the real card's count to copy; open.
 - Inca II's "not enough extended memory" is its Phar Lap 286 extender
   above 16 MB of free DPMI memory; not ours.
+- Found by the sound engine traces (19 Oct, branch `sound-engine-library`,
+  docs/sound-engines/findings.md; 86Box only):
+  - F1: with the physical and the virtual card both on IRQ 7, the probe
+    interrupt of the 1994 Miles drivers (Warcraft, System Shock: MSS 3.0x
+    SB16.DIG) never reaches the game's handler in 5 of 6 runs, and the
+    game runs without digital sound. Physical 5 with virtual 7: 3 of 3
+    pass. Miles 3.5 passes on 7/7. Open.
+  - F2: the polled DMA count reads higher than the read before it, without
+    a wrap, by about one to two output periods (Hexen, Dark Forces, Star
+    Dust, King's Quest V, Cyberdogs, Raptor). A real 8237's count only
+    falls. Open.
+  - F3: King's Quest V's 16 KB single-cycle block: the count hovered in a
+    64-byte window for 120 reads where the block should have ended. Open.
 - Super Street Fighter II Turbo: dropped (Michael, 18 Oct). Its 32RTM
   loader writes CR0 and then needs DOS translation for 32-bit programs, a
   host feature of its own for one game; runs without the driver.
