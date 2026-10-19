@@ -16,7 +16,8 @@ gives where the evidence is. Find the game's engine first in the
 | King's Quest V and other Sierra SCI1 games | AUDBLAST's fixed 2048-pass wait for its test interrupt is too short on a fast CPU (the library carries a patched driver) | [sierra-sci.md](sierra-sci.md) |
 | A game that finds the IRQ with F2h (Miles counts the interrupts one by one) | an F2h whose interrupt comes inside the write, or two at once, fails the count (seen and fixed on the virtual ESS, 15 Oct) | [miles.md](miles.md), the F2h test |
 | A game set up for an SB16 (most of the library: eXo's default) on a virtual SB Pro or SB 2.0 | its engine was given an SB16 driver by its configuration (HMI device ID, Miles DIG.INI, DigPak SOUNDRV.COM): it sends SB16 commands or gives up, as on a real older card. Run the game's own setup for the card | [pre-sb16.md](pre-sb16.md) |
-| SB Pro stereo games on a virtual SB Pro (Doom, Hexen, Rayman, Stargunner) with both cards on IRQ 7 | the stereo transfer never starts | [findings.md](findings.md) F4 |
+| High-speed games on a virtual SB Pro or SB 2.0 (Doom, Hexen, Rayman, Stargunner) with both cards on IRQ 7 | the high-speed transfer never starts | [findings.md](findings.md) F4 |
+| Duke Nukem 3D on a virtual SB Pro | its 90h output never starts, at any IRQ | [findings.md](findings.md) F6 |
 | C-Dogs, on any card | it sends 90h before setting up the DMA channel; uCDD never starts that transfer | [findings.md](findings.md) F5 |
 | A game whose AIL 2, Westwood or own SB Pro code tests the mixer, on a virtual SB 2.0 | the SB 2.0 has no mixer, so the game finds no card | [pre-sb16.md](pre-sb16.md) |
 | A DigPak game where the loader says "Load Failed" | not shown to be the card: Simon the Sorcerer's loader failed so in 86Box; cause not looked at | [digpak.md](digpak.md) |
@@ -48,6 +49,7 @@ gives where the evidence is. Find the game's engine first in the
 | Seen with | Likely cause | Where |
 |---|---|---|
 | Missing or wrong notes in Wing Commander, Tyrian, Jill of the Jungle, Pizza Tycoon, Monkey Island | they write the FM chip with no delay; a real OPL2 cannot keep up with a fast CPU (uCDD is not involved: it does not trap the FM ports) | [music-and-timers.md](music-and-timers.md) |
+| Wrong instruments on a General MIDI or GS board (the X2GS) | the game is set up for an MT-32: it sends MT-32 system exclusive messages the board ignores and plays MT-32 program numbers as General MIDI ones (Theme Hospital's MT32MPU.MDI, Sierra's MT32.DRV). Set it to General MIDI | [wavetable.md](wavetable.md) |
 | Half the notes missing in an OPL3 game (HMI, Apogee, Miles 3, King's Quest VI) | the game is set for OPL3 on a card with an OPL2 | [music-and-timers.md](music-and-timers.md) |
 | Music at the wrong speed | the engine's timer rate (35 Hz to 701 Hz) is not kept: lost or late timer interrupts | [music-and-timers.md](music-and-timers.md), the timer table |
 

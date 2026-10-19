@@ -78,20 +78,23 @@ the transfer had stalled and the count wobbles around the stall point,
 or the transfer runs on and the count runs backwards. The block should
 have ended about 1.5 s after it started.
 
-### F4. SB Pro stereo never starts with the cards sharing IRQ 7
+### F4. High speed on the older virtual cards never starts with the cards sharing IRQ 7
 
-Found on the pre-SB16 pass ([pre-sb16.md](pre-sb16.md)). With the
-virtual card an SB Pro and both cards on IRQ 7, every game that turns on
-SB Pro stereo (mixer 0Eh bit 1) and starts a transfer saw its DMA count
-stay at the start value: Doom, Hexen and Raptor (DMX: a 12-byte priming
-14h, then 90h), Rayman (HMI's SB Pro module: 90h), Stargunner (90h).
-With both cards on IRQ 5, Doom, Rayman and Stargunner all play (the
-count moves through 105-123 values). Mono output on the virtual SB Pro at
-IRQ 7 plays (King's Quest V, Capitalism, Hocus Pocus), and DMX and
-Stargunner play on the virtual SB 2.0 at IRQ 7. A transfer starts only
-at the driver's next mixing period (game_start_pending); what stops it
-on this path is not known. Probably the same root as F1. Not on the
-planned set-up (both cards on IRQ 5).
+Found on the pre-SB16 pass ([pre-sb16.md](pre-sb16.md)), confirmed
+against DOSBox-X ([family.md](family.md)). With the virtual card an SB Pro
+or an SB 2.0 and both cards on IRQ 7, high-speed output (90h) and DMX's
+stereo priming transfer never start: the DMA count stays at its start
+value. Seen in Doom, Hexen and Raptor (DMX: a 12-byte single-cycle 14h
+with stereo on, then 90h), Rayman (HMI's SB Pro module: 90h, on the
+virtual SB Pro and SB 2.0), Stargunner (90h). With both cards on IRQ 5
+Doom, Rayman (both cards) and Stargunner play (the count moves through
+82-123 values). Mono auto-init (1Ch) and chained single-cycle 14h play
+at IRQ 7 (King's Quest V, Capitalism, Hocus Pocus; DMX and Stargunner
+take 1Ch on the SB 2.0 and play). DOSBox-X plays every one of these on
+its own SB Pro and SB 2.0. A transfer starts only at the driver's next
+mixing period (game_start_pending); what stops these at IRQ 7 is not
+known. Probably the same root as F1. Not on the planned set-up (both
+cards on IRQ 5).
 
 ### F5. A transfer started before the 8237 is set never starts
 
@@ -103,6 +106,24 @@ uCDD the count never moved: on the virtual SB16, SB Pro and SB 2.0, and
 at IRQ 5 as at 7 (464 reads, one value). DigPak, which unmasks after its
 DSP command but sets mode and count before it, plays. Not settled: which
 of mode, count or mask the virtual card latches at the command.
+DOSBox-X plays C-Dogs on every card from the SB 2.0 up (the count
+moves through 112-1700 values), so the fault is uCDD's.
+
+### F6. Duke Nukem 3D's SB Pro path never starts on the virtual SB Pro
+
+On the virtual SB Pro, Duke Nukem 3D (configured SBType 6, so it checks
+the DSP itself) sets time constant E9h (43.5 kHz), 48h 512 and 90h, mono,
+and gets no interrupt: its DMA address never moves, it sends D3h twice
+and gives up. The same at IRQ 5, so not F4. DOSBox-X's SB Pro 1 and 2
+play the same sequence at one interrupt every 12 ms. Stargunner's 90h at
+the same time constant (stereo) plays on the virtual SB Pro at IRQ 5, so
+the rate is not the cause. Open; Duke reads the 8237's address and page
+register rather than the count, which the earlier stalls did not.
+
+### F1 confirmed
+
+System Shock on DOSBox-X's SB16 plays its digital sound (46 ms blocks),
+where uCDD's runs with both cards on IRQ 7 lost the probe interrupt.
 
 ## Behaviour to copy (rule 1: as the real hardware would)
 

@@ -41,7 +41,7 @@ came; the runs were at IRQ 7 unless stated (see F4 below).
 | AIL/32 SB16 driver (LBA) | sends B6h anyway: nothing plays | no card |
 | **HMI SOS**, SB16 module (Descent, Tomb Raider, MDK, Abuse) | sends 41h and C4h anyway: 41h is taken as a time constant, C4h starts nothing; silent. Only the setup's device ID decides | the same |
 | HMI SOS, SB Pro module E001h (Rayman) | stereo 0Eh=13h, time constant CDh, 48h 8192, 90h. Plays at IRQ 5; **stalls at IRQ 7** (F4) | 90h, mono (no mixer); stalled at IRQ 7 (not run at 5) |
-| **Apogee SS** (Duke Nukem 3D, configured SBType 6) | adapts: time constant E9h (43.5 kHz, inside the high-speed mono range), 48h 512, **90h**, mono (no 0Eh write) | no transfer seen |
+| **Apogee SS** (Duke Nukem 3D, configured SBType 6) | adapts: time constant E9h (43.5 kHz, inside the high-speed mono range), 48h 512, **90h**, mono (no 0Eh write); under uCDD it never starts (F6) | no transfer seen |
 | Apogee SS (Rise of the Triad, SBType 6) | 90h, but **DMA 5** programmed and DMA 1 left masked: silent, as a real SB Pro would be | the same |
 | Apogee SS (Hocus Pocus, Realms of Chaos) | **1Ch** with 48h 128 (about 12 ms blocks), 0Eh=11h | 1Ch; plays |
 | **DigPak** SB16 driver (X-COM, Pizza Tycoon) | sends 41h and C6h anyway: silent | the same |
@@ -71,20 +71,24 @@ came; the runs were at IRQ 7 unless stated (see F4 below).
   (Apogee, MIDAS, Albion).
 - **The SB 2.0 loses the games that need a mixer**: AIL 2's SB Pro driver,
   Westwood's code and Ultima Underworld test mixer 0Ah and find no card.
-- **Every SB Pro stereo path here stalls at IRQ 7 under uCDD** (F4), and
+- **Every high-speed path here stalls at IRQ 7 under uCDD** (F4), and
   the DMX games are among them: on a virtual SB Pro at IRQ 7 Doom, Hexen
   and Raptor ran without digital sound (Heretic and Strife share the
-  engine and were not run).
+  engine and were not run). Duke Nukem 3D's stalls at any IRQ (F6). The
+  same games on DOSBox-X's cards: [family.md](family.md).
 
 ## uCDD faults found on this pass
 
 See [findings.md](findings.md):
 
-- **F4**: SB Pro stereo output (0Eh bit 1, then 14h priming or 90h)
-  never starts when the physical and the virtual card share IRQ 7 (DMX
-  three games, Rayman, Stargunner); with both on IRQ 5 all three run.
-  Mono output on the SB Pro at IRQ 7 plays (King's Quest V, Capitalism,
-  Hocus Pocus). Probably the same root as F1.
+- **F4**: high-speed output (90h) and DMX's stereo priming never start
+  on the virtual SB Pro or SB 2.0 when the physical and the virtual card
+  share IRQ 7 (DMX's three games, Rayman on both cards, Stargunner); with
+  both on IRQ 5 they run. Mono 1Ch and 14h chains play at IRQ 7. A later
+  check showed it is high speed, not stereo, that stalls (Rayman's mono
+  90h on the SB 2.0). Probably the same root as F1.
+- **F6**: Duke Nukem 3D's mono 90h at 43.5 kHz never starts on the
+  virtual SB Pro, at IRQ 5 as at 7; DOSBox-X plays it.
 - **F5**: a DSP command that starts a transfer before the game has set
   the 8237's mode and count and unmasked it (C-Dogs: 48h, 90h, then the
   DMA) never starts, on every card and at IRQ 5 too. A real DSP waits for

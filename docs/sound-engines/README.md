@@ -25,6 +25,10 @@ Built 19 Oct 2026 from a scan of every game's files and port traces of
 | [lucasarts.md](lucasarts.md) | iMUSE and LucasArts' digital drivers |
 | [others.md](others.md) | DSMI, MIDAS, Allegro, Loudness, MicroProse, Sound Images, Melodix, Vision, DiamondWare, Origin, AdLib's driver, CMS/Tandy/Covox |
 | [own-code.md](own-code.md) | The games with their own sound code, by class |
+| [family.md](family.md) | **The whole family**: 24 games on the SB 1.0, 2.0, Pro 1, Pro 2 and SB16 in DOSBox-X, compatibility modes (BLASTER claims, the game's own configuration), uCDD against that reference |
+| [wavetable.md](wavetable.md) | General MIDI on the SB16's wavetable header (the X2GS): which engines send GM, GS or MT-32 set-ups, and whether the music plays under uCDD |
+| [census.md](census.md) | Every driver file by exact version: which games share a driver, and which versions have been traced |
+| [methods.md](methods.md) | How to probe an engine: the methods used here, what each tells, and the ones not used yet |
 | [pre-sb16.md](pre-sb16.md) | The SB 1.x/2.0 and SB Pro: what each engine does when it meets one, from runs on uCDD's virtual SB Pro and SB 2.0 |
 | [music-and-timers.md](music-and-timers.md) | The timer rate each engine sets, how it writes the FM chip (OPL2/OPL3, delays) and the MPU-401 |
 | [symptoms.md](symptoms.md) | **Start here for a fault**: from what you hear or see to the engine habit or finding behind it |
