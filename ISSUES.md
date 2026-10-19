@@ -122,6 +122,17 @@ changed volumes.
 
 ## Not solved
 
+- Shellshock: DOS/4GW's divide error in its PIT clock (it reads 3 ms
+  back). Measured 19 Oct: 1.2 million single steps in about 70 s, and
+  every timer interrupt that reached the game 1 to 5 ms late arrived while
+  its virtual interrupt flag was off. The cost of stepping interrupts-off
+  regions (D-8) is the cause; open.
+- Battle Race 95 stops before "press any key": it polls the 16-bit DMA
+  count with interrupts off until two reads agree, and under the host the
+  reads are too slow for the moving virtual count (spec section 10).
+  DMACNT.COM measures the real card's count to copy; open.
+- Inca II's "not enough extended memory" is its Phar Lap 286 extender
+  above 16 MB of free DPMI memory; not ours.
 - Super Street Fighter II Turbo: dropped (Michael, 18 Oct). Its 32RTM
   loader writes CR0 and then needs DOS translation for 32-bit programs, a
   host feature of its own for one game; runs without the driver.
