@@ -1,7 +1,10 @@
 # From a symptom to its cause
 
 Start here when a game's sound misbehaves under uCDD. Find what you hear
-or see, then read the engine page and the item named. The causes are
+or see, then read the engine page and the item named. Then test the other
+games of that engine and driver version ([census.md](census.md)) before
+anything is fixed: a fault seen in one game is usually its family's
+([README](README.md), fix by family). The causes are
 those seen in this library's traces and in the fork's notes; each line
 gives where the evidence is. Find the game's engine first in the
 [inventory](inventory.md).

@@ -10,6 +10,23 @@ game can be matched to its engine's habits before anything is patched.
 Built 19 Oct 2026 from a scan of every game's files and port traces of
 74 games in 86Box.
 
+## Fix by family, not by game
+
+The reason this library exists. When a game's sound misbehaves under
+uCDD, find its engine and driver version ([inventory.md](inventory.md),
+[census.md](census.md)) and test every game that shares them before the
+fault is called that game's own. Fix the shared cause once, and check the
+fix across the family, and on one game of each other family, before it
+ships. A fix for one game alone is the last resort, and the mantra's rule
+1 allows no special cases anyway.
+
+Fixing one game at a time had the same fault coming back in the next
+game. The first fault found after this rule was written proved it:
+Mortal Kombat Trilogy's slow-motion sounds looked like that game's
+problem, and a survey of the families in the census found 21 more games
+with the same fault, all cleared by one fix in the DPMI host
+([findings.md](findings.md), F14).
+
 ## The pages
 
 | Page | What it covers |
