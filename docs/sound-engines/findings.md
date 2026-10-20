@@ -70,6 +70,23 @@ Battle Race 95 (host-cdrom-spec.md section 10) is the same field. The
 counts were paired from the traces with each game's programmed buffer
 size, so a wrap is not counted as a step back.
 
+Follow-up 20 Oct, Hexen [trace, reading]: its steps are 98 bytes, two
+output periods (128 bytes of its 8-bit stereo at 11025 Hz, with
+128-frame periods) less the 30 bytes between its reads. In the trace's
+last stretch the count climbs 30 bytes a read and falls back 98 every
+fourth read, with no block interrupt in between: it cycles inside a
+two-period window. That is what output_clock (trap.asm) gives when the
+period interrupt has not run for more than a period: it takes the
+playing half from the physical DMA position and the period from its own
+counter, and once the DMA is more than a period past the counter it reads
+two periods short. So Hexen's F2 in that trace is the output clock
+aliasing while uCDD's period interrupt is held off, not a race in the
+count. What held it off is not known: that run had both cards on IRQ 7,
+and DMX sends its timer EOI only after its timer jobs (dmx.md step 13),
+which holds every lower line, IRQ 5 and 7 among them, until then. DMX's
+answer to a step back across a block boundary: it mixes a block it has
+already mixed, and every sound playing skips 11.6 ms.
+
 ### F3. A single-cycle count that hovers (King's Quest V)
 
 At the end of King's Quest V's run the count of a 16 KB single-cycle
@@ -258,6 +275,62 @@ not F14's path. Not looked at yet. By rule 10 the first step is the
 family: Creative's drivers on the virtual cards across the games that use
 them (about 28, inventory.md), then the driver's transfer and interrupt
 habits there (14h per VOC block, single-cycle).
+
+### F18. DMX mixes one block ahead of a count that trails what uCDD has taken
+
+Found reading Hexen's DMX (20 Oct; [dmx.md](dmx.md) steps 15 and 16)
+[code], with the 19 Oct trace of Hexen [trace] and the CT2290's count
+[hw, F8].
+
+DMX mixes, at a 140 Hz timer tick after each block interrupt, exactly the
+block after the one the 8237 count is in: at most 11.6 ms ahead. On the
+CT2290 the count is where the DMA has fetched to and sits on the block
+boundary at the interrupt, so DMX always writes a block at least 4.5 ms
+before the card takes it. Under uCDD the block interrupt comes when the
+mix (what uCDD has taken from the buffer) crosses the boundary, but the
+count follows the output clock (the frame being heard; trap.asm, since
+5e3f364 on 15 Oct), one to two output periods behind the mix: 2.9-5.8 ms
+with 128-frame periods, the period of D7 and D9. On the PC that shows as
+F8: the count about 7Dh short of the boundary at the interrupt. DMX's
+lead over what uCDD takes shrinks by that much:
+
+- When DMX's tick finds the count still in the old block, it waits a tick
+  (the "count twice" of the traces) and mixes 7.1 ms later. If by then
+  uCDD has taken the start of the next block, that start plays what the
+  buffer held one lap (186 ms) earlier. At 128 frames the window is
+  small: up to about 1.3 ms of a block in about one block in five, by
+  the arithmetic [reading].
+- When DMX falls a block behind (a late tick or interrupt), it mixes the
+  block uCDD is already taking, and when the count has moved two blocks
+  between its reads it skips a block: 11.6 ms of sound 186 ms old. The
+  19 Oct trace of Hexen (snd_tr, a trace build, both cards on IRQ 7)
+  shows both at the start of play: blocks mixed while uCDD was 0-120
+  bytes into them, and 6 blocks skipped in 48 mixes; the reads then
+  settle into the safe pattern [trace].
+- 256-frame periods (5.8-11.6 ms behind) leave DMX no margin: the output
+  period table's "256 is silent on a virtual SB Pro" (ISSUES.md) is
+  probably this. 32-frame periods (0.7-1.5 ms) leave it its margin.
+
+Measured: a detector for blocks that replay the sound of one lap before,
+starting on DMX's block grid (the bench's rec/stale.py), finds 64% of
+stale blocks injected into a recording (the misses fall in silence),
+and in the sound check's D7 and D9 recordings of Hexen at 128 frames
+nothing above the two references [86Box]. So on the clean build, at
+86Box's timing, DMX keeps its margin. Not measured yet: the 256- and
+32-frame builds (their runs stopped on a fault of the bench's host) and
+the PC. Whether this is the chop Michael hears in Hexen is open; F2
+below is the other candidate.
+
+What it says about the count (rule 1): the CT2290's count tells how far
+the card has taken data. A count that trails that breaks engines writing
+just ahead of the count (DMX); one that runs ahead of it breaks engines
+writing just behind (HMI). On the Sound Blaster models uCDD's mix position
+is what it has taken: mix.asm sets it inside the period handler, with
+interrupts off. The HMI clicks that 5e3f364 fixed were on the virtual
+ESS, whose mixer reads a delayed ring (ess_fifo.asm), so there the mix
+position ran ahead of what was taken [reading]. A fix needs the survey
+of every engine that reads the count, by which side of it each writes
+(rule 10), and keeps the ESS separate (rule 6).
 
 F5's confirmation is above. The card also settles three things the
 virtual card already does right: no lockout during 90h on the 4.13 (D0h,

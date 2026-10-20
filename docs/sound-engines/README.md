@@ -117,6 +117,9 @@ Every statement carries one:
 | [file] | Read from the game's own files: config files, driver headers, strings, tables |
 | [doc] | A cited document (SBG is Creative's *Sound Blaster Series Hardware Programming Guide*) |
 | [hw] | Measured on Michael's PC |
+| [86Box] | Another emulator result: a recording or counters in 86Box |
+| [code] | Read in the game's own program on the bench (decompiled or disassembled there; the code itself never leaves the bench, these notes say what it does) |
+| [reading] | Worked out from uCDD's source or from the numbers, not measured |
 | [recall] | Background knowledge not checked here; to be confirmed before anything is built on it |
 
 ## How these notes were made

@@ -105,7 +105,7 @@ bytes.
 | Item | What HMI does | What it needs | Where |
 |---|---|---|---|
 | Position by count | reads the DMA count hundreds of times a second | a count that moves with the output clock, not in whole mix periods | ISSUES.md `virtual-timing`, `ess-position` |
-| Descent 2 clicks | rewrites the buffer right up to the count it reads; a virtual count at the mix position (ahead of what is heard) let it overwrite frames not yet played | the count follows the output clock and never passes the mix | ISSUES.md `ess-position`, `virtual-timing` |
+| Descent 2 clicks | rewrites the buffer right up to the count it reads; a virtual count at the mix position (ahead of what is heard) let it overwrite frames not yet played | the count follows the output clock and never passes the mix (20 Oct: the clicks were on the virtual ESS, whose mixer reads a delayed ring; on the Sound Blaster models the mix is what uCDD has taken, and DMX needs the count there: [findings.md](findings.md) F18) | ISSUES.md `ess-position`, `virtual-timing` |
 | No version check | goes straight to 83h and 41h | the configured card must accept 41h (an SB16 or ESS command) | |
 | 0Ch before D8h | wrong controller's flip-flop | channel 5's flip-flop must survive 0Ch writes | host-cdrom-spec.md D5 |
 | No acknowledge needed | plays on with its interrupt lost | the output must keep running when the game never acknowledges | see below |

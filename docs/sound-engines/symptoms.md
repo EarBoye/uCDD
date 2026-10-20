@@ -33,6 +33,7 @@ gives where the evidence is. Find the game's engine first in the
 |---|---|---|
 | HMI games (Descent 2) | the engine mixes up to the DMA count it reads; a count ahead of what is heard lets it overwrite unplayed frames | [hmi-sos.md](hmi-sos.md), ISSUES.md `ess-position`, `virtual-timing` |
 | iMUSE, DMX, MIDAS, DSMI games | a polled count that steps back (seen in 86Box, timing-sensitive) | [findings.md](findings.md) F2 |
+| DMX games (Doom, Heretic, Hexen, Raptor, Strife): game sounds chopped or garbled in short bursts | DMX mixes only one block (11.6 ms) ahead of the count; a count that trails what uCDD has taken, or one that steps back, makes it mix blocks already taken (186 ms old sound) or skip ahead | [findings.md](findings.md) F18 and F2; [dmx.md](dmx.md) steps 15-16 |
 | Game sounds in slow motion: the right pitch, but each sound about twice as long, grainy (Mortal Kombat Trilogy, Theme Hospital, Dungeon Keeper, Redguard, Little Big Adventure 2, GTA, Time Commando and more: Miles MSS 3 under DOS/4GW) | the host swallowed the game's EOI, so the card replayed its buffer halves before the handler refilled them; fixed on `stray-eoi` | [findings.md](findings.md) F14 |
 | Games that read the count twice until they agree (Battle Race 95) | the virtual count moves between the two reads, so they never agree: a hang, not a click | [others.md](others.md), host-cdrom-spec.md section 10 |
 
