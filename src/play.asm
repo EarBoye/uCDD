@@ -267,6 +267,7 @@ error_exit:
 %include "play/landscape.asm"
 %include "play/cubes.asm"
 %include "play/balls.asm"
+%include "play/dancers.asm"
 %include "play/ui.asm"
 %include "play/input.asm"
 %include "play/text.asm"
@@ -474,6 +475,11 @@ ball_depth dw 0
 ball_left dw 0
 ball_base dw 0
 ball_row dw 0
+dancer_pos times DANCERS*4 dw 0
+dancer_kick times DANCERS dw 0
+dancer_side dw 0
+dancer_wave dw 0
+dancer_hi db 0
 cube_yaw_s dw 0
 cube_yaw_c dw 0
 cube_pitch_s dw 0
