@@ -34,8 +34,8 @@ Add this to $1/.claude/settings.json (merge it with what is there):
   "hooks": {
     "PreToolUse": [
       {
-        "matcher": "Bash",
-        "hooks": [{ "type": "command", "command": "python3 $here/guard/no_verify.py" }]
+        "matcher": "Bash|Write|Edit|MultiEdit|NotebookEdit|mcp__github__.*",
+        "hooks": [{ "type": "command", "command": "python3 $here/guard/guard.py" }]
       }
     ]
   }

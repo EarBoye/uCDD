@@ -13,6 +13,7 @@ from pathlib import Path
 import itertools
 import json
 import os
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -26,8 +27,10 @@ GOOD = """IRQ: a change
 
 Issue: {row}
 Evidence: data sheet: SBG 6-12
-Evidence: emulator: 86Box, plan 00000000, 1 run
+Evidence: emulator: 86Box, D10, by hand
 """
+LEDGER = tempfile.TemporaryDirectory(prefix='method-ledger-')
+os.environ['UCDD_LEDGER'] = LEDGER.name
 
 
 def repository():
@@ -64,6 +67,21 @@ class HookTests(unittest.TestCase):
 
     def tearDown(self):
         self.git('reset', '-q', '--hard', self.start)
+
+    def tool(self, *args):
+        return subprocess.run([sys.executable, *map(str, args)], cwd=self.tree,
+                              capture_output=True, text=True)
+
+    def build(self, options='--resident-audio --audio-period-frames 128'):
+        shutil.rmtree(self.tree / 'build', ignore_errors=True)
+        subprocess.run([sys.executable, 'scripts/build.py', *options.split()], cwd=self.tree,
+                       capture_output=True, check=True)
+        return self.tree / 'build'
+
+    def saved_plan(self):
+        result = self.tool(PACKAGE / 'matrix/plan.py', '--test', 'SBT16', '--save', '--format', 'json')
+        plan = json.loads(result.stdout)
+        return plan['tag'], plan['runs'][0]['id']
 
     def git(self, *args, input=None, check=True):
         return subprocess.run(['git', '-c', f'core.hooksPath={PACKAGE / "hooks"}',
@@ -167,6 +185,79 @@ class HookTests(unittest.TestCase):
         result = self.commit('IRQ: a comment\n\nIssue: test-row-j\nEvidence: none: a comment\n')
         self.assertEqual(result.returncode, 0, result.stderr)
 
+    def test_ledger_pass_on_these_binaries(self):
+        self.add_row('test-row-k')
+        tag, run = self.saved_plan()
+        record = self.tool(PACKAGE / 'tools/ledger.py', 'record', tag, run, 'pass',
+                           '--build-dir', self.build())
+        self.assertEqual(record.returncode, 0, record.stderr)
+        self.append('src/audio/irq.asm', '; a comment only: the binaries stay the same\n')
+        message = GOOD.format(row='test-row-k').replace('86Box, D10, by hand', f'plan {tag}, 1 run')
+        result = self.commit(message)
+        self.assertEqual(result.returncode, 0, result.stderr)
+
+    def test_ledger_other_binaries(self):
+        self.add_row('test-row-l')
+        tag, run = self.saved_plan()
+        self.tool(PACKAGE / 'tools/ledger.py', 'record', tag, run, 'pass', '--build-dir', self.build())
+        path = self.tree / 'src/audio/irq.asm'
+        path.write_text(path.read_text().replace('\n    ret\n', '\n    nop\n    ret\n', 1))
+        message = GOOD.format(row='test-row-l').replace('86Box, D10, by hand', f'plan {tag}, 1 run')
+        result = self.commit(message)
+        self.assertEqual(result.returncode, 1)
+        self.assertIn('ran other binaries', result.stderr)
+
+    def test_ledger_failed_run(self):
+        self.add_row('test-row-m')
+        tag, run = self.saved_plan()
+        build = self.build()
+        self.tool(PACKAGE / 'tools/ledger.py', 'record', tag, run, 'pass', '--build-dir', build)
+        self.tool(PACKAGE / 'tools/ledger.py', 'record', tag, run, 'fail', '--build-dir', build)
+        self.append('src/audio/irq.asm', '; x\n')
+        message = GOOD.format(row='test-row-m').replace('86Box, D10, by hand', f'plan {tag}, 1 run')
+        result = self.commit(message)
+        self.assertEqual(result.returncode, 1)
+        self.assertIn('did not pass', result.stderr)
+
+    def test_ledger_unknown_plan(self):
+        self.add_row('test-row-n')
+        self.append('src/audio/irq.asm', '; x\n')
+        message = GOOD.format(row='test-row-n').replace('86Box, D10, by hand', 'plan abcdef12, 1 run')
+        result = self.commit(message)
+        self.assertEqual(result.returncode, 1)
+        self.assertIn('not in the ledger', result.stderr)
+
+    def test_ledger_edited_plan(self):
+        self.add_row('test-row-o')
+        tag, run = self.saved_plan()
+        path = Path(LEDGER.name) / 'plans' / f'{tag}.json'
+        plan = json.loads(path.read_text())
+        plan['runs'][0]['repeat'] = 9
+        path.write_text(json.dumps(plan))
+        self.append('src/audio/irq.asm', '; x\n')
+        message = GOOD.format(row='test-row-o').replace('86Box, D10, by hand', f'plan {tag}, 1 run')
+        result = self.commit(message)
+        path.unlink()
+        self.assertEqual(result.returncode, 1)
+        self.assertIn('no longer matches', result.stderr)
+
+    def test_record_needs_a_saved_plan_and_run(self):
+        self.assertNotEqual(self.tool(PACKAGE / 'tools/ledger.py', 'record', 'abcdef12', 'x', 'pass',
+                                      '--build-dir', '.').returncode, 0)
+        tag, _ = self.saved_plan()
+        result = self.tool(PACKAGE / 'tools/ledger.py', 'record', tag, f'{tag}-999', 'pass',
+                           '--build-dir', '.')
+        self.assertIn('has no run', result.stderr)
+
+    def test_upstream_reference_refused(self):
+        self.append('ISSUES.md', '\nSee vorvek/uCDD#3 for the original report.\n')
+        result = self.commit('ISSUES: a note\n')
+        self.assertEqual(result.returncode, 1)
+        self.assertIn('upstream author', result.stderr)
+        self.git('reset', '-q', '--hard')
+        self.append('ISSUES.md', '\nThanks to vorvek for the driver.\n')
+        self.assertEqual(self.commit('ISSUES: thanks\n').returncode, 0)
+
     def test_notes_are_exempt(self):
         self.append('ISSUES.md', '\nA note from the 86Box run, the original trigger.\n')
         self.assertEqual(self.commit('ISSUES: a note\n').returncode, 0)
@@ -181,10 +272,42 @@ class HookTests(unittest.TestCase):
 
 
 class GuardTests(unittest.TestCase):
-    def guard(self, command):
-        return subprocess.run([sys.executable, str(PACKAGE / 'guard/no_verify.py')],
-                              input=json.dumps({'tool_input': {'command': command}}),
-                              capture_output=True, text=True).returncode
+    def guard(self, command=None, tool='Bash', **given):
+        call = {'tool_name': tool, 'tool_input': {'command': command} if command else given}
+        return subprocess.run([sys.executable, str(PACKAGE / 'guard/guard.py')],
+                              input=json.dumps(call), capture_output=True, text=True).returncode
+
+    def test_ledger_refused(self):
+        ledger = os.environ['UCDD_LEDGER']
+        for command in (f'echo x >> {ledger}/runs.jsonl', 'sed -i 1d ledger/runs.jsonl',
+                        'python3 tools/ledger.py record abc12345 abc12345-001 pass --build-dir b',
+                        f'rm {ledger}/plans/abc12345.json'):
+            self.assertEqual(self.guard(command), 2, command)
+        self.assertEqual(self.guard(tool='Write', file_path=f'{ledger}/runs.jsonl', content='x'), 2)
+        self.assertEqual(self.guard(tool='Edit', file_path=f'{ledger}/plans/a.json'), 2)
+        for command in ('python3 tools/ledger.py show abc12345', 'python3 matrix/plan.py --save',
+                        'bash runs/regress.sh src d10 p'):
+            self.assertEqual(self.guard(command), 0, command)
+
+    def test_upstream_refused(self):
+        for command in ('git push https://github.com/vorvek/uCDD fixes',
+                        'gh pr create --title x --body y',
+                        'gh pr create --repo vorvek/uCDD --title x',
+                        'gh issue comment 3 --repo vorvek/uCDD --body hi',
+                        'gh api -X POST repos/vorvek/uCDD/issues -f title=x'):
+            self.assertEqual(self.guard(command), 2, command)
+        self.assertEqual(self.guard(tool='mcp__github__create_pull_request', owner='vorvek',
+                                    repo='uCDD', title='x'), 2)
+        self.assertEqual(self.guard(tool='mcp__github__add_issue_comment', owner='Vorvek',
+                                    repo='uCDD', body='x'), 2)
+        for command in ('git push -u origin claude/x', 'gh pr create --repo EarBoye/uCDD --title x',
+                        'gh repo view vorvek/uCDD', 'gh api repos/vorvek/uCDD',
+                        'git fetch https://github.com/vorvek/uCDD'):
+            self.assertEqual(self.guard(command), 0, command)
+        self.assertEqual(self.guard(tool='mcp__github__create_pull_request', owner='EarBoye',
+                                    repo='uCDD', title='x'), 0)
+        self.assertEqual(self.guard(tool='mcp__github__pull_request_read', owner='vorvek',
+                                    repo='uCDD'), 0)
 
     def test_refused(self):
         for command in ('git commit -n -m x', 'git commit -nm x', 'git commit -m x --no-verify',

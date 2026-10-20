@@ -4,30 +4,33 @@
 A code commit (method.toml, [commit] code) must name its row in an Issue:
 trailer, and the row must already be committed (step 5: the row before the
 fix). It must carry Evidence: trailers with a grade, one of them the data
-sheet (rule 1). "Evidence: none" claims no change in behaviour, and the hook
-proves it by building the parent and the staged tree. Notes commits are
-exempt; banned words are refused in every commit's message and added lines.
+sheet (rule 1). A plan named in an emulator line must be in the results
+ledger with every run passed on the binaries this commit builds. "Evidence:
+none" claims no change in behaviour, and the hook proves it by building the
+parent and the staged tree. Notes commits are exempt; banned words are
+refused in every commit's message and added lines.
 """
 
 from pathlib import Path
 import fnmatch
-import hashlib
 import re
 import shutil
 import subprocess
 import sys
 import tempfile
-import tomllib
 
-PACKAGE = Path(__file__).resolve().parent.parent
-CONFIG = tomllib.loads((PACKAGE / 'method.toml').read_text())
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / 'lib'))
+import methodlib  # noqa: E402
+
+CONFIG = methodlib.CONFIG
+PLAN_TAG = re.compile(r'\bplan ([0-9a-f]{8})\b')
 
 EXAMPLE = """\
 Example: the last paragraph of the message, one trailer a line:
 
     Issue: F17
     Evidence: data sheet: SBG 6-12, a 14h block ends on its last byte
-    Evidence: emulator: 86Box, D10 against D9, plan 3f2a91c4, 18 runs, F17 gone
+    Evidence: emulator: plan 3f2a91c4, 18 runs, all passed (ledger), D10 against D9: F17 gone
     Evidence: hardware: the PC, D10 kit, Jill on the CT2290
 
 Or, for a change the binaries do not see:
@@ -186,13 +189,65 @@ def build_hashes(tree, options):
                             cwd=tree, capture_output=True, text=True)
     if result.returncode:
         return result.returncode
-    hashes = {}
-    for path in sorted(build.rglob('*')):
-        if any(fnmatch.fnmatchcase(path.name, pattern)
-               for pattern in CONFIG['identical']['compare']):
-            hashes[str(path.relative_to(build))] = hashlib.sha256(
-                path.read_bytes()).hexdigest()
-    return hashes
+    return methodlib.binaries(build)
+
+
+def listed(names):
+    return ', '.join(names[:5]) + (f' and {len(names) - 5} more' if len(names) > 5 else '')
+
+
+def ledger_problems(evidence):
+    """A plan named as emulator evidence must have passed, on these binaries."""
+    problems, tags = [], []
+    for value in evidence:
+        grade, text = grade_of(value)
+        if grade != 'emulator':
+            continue
+        found = PLAN_TAG.findall(text)
+        if not found and CONFIG['ledger'].get('require'):
+            problems.append(f'Evidence: {value}: name the plan the runners recorded ("plan <tag>"); '
+                            'emulator evidence comes from the ledger')
+        tags += found
+    if not tags:
+        return problems
+    with tempfile.TemporaryDirectory(prefix='commit-msg-') as tmp:
+        tree = Path(tmp) / 'staged'
+        export_tree(tree, staged=True)
+        built = {}
+        for tag in tags:
+            plan = methodlib.saved_plan(tag)
+            if not plan:
+                problems.append(f'plan {tag} is not in the ledger ({methodlib.ledger_dir()}): '
+                                'save it with plan.py --save and let the runners record it')
+                continue
+            if methodlib.plan_tag(plan['runs']) != tag:
+                problems.append(f'plan {tag}: the saved plan no longer matches its tag (edited?)')
+                continue
+            newest = methodlib.latest(tag)
+            missing, failed, unknown, other = [], [], [], []
+            for run in plan['runs']:
+                entry = newest.get(run['id'])
+                if not entry:
+                    missing.append(run['id'])
+                elif entry['verdict'] != 'pass':
+                    failed.append(run['id'])
+                elif run['config']['mode'] != 'base':
+                    options = run.get('build_options', '')
+                    if options not in built:
+                        built[options] = build_hashes(tree, options)
+                    expected = built[options]
+                    if not entry.get('binaries'):
+                        unknown.append(run['id'])
+                    elif isinstance(expected, int) or any(
+                            expected.get(name) != digest for name, digest in entry['binaries'].items()):
+                        other.append(run['id'])
+            for names, what in ((missing, 'have no result'), (failed, 'did not pass'),
+                                (unknown, 'recorded no binaries'),
+                                (other, 'ran other binaries than this commit builds')):
+                if names:
+                    problems.append(f'plan {tag}: {len(names)} of {len(plan["runs"])} runs {what}: '
+                                    f'{listed(names)}')
+    return problems
 
 
 def identical_problems():
@@ -261,6 +316,8 @@ def code_problems(message, code):
     elif grades and CONFIG['commit'].get('require_data_sheet') and 'data sheet' not in grades:
         problems.append('no "Evidence: data sheet:" line (rule 1): cite the document, '
                         'or write "data sheet: silent" and what decided instead')
+    if not problems:
+        problems += ledger_problems(evidence)
     if 'none' not in grades:
         for name, number, label, comment in joins_touched(code):
             if not named(label, paths):

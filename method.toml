@@ -30,6 +30,29 @@ none = ["none"]
 pattern = '(?i)\brig(86)?\b'
 why = "no test-bench nicknames (mantra rule 7)"
 
+# Nothing goes to the upstream author (Michael, 20 Oct 2026). A mention, or
+# a link to one of his issues or pull requests, notifies him from a commit.
+[[banned]]
+pattern = '(?i)@vorvek\b|vorvek/ucdd(#\d+|/(issues|pull)/\d+)'
+why = "it would notify the upstream author; nothing from this fork goes to him"
+
+# What the guard keeps away from the upstream: pushes to his repository,
+# pull requests, issues and comments there.
+[upstream]
+owner = "vorvek"
+fork = "EarBoye/uCDD"
+
+# The results ledger. The runners write it (tools/ledger.py record), the
+# hook reads it: a plan named in an "Evidence: emulator:" line must be saved
+# (plan.py --save), every one of its runs recorded as a pass, and the
+# recorded binaries the ones this commit builds. With require on, every
+# emulator line must name a plan; leave it off until the runners record.
+# The path is relative to this directory unless absolute; UCDD_LEDGER
+# overrides it.
+[ledger]
+path = "ledger"
+require = false
+
 # Lesson L2: code on a shared path keeps what every path into it carries.
 # A label whose comment names its incoming paths (the data-flow pass wrote
 # them) is a join. A code commit that changes the code under one names it in

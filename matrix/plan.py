@@ -21,7 +21,6 @@ Other programs read the matrix through load():
 from pathlib import Path
 import argparse
 import fnmatch
-import hashlib
 import itertools
 import json
 import subprocess
@@ -29,6 +28,8 @@ import sys
 import tomllib
 
 HERE = Path(__file__).resolve().parent
+sys.path.insert(0, str(HERE.parent / 'lib'))
+import methodlib  # noqa: E402
 PHASES = {'probe': 1, 'recording': 2, 'hardware': 3}
 PHASE_TITLES = {
     1: 'probes, up to {parallel} at a time',
@@ -281,14 +282,14 @@ def build_plan(matrix, chosen, baseline=False):
                              'kind': matrix.kind(test), 'why': why['why'],
                              'secs': entry.get('secs', 60)})
     runs.sort(key=lambda run: (PHASES[run['kind']], list(matrix.tests).index(run['test'])))
-    tag = hashlib.sha256(json.dumps([(run['test'], run['config'], run['repeat']) for run in runs],
-                                    sort_keys=True).encode()).hexdigest()[:8]
+    tag = methodlib.plan_tag(runs)
     for number, run in enumerate(runs, 1):
         run['phase'] = PHASES[run['kind']]
         run['id'] = f'{tag}-{number:03d}'
         run['tag'] = tag
         run['env'] = matrix.env(run['test'], run['config'])
         run['build'] = '-' if run['config']['mode'] == 'base' else run['config']['build']
+        run['build_options'] = matrix.data.get('builds', {}).get(run['config']['build'], '')
         run['command'] = matrix.command(run)
     return {'tag': tag, 'runs': runs, 'blocked': blocked, 'skipped': skipped}
 
@@ -357,7 +358,8 @@ def show_markdown(matrix, plan, files, base, hit, unmatched, cover, todo):
     warnings = gaps + todo + [f'{test} skipped: {reason}' for test, reason in plan['skipped']]
     if warnings:
         out += ['', '## Warnings', ''] + [f'- {warning}' for warning in warnings]
-    out += ['', 'Once it has run, the commit carries:', '',
+    out += ['', 'Save it (--save) before running it. Once the runners have recorded every run as a',
+            f'pass (ledger.py show {plan["tag"]}), the commit can carry:', '',
             f'    Evidence: emulator: plan {plan["tag"]}, {len(runs)} runs, <after> against <before>: <result>']
     return '\n'.join(out)
 
@@ -448,6 +450,8 @@ def main():
     parser.add_argument('--baseline', action='store_true',
                         help='add a run without uCDD (mode base) beside each run (step 3)')
     parser.add_argument('--format', choices=('md', 'tsv', 'json'), default='md')
+    parser.add_argument('--save', action='store_true',
+                        help='save the plan in the ledger, so its runs can be recorded')
     args = parser.parse_args()
     matrix = load(args.matrix)
     if args.command == 'check':
@@ -466,6 +470,9 @@ def main():
     if not chosen:
         raise SystemExit('the change reaches no test (notes only?)')
     plan = build_plan(matrix, chosen, args.baseline)
+    if args.save:
+        saved = methodlib.save_plan({'tag': plan['tag'], 'files': files, 'runs': plan['runs']})
+        print(f'plan {plan["tag"]} saved: {saved}', file=sys.stderr)
     if args.format == 'json':
         print(json.dumps(plan, indent=1))
     elif args.format == 'tsv':

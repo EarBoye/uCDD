@@ -1,25 +1,27 @@
-# uCDD method: the change loop, its hook and the test matrix
+# uCDD method: the change loop, its hook, the test matrix and the ledger
 
 Tooling for working on uCDD, kept apart from the driver. It puts the agreed
-order of work into four pieces:
+order of work into these pieces:
 
 | Piece | What it does |
 |---|---|
-| `skills/change-loop/SKILL.md` | A Claude Code skill: the order of one change (spec, family, baseline, reproduce, row first, fix, prove, close) |
+| `skills/change-loop/SKILL.md` | A Claude Code skill: the order of one change (spec, family, baseline, reproduce, row first, fix, prove, close), honest results, the check before `fixes` |
 | `hooks/commit-msg`, `method.toml` | A git hook that refuses a code commit without its row and its evidence |
 | `matrix/matrix.toml`, `matrix/plan.py` | One definition of the test matrix, and a planner that turns a diff into the runs it needs |
-| `guard/no_verify.py` | A Claude Code hook that refuses `--no-verify` and core.hooksPath changes |
+| `tools/ledger.py` | The results ledger: the runners record each verdict and the binaries it was for; the hook reads it |
+| `guard/guard.py` | A Claude Code hook: no `--no-verify`, no hand-written ledger, nothing to the upstream |
 | `tools/trailers.py` | Counts Issue:, Lesson: and Evidence: trailers in the history |
-| `install.sh`, `tests/test_method.py` | Install per worktree; self-tests |
+| `install.sh`, `tests/test_method.py`, `lib/methodlib.py` | Install per worktree; self-tests; what the pieces share |
 
 Standard library only: Python 3.11 or later (tomllib), git, sh.
 
 ## Why a branch of its own
 
 This branch shares no history with the driver's branches, like
-`reference-library`: git refuses to merge it into `fixes` or anything bound
-for the upstream without `--allow-unrelated-histories`. A `.claude/` or test
-tooling never rides into a fix by accident.
+`reference-library`: git refuses to merge it into `fixes` without
+`--allow-unrelated-histories`, so a `.claude/` or test tooling never rides
+into a fix by accident. Nothing from this fork goes to the upstream at all
+(see "Nothing goes upstream" below).
 
 ## Install
 
@@ -36,10 +38,11 @@ From the uCDD clone:
   after `extensions.worktreeConfig`). Worktrees you don't name never see the
   hook. `sh install.sh --remove <worktree>` takes it out again.
 - **Claude Code:** `--claude` links the skill into `<dir>/.claude/skills` and
-  prints the PreToolUse lines to merge into `<dir>/.claude/settings.json`. It
-  does not edit the settings itself.
+  prints the PreToolUse lines to merge into `<dir>/.claude/settings.json`
+  (the guard, for Bash, file edits and the GitHub tools). It does not edit
+  the settings itself.
 - **The self-tests:** they make commits in a temporary worktree of
-  `UCDD_REF` and remove it afterwards.
+  `UCDD_REF` and remove it afterwards, with a temporary ledger.
 
 ## The hook
 
@@ -49,7 +52,7 @@ trailers in the last paragraph of its message:
 
     Issue: F17
     Evidence: data sheet: SBG 6-12, a 14h block ends on its last byte
-    Evidence: emulator: plan 3f2a91c4, 46 runs, D10 against D9, F17 gone, the rest unchanged
+    Evidence: emulator: plan 3f2a91c4, 46 runs, all passed (ledger), D10 against D9: F17 gone
 
 - **`Issue:`** must name a row that is already committed: in ISSUES.md or
   `docs/*.md`, at the parent commit or on `sound-engine-library` or
@@ -65,6 +68,11 @@ trailers in the last paragraph of its message:
   Every code commit needs a `data sheet` line (rule 1). When the documents
   are silent, the line says so: `Evidence: data sheet: silent; the CT2290
   decided`.
+- **A plan named in an emulator line** ("plan 3f2a91c4") is checked against
+  the ledger: the plan must be saved and unedited, every one of its runs
+  recorded as a pass, and the binaries each run recorded must be the ones
+  this commit builds (the hook builds the staged tree to compare). See "The
+  ledger".
 - **`Evidence: none`** claims the binaries don't change (comments, names,
   layout). The hook proves it: it builds the parent and the staged tree with
   each variant in method.toml and compares the EXE and BIN files, which takes
@@ -77,9 +85,11 @@ trailers in the last paragraph of its message:
   checked against the comment (lesson L2). It is recall at the moment of
   the change, not proof: the hook shows the comment and asks for the name.
   An `Evidence: none` commit is exempt.
-- **The bench's nickname** is refused in every commit, in the message and in
-  every added line (rule 7). The pattern is in method.toml.
-- **Not checked:** merge commits are checked for the nickname in their
+- **Refused in every commit**, in the message and in every added line: the
+  bench's nickname (rule 7), and an @mention of the upstream author or a
+  link to one of his issues or pull requests. The patterns are in
+  method.toml.
+- **Not checked:** merge commits are checked for the banned patterns in their
   message only. Branches matching `archive/*` are not checked at all.
 
 When it refuses, it says what is missing and keeps the message in
@@ -87,7 +97,7 @@ COMMIT_EDITMSG. Claude never bypasses it. A person who must can use
 `git commit --no-verify` in their own shell.
 
 All of it is in method.toml: which paths count as code, the grades, the notes
-refs, the build variants.
+refs, the build variants, the ledger.
 
 ## The matrix and the planner
 
@@ -106,12 +116,12 @@ refs, the build variants.
 
 From a uCDD worktree:
 
-    python3 ../method/matrix/plan.py --base irq-counters    # this topic's change
+    python3 ../method/matrix/plan.py --base irq-counters --save   # this topic's change
     python3 ../method/matrix/plan.py --files src/audio/irq.asm
-    python3 ../method/matrix/plan.py --test JILLJUNG --baseline   # with runs without uCDD (step 3)
-    python3 ../method/matrix/plan.py --group pc               # add the PC's runs
-    python3 ../method/matrix/plan.py --format tsv             # for a runner
-    python3 ../method/matrix/plan.py check                    # after every edit to matrix.toml
+    python3 ../method/matrix/plan.py --test JILLJUNG --baseline    # with runs without uCDD (step 3)
+    python3 ../method/matrix/plan.py --group pc                # add the PC's runs
+    python3 ../method/matrix/plan.py --format tsv              # for a runner
+    python3 ../method/matrix/plan.py check                     # after every edit to matrix.toml
 
 **What a plan contains.** For each test it reaches, the plan covers:
 - every value of a varied axis;
@@ -132,7 +142,8 @@ asks for `base` or `free`.
 - the coverage of each axis;
 - "Blocked" tests: needed by the change, but missing a launcher ID or a
   program;
-- the `Evidence:` line for the commit, with the plan's tag.
+- the `Evidence:` line the commit can carry once the ledger shows every run
+  passed.
 
 **For regress.sh and sndreg:** the aim is one definition, so these should
 read the matrix instead of keeping their own lists:
@@ -150,6 +161,60 @@ read the matrix instead of keeping their own lists:
   Once they do, delete the lists in regress.sh (a, b, c), MODELS in
   sndreg/games.py and fixtest.SOUNDS.
 
+## The ledger
+
+Evidence is what a tool wrote, not what an agent says. The runners record
+each verdict once a run is judged:
+
+    python3 ../method/tools/ledger.py record <tag> <run> pass|fail \
+        --build-dir <the directory the run's UCDD.EXE came from> \
+        --tool runs/sndreg/sndreg.py --tool runs/rec/audiocmp.py --output <the recording>
+
+- **What an entry holds:** the time, the plan and run, the verdict, the hash
+  of every EXE and BIN in the build directory, the hash of each tool given
+  (the bench is not versioned, so this pins the instruments), the hash of
+  each output, and the host.
+- **Where it lives:** `ledger/` beside this README (ignored by git), or
+  `[ledger] path` in method.toml, or `UCDD_LEDGER`. The ledger is append
+  only: `runs.jsonl` and the saved plans in `plans/`.
+- **Who writes it:** the runners only. `record` refuses a plan that was not
+  saved first (`plan.py --save`) and a run the plan does not have. The guard
+  refuses `ledger.py record` typed by Claude, edits of the ledger's files, and
+  shell commands that name them. Michael can record a run by hand in his own
+  shell.
+- **Reading it:** `ledger.py show <tag>` (every run's latest verdict), `spot`
+  and `audit` (below).
+- **Turning it on fully:** with `[ledger] require = true`, every emulator line
+  must name a recorded plan. Leave it off until the runners call `record`,
+  then switch it on.
+- **What it does not stop:** an agent that edits a runner to record a pass it
+  did not see. That is deliberate forgery, not a rounded-up summary, and the
+  spot checks are there to catch it.
+
+**The spot check before `fixes`.** A session with no stake in the fix runs
+`ledger.py spot <tag>`, which picks two passed runs at random and prints
+their commands. It re-runs them with `UCDD_SPOT=1` set, so the runner records
+them as spot checks. Then `ledger.py audit <tag>` compares each with its
+first verdict. A disagreement stops the merge: it is a finding about the fix
+or about the instrument (L11).
+
+## Nothing goes upstream
+
+Nothing from this fork goes to vorvek (Michael, 20 Oct 2026). What reaches
+him on GitHub, and what does not:
+
+- **Reaches him:** a pull request or issue on his repository, a comment
+  there, an @mention of him, and a link to one of his issues or pull
+  requests from a commit or a note (it shows on that issue).
+- **Does not reach him:** pushes to this fork, its branches and any CI it
+  runs. The fork is public, though, and listed among his repository's
+  forks, so anyone, him included, can read it.
+
+The hook refuses the mention and the links. The guard refuses a push to his
+repository, gh and GitHub-tool writes there, and a `gh pr create` that does
+not name `--repo EarBoye/uCDD` (in a fork, gh and GitHub's own page offer
+the original repository as the target).
+
 ## The tally
 
     python3 ../method/tools/trailers.py [--since 2026-10-01] [refs]
@@ -166,9 +231,15 @@ cross-check: every trailer should have its hit line in the register.
 
 ## Not done yet
 
+- **The runners do not record yet.** regress.sh, sndreg, game_live.py and
+  probe_test.py each need a `ledger.py record` call after a run is judged,
+  with the build directory, the tools and the outputs; then `[ledger]
+  require = true`.
 - **Lines marked "check" in matrix.toml** are the seed's best reading of the
   bench's report: the PROBE_RUN names, the GL_CFG_V4 fields, the runners'
-  arguments, the bset suffixes, and what some probes check.
+  arguments, the bset suffixes, and what some probes check. The `[builds]`
+  options must be the ones bset.sh uses, or the hook's binary comparison
+  will refuse good runs.
 - **Tests that need a launcher ID or a fact:**
   - F1: Warcraft or System Shock;
   - F4: Doom, Hexen or Raptor;
@@ -183,11 +254,10 @@ cross-check: every trailer should have its hit line in the register.
   The plan names each as a warning when its area is hit.
 - **The test bench is not versioned.** Once it is, the matrix belongs with
   it, and `[rows] refs` in method.toml may need its branch.
-- **Ideas not built:**
-  - The hook could check that an `Evidence: emulator: plan <tag>` names the
-    plan for the commit's own diff.
-  - An amend can fold a row into the code commit it should precede. The hook
-    sees only the parent.
+- **A GitHub Action** (builds, segment headroom, the trailers checked on
+  GitHub) waits on Michael's choice of where its file lives.
+- **An amend** can fold a row into the code commit it should precede. The
+  hook sees only the parent.
 
 ## For the session that runs the bench
 
@@ -201,7 +271,9 @@ cross-check: every trailer should have its hit line in the register.
 > 4. Go through every line marked "check" in matrix/matrix.toml and the "Not done
 >    yet" list, and correct the matrix from what the bench actually does.
 > 5. Point regress.sh and sndreg at the matrix and delete their own lists.
-> 6. Then plan the next change with `plan.py` before running anything.
+> 6. Make the runners call `ledger.py record` after each judged run, then set
+>    `[ledger] require = true`.
+> 7. Then plan the next change with `plan.py --save` before running anything.
 >
 > Where this disagrees with your guards or the lessons register, say so to Michael
 > rather than working around either.

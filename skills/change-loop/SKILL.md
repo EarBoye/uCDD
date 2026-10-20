@@ -69,12 +69,16 @@ changes a join without naming it.
 
 1. The reproducer from step 4 passes on the new build.
 2. From the uCDD worktree: `python3 METHOD/matrix/plan.py --base <where the
-   topic started>`. Run phase 1 (probes, up to seven at a time), then phase
-   2 (recordings, one at a time with nothing else running, L6). Phase 3, on
-   the PC, only when Michael is running the kit.
-3. Compare against the build before (rsum.py with a BASE). A difference
+   topic started> --save`. Run it through the runners: phase 1 (probes, up
+   to seven at a time), then phase 2 (recordings, one at a time with nothing
+   else running, L6). Phase 3, on the PC, only when Michael is running the
+   kit. The runners record each verdict in the ledger; you never do.
+3. `python3 METHOD/tools/ledger.py show <tag>`: the plan is evidence only
+   when every run passed on the binaries you are committing. Commit exactly
+   what was built and run; a change after the runs means running again.
+4. Compare against the build before (rsum.py with a BASE). A difference
    nobody can explain is a finding, not noise.
-4. The plan's "Blocked" lines are tests this change needs and nobody can run
+5. The plan's "Blocked" lines are tests this change needs and nobody can run
    yet. Give them what they lack, or write in the row why not.
 
 A trace build explains; the clean build and the recording judge (L3).
@@ -85,7 +89,7 @@ Commit with the trailers in the last paragraph of the message:
 
     Issue: F17
     Evidence: data sheet: SBG 6-12, a 14h block ends on its last byte
-    Evidence: emulator: plan 3f2a91c4, 46 runs, D10 against D9, F17 gone, the rest unchanged
+    Evidence: emulator: plan 3f2a91c4, 46 runs, all passed (ledger), D10 against D9: F17 gone
     Evidence: hardware: the PC, D10 kit, Jill on the CT2290
     Paths: audio_irq.acknowledged, all four incoming paths checked
     Lesson: L7
@@ -103,12 +107,40 @@ links the commit to it.
 | reading | no check could fail on the old build; the fix stands on reading |
 | none | nothing a binary sees changed; the hook builds both sides to prove it |
 
-## When the hook refuses
+## Honest results
 
-Read what it says and give the commit what it lacks. Never `--no-verify`, and
-never move core.hooksPath (a guard refuses both). If the hook is wrong, say
-so, fix it in METHOD, and tell Michael. Notes commits pass without trailers;
-the test-bench nickname never passes anywhere.
+A correct "not verified" is worth more than a wrong "verified". Write only
+results read from a tool's output or the ledger, never from memory or from
+what a run should have shown. When something could not be run, say so: the
+row names what is untested and why, the commit cites only what ran (a
+smaller plan, `reading`, or no emulator line), and Blocked runs stay listed.
+A claim found wrong later is corrected everywhere it was written, as soon as
+it is found.
+
+## Before a branch is merged into fixes
+
+A session with no stake in the fix checks it:
+1. It reads the row, the diff and the evidence, and says whether the
+   evidence supports the claim.
+2. `ledger.py spot <tag>` picks two passed runs at random; it re-runs each
+   with the command shown (UCDD_SPOT=1 marks the result as a spot check).
+3. `ledger.py audit <tag>`: a disagreement stops the merge. It is a finding
+   about the fix or about the instrument (L11).
+
+## When the hook or the guard refuses
+
+Read what it says and give the commit what it lacks. Never `--no-verify`,
+never move core.hooksPath, never write the ledger by hand (the guard refuses
+all three). If the hook is wrong, say so, fix it in METHOD, and tell
+Michael. Notes commits pass without trailers; the test-bench nickname never
+passes anywhere.
+
+## Nothing goes upstream
+
+Nothing from this fork goes to vorvek (Michael, 20 Oct 2026): no pull
+request, issue, comment or @mention on his repository, and no link to his
+issues in a commit or a note. Pull requests, if any, go to EarBoye/uCDD only
+(`gh pr create --repo EarBoye/uCDD`). The guard and the hook refuse the rest.
 
 ## The matrix
 
