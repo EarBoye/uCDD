@@ -58,7 +58,7 @@ C:\DOS\SHSUCDX.COM /D:UCDD0001 /L:F
 
 `MSCDEX` can also assign the drive letter.
 
-Do not load the audio driver for games that use ADPCM sound. ADPCM is not supported or passed through, and its playback commands conflict with the PCM output that μCDD mixes into. Boot without `UCDD -install` for those games. Unmounting an image does not unload the driver.
+μCDD plays single-cycle Creative ADPCM sound. It converts the ADPCM data to PCM and mixes it with the CD-Audio. μCDD does not support auto-initialize ADPCM output. For games that use it, boot without `UCDD -install`. Unmounting an image does not unload the driver.
 
 ## How it works
 
@@ -182,74 +182,165 @@ Physical-disc playback uses the wave output level set in UCDDSET. The player's v
 
 These are games known to work, not a list of every game that may work.
 
+- 3D Hero
+- 4-4-2 Soccer
+- A.D Cop
+- A.R.S.E.N.A.L: Taste the Power
 - Absolute Pinball
+- Abyss of Pandemonium
+- Action Soccer
+- Air Power: Battle in the Skies
 - Alien Logic: A Skyrealms of Jorune Adventure
+- Alien Terminator
 - Alien Trilogy
+- Alien Virus
 - Alone in the Dark
 - Alone in the Dark 2
 - Alone in the Dark 3
 - Alpha Storm
 - Amazing Learning Games with Rayman
 - An Elder Scrolls Legend: Battlespire
+- Angst: Rahz's Revenge
 - Archimedean Dynasty
+- Assault Rigs
+- Australian Rugby League
+- B.A.T. II
+- B.I.G.
+- Barbarian
 - Batman Forever: The Arcade Game
 - Battle Arena Toshinden
 - Battle Chess Enhanced CD-ROM
 - Battle Race
+- BattleSport
 - BC Racers
 - Betrayal at Krondor
 - Big Red Racing
 - Blam! Machinehead
 - Blood
 - Bust-A-Move 2 Arcade Edition
+- C.E.O.
 - Carmageddon †
+- Castles II: Siege & Conquest
+- Cavewars
 - Chasm: The Rift
+- Chronicles of the Sword
+- Conan the Cimmerian
 - Corridor 7: Alien Invasion
+- Creature Shock
 - Cyber Police (CYBERPO1.EXE)
 - Cyberball
+- CyClones
+- Daemonsgate
+- Dark Rage
+- Darklight Conflict
+- Davis Cup Complete Tennis
+- Defender of the Crown CD-ROM
 - Descent II
 - Descent II: Vertigo Series
 - Destruction Derby
 - Destruction Derby 2
 - Diggers 2: Extractors
+- Dominus
+- Double Agent
+- Drascula: The Vampire Strikes Back
+- Drilling Billy
 - Dráscula: The Vampire Strikes Back (English edition)
+- Dungeon Keeper
 - Earth 2140
 - Earthworm Jim
 - Earthworm Jim 2
+- Edna
+- Electronic Popple
 - Eradicator (DOS Release Version 1.0)
+- ESPN Extreme Games
+- Eternam
+- Exploration
 - Extreme Assault
+- Fantasy General
 - Fascination
 - Fatal Racing / Whiplash
+- FIFA International Soccer ‡
+- Fight'N'Jokes
+- Firestorm: Thunderhawk 2
 - Future Wars
+- FX Fighter
+- Gender Wars
+- Gene Wars
+- Genocide 2: Master of the Dark Communion
 - Gobliiins
 - Gobliins 2: The Prince Buffoon
 - Goblins Quest 3
+- Golden Immortal
 - Grand Theft Auto (start through the K.EXE launcher)
+- Great Naval Battles Vol. III: Fury in the Pacific, 1941-44
+- Great Naval Battles Vol. IV
+- Hariboy's Quest
+- Heimdall 2
+- Heroes of Might and Magic II (Deluxe Edition)
 - Heroes of Might and Magic II: The Succession Wars (DOS base game from Deluxe Edition)
 - Hexen: Beyond Heretic
+- Hound of the Baskervilles
 - Hyper 3-D Pinball
 - Ignition
+- Inca II: Wiracocha
+- Incredible Hulk: The Pantheon Saga
 - Inferno
+- Iron Man / X-O Manowar in Heavy Metal
 - Iron Man and X-O Manowar in Heavy Metal
+- Jetstrike
+- Judge Dredd
+- Judge Dredd Pinball
+- Jurassic Park
+- Legends
 - Little Big Adventure
 - Little Big Adventure 2
+- Lollypop
 - Loom
 - Lost in Time
 - MadSpace: To Hell and Beyond
+- Magic Carpet 2: The Netherworlds
+- Malice for Quake
+- Man of War
 - Manic Karts
 - Mass Destruction
+- Maximum Roadkill
 - MechWarrior 2: 31st Century Combat
 - MechWarrior 2: Mercenaries
+- Metal Rage
+- Micro Machines 2
+- Mission Pom-Baer
 - Mortal Kombat 3
+- Mr. Tomato
+- Murder Makes Strange Deadfellows
+- My Friend Koo
+- Mystic Midway: Rest in Pieces
+- Napion 3D
+- NBA Jam Tournament Edition
+- Necromantics
 - Network Q RAC Rally Championship
 - Nihilist
 - Nitro Racers (set Link Mode to Single in Options)
+- Ocean Trader
+- Oh No! More Lemmings
+- Olympic Games: Atlanta 1996
+- Olympic Soccer
+- On the Ball
+- Operation Body Count
+- Oscar
+- Overlord Maniac Car
 - Power F1
+- Pray for Death
 - Pro Pinball: The Web
 - Pro Pinball: Timeshock!
+- Project Paradise
+- Prototype
+- Punky Duck
+- Q.A.D: Quintessential Art of Destruction
 - Quake
 - Quarantine
 - Quarantine II: Road Warrior
+- Race Mania
+- Raiden
 - Rayman
 - Rayman 60 Levels
 - Rayman By His Fans
@@ -258,38 +349,88 @@ These are games known to work, not a list of every game that may work.
 - Realms of Arkania: Blade of Destiny (German CD edition)
 - Realms of Arkania: Star Trail (German CD edition)
 - Redneck Rampage
+- Redneck Rampage Rides Again
 - Return to Zork
+- Revolution X
+- Ring Cycle
 - Rise 2: Resurrection (Director's Cut DOS edition)
 - Roketz
+- Roland Garros 1997
+- Rugby World Cup 95 ‡
+- SAF: Secret Armored Force
+- Sandwarriors
+- Savage Warriors
 - Screamer
 - Screamer 2
 - Screamer Rally
 - Shadow Warrior
 - ShadowCaster
 - Shattered Steel (DOS 1.14)
+- Shrak for Quake
+- Spirit of Excalibur
+- Star Command: Revolution
 - Star General
+- Star Trek Pinball
+- StarFighter 3000
+- Steel Panthers II: Modern Battles
+- Stellar 7
+- Street Racer
+- Super Dog Story
+- Super Stardust
 - Super Street Fighter II Turbo (start SF2TURBO directly; bypass MAKESWP)
 - SuperKarts
 - Surface Tension
 - Syndicate Wars
+- Tao
+- Team F1
 - Tempest 2000
+- Test Drive: Off-Road
+- The Case of the Cautious Condor
 - The City of Lost Children
+- The End of the World
+- The Even More Incredible Machine
 - The Horde
+- The Incredible Machine 2
 - The Manhole
+- The Patrician
 - The Secret of Monkey Island
 - The Settlers II: Veni, Vidi, Vici (DOS Gold Edition 1.51; mission loading is slow)
+- The Soul
 - The Varginha Incident
+- Thunder Offshore
 - Tomb Raider
+- Total Football Management
+- Total Pinball 3D
+- Touring Car Champions
+- Tower of Souls
+- Town With No Name
+- Toxic Bunny
+- Track Attack
 - Tunnel B1
+- Ultimate Body Blows
+- Unlimited Warriors
+- WarCraft II: Beyond the Dark Portal
 - Warcraft II: Tides of Darkness
+- Wargame Construction Set: Age of Rifles 1846-1905
+- Whale's Voyage
+- Whale's Voyage II: Die Uebermacht
+- WHAM!
+- William Shatner's TekWar
+- Wingstar
 - Wipeout
+- World of Aden: Thunderscape
 - World Rally Fever: Born on the Road
 - Worms United
+- WWF in Your House
+- X-Men: Children of the Atom
 - X-Men: The Ravages of Apocalypse
+- XCar: Experimental Racing
 - XS
 - Z.A.R.
 
 † **Carmageddon:** Use SHSUCDX with μCDD for European editions. Affected editions check disc files while CD audio plays; MSCDEX can reject these checks.
+
+‡ Install μCDD with `UCDD -install -vcpi` for these games. They use the Phar Lap TNT extender, which does not start under the μCDD DPMI host. With `-vcpi`, TNT uses VCPI and μCDD still mixes the CD-Audio with the game sound.
 
 ## Build
 

@@ -937,9 +937,65 @@ resident_io:
     je .callback
     ; Word input and output at the mixer ports go to the audio callback.
     cmp cl, 2
-    jne .bad
+    jne .split
     cmp dx, [ebp+resident_mixer_ports]
-    jne .bad
+    je .callback
+.split:
+    ; Other wide access: one byte at a time, as on the ISA bus.
+    push ebx
+    push edx
+    push esi
+    push eax
+    mov bl, ch
+    mov bh, cl
+    movzx esi, cl
+.split_byte:
+    bt [ebp+mon_bitmap], edx
+    jc .split_trapped
+    mov al, [esp]
+    test bl, bl
+    jz .split_input
+    out dx, al
+    jmp .split_next
+.split_input:
+    in al, dx
+    jmp .split_store
+.split_trapped:
+    push edx
+    push esi
+    mov al, [esp+8]
+    mov cl, 1
+    mov ch, bl
+    call resident_io
+    pop esi
+    pop edx
+    jc .split_bad
+.split_store:
+    test bl, bl
+    jnz .split_next
+    mov [esp], al
+.split_next:
+    ror dword [esp], 8
+    inc edx
+    dec esi
+    jnz .split_byte
+    cmp bh, 4
+    je .split_done
+    ror dword [esp], 16
+.split_done:
+    pop eax
+    pop esi
+    pop edx
+    pop ebx
+    clc
+    ret
+.split_bad:
+    pop eax
+    pop esi
+    pop edx
+    pop ebx
+    stc
+    ret
 .callback:
     lea edi, [ebp+mon_rm_regs]
     mov [edi+28], eax
@@ -981,6 +1037,10 @@ host_protected_end:
 ; The LDT pages follow the image in XMS. Each client start clears them.
 dpmi_ldt equ host_protected_end
 dpmi_used equ dpmi_ldt+DPMI_LDT_COUNT*8
-host_ldt_end equ dpmi_used+DPMI_LDT_COUNT
+; The host stacks follow the LDT and need no image bytes.
+dpmi_parent_map equ dpmi_used+DPMI_LDT_COUNT
+mon_kernel_stack_top equ dpmi_parent_map+DPMI_LDT_COUNT/8+2048
+dpmi_callback_kernel_top equ mon_kernel_stack_top+1920
+host_ldt_end equ dpmi_callback_kernel_top
 HOST_SCRATCH
 host_image_end:

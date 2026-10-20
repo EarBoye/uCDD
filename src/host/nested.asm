@@ -9,14 +9,22 @@ NEST_GATE_BYTES equ host_gateway_end-mon_base
 NEST_PM_BYTES equ host_ldt_end-mon_vectors
 NEST_BYTES equ 4480+NEST_GATE_BYTES+NEST_PM_BYTES
 NEST_PAGES equ (NEST_BYTES+4095)/4096
+NEST_PARENT equ NEST_BASE-NEST_STRIDE+4480
 
 HOST_REAL
 dpmi_nested_save:
     push ax
     push bx
-    mov ah, 51h
-    int 21h
+    mov bx, [cs:dpmi_nested_psp]
     cmp bx, [cs:dpmi_psp]
+    je .same
+    ; A DOS call after the save can reach the parent through its DOS/4GW
+    ; INT 2Ah hook and a raw switch (Judge Dredd). Make the child's calls now.
+    mov bx, 256+DPMI_XFER_PARAS
+    call dpmi_real_allocate
+    mov [cs:dpmi_nested_segment], ax
+    test ax, ax
+.same:
     pop bx
     pop ax
     je .bad
@@ -70,6 +78,8 @@ dpmi_nested_return:
     ret
 
 dpmi_nested_depth db 0
+dpmi_nested_psp dw 0
+dpmi_nested_segment dw 0
 dpmi_nested_action db 0
 dpmi_nested_error db 0
 dpmi_nested_switch_ip dd 0
@@ -96,6 +106,7 @@ dpmi_nested_pm:
     jne .restore
     cmp byte [ebp+dpmi_nested_depth], NEST_LEVELS
     jae .bad
+    call dpmi_parked_drop
     cmp byte [ebp+dpmi_nested_depth], 0
     jne .table_ready
     cmp dword [0fffff100h], 0
@@ -155,10 +166,10 @@ dpmi_nested_pm:
     rep movsb
     call dpmi_bridge_remove
     inc byte [ebp+dpmi_nested_depth]
-    mov edi, 0fffff004h
+    ; The child shares the parent's memory and allocates above it.
+    call dpmi_linear_top
+    mov [ebp+dpmi_linear_floor], eax
     xor eax, eax
-    mov ecx, 63
-    rep stosd
     lea edi, [ebp+dpmi_locked_pages]
     mov ecx, DPMI_LOCK_PAGES
     rep stosd
@@ -167,6 +178,8 @@ dpmi_nested_pm:
     mov [ebp+dpmi_block_pages], eax
     mov [ebp+dpmi_pool_head], eax
     mov [ebp+dpmi_pool_count], eax
+    mov [ebp+dpmi_parked], eax
+    mov [ebp+dpmi_parked+4], eax
     mov [ebp+dpmi_large_stack_segment], ax
     mov [ebp+dpmi_large_stack_busy], al
     mov [ebp+dpmi_bridge_real_segment], ax
@@ -193,6 +206,10 @@ dpmi_nested_pm:
     mov byte [ebp+dpmi_nested_error], 1
     jmp .leave
 .restore:
+    cmp byte [ebp+dpmi_parent_mode], 0
+    je .child_mode
+    call dpmi_nested_toggle
+.child_mode:
     mov edx, [ebp+dpmi_physical_pending]
     dec byte [ebp+dpmi_nested_depth]
     movzx ebx, byte [ebp+dpmi_nested_depth]
@@ -258,4 +275,106 @@ dpmi_nested_pm:
     call dpmi_page_free
 .flush:
     call dpmi_flush
+    ret
+
+; CF=1 when a child starts. It shares the parent's descriptors and real-mode
+; callbacks and gets its hardware IRQ vectors, as under an extender that keeps
+; its real IRQ hooks. dpmi_parent_map marks the parent's descriptors.
+dpmi_nested_inherit:
+    movzx edx, byte [ebp+dpmi_nested_depth]
+    shl edx, 18
+    jz .done
+    pushad
+    movzx eax, byte [ebp+mon_master]
+    call .copy
+    movzx eax, byte [ebp+mon_slave]
+    call .copy
+    xor ecx, ecx
+.map:
+    btr [ebp+dpmi_parent_map], ecx
+    cmp byte [ebp+dpmi_used+ecx], 0
+    je .free
+    bts [ebp+dpmi_parent_map], ecx
+.free:
+    inc ecx
+    cmp ecx, DPMI_LDT_COUNT
+    jb .map
+    ; The child's initial descriptors and locked stack replace these.
+    mov byte [ebp+dpmi_parent_map], 0
+    popad
+    stc
+.done:
+    ret
+.copy:
+    imul eax, 6
+    lea edi, [ebp+mon_vectors+eax]
+    lea esi, [edx+eax+NEST_PARENT+NEST_GATE_BYTES]
+    push 12
+    pop ecx
+    rep movsd
+    ret
+
+; AX=code selector. Enter the code size and LDT entries 1-5 of the client
+; that owns it. CF=1 when they changed.
+dpmi_nested_enter:
+    push eax
+    push edx
+    movzx edx, ax
+    shr edx, 3
+    xor eax, eax
+    cmp byte [ebp+dpmi_nested_depth], 0
+    je .owner
+    bt [ebp+dpmi_parent_map], edx
+    setc al
+.owner:
+    cmp al, [ebp+dpmi_parent_mode]
+    pop edx
+    pop eax
+    je .same
+    call dpmi_nested_toggle
+    stc
+    ret
+.same:
+    clc
+    ret
+
+; Switch between the child and the parent's code: code size, protected-mode
+; vectors and exception handlers, and LDT entries 1-5 (the child's initial
+; descriptors replace the parent's).
+dpmi_nested_toggle:
+    pushad
+    xor byte [ebp+dpmi_parent_mode], 1
+    movzx edx, byte [ebp+dpmi_nested_depth]
+    shl edx, 18
+    mov al, [ebp+dpmi_own16]
+    jz .size
+    cmp byte [ebp+dpmi_parent_mode], 0
+    je .size
+    mov al, [edx+NEST_PARENT+dpmi_own16-mon_base]
+.size:
+    mov [ebp+dpmi_client16], al
+    test edx, edx
+    jz .done
+    lea esi, [edx+NEST_PARENT+NEST_GATE_BYTES+dpmi_ldt-mon_vectors+8]
+    lea edi, [ebp+dpmi_ldt+8]
+    mov ecx, 10
+    call .swap
+    lea esi, [edx+NEST_PARENT+NEST_GATE_BYTES]
+    lea edi, [ebp+mon_vectors]
+    mov ecx, 256*6/4
+    call .swap
+    lea esi, [edx+NEST_PARENT+NEST_GATE_BYTES+dpmi_exceptions-mon_vectors]
+    lea edi, [ebp+dpmi_exceptions]
+    mov ecx, 32*6/4
+    call .swap
+.done:
+    popad
+    ret
+.swap:
+    mov eax, [esi]
+    xchg eax, [edi]
+    mov [esi], eax
+    add esi, 4
+    add edi, 4
+    loop .swap
     ret

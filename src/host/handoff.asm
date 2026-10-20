@@ -62,6 +62,48 @@ dpmi_physical_handoff:
     popfd
     ret
 
+; Far call, AL=physical master ISR. Return AX=accepted IRQs without a
+; protected-mode handler. The caller gives them to the real chain.
+dpmi_real_pending:
+    pushf
+    cli
+    push bx
+    push cx
+    mov bl, al
+    xor ax, ax
+    cmp byte [cs:dpmi_active], 1
+    jne .done
+    cmp byte [cs:resident_refill_busy], 0
+    jne .done
+    mov ax, [cs:dpmi_bridge_mask]
+    not ax
+    and ax, [cs:dpmi_physical_pending]
+    and ax, 0fffbh
+    jz .done
+    or bl, [cs:dpmi_real_eoi]
+    xor bh, bh
+    bsf cx, bx
+    jz .take
+    ; Only levels above the highest level in service.
+    mov bx, 1
+    shl bx, cl
+    dec bx
+    cmp cl, 2
+    jbe .master
+    mov bh, 0ffh
+.master:
+    and ax, bx
+.take:
+    mov bx, ax
+    not bx
+    and [cs:dpmi_physical_pending], bx
+    and [cs:dpmi_pending_irqs], bx
+.done:
+    pop cx
+    pop bx
+    popf
+    retf
+
 ; End the top-level phase at the DOS termination boundary.
 dpmi_physical_complete:
     pushf

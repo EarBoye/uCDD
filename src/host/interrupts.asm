@@ -2302,6 +2302,29 @@ dpmi_sti_retire:
     or word [ebx+48], 100h
 .done:
     ret
+
+; CF unless the instruction in the STI shadow is POPF or IRET.
+dpmi_sti_loads_flags:
+    pushad
+    mov ax, [ebp+dpmi_sti_cs]
+    mov edx, [ebp+dpmi_sti_ip]
+    mov ecx, 2
+    mov edi, 2
+    call dpmi_code_buffer
+    jc .done
+    mov cl, [eax]
+    cmp cl, 66h
+    jne .opcode
+    mov cl, [eax+1]
+.opcode:
+    cmp cl, 9dh
+    je .done
+    cmp cl, 0cfh
+    je .done
+    stc
+.done:
+    popad
+    ret
 %ifndef RESIDENT_HOST
 HOST_REAL
 dpmi_sti_shadow db 0

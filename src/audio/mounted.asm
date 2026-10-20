@@ -385,11 +385,6 @@ cd_request:
 .seek:
     cmp bp, 10000h-24
     ja .done
-    cmp byte [fs:bp], 13
-    je .seek_header
-    cmp byte [fs:bp], 24
-    jb .done
-.seek_header:
     mov eax, [fs:bp+20]
     call cd_address
     jc .done
@@ -448,10 +443,16 @@ cd_request:
     mov edx, [fs:bp+18]
     test edx, edx
     jz .done
+    ; Drives stop at the lead-out (Angst sends a count past the disc end).
     add edx, eax
-    jc .done
+    jc .clamp
     cmp edx, [cd_info+INFO_TOTAL]
-    ja .done
+    jbe .end_ok
+.clamp:
+    mov edx, [cd_info+INFO_TOTAL]
+    cmp eax, edx
+    jae .done
+.end_ok:
     mov si, cd_info+INFO_TRACKS
     mov cx, [cd_info+INFO_COUNT]
 .track:
@@ -684,6 +685,12 @@ cd_foreground:
     je .done
 %ifdef EXTERNAL_CD_BUFFERS
     call dos_enter
+    cmp byte [cc_warm_pending], 0
+    je .warmed
+    call cd_cache_warm
+    ; The warm reads move the file position.
+    mov byte [cd_seek], 1
+.warmed:
 %else
     les bx, [cd_indos]
     cmp byte [es:bx], 0

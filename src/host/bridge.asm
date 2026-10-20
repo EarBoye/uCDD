@@ -28,15 +28,16 @@ endstruc
 
 HOST_REAL
 dpmi_bridge_real_allocate:
-    mov bx, 128+DPMI_XFER_PARAS
 %ifdef RESIDENT_HOST
+    ; dpmi_nested_save allocates the block of a child.
+    mov ax, [dpmi_nested_segment]
     cmp byte [dpmi_nested_depth], 0
-    je .allocate
-    add bx, 128
-.allocate:
+    jne .store
 %endif
+    mov bx, 128+DPMI_XFER_PARAS
     call dpmi_real_allocate
     jc .done
+.store:
     mov [dpmi_bridge_real_segment], ax
 .done:
     ret
@@ -253,6 +254,43 @@ dpmi_bridge_real_vector:
     pop eax
     ret
 
+; AL=vector of a reflected IRQ. A real-mode handler that was installed after
+; the bridge (Jutland, Aegis) chains to the stub during the reflection. The
+; stub must then continue to the saved vector, or the BIOS timer stops.
+dpmi_bridge_mark_irq:
+    push eax
+    sub al, [ebp+mon_master]
+    cmp al, 8
+    jb .mark
+    mov al, [esp]
+    sub al, [ebp+mon_slave]
+    cmp al, 8
+    jae .none
+    add al, 8
+.mark:
+    inc eax
+    mov [ebp+dpmi_bridge_irq_chain], al
+    pop eax
+    ret
+.none:
+    mov byte [ebp+dpmi_bridge_irq_chain], 0
+    pop eax
+    ret
+
+; The reflection starts at the saved vector. Clear the marks of this IRQ, or
+; the stub would pass new IRQs of this level to the real chain only.
+dpmi_bridge_unmark_irq:
+    push eax
+    movzx eax, byte [ebp+dpmi_bridge_irq_chain]
+    test eax, eax
+    jz .done
+    dec eax
+    btr [ebp+dpmi_irq_reflecting], eax
+    mov byte [ebp+dpmi_bridge_irq_chain], 0
+.done:
+    pop eax
+    ret
+
 ; A reflected IRQ must finish the real chain that entered this bridge.
 dpmi_bridge_chained_vector:
     call dpmi_bridge_real_vector
@@ -331,6 +369,12 @@ dpmi_bridge_update:
     cmp ebx, BRIDGE_SOFT_COUNT
     jb .software
     mov [ebp+dpmi_bridge_soft_mask], cl
+%ifdef RESIDENT_HOST
+    movzx eax, byte [ebp+dpmi_guest_vector]
+    imul eax, 6
+    cmp word [ebp+mon_vectors+eax+4], 0
+    setne byte [ebp+dpmi_audio_pm_handler]
+%endif
     popad
     ret
 
@@ -629,6 +673,15 @@ dpmi_bridge_stubs:
 %rep 16
 dpmi_bridge_irq_%+irq:
     pushf
+    cmp byte [cs:dpmi_bridge_irq_chain], irq+1
+    je .chained
+    test word [cs:dpmi_irq_reflecting], 1<<irq
+    jnz .chained
+%if irq < 2
+    push byte irq
+    call dpmi_bridge_owned
+    jc .chain
+%endif
     call dpmi_bridge_blocked
 %if irq = 6 || irq >= 8 && irq <= 11 || irq >= 14
     ; The CD refill can wait for the disk and RTC IRQs.
@@ -655,11 +708,43 @@ dpmi_bridge_irq_%+irq:
     popf
     push strict word irq
     jmp dpmi_bridge_defer
+.chained:
+    ; The hook chains once. A later IRQ at this stub is a new one.
+    mov byte [cs:dpmi_bridge_irq_chain], 0
+    and word [cs:dpmi_irq_reflecting], 0ffffh & ~(1<<irq)
 .chain:
     popf
     jmp far [cs:dpmi_bridge_vectors+irq*4]
 %assign irq irq+1
 %endrep
+
+; Word argument=master IRQ. CF=1 when the protected handler of this level
+; calls the real vector (On the Ball chains through a raw switch). The real
+; chain then owns the EOI, as with function 0302h.
+dpmi_bridge_owned:
+    pusha
+    mov bp, sp
+    mov cx, [bp+18]
+    bt [cs:dpmi_pic_service], cx
+    jnc .done
+    ; A new IRQ of this level is in service in the controller.
+    mov al, 0bh
+    out 20h, al
+    in al, 20h
+    xchg ax, bx
+    mov al, 0ah
+    out 20h, al
+    bt bx, cx
+    cmc
+    jnc .done
+    btr [cs:dpmi_pic_service], cx
+%ifdef RESIDENT_HOST
+    bts word [cs:dpmi_real_eoi], cx
+    stc
+%endif
+.done:
+    popa
+    ret 2
 
 ; A virtual guest IRQ during a real-mode call, entered like an IRQ handler.
 dpmi_bridge_virtual:
@@ -761,7 +846,11 @@ dpmi_bridge_real_return:
     iret
 
 dpmi_bridge_mask dw 0
+dpmi_irq_reflecting dd 0
+; The real-mode stubs read the virtual in-service levels.
+dpmi_pic_service dd 0
 dpmi_bridge_installed db 0
+dpmi_bridge_irq_chain db 0
 dpmi_bridge_vectors times 16 dd 0
 dpmi_bridge_entry dd 0
     times 32 db 0

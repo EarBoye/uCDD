@@ -3,13 +3,20 @@
 
 %ifdef OWN_HOST
 CD_REFILL_URGENT equ CD_READ_BYTES*2
+; About 190 ms of output periods without a timer call.
+CD_TIMER_STARVED equ 8192/PERIOD_FRAMES
+; About 370 ms of output periods without a host refill.
+CD_HOST_STARVED equ CD_TIMER_STARVED*2
 %endif
 CD_TIMER_READS equ 4
 CD_TIMER_MAX_READS equ 32
 
 cd_timer:
+    mov word [cs:cd_timer_missed], 0
     pushf
     call far [cs:cd_old_timer]
+; The audio IRQ enters here when a game timer handler does not chain.
+cd_timer_refill:
     pushad
     push ds
     push es
@@ -18,6 +25,11 @@ cd_timer:
     push cs
     pop ds
     cli
+%ifdef OWN_HOST
+    mov al, 0
+    xchg al, [cd_irq_entry]
+    mov [cd_irq_forced], al
+%endif
     cmp byte [cd_started], 1
     jne .done
     cmp byte [cd_error], 0
@@ -50,6 +62,24 @@ cd_timer:
     les bx, [own_host_active]
     cmp byte [es:bx], 1
     jne .synchronous
+    ; The audio IRQ interrupted real-mode code with IF set. Hold the client.
+    cmp byte [cd_irq_forced], 0
+    je .deferred
+    mov bp, sp
+    test byte [ss:bp+45], 2
+    jz .deferred
+    mov bx, [es:bx+8]
+    test bx, bx
+    jz .deferred
+    cmp byte [es:bx], 0
+    jne .deferred
+    mov byte [es:bx], 1
+    mov [cd_host_hold], bx
+    mov [cd_host_hold+2], es
+    mov word [cd_host_missed], 0
+    mov byte [cd_background_reads], CD_TIMER_MAX_READS
+    jmp .synchronous
+.deferred:
     mov byte [cd_refill_pending], 1
     jmp .done
 .synchronous:
@@ -72,6 +102,13 @@ cd_timer:
     mov ss, [cd_call_ss]
     mov sp, [cd_call_sp]
     mov byte [busy], 0
+%ifdef OWN_HOST
+    cmp word [cd_host_hold+2], 0
+    je .done
+    les bx, [cd_host_hold]
+    mov byte [es:bx], 0
+    mov dword [cd_host_hold], 0
+%endif
 .done:
     pop gs
     pop fs
@@ -114,6 +151,7 @@ cd_deferred_refill:
     cmp eax, CD_QUEUE_BYTES-65536
     ja .cancel
     mov byte [cd_refill_pending], 0
+    mov word [cd_host_missed], 0
     mov byte [busy], 1
     mov [cd_call_ss], ss
     mov [cd_call_sp], sp
@@ -185,6 +223,12 @@ cd_background_remove:
 cd_old_timer dd 0
 cd_old_bios dd 0
 cd_bios_busy db 0
+cd_timer_missed dw 0
+cd_irq_refill db 0
+cd_irq_entry db 0
+cd_irq_forced db 0
+cd_host_missed dw 0
+cd_host_hold dd 0
 cd_background_set db 0
 cd_background_reads db 0
 

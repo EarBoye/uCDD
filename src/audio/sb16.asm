@@ -374,6 +374,29 @@ audio_irq:
     jae .refill_ready
     mov byte [cd_refill_pending], 2
 .refill_ready:
+    ; The host refills in protected mode. A client that stays in real mode
+    ; starves it, and this IRQ then refills.
+    cmp byte [cd_refill_pending], 0
+    jne .host_wait
+    mov word [cd_host_missed], 0
+    jmp .host_checked
+.host_wait:
+    cmp word [cd_host_missed], CD_HOST_STARVED
+    jae .host_starved
+    inc word [cd_host_missed]
+    jmp .host_checked
+.host_starved:
+    mov byte [cd_irq_refill], 1
+.host_checked:
+    cmp word [cd_timer_missed], CD_TIMER_STARVED
+    jae .timer_starved
+    inc word [cd_timer_missed]
+    jmp .timer_checked
+.timer_starved:
+    cmp byte [cd_refill_pending], 2
+    jne .timer_checked
+    mov byte [cd_irq_refill], 1
+.timer_checked:
 %endif
 %endif
 .eoi:
@@ -383,6 +406,7 @@ audio_irq:
     call physical_write
 %ifdef OWN_HOST
     call sb_real_irq
+    call host_real_pending
 %endif
     cli
     call audio_irq_unmask
@@ -395,14 +419,24 @@ audio_irq:
     pop ax
     pop ds
 %ifdef OWN_HOST
+    cmp word [cs:host_pending_irqs], 0
+    jne host_pending_tail
+.tail:
     cmp byte [cs:sb_real_pending], 0
     jne .real_tail
+    cmp byte [cs:cd_irq_refill], 0
+    jne .refill_tail
 %endif
     iret
 %ifdef OWN_HOST
 .real_tail:
     mov byte [cs:sb_real_pending], 0
     jmp far [cs:sb_real_vector]
+.refill_tail:
+    ; This IRQ's return frame becomes the refill's frame.
+    mov byte [cs:cd_irq_refill], 0
+    mov byte [cs:cd_irq_entry], 1
+    jmp cd_timer_refill
 %endif
 .pro:
     cmp byte [pro_priming], 0
@@ -446,7 +480,30 @@ audio_irq:
     mov sp, [irq_sp]
     pop ax
     pop ds
+%ifdef VIRTUAL_IRQ
+    pushf
+    call far [cs:old_irq]
+    ; The guest does not see this IRQ in service. End it if its handler did not.
+    push ds
+    push ax
+    push dx
+    mov ax, cs
+    mov ds, ax
+    call physical_pic_isr
+    test al, [physical_irq_bit]
+    jz .ended
+    mov al, [sb_irq]
+    or al, 60h
+    mov dx, 20h
+    call physical_write
+.ended:
+    pop dx
+    pop ax
+    pop ds
+    iret
+%else
     jmp far [cs:old_irq]
+%endif
 
 audio_irq.nested:
     pop ax

@@ -51,6 +51,8 @@ dpmi_dos16:
     je .temp
     cmp al, 6ch
     je .open_extended
+    cmp al, 4bh
+    je .exec
     ; These functions take an ASCIIZ path at DS:DX.
     cmp al, 39h
     jb .other
@@ -331,6 +333,10 @@ dpmi_dos16:
 .cwd:
     mov ax, [ebx+4]
     movzx edx, word [ebx+12]
+    cmp byte [ebp+dpmi_client16], 0
+    jne .cwd_offset
+    mov edx, [ebx+12]
+.cwd_offset:
     mov ecx, 64
     call .write_ptr
     jc .bad_pointer
@@ -556,16 +562,100 @@ dpmi_dos16:
     mov ax, [ebx+4]
     mov [ebp+mon_vectors+ecx+4], ax
     call dpmi_bridge_update
-%ifdef RESIDENT_HOST
-    movzx eax, byte [ebp+dpmi_guest_vector]
-    imul eax, 6
-    cmp word [ebp+mon_vectors+eax+4], 0
-    setne byte [ebp+dpmi_audio_pm_handler]
-%endif
     jmp mon_dpmi.done
 .vector_bad:
     or byte [ebx+48], 1
     jmp mon_dpmi.done
+
+; B.I.G. starts PLAY.EXE. Copy the path, the parameter block and its
+; command tail and FCBs to the buffer.
+.exec:
+    cmp byte [ebx+36], 0
+    jne .bad_pointer
+    mov ax, [ebx+4]
+    call .offset_dx
+    xor ecx, ecx
+    call .string_in
+    jc .bad_pointer
+    mov ax, [ebx]
+    movzx edx, word [ebx+24]
+    cmp byte [ebp+dpmi_client16], 0
+    jne .exec_block
+    mov edx, [ebx+24]
+.exec_block:
+    mov ecx, 14
+    call .read_ptr
+    jc .bad_pointer
+    push edi
+    mov esi, eax
+    mov edi, [ebp+dpmi_xfer_linear]
+    add edi, 128
+    mov ecx, 14
+    rep movsb
+    pop edi
+    mov esi, [ebp+dpmi_xfer_linear]
+    mov ax, [esi+128]
+    ; Environment selector 0 keeps the parent environment (Crusade).
+    test ax, ax
+    jz .exec_env
+    call .segment
+    jc .bad_pointer
+.exec_env:
+    mov esi, [ebp+dpmi_xfer_linear]
+    mov [esi+128], ax
+    mov eax, 130
+    mov ecx, 160
+    call .exec_far
+    mov eax, 134
+    mov ecx, 288
+    call .exec_far
+    mov eax, 138
+    mov ecx, 416
+    call .exec_far
+    call .buffer_ds
+    mov word [edi+20], 0
+    mov ax, [ebp+dpmi_xfer_segment]
+    mov [edi+34], ax
+    mov word [edi+16], 128
+    call .call
+    mov eax, [ebx+24]
+    mov [edi+16], eax
+    jmp .keep_dx
+; EAX=far pointer field in the buffer, ECX=target in the buffer. Copy up to
+; 128 bytes, or zeros for a bad pointer, and point the field at the copy.
+.exec_far:
+    push edi
+    push eax
+    push ecx
+    mov esi, [ebp+dpmi_xfer_linear]
+    movzx edx, word [esi+eax]
+    mov ax, [esi+eax+2]
+    xor edi, edi
+    call dpmi_dos16_span
+    mov edi, [esp]
+    jc .exec_zero
+    add edi, [ebp+dpmi_xfer_linear]
+    cmp ecx, 128
+    jbe .exec_copy
+    mov ecx, 128
+.exec_copy:
+    mov esi, eax
+    rep movsb
+    jmp .exec_set
+.exec_zero:
+    add edi, [ebp+dpmi_xfer_linear]
+    mov ecx, 128
+    xor eax, eax
+    rep stosb
+.exec_set:
+    pop ecx
+    pop eax
+    mov esi, [ebp+dpmi_xfer_linear]
+    mov [esi+eax], cx
+    mov dx, [ebp+dpmi_xfer_segment]
+    mov [esi+eax+2], dx
+    pop edi
+    ret
 
 .keep_dx:
     mov eax, [ebx+28]

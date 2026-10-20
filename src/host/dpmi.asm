@@ -13,6 +13,7 @@ dpmi_install:
     int 2fh
     test ax, ax
     jz .bad
+    call dpmi_cpu_detect
     xor ax, ax
     xor bx, bx
     call monitor_init
@@ -47,6 +48,46 @@ dpmi_install:
     ret
 .bad:
     stc
+    ret
+
+; Some clients refuse the default 386 processor type.
+dpmi_cpu_detect:
+    pushad
+    pushfd
+    pop ecx
+    mov edx, 40000h
+    call .flag
+    jz .done
+    mov byte [dpmi_cpu], 4
+    mov edx, 200000h
+    call .flag
+    jz .done
+    xor eax, eax
+    db 0fh, 0a2h
+    test eax, eax
+    jz .done
+    mov eax, 1
+    db 0fh, 0a2h
+    shr ax, 8
+    and al, 0fh
+    cmp al, 4
+    jbe .done
+    mov [dpmi_cpu], al
+.done:
+    popad
+    ret
+; ECX=original EFLAGS, EDX=bit. ZF=1 when the bit does not change.
+.flag:
+    mov eax, ecx
+    xor eax, edx
+    push eax
+    popfd
+    pushfd
+    pop eax
+    push ecx
+    popfd
+    xor eax, ecx
+    test eax, edx
     ret
 dpmi_remove:
     push ds
@@ -101,7 +142,7 @@ dpmi_mux:
     jne .chain
     xor ax, ax
     mov bx, 1
-    mov cx, 3
+    movzx cx, byte [cs:dpmi_cpu]
     mov dx, 90
     xor si, si
     push cs
@@ -125,6 +166,11 @@ dpmi_entry:
     push fs
     push gs
 %ifdef RESIDENT_HOST
+    push ax
+    mov ah, 51h
+    int 21h
+    mov [cs:dpmi_nested_psp], bx
+    pop ax
     cmp byte [cs:dpmi_active], 0
     je .saved
     call dpmi_nested_save
@@ -144,6 +190,8 @@ dpmi_entry:
     jnz .bits_ready
     mov byte [cs:dpmi_client16], 1
 .bits_ready:
+    mov al, [cs:dpmi_client16]
+    mov [cs:dpmi_own16], al
     mov bp, sp
     push cs
     pop ds
@@ -178,9 +226,13 @@ dpmi_entry:
     mov dword [dpmi_physical_pending], 0
 %endif
     call dpmi_ivt_snapshot
+%ifdef RESIDENT_HOST
+    mov ax, [dpmi_nested_psp]
+%else
     mov ah, 51h
     int 21h
     mov ax, bx
+%endif
     mov [dpmi_psp], ax
     push es
     mov es, [dpmi_psp]
@@ -236,6 +288,10 @@ dpmi_entry:
     mov sp, dpmi_nested_real_top
     sti
 .free_stack:
+    ; A child frees its blocks when the parent is back: DOS can call
+    ; the parent's DOS/4GW INT 2Ah hook.
+    cmp byte [dpmi_nested_depth], 0
+    jne .exit
 %endif
     call dpmi_bridge_real_free
     test ax, ax
@@ -249,12 +305,31 @@ dpmi_entry:
 %ifdef RESIDENT_HOST
     cmp byte [dpmi_nested_depth], 0
     je .terminate
+    push word [dpmi_large_stack_segment]
+    push word [dpmi_bridge_real_segment]
     call dpmi_nested_restore
+    pop bx
+    call .free_block
+    pop bx
+    call .free_block
 .terminate:
     call dpmi_physical_complete
 %endif
     mov ah, 4ch
     int 21h
+%ifdef RESIDENT_HOST
+; BX=a DOS block or 0. AX stays.
+.free_block:
+    test bx, bx
+    jz .freed
+    push ax
+    mov es, bx
+    mov ah, 49h
+    int 21h
+    pop ax
+.freed:
+    ret
+%endif
 .bad:
     stc
     retf
@@ -460,12 +535,6 @@ dpmi_client_init:
     call resident_refill_reset
 %endif
     xor eax, eax
-    lea edi, [ebp+dpmi_ldt]
-    mov ecx, DPMI_LDT_COUNT*8/4
-    rep stosd
-    lea edi, [ebp+dpmi_used]
-    mov ecx, DPMI_LDT_COUNT/4
-    rep stosd
     lea edi, [ebp+mon_vectors]
     mov ecx, 256*6/4
     rep stosd
@@ -473,9 +542,20 @@ dpmi_client_init:
     mov ecx, 32*6/4
     rep stosd
     mov byte [ebp+dpmi_exception_active], 0
+%ifdef RESIDENT_HOST
+    call dpmi_nested_inherit
+    jc .descriptors_ready
+%endif
     lea edi, [ebp+dpmi_callbacks]
     mov ecx, 16*20/4
     rep stosd
+    lea edi, [ebp+dpmi_ldt]
+    mov ecx, DPMI_LDT_COUNT*8/4
+    rep stosd
+    lea edi, [ebp+dpmi_used]
+    mov ecx, DPMI_LDT_COUNT/4
+    rep stosd
+.descriptors_ready:
     mov byte [ebp+dpmi_vif], 1
     mov byte [ebp+dpmi_step_active], 0
     mov byte [ebp+dpmi_first_exception], 0ffh
@@ -539,6 +619,7 @@ dpmi_enter_client:
     call dpmi_memory_init
     jc dpmi_locked_abort
     call dpmi_bridge_install
+    call dpmi_bridge_update
     push dword 1fh
     movzx eax, word [ebp+dpmi_client_sp]
     push eax
@@ -696,7 +777,8 @@ dpmi_dispatch:
 .version:
     mov word [ebx+36], 90
     mov word [ebx+24], 1
-    mov byte [ebx+32], 3
+    mov al, [ebp+dpmi_cpu]
+    mov [ebx+32], al
     mov al, [ebp+mon_master]
     mov [ebx+29], al
     mov al, [ebp+mon_slave]
@@ -969,12 +1051,27 @@ dpmi_audio_pm_handler db 0
 dpmi_virtual_entry dw dpmi_bridge_virtual
 dpmi_real_eoi db 0
 dpmi_real_priority db 0ffh
-%if dpmi_audio_pm_handler-dpmi_active != 1 || dpmi_virtual_entry-dpmi_active != 2 || dpmi_real_eoi-dpmi_active != 4 || dpmi_real_priority-dpmi_active != 5
+%ifdef RESIDENT_HOST
+dpmi_pending_entry dw dpmi_real_pending
+dpmi_refill_flag dw resident_refill_busy
+%else
+dpmi_pending_entry dw 0
+dpmi_refill_flag dw 0
+%endif
+%if dpmi_audio_pm_handler-dpmi_active != 1 || dpmi_virtual_entry-dpmi_active != 2 || dpmi_real_eoi-dpmi_active != 4 || dpmi_real_priority-dpmi_active != 5 || dpmi_pending_entry-dpmi_active != 6 || dpmi_refill_flag-dpmi_active != 8
     %error Invalid resident IRQ state layout
 %endif
+dpmi_cpu db 3
 dpmi_psp dw 0
 dpmi_environment dw 0
 dpmi_client16 db 0
+; The code size of the current client. dpmi_client16 has the size of the
+; client whose code runs: a parent's handler can run while its child is current.
+dpmi_own16 db 0
+dpmi_callback_flip db 0
+dpmi_raw_flip db 0
+dpmi_parent_mode db 0
+dpmi_nested_entered db 0
 dpmi_exit_code db 1
 dpmi_last_call dw 0
 dpmi_last_dos dw 0
@@ -1021,8 +1118,6 @@ dpmi_trace_end:
 dpmi_dll_vector times 6 db 0
 dpmi_fault_ip dd 0
 dpmi_fault_regs times 16 dd 0
-dpmi_fault_bytes times 8 db 0
-dpmi_fault_stack times 64 db 0
 %ifndef RESIDENT_HOST
 dpmi_ldt times DPMI_LDT_COUNT*8 db 0
 dpmi_used times DPMI_LDT_COUNT db 0

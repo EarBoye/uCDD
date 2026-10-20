@@ -72,6 +72,10 @@ virtual_irq_tick:
     cmp byte [sb_single], 0
     je .position
     mov eax, [game_block_bytes]
+    cmp byte [game_adpcm], 0
+    je .pcm_units
+    mov eax, [adpcm_bytes]
+.pcm_units:
     cmp si, dma16
     jne .single_units
     shr eax, 1
@@ -218,8 +222,18 @@ virtual_pic_read:
     ret
 
 virtual_pic_write:
+    ; ICW2-ICW4 follow ICW1 on the data port (pMAX under VCPI).
+    cmp byte [pic_init_words], 0
+    je .command
+    cmp dx, 21h
+    jne .command
+    dec byte [pic_init_words]
+    jmp .physical
+.command:
     cmp dx, 21h
     je .mask
+    test al, 10h
+    jnz .init
     cmp al, 48h
     je .physical
     cmp al, 68h
@@ -232,6 +246,9 @@ virtual_pic_write:
     je .eoi
     mov ah, al
     and ah, 0f8h
+    ; Set the priority on the physical controller.
+    cmp ah, 0c0h
+    je .physical
     cmp ah, 60h
     jne .unsupported
 %ifdef OWN_HOST
@@ -248,6 +265,25 @@ virtual_pic_write:
     mov byte [fault], 1
 %endif
     ret
+.init:
+    ; ICW2, ICW3 unless single, ICW4 if requested.
+    mov ah, 2
+    test al, 2
+    jz .cascade
+    dec ah
+.cascade:
+    test al, 1
+    jz .words
+    inc ah
+.words:
+    mov [pic_init_words], ah
+    mov byte [virtual_pic_service], 0
+    mov byte [virtual_pic_mask], 0
+    mov byte [physical_pic_read], 0ah
+%ifdef RESIDENT_AUDIO
+    mov byte [emm_pic_mask_shadow], 0
+%endif
+    jmp .physical
 .select:
     mov [physical_pic_read], al
 .physical:
@@ -342,13 +378,14 @@ virtual_pic_host_specific:
     shl al, cl
     test bl, al
     jz .not_owned
-    and bh, al
+    ; The host ended the owned IRQ in hardware. A physical IRQ of the same
+    ; level is nested in its handler, and this EOI ends that IRQ.
+    test bh, al
+    jnz .not_owned
     not al
     and [es:di+4], al
-    ; A physical owner still needs the hardware EOI.
-    neg bh
     pop ax
-    cmc
+    stc
     jmp .restore
 .specific:
     mov cl, al
@@ -361,12 +398,12 @@ virtual_pic_host_specific:
     pop dx
     test [es:di+4], ch
     jz .not_owned
-    and al, ch
+    test al, ch
+    jnz .not_owned
     not ch
     and [es:di+4], ch
-    neg al
     pop ax
-    cmc
+    stc
     jmp .restore
 .not_owned:
     pop ax
@@ -398,6 +435,7 @@ physical_pic_initial db 0ffh
 physical_irq_bit db 20h
 pic_visible_bits db 0dfh
 physical_pic_read db 0ah
+pic_init_words db 0
 
 %ifdef RESIDENT_AUDIO
 emm_pic_mask_shadow db 0ffh

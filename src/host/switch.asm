@@ -162,6 +162,12 @@ dpmi_raw:
     mov [edi+24], eax
     mov dword [edi+28], 0
     mov dword [edi+32], 0
+%ifdef RESIDENT_HOST
+    shr byte [ebp+dpmi_raw_flip], 1
+    jnc .size_ready
+    call dpmi_nested_toggle
+.size_ready:
+%endif
     jmp mon_leave
 .bad_gate:
     sub dword [esp+40], 2
@@ -190,6 +196,13 @@ dpmi_raw_pm:
 .stack_ready:
     ; Save after the stack is final: a call at the TSS stack top overwrites the frame.
     call dpmi_debug_host_save
+%ifdef RESIDENT_HOST
+    ; The parent's real-mode code can switch to its own code while its child
+    ; is current (DOS/4GW INT 2Ah hook).
+    mov ax, [ebp+dpmi_raw_regs+4]
+    call dpmi_nested_enter
+    setc [ebp+dpmi_raw_flip]
+%endif
     cmp byte [ebp+dpmi_client16], 0
     je .offsets_ready
     movzx eax, word [ebp+dpmi_raw_regs]

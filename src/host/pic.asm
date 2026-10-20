@@ -8,6 +8,7 @@ dpmi_pic_reset:
     mov byte [ebp+dpmi_real_priority], 0ffh
     mov word [ebp+dpmi_pic_special], 0
     mov word [ebp+dpmi_pic_read_mode], 0a0ah
+    mov word [ebp+dpmi_pic_lowest], 0707h
     in al, 21h
     mov [ebp+dpmi_pic_mask], al
     in al, 0a1h
@@ -67,22 +68,47 @@ dpmi_pic_next:
     not ah
     and al, ah
 .slave_priority:
+    ; The highest priority follows the lowest level (C0h-C7h).
+    push ecx
+    mov cl, [ebp+dpmi_pic_lowest+1]
+    inc cl
+    and ecx, 7
+    ror al, cl
     movzx eax, al
-    bsf edi, esi
+    mov edx, esi
+    ror dl, cl
+    movzx edx, dl
+    bsf edi, edx
     bsf eax, eax
     jz .slave
     cmp edi, eax
-    jae .master
+    jae .slave_blocked
 .slave:
+    add edi, ecx
+    and edi, 7
+    pop ecx
     or cl, 4
+    jmp .master
+.slave_blocked:
+    pop ecx
 .master:
-    movzx eax, cl
+    mov edx, ecx
+    mov cl, [ebp+dpmi_pic_lowest]
+    inc cl
+    and cl, 7
+    ror dl, cl
+    ror bl, cl
+    movzx eax, dl
     bsf eax, eax
     jz .none
-    bsf edx, ebx
-    jz .selected
+    movzx edx, bl
+    bsf edx, edx
+    jz .rotated
     cmp eax, edx
     jae .none
+.rotated:
+    add al, cl
+    and eax, 7
 .selected:
     bts [ebp+dpmi_pic_service], eax
     cmp eax, 2
@@ -176,12 +202,24 @@ dpmi_pic_real_chain:
 
 dpmi_pic_audio_allowed:
     push ecx
+    ; CL=the guest level and levels above it, CH=levels above it.
+    push edx
+    mov dl, [ebp+dpmi_pic_lowest]
+    inc dl
+    and dl, 7
     mov cl, [ebp+dpmi_guest_irq]
-    mov ch, 1
+    mov dh, 1
+    shl dh, cl
+    sub cl, dl
+    and cl, 7
+    mov ch, 2
     shl ch, cl
-    mov cl, ch
     dec ch
-    or cl, ch
+    mov cl, dl
+    rol ch, cl
+    mov cl, ch
+    xor ch, dh
+    pop edx
     push eax
     mov al, [ebp+dpmi_pic_service]
     or al, [ebp+dpmi_real_eoi]
@@ -198,9 +236,10 @@ dpmi_pic_audio_allowed:
     and eax, 0ffh
 .cascade:
     test eax, 0ff00h
-    jnz .pending
+    jz .master
+    or al, 4
+.master:
     test al, ch
-.pending:
     pop eax
     jnz .blocked
     pop ecx
@@ -246,6 +285,8 @@ dpmi_pic_io:
     and ah, 0f8h
     cmp ah, 60h
     je .specific
+    cmp ah, 0c0h
+    je .rotate
     cmp al, 20h
     jne .failure
     call dpmi_pic_read_isr
@@ -256,9 +297,16 @@ dpmi_pic_io:
     not ah
     and al, ah
 .eoi_priority:
+    ; The highest priority follows the lowest level.
     movzx eax, al
+    mov cl, [ebp+dpmi_pic_lowest+ebx]
+    inc cl
+    and cl, 7
+    ror al, cl
     bsf eax, eax
     jz .forward
+    add al, cl
+    and eax, 7
     jmp .eoi
 .specific:
     and eax, 7
@@ -271,6 +319,10 @@ dpmi_pic_io:
     jmp .success
 .mode:
     mov [ebp+dpmi_pic_read_mode+ebx], al
+    jmp .forward
+.rotate:
+    and al, 7
+    mov [ebp+dpmi_pic_lowest+ebx], al
     jmp .forward
 .mask:
     mov [ebp+dpmi_pic_mask+ebx], al
@@ -359,6 +411,18 @@ dpmi_pic_restore:
     pushad
     xor ebx, ebx
 .controller:
+    cmp byte [ebp+dpmi_pic_lowest+ebx], 7
+    je .special
+    mov dx, 20h
+    test ebx, ebx
+    jz .default_priority
+    mov dx, 0a0h
+.default_priority:
+    mov al, 0c7h
+    mov ecx, 0101h
+    call dpmi_pic_backend
+    mov byte [ebp+dpmi_pic_lowest+ebx], 7
+.special:
     cmp byte [ebp+dpmi_pic_special+ebx], 0
     je .next
     mov dx, 20h
@@ -460,7 +524,7 @@ dpmi_pic_backend:
     pop ebx
     ret
 
-dpmi_pic_service dd 0
 dpmi_pic_mask dw 0ffffh
 dpmi_pic_read_mode dw 0a0ah
 dpmi_pic_special dw 0
+dpmi_pic_lowest dw 0707h

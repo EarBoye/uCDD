@@ -152,6 +152,65 @@ sb_real_irq:
 sb_real_vector dd 0
 sb_real_pending db 0
 
+; Physical IRQs that arrived in protected mode and have no protected-mode
+; handler. The real chain gets them when this IRQ ends.
+host_real_pending:
+    cmp word [own_host_active+2], 0
+    je .done
+    les di, [own_host_active]
+    cmp byte [es:di], 1
+    jne .done
+    ; The interrupted code must accept IRQs.
+    push ds
+    mov bx, [irq_sp]
+    mov ds, [irq_ss]
+    test byte [bx+9], 2
+    pop ds
+    jz .done
+    mov ax, [es:di+6]
+    test ax, ax
+    jz .done
+    mov [host_pending_entry], ax
+    mov [host_pending_entry+2], es
+    call physical_pic_isr
+    call far [host_pending_entry]
+    or [host_pending_irqs], ax
+.done:
+    ret
+
+; IF is clear. Stack: the interrupted IRQ frame.
+host_pending_tail:
+    push ax
+    push bx
+    push ds
+    xor ax, ax
+    xchg ax, [cs:host_pending_irqs]
+.next:
+    bsf bx, ax
+    jz .done
+    btr ax, bx
+    push ax
+    add bx, 8
+    cmp bx, 16
+    jb .vector
+    add bx, 70h-16
+.vector:
+    shl bx, 2
+    xor ax, ax
+    mov ds, ax
+    pushf
+    call far [bx]
+    cli
+    pop ax
+    jmp .next
+.done:
+    pop ds
+    pop bx
+    pop ax
+    jmp audio_irq.tail
+host_pending_entry dd 0
+host_pending_irqs dw 0
+
 sb_dos_vector:
     cmp al, [cs:guest_vector]
     jne .chain

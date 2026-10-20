@@ -31,6 +31,8 @@ memory_mode db 0
 keep_vcpi db 0
 %endif
 caller_psp dw 0
+; 1 between dos_enter and dos_leave: DOS calls use the resident PSP.
+dos_entered db 0
 sda_pointer dd 0
 sda_size dw 0
 indos_pointer dd 0
@@ -49,6 +51,7 @@ candidate_stride dw 0
 candidate_payload dw 0
 candidate_origin dd 0
 candidate_count dw 0
+candidate_audio db 0
 read_skip dw 0
 descriptor_sector dd 0
 read_remaining dw 0
@@ -87,17 +90,8 @@ interrupt:
     lfs bp, [active_request]
     cmp bp, 0fff3h
     ja .return_only_status
-    cmp byte [fs:bp], 13
-    jae .length_ok
-    ; Tunnel B1 sends lengths of 0 and 5. Handlers check the bounds of the fields they read.
-    cmp byte [fs:bp+2], 3
-    je .short_ioctl
-    cmp byte [fs:bp+2], 0ch
-    jne .length_ok
-.short_ioctl:
-    cmp byte [fs:bp], 7
-    jne .bad_length
-.length_ok:
+    ; Drives ignore the length field (Tunnel B1: 0 and 5, Jetstrike: IOCTL 0).
+    ; Handlers check the bounds of the fields they read.
     movzx eax, byte [fs:bp]
     movzx edx, bp
     add eax, edx
@@ -111,6 +105,9 @@ interrupt:
     mov [unit_pointer], ax
     mov si, ax
     mov al, [fs:bp+2]
+    ; A repeated INIT reports the status only (UBBFIX checks the busy bit).
+    test al, al
+    jz .success
     cmp al, 3
     je .ioctl_in
     cmp al, 0ch
@@ -209,38 +206,27 @@ interrupt:
 ioctl_buffer:
     cmp bp, 0ffech
     ja .bad
-    mov al, [fs:bp]
-    cmp al, 7
-    je .header_ok
-    cmp al, 13
-    je .header_ok
-    cmp al, 18
-    je .header_ok
-    cmp al, 20
-    jb .bad
-.header_ok:
+    ; Drives write the fixed control block size and ignore the count
+    ; (Aegis, Warcraft II). Absolute Pinball sends a zero count.
     mov cx, [fs:bp+18]
-    ; Absolute Pinball sends a zero count. Allow the largest control block.
+    les di, [fs:bp+14]
+    movzx bx, byte [es:di]
+    xor ax, ax
+    cmp byte [fs:bp+2], 3
+    jne .output_size
+    cmp bx, 15
+    ja .extend
+    mov al, [ioctl_sizes+bx]
+    jmp .extend
+.output_size:
+    cmp bx, 5
+    ja .extend
+    mov al, [ioctl_output_sizes+bx]
+.extend:
     test cx, cx
     jnz .count_ok
     mov cl, 11
 .count_ok:
-    les di, [fs:bp+14]
-    ; Warcraft II uses a four-byte count for fixed-size control blocks.
-    cmp cx, 4
-    jne .size_ok
-    movzx bx, byte [es:di]
-    cmp byte [fs:bp+2], 3
-    jne .output_size
-    cmp bx, 15
-    ja .size_ok
-    movzx ax, byte [ioctl_sizes+bx]
-    jmp .extend
-.output_size:
-    cmp bl, 3
-    jne .size_ok
-    mov ax, 9
-.extend:
     cmp ax, cx
     jbe .size_ok
     mov cx, ax
@@ -370,6 +356,7 @@ ioctl_input:
     mov [es:di+2], eax
     jmp request_ok
 ioctl_sizes db 5,6,0,0,9,0,5,4,5,2,7,7,11,0,0,11
+ioctl_output_sizes db 1,2,1,9,0,1
 
 ; EAX: image sector. Return frame, second and minute in bytes 0 to 2 of EAX.
 lba_msf:
@@ -437,8 +424,9 @@ audio_request:
     ret
 
 read_sectors:
-    cmp byte [fs:bp], 26
-    jb request_error
+    ; Drives ignore the length field (Necromantics: 0).
+    cmp bp, 10000h-26
+    ja request_error
     mov cx, [fs:bp+18]
     mov [read_remaining], cx
     mov word [read_completed], 0
@@ -889,6 +877,7 @@ mount_image:
     jc .return
     mov [candidate], ax
     mov bx, ax
+    call handle_record
     xor cx, cx
     xor dx, dx
     mov ax, 4202h
@@ -961,9 +950,18 @@ mount_image:
     ja .reject
     mov [candidate_count], ax
     mov al, [es:di+INFO_TRACKS+TRACK_CONTROL]
+    ; An audio CD has no data track. Data reads fail as on a drive.
+    mov [candidate_audio], al
+    test al, 40h
+    jnz .data_first
+    cmp word [candidate_stride], 2352
+    jne .reject
+    jmp .first_ok
+.data_first:
     and al, 0dfh
     cmp al, 40h
     jne .reject
+.first_ok:
     mov eax, [es:di+INFO_TRACKS+TRACK_START]
     cmp eax, [candidate_origin]
     jne .reject
@@ -1022,6 +1020,11 @@ mount_image:
     mov eax, [es:di+INFO_TRACKS+TRACK_SIZE+TRACK_INDEX0]
     mov [candidate_limit], eax
 .data_limit:
+    test byte [candidate_audio], 40h
+    jnz .data_track
+    mov dword [candidate_sectors], 0
+    jmp .checked
+.data_track:
     mov eax, [candidate_limit]
     sub eax, [candidate_origin]
     cmp eax, 18
@@ -1099,6 +1102,7 @@ mount_image:
     jc .reject
     cmp eax, [candidate_limit]
     ja .reject
+.checked:
     cmp word [control_op], 7
     jne .commit
     mov word [control_result], 0
@@ -1224,6 +1228,7 @@ dos_enter:
     mov bx, [cs:resident_psp]
     mov ah, 50h
     int 21h
+    call handle_check
     xor ax, ax
     mov es, ax
     pushf
@@ -1233,9 +1238,99 @@ dos_enter:
     mov word [es:24h*4], critical_error
     mov [es:24h*4+2], cs
     popf
+    mov byte [cs:dos_entered], 1
     pop es
     pop ds
     popad
+    ret
+
+; Ultimate Body Blows writes into the first SFT block and changes the
+; SFT numbers. Keep the resident handles on their SFT entries.
+handle_sft times 20 dd 0
+
+; BX=handle of the resident PSP.
+handle_record:
+    pushad
+    push es
+    cmp bx, 20
+    jae .done
+    mov bp, bx
+    shl bp, 2
+    mov ax, 1220h
+    int 2fh
+    jc .done
+    movzx bx, byte [es:di]
+    mov ax, 1216h
+    int 2fh
+    jc .done
+    mov [cs:handle_sft+bp], di
+    mov [cs:handle_sft+bp+2], es
+.done:
+    pop es
+    popad
+    ret
+
+handle_check:
+    pushad
+    push es
+    xor bp, bp
+.next:
+    cmp dword [cs:handle_sft+bp], 0
+    je .skip
+    mov bx, bp
+    shr bx, 2
+    mov ax, 1220h
+    int 2fh
+    jc .skip
+    movzx bx, byte [es:di]
+    cmp bl, 0ffh
+    je .skip
+    push es
+    push di
+    call .match
+    je .kept
+    xor bx, bx
+.find:
+    call .match
+    je .found
+    jc .kept
+    inc bx
+    cmp bx, 0ffh
+    jb .find
+    jmp .kept
+.found:
+    pop di
+    pop es
+    mov [es:di], bl
+    jmp .skip
+.kept:
+    pop di
+    pop es
+.skip:
+    add bp, 4
+    cmp bp, 20*4
+    jb .next
+    pop es
+    popad
+    ret
+; ZF set when SFT entry BX is the recorded entry. CF set past the last entry.
+.match:
+    ; DOS returns the index inside the block in BX.
+    push bx
+    mov ax, 1216h
+    int 2fh
+    pop bx
+    jc .end
+    cmp di, [cs:handle_sft+bp]
+    jne .other
+    mov ax, es
+    cmp ax, [cs:handle_sft+bp+2]
+.other:
+    clc
+    ret
+.end:
+    or al, 1
+    stc
     ret
 
 dos_leave:
@@ -1243,6 +1338,7 @@ dos_leave:
     pushad
     push ds
     push es
+    mov byte [cs:dos_entered], 0
     xor ax, ax
     mov es, ax
     pushf

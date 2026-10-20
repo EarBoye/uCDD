@@ -180,6 +180,12 @@ dpmi_callback_pm:
     lea ebx, [ebp+dpmi_callbacks+eax]
     cmp word [ebx], 0
     je dpmi_callback_abort
+%ifdef RESIDENT_HOST
+    ; A parent's callback can run while its child is current.
+    mov ax, [ebx]
+    call dpmi_nested_enter
+    setc [ebp+dpmi_callback_flip]
+%endif
     mov ax, [ebx+8]
     mov edx, [ebx+12]
     mov ecx, 50
@@ -290,6 +296,24 @@ dpmi_callback_done:
     mov ecx, 50
     cld
     rep movsb
+    ; A procedure that popped an IRET frame gets the IF of that frame.
+    movzx eax, word [ebp+dpmi_callback_regs+48]
+    shl eax, 4
+    movzx edx, word [ebp+dpmi_callback_regs+46]
+    cmp edx, 6
+    jb .flags_ready
+    add eax, edx
+    mov dx, [eax-6]
+    cmp dx, [ebp+dpmi_callback_regs+42]
+    jne .flags_ready
+    mov dx, [eax-4]
+    cmp dx, [ebp+dpmi_callback_regs+44]
+    jne .flags_ready
+    mov dx, [eax-2]
+    and dx, 200h
+    and word [ebp+dpmi_callback_regs+32], 0fdffh
+    or [ebp+dpmi_callback_regs+32], dx
+.flags_ready:
     lea esi, [ebp+dpmi_callback_context]
     lea edi, [ebp+mon_return]
     mov ecx, 9
@@ -336,6 +360,12 @@ dpmi_callback_done:
     add esi, 2
     loop .segments
     mov byte [ebp+dpmi_callback_active], 0
+%ifdef RESIDENT_HOST
+    shr byte [ebp+dpmi_callback_flip], 1
+    jnc .size_ready
+    call dpmi_nested_toggle
+.size_ready:
+%endif
     cli
     mov ax, 10h
     mov ds, ax
@@ -450,10 +480,10 @@ dpmi_callback_return_frame times 36 db 0
     times 512 db 0
 dpmi_callback_real_top:
 HOST_PROTECTED
-    ; 1920 keeps the resident host inside one real-mode segment.
+%ifndef RESIDENT_HOST
     times 1920 db 0
 dpmi_callback_kernel_top:
-dpmi_callback_user_top:
+%endif
 dpmi_callbacks times 16*20 db 0
 dpmi_callback_context times 116 db 0
 

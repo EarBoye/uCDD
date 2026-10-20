@@ -79,12 +79,6 @@ dpmi_write_vector:
     cmp edi, esi
     jne .done
     call dpmi_bridge_update
-%ifdef RESIDENT_HOST
-    movzx eax, byte [ebp+dpmi_guest_vector]
-    imul eax, 6
-    cmp word [ebp+mon_vectors+eax+4], 0
-    setne byte [ebp+dpmi_audio_pm_handler]
-%endif
 .done:
     jmp mon_dpmi.success
 
@@ -236,7 +230,6 @@ dpmi_deliver_exception:
 dpmi_exception_return:
     int 0f3h
     ud2
-dpmi_debug_code times 64 db 0
 dpmi_first_exception times 16 db 0ffh
 dpmi_exception_done:
     DPMI_DEBUG_STOP
@@ -450,6 +443,19 @@ dpmi_default_vectors:
 
 ; EBX=interrupt frame, ESI=protected vector.
 dpmi_deliver_interrupt:
+%ifdef RESIDENT_HOST
+    ; A parent's handler returns through the host to get the parent's state
+    ; (Judge Dredd: JD.EXE calls INT 08h, LAW.EXE handles it).
+    cmp byte [ebp+dpmi_parent_mode], 0
+    jne .own
+    cmp byte [ebp+dpmi_nested_depth], 0
+    je .own
+    movzx eax, word [esi+4]
+    shr eax, 3
+    bt [ebp+dpmi_parent_map], eax
+    jc dpmi_deliver_software
+.own:
+%endif
     push esi
     mov edx, [esi]
     mov ax, [esi+4]

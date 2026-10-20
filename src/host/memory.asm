@@ -66,10 +66,13 @@ dpmi_memory_info:
     mov [esp+20], edx
     popad
     add edx, [ebp+dpmi_pool_count]
+    add edx, [ebp+dpmi_parked+4]
     sub edx, 64
     jnc .count
     xor edx, edx
 .count:
+    mov eax, edx
+    shl eax, 12
     call dpmi_largest_gap
     shr eax, 12
     cmp edx, eax
@@ -89,6 +92,35 @@ dpmi_memory_info:
     mov [edi], edx
     mov dword [edi+12], 0fc00h
     mov dword [edi+32], 0
+    ; DOS/4GW clients fail on -1 total and free linear page counts.
+    push esi
+    xor eax, eax
+    xor ecx, ecx
+    mov esi, dpmi_blocks
+    mov edx, [ebp+dpmi_block_count]
+    test edx, edx
+    jz .counted
+.used:
+    cmp dword [esi], 0
+    je .next_used
+    add ecx, [esi+4]
+    test dword [esi+8], 80000000h
+    jnz .next_used
+    add eax, [esi+4]
+.next_used:
+    add esi, 16
+    dec edx
+    jnz .used
+.counted:
+    pop esi
+    add eax, [edi+20]
+    mov [edi+24], eax
+    mov eax, 0fc00h
+    sub eax, ecx
+    jnc .linear
+    xor eax, eax
+.linear:
+    mov [edi+28], eax
     jmp mon_dpmi.success
 
 dpmi_allocate:
@@ -112,7 +144,7 @@ dpmi_free:
     jc .bad
     test dword [esi+8], 80000000h
     jnz .bad
-    call dpmi_memory_release
+    call dpmi_memory_park
     jmp mon_dpmi.success
 .bad:
     mov ax, 8023h
@@ -198,7 +230,20 @@ dpmi_memory_allocate:
 .owned:
     shr eax, 12
     mov [esi+4], eax
-    mov edx, 400000h
+    cmp dword [ebp+dpmi_map_source], 0
+    jne .place
+    ; Refuse a block larger than the free pages before any page moves.
+    pushad
+    mov ax, 0de03h
+    call far [ebp+mon_server]
+    mov [esp+20], edx
+    popad
+    add edx, [ebp+dpmi_pool_count]
+    add edx, [ebp+dpmi_parked+4]
+    cmp eax, edx
+    ja .full
+.place:
+    mov edx, [ebp+dpmi_linear_floor]
     cmp dword [ebp+dpmi_allocate_hint], 0
     je .restart
     mov edx, [ebp+dpmi_allocate_hint]
@@ -235,7 +280,11 @@ dpmi_memory_allocate:
     jnz .range
     mov [esi], edx
     mov edi, edx
-    xor ebx, ebx
+    call dpmi_parked_take
+    mov eax, ebx
+    shl eax, 12
+    add edi, eax
+    jmp .check
 .map:
     call dpmi_page_table
     jc .rollback
@@ -257,21 +306,32 @@ dpmi_memory_allocate:
     add edx, [ebp+dpmi_map_source]
     or edx, 18h
 .map_page:
-    ; The final mapping also exposes a pooled page's next link.
+    ; The final mapping also exposes a pooled page's next link. The entry
+    ; was not present, so the TLB holds nothing to flush until the end.
     mov eax, edi
     shr eax, 10
     or edx, 7
     mov [eax+0ffc00000h], edx
-    call dpmi_flush
-    jecxz .mapped
+    jecxz .clear
     mov edx, [edi]
     mov [ebp+dpmi_pool_head], edx
     dec dword [ebp+dpmi_pool_count]
+.clear:
+    ; Loaders expect new pages to be zero (Tao FLIPLAY.EXE data).
+    cmp dword [ebp+dpmi_map_source], 0
+    jne .mapped
+    push edi
+    mov ecx, 1024
+    xor eax, eax
+    rep stosd
+    pop edi
 .mapped:
     inc ebx
     add edi, 4096
+.check:
     cmp ebx, [esi+4]
     jb .map
+    call dpmi_flush
     inc dword [ebp+dpmi_next_handle]
     jnz .handle
     inc dword [ebp+dpmi_next_handle]
@@ -353,6 +413,88 @@ dpmi_memory_grow:
     stc
     ret
 
+; A freed block stays mapped until the next allocation. A client that
+; frees and allocates again at the same address reuses its pages.
+dpmi_memory_park:
+    pushad
+    push esi
+    call dpmi_parked_drop
+    pop esi
+    mov eax, [esi]
+    mov [ebp+dpmi_parked], eax
+    mov eax, [esi+4]
+    mov [ebp+dpmi_parked+4], eax
+    xor eax, eax
+    mov [esi], eax
+    mov [esi+4], eax
+    mov [esi+8], eax
+    mov [esi+12], eax
+    popad
+    ret
+
+dpmi_parked_drop:
+    pushad
+    lea esi, [ebp+dpmi_parked]
+    cmp dword [esi+4], 0
+    je .done
+    call dpmi_memory_release
+.done:
+    popad
+    ret
+
+; EDX=start of the block at ESI. Returns EBX=pages already mapped there.
+dpmi_parked_take:
+    xor ebx, ebx
+    cmp dword [ebp+dpmi_map_source], 0
+    jne .drop
+    cmp edx, [ebp+dpmi_parked]
+    jne .drop
+    mov ebx, [ebp+dpmi_parked+4]
+    cmp ebx, [esi+4]
+    jbe .take
+    ; Release the parked pages past the end of the new block.
+    mov ebx, [esi+4]
+    sub [ebp+dpmi_parked+4], ebx
+    push ebx
+    shl ebx, 12
+    add [ebp+dpmi_parked], ebx
+    pop ebx
+.drop:
+    call dpmi_parked_drop
+.take:
+    mov dword [ebp+dpmi_parked], 0
+    mov dword [ebp+dpmi_parked+4], 0
+    ret
+
+; Return EAX=first 4 MB boundary above the floor and all blocks.
+dpmi_linear_top:
+    push ecx
+    push edx
+    push esi
+    mov eax, [ebp+dpmi_linear_floor]
+    mov esi, dpmi_blocks
+    mov ecx, [ebp+dpmi_block_count]
+    jecxz .done
+.block:
+    cmp dword [esi], 0
+    je .next
+    mov edx, [esi+4]
+    shl edx, 12
+    add edx, [esi]
+    cmp edx, eax
+    jbe .next
+    mov eax, edx
+.next:
+    add esi, 16
+    loop .block
+.done:
+    add eax, 3fffffh
+    and eax, 0ffc00000h
+    pop esi
+    pop edx
+    pop ecx
+    ret
+
 dpmi_memory_find:
     mov esi, dpmi_blocks
     mov ecx, [ebp+dpmi_block_count]
@@ -428,6 +570,7 @@ dpmi_memory_cleanup:
     pushad
     cmp dword [ebp+dpmi_blocks_page], 0
     je .done
+    call dpmi_parked_drop
     mov esi, dpmi_blocks
     mov ecx, [ebp+dpmi_block_count]
 .block:
@@ -464,10 +607,45 @@ dpmi_memory_cleanup:
     popad
     ret
 
-; EAX=largest available linear span; other registers stay intact.
+; EAX=bytes that are enough, or 0. Returns EAX=the largest available linear
+; span, or a span of at least EAX bytes. Other registers stay intact.
 dpmi_largest_gap:
     pushad
-    mov edx, 400000h
+    ; The range above all blocks is usually enough. Queen: The Eye calls
+    ; 0500h with thousands of blocks, and the full search is quadratic.
+    mov edx, [ebp+dpmi_linear_floor]
+    xor edi, edi
+    mov esi, dpmi_blocks
+    mov ecx, [ebp+dpmi_block_count]
+    jecxz .top_ready
+.top:
+    cmp dword [esi], 0
+    jne .top_used
+    mov edi, 1
+    jmp .top_next
+.top_used:
+    mov ebx, [esi+4]
+    shl ebx, 12
+    add ebx, [esi]
+    cmp ebx, edx
+    jbe .top_next
+    mov edx, ebx
+.top_next:
+    add esi, 16
+    loop .top
+.top_ready:
+    mov ebx, 10000000h
+    sub ebx, edx
+    jae .top_size
+    xor ebx, ebx
+.top_size:
+    mov eax, [esp+28]
+    test eax, eax
+    jz .search
+    cmp ebx, eax
+    jae .done
+.search:
+    mov edx, [ebp+dpmi_linear_floor]
     xor ebx, ebx
     xor edi, edi
 .gap:
@@ -613,6 +791,8 @@ dpmi_blocks_page times DPMI_BLOCK_PAGES dd 0
 dpmi_blocks_pte times DPMI_BLOCK_PAGES dd 0
 dpmi_pool_head dd 0
 dpmi_pool_count dd 0
+dpmi_parked dd 0,0,0,0
+dpmi_linear_floor dd 400000h
 dpmi_map_source dd 0
 dpmi_allocate_hint dd 0
 dpmi_release_failed db 0

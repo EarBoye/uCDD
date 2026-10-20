@@ -63,6 +63,14 @@ cd_cache_warm:
     je .done
     cmp byte [cd_background_set], 1
     jne .done
+    ; A disc change from a hotkey or a device request has no DOS context.
+    ; The handle is not valid in the caller's PSP. Warm at the next refill.
+    cmp byte [dos_entered], 0
+    jne .warm
+    mov byte [cc_warm_pending], 1
+    ret
+.warm:
+    mov byte [cc_warm_pending], 0
     pushad
     call cd_cache_open
     cmp word [cc_handle], 0
@@ -308,6 +316,7 @@ cc_copy:
     call far [cd_xms]
     ret
 cc_warming db 0
+cc_warm_pending db 0
 cc_fill db 0
 cc_handle dw 0
 cc_epoch dd 1

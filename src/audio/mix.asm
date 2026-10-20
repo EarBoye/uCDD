@@ -687,6 +687,8 @@ mix_half:
 sb_dma_sample:
     cmp byte [game_frame_shift], 0
     jne .stereo
+    cmp byte [game_adpcm], 0
+    jne sb_adpcm_sample
     mov si, ax
     add si, [sb_tail_read_offset]
     sb_source
@@ -852,6 +854,113 @@ sb_dma_sample:
     sar edx, 1
     mov esi, edx
 %endif
+    ret
+
+; AX: sample index. Samples decode in order; the interpolation reads one ahead.
+sb_adpcm_sample:
+    push bx
+    push cx
+    mov cx, ax
+    sub cx, [adpcm_next]
+    cmp cx, -2
+    je .previous
+    cmp cx, -1
+    je .current
+    cmp cx, 2048
+    jae .current
+    inc cx
+    add [adpcm_next], cx
+.decode:
+    call adpcm_decode
+    loop .decode
+.current:
+    mov al, [adpcm_value]
+    jmp .scale
+.previous:
+    mov al, [adpcm_prev]
+.scale:
+    movzx edx, al
+    sub edx, 128
+    shl edx, 7
+    mov esi, edx
+    pop cx
+    pop bx
+    ret
+
+; Creative ADPCM: one sample into adpcm_value.
+adpcm_decode:
+    push cx
+    mov al, [adpcm_value]
+    mov [adpcm_prev], al
+    cmp byte [adpcm_left], 0
+    jne .code
+.fetch:
+    mov si, [adpcm_src]
+    inc word [adpcm_src]
+    add si, [game_offset]
+    sb_source
+    mov al, [fs:si]
+    cmp byte [adpcm_ref], 0
+    je .byte
+    mov byte [adpcm_ref], 0
+    mov [adpcm_value], al
+    mov [adpcm_prev], al
+    mov byte [adpcm_level], 0
+    jmp .fetch
+.byte:
+    mov [adpcm_byte], al
+    mov al, [adpcm_per]
+    mov [adpcm_left], al
+.code:
+    dec byte [adpcm_left]
+    mov al, [adpcm_byte]
+    mov ah, al
+    mov cl, [adpcm_bits]
+    shl ah, cl
+    mov [adpcm_byte], ah
+    neg cl
+    add cl, 8
+    shr al, cl
+    mov ah, al
+    and ah, [adpcm_mask]
+    movzx bx, byte [adpcm_level]
+    mov cl, [adpcm_bits]
+    dec cl
+    shl bx, cl
+    add bl, ah
+    add bx, [adpcm_map]
+    movzx cx, byte [bx]
+    movzx bx, byte [adpcm_value]
+    mov dl, [adpcm_mask]
+    inc dl
+    test al, dl
+    jz .up
+    sub bx, cx
+    jns .value
+    xor bx, bx
+    jmp .value
+.up:
+    add bx, cx
+    cmp bx, 255
+    jbe .value
+    mov bx, 255
+.value:
+    mov [adpcm_value], bl
+    mov al, [adpcm_level]
+    cmp ah, [adpcm_up]
+    jb .low
+    cmp al, [adpcm_top]
+    jae .done
+    inc byte [adpcm_level]
+    jmp .done
+.low:
+    test ah, ah
+    jnz .done
+    test al, al
+    jz .done
+    dec byte [adpcm_level]
+.done:
+    pop cx
     ret
 
 sb_pcm_interpolate:

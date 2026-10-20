@@ -800,8 +800,13 @@ mon_real_irq:
     push dword 0
     mov byte [ebp+mon_rm_kind], 0
     mov [ebp+mon_int_opcode+1], al
+    call dpmi_bridge_mark_irq
     push esi
     call dpmi_bridge_chained_vector
+    ; Only a real-mode hook in front of the stub can chain back to it.
+    cmp esi, 1024
+    jb mon_real_int_vector
+    call dpmi_bridge_unmark_irq
     jmp mon_real_int_vector
 %endif
 mon_real_int:
@@ -813,6 +818,7 @@ mon_real_int_start:
     mov byte [ebp+mon_rm_kind], 0
     mov [ebp+mon_int_opcode+1], al
 %ifdef HOST_DPMI
+    mov byte [ebp+dpmi_bridge_irq_chain], 0
     push esi
     call dpmi_bridge_real_vector
 mon_real_int_vector:
@@ -834,6 +840,9 @@ mon_real_far_copy:
     push ecx
 mon_real_far_start:
     mov [ebp+mon_rm_kind], al
+%ifdef HOST_DPMI
+    mov byte [ebp+dpmi_bridge_irq_chain], 0
+%endif
 mon_real_transfer:
     HOST_COUNT bridge, 0
     ; A raw switch can run client code inside this call. Keep the outer state.
@@ -913,6 +922,8 @@ mon_resume:
     mov esp, [ebp+mon_resume_sp]
 %ifdef HOST_DPMI
     call dpmi_debug_host_save
+    ; The reflected IRQ has ended. A later IRQ at the stub is a new one.
+    mov byte [ebp+dpmi_bridge_irq_chain], 0
 %endif
 %ifdef HOST_DPMI
     lea esi, [esp+66]
@@ -1023,7 +1034,10 @@ mon_exception:
     test eax, 4000h
     jnz .shadow_debug
     test word [esp+56], 100h
-    jz .shadow_arrival
+    jnz .shadow_debug
+    ; Without BS, a POPF or IRET in the shadow clears the saved TF.
+    call dpmi_sti_loads_flags
+    jc .shadow_arrival
 .shadow_debug:
     lea ebx, [esp+8]
     call dpmi_sti_retire
@@ -1096,6 +1110,38 @@ mon_exception:
     xor edi, edi
     jmp .advance
 .ordinary:
+%ifdef HOST_DPMI
+    ; A ring-3 INT n to an IRQ gate faults with the IDT bit. Run it as INT n.
+    mov eax, [esp+44]
+    test eax, eax
+    jz .no_gate
+    and al, 3
+    cmp al, 2
+    jne .fault
+    test byte [esp+52], 3
+    jz .fault
+    cmp byte [ebp+dpmi_active], 0
+    je .fault
+    mov ebx, esp
+    xor edi, edi
+    call mon_gp_fetch
+    jc .fault
+    cmp al, 0cdh
+    jne .fault
+    inc edi
+    call mon_gp_fetch
+    jc .fault
+    movzx eax, al
+    mov edx, [esp+44]
+    shr edx, 3
+    cmp eax, edx
+    jne .fault
+    mov [esp+40], eax
+    mov dword [esp+44], 0
+    add dword [esp+48], 2
+    jmp dpmi_software_interrupt
+.no_gate:
+%endif
     cmp dword [esp+44], 0
     jne .fault
     mov esi, [esp+48]
@@ -1677,12 +1723,16 @@ HOST_SCRATCH
 mon_pages times 12287 db 0
 %endif
 HOST_PROTECTED
+%ifdef RESIDENT_HOST
+mon_client_stack_top equ mon_kernel_stack_top
+%else
     times 2048 db 0
 mon_kernel_stack_top:
 %ifndef HOST_DPMI
     times 2048 db 0
 %endif
 mon_client_stack_top:
+%endif
 %ifdef HOST_DPMI
 %include "host/dpmi.asm"
 %endif

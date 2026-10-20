@@ -297,11 +297,25 @@ dpmi_dos_translate:
 .dos16:
     cmp byte [ebp+dpmi_client16], 0
     jne dpmi_dos16
-    cmp byte [ebx+37], 3dh
+    ; 32-bit clients get the calls that pass a path or a short buffer.
+    mov al, [ebx+37]
+    cmp al, 39h
+    jb .ordinary
+    cmp al, 3dh
+    jbe dpmi_dos16
+    cmp al, 3fh
     je dpmi_dos16
-    cmp byte [ebx+37], 3fh
+    cmp al, 40h
     je dpmi_dos16
-    cmp byte [ebx+37], 40h
+    cmp al, 41h
+    je dpmi_dos16
+    cmp al, 43h
+    je dpmi_dos16
+    cmp al, 47h
+    je dpmi_dos16
+    cmp al, 5bh
+    je dpmi_dos16
+    cmp al, 6ch
     je dpmi_dos16
     jmp .ordinary
 .psp:
@@ -391,6 +405,7 @@ dpmi_dos_translate:
     mov [edi+34], ax
 .reflect:
     lea esi, [ebp+mon_real_int]
+    push dword [ebp+dpmi_irq_reflecting]
 .reflect_call:
     push esi
     push edi
@@ -402,6 +417,7 @@ dpmi_dos_translate:
     movzx eax, byte [ebp+dpmi_reflect_vector]
     call [esp]
     add esp, 4
+    pop dword [ebp+dpmi_irq_reflecting]
     cmp byte [ebp+dpmi_reflect_vector], 10h
     jne .registers
     cmp word [ebx+36], 1130h
@@ -426,6 +442,20 @@ dpmi_dos_translate:
 .hardware:
     call dpmi_pic_reflect
     mov dword [edi+34], 0
+    push dword [ebp+dpmi_irq_reflecting]
+    ; A real-mode hook can chain to the bridge stub. The stub must not pass this IRQ up again.
+    movzx eax, byte [ebp+dpmi_reflect_vector]
+    sub al, [ebp+mon_master]
+    cmp al, 8
+    jb .irq_bit
+    mov al, [ebp+dpmi_reflect_vector]
+    sub al, [ebp+mon_slave]
+    cmp al, 8
+    jae .irq_ready
+    add al, 8
+.irq_bit:
+    bts [ebp+dpmi_irq_reflecting], eax
+.irq_ready:
     lea esi, [ebp+mon_real_irq]
     jmp .reflect_call
 
@@ -437,6 +467,9 @@ dpmi_register_interrupt:
     cmp al, 12h
     je .yes
     cmp al, 16h
+    je .yes
+    ; Judge Dredd: JD.EXE asks LAW.EXE for sounds with INT 2Bh.
+    cmp al, 2bh
     je .yes
     cmp al, 1ah
     jne .video
@@ -468,6 +501,10 @@ dpmi_register_interrupt:
     je .yes
     jmp .no
 .dos:
+    cmp al, 33h
+    je .mouse
+    cmp al, 2fh
+    je .mux
     cmp al, 21h
     jne .no
     mov al, [ebx+37]
@@ -491,6 +528,35 @@ dpmi_register_interrupt:
     je .yes
     cmp al, 4dh
     je .yes
+    jmp .no
+; MSCDEX checks that take no pointers (Napion 3D).
+.mux:
+    mov ax, [ebx+36]
+    cmp ax, 1500h
+    je .yes
+    cmp ax, 150bh
+    je .yes
+    cmp ax, 150ch
+    je .yes
+    jmp .no
+.mouse:
+    ; Mouse functions with no pointer input or output.
+    push edx
+    movzx eax, word [ebx+36]
+    mov edx, 7c29edffh
+    cmp eax, 20h
+    jb .mouse_bit
+    sub eax, 20h
+    mov edx, 453h
+.mouse_bit:
+    cmp eax, 20h
+    jae .mouse_no
+    bt edx, eax
+    pop edx
+    jc .yes
+    jmp .no
+.mouse_no:
+    pop edx
 .no:
     stc
     ret

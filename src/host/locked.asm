@@ -168,6 +168,11 @@ dpmi_deliver_software:
 dpmi_deliver_locked:
     call dpmi_locked_capture
     call dpmi_stack_acquire
+%ifdef RESIDENT_HOST
+    mov ax, [esi+4]
+    call dpmi_nested_enter
+    setc [ebp+dpmi_nested_entered]
+%endif
     push esi
     mov edx, [esi]
     mov ax, [esi+4]
@@ -200,6 +205,13 @@ dpmi_deliver_locked:
     mov [edi+12], eax
     mov eax, [ebx+56]
     mov [edi+16], eax
+%ifdef RESIDENT_HOST
+    ; Bit 0 of the marker is clear when the handler belongs to the other client.
+    shr byte [ebp+dpmi_nested_entered], 1
+    jnc .size_ready
+    and byte [edi+24], 0feh
+.size_ready:
+%endif
     cmp byte [ebp+dpmi_client16], 0
     jne .word_frame
     sub edi, 12
@@ -270,6 +282,13 @@ dpmi_locked_done:
     cmp esi, eax
     jb dpmi_locked_abort
     add esi, DPMI_LOCK_BASE
+%ifdef RESIDENT_HOST
+    ; The interrupted code gets its code size back.
+    bts dword [esi+24], 0
+    jc .size_ready
+    call dpmi_nested_toggle
+.size_ready:
+%endif
     cmp dword [esi+24], 48495251h
     je .marker_ready
     cmp dword [esi+24], 53495251h
