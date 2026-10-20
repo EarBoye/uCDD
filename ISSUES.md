@@ -170,6 +170,11 @@ changed volumes.
   Two kept overruns: Fade to Black (F15, open) and Duke Nukem 3D (F16),
   which was not the driver: the copy traced had Duke's own config on IRQ
   7 with the cards on 5, and it fails the same way without the driver.
+- Space (20 Oct, every irq-counters build with NASM 3.02): the DPMI host is
+  65267 of the 65535 bytes build.py allows (268 free); the driver 63495 of
+  65536 (about 2 KB free), the verify-mix build 65031 (505 free), the
+  virtual ESS build 64563 (973 free). The next host fix or host
+  diagnostic has to find room first (rings, trims) or move code out.
 - Inca II's "not enough extended memory" is its Phar Lap 286 extender
   above 16 MB of free DPMI memory; not ours.
 - Super Street Fighter II Turbo: dropped (Michael, 18 Oct). Its 32RTM
