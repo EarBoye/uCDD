@@ -9,6 +9,15 @@ import tomllib
 
 PACKAGE = Path(__file__).resolve().parent.parent
 CONFIG = tomllib.loads((PACKAGE / 'method.toml').read_text())
+# The bench's own settings, never committed (its paths, its account name as a
+# banned word): tables merge into method.toml's, [[banned]] entries add to it.
+LOCAL = Path(os.environ.get('UCDD_METHOD_LOCAL') or PACKAGE / 'method.local.toml')
+if LOCAL.exists():
+    for table, values in tomllib.loads(LOCAL.read_text()).items():
+        if isinstance(values, list):
+            CONFIG.setdefault(table, []).extend(values)
+        else:
+            CONFIG.setdefault(table, {}).update(values)
 MATRIX = tomllib.loads((PACKAGE / 'matrix' / 'matrix.toml').read_text())
 
 

@@ -105,6 +105,10 @@ trailers in the last paragraph of its message:
   over 187 recent commits of fixes, irq-counters, sound-engine-library and
   spec-first, it finds nothing (two false alarms were fixed on the way: a web
   address, and the English word "undefined").
+- **No local path, in every commit** (Michael, 20 Oct 2026): a home directory
+  (`/home/<name>/`, `/Users/<name>/`, `C:\Users\<name>\`) is refused in the
+  message and in every added line. The bench's own paths and account name
+  live in `method.local.toml` (below), which git ignores.
 - **Refused in every commit**, in the message and in every added line: the
   bench's nickname (rule 7), and an @mention of the upstream author or a
   link to one of his issues or pull requests. The patterns are in
@@ -118,6 +122,23 @@ COMMIT_EDITMSG. Claude never bypasses it. A person who must can use
 
 All of it is in method.toml: which paths count as code, the grades, the notes
 refs, the build variants, the ledger.
+
+## The bench's own settings
+
+`method.local.toml`, beside method.toml, is never committed (`.gitignore`).
+Its tables merge into method.toml's and its `[[banned]]` entries add to the
+list, so the bench can ban its own account name without publishing it:
+
+    [games]
+    paths = ["<the game library>", "<its disc images>"]
+
+    [[banned]]
+    pattern = '(?i)<the account name>'
+    why = "the bench's account name"
+
+`UCDD_METHOD_LOCAL` points at another file. The runners' commands in
+matrix.toml name the library as `$GAMES`, which the bench sets in its own
+environment.
 
 ## The matrix and the planner
 
@@ -255,7 +276,7 @@ expects of the hardware; the notes say it in words.
   `sed`/`perl`. Reading, hex dumps, disassembling into another directory and
   copying out are allowed, and so are the runners, which set a game's own
   configuration as its setup program would. Set `[games] paths` in
-  method.toml to the library and its disc images (or `UCDD_GAMES`).
+  method.local.toml to the library and its disc images (or `UCDD_GAMES`).
 - **The GitHub tools** cannot commit files (the guard refuses
   `create_or_update_file`, `push_files` and `delete_file`): commits are made
   with git, where the hook sees them.
@@ -326,8 +347,8 @@ cross-check: every trailer should have its hit line in the register.
 
 ## Not done yet
 
-- **`[games] paths` is empty.** The bench sets it to the game library and its
-  disc images, or the guard cannot protect them.
+- **`[games] paths`** belongs in the bench's method.local.toml, or the guard
+  cannot protect the library.
 - **The runners do not record yet.** regress.sh, sndreg, game_live.py and
   probe_test.py each need a `ledger.py record` call after a run is judged,
   with the build directory, the tools and the outputs; then `[ledger]

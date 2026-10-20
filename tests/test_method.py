@@ -385,6 +385,12 @@ class HookTests(unittest.TestCase):
         result = self.commit(GOOD.format(row='test-row-w'))
         self.assertEqual(result.returncode, 0, result.stderr)
 
+    def test_local_path_refused(self):
+        self.append('ISSUES.md', '\nThe kit is in /home/someone/Claude/kit on the bench.\n')
+        result = self.commit('ISSUES: the kit\n')
+        self.assertEqual(result.returncode, 1)
+        self.assertIn('a local path', result.stderr)
+
     def test_notes_are_exempt(self):
         self.append('ISSUES.md', '\nA note from the 86Box run, the original trigger.\n')
         self.assertEqual(self.commit('ISSUES: a note\n').returncode, 0)
@@ -432,6 +438,19 @@ class GuardTests(unittest.TestCase):
                     self.assertEqual(self.guard(command), 0, command)
             finally:
                 del os.environ['UCDD_GAMES']
+
+    def test_local_settings_file(self):
+        with tempfile.TemporaryDirectory() as library, tempfile.NamedTemporaryFile(
+                'w', suffix='.toml', delete=False) as local:
+            local.write(f'[games]\npaths = ["{library}"]\n')
+            local.close()
+            os.environ['UCDD_METHOD_LOCAL'] = local.name
+            try:
+                self.assertEqual(self.guard(f'rm -rf {library}/DOOM'), 2)
+            finally:
+                del os.environ['UCDD_METHOD_LOCAL']
+                os.unlink(local.name)
+            self.assertEqual(self.guard(f'rm -rf {library}/DOOM'), 0)
 
     def test_github_file_tools_refused(self):
         for name in ('push_files', 'create_or_update_file', 'delete_file'):

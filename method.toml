@@ -35,6 +35,12 @@ none = ["none"]
 pattern = '(?i)\brig(86)?\b'
 why = "no test-bench nicknames (mantra rule 7)"
 
+# No local path in the repository (Michael, 20 Oct 2026): the bench's
+# account name and directories stay on the bench, in method.local.toml.
+[[banned]]
+pattern = '(?i)/home/[a-z0-9_.-]+/|/Users/[A-Za-z0-9_.-]+/|\b[A-Z]:\\Users\\'
+why = "a local path; keep it in method.local.toml, which git ignores"
+
 # Nothing goes to the upstream author (Michael, 20 Oct 2026). A mention, or
 # a link to one of his issues or pull requests, notifies him from a commit.
 [[banned]]
@@ -50,8 +56,9 @@ why = "it would notify the upstream author; nothing from this fork goes to him"
 # under any name, a disassembly listing, or a string naming a game in driver
 # code (a special case). The guard refuses writes into the game library.
 [games]
-# The game library and its disc images on the bench: absolute paths, set by
-# the bench (UCDD_GAMES, os.pathsep-separated, overrides).
+# The game library and its disc images on the bench: absolute paths. They
+# are the bench's own and never committed: set them in method.local.toml,
+# beside this file and ignored by git, or in UCDD_GAMES (os.pathsep apart).
 paths = []
 suffixes = [".exe", ".com", ".ovl", ".ovr", ".dig", ".mdi", ".adv", ".drv", ".386", ".dll",
             ".bin", ".cue", ".iso", ".img", ".ima", ".mdf", ".ccd", ".sub", ".voc", ".xmi"]
