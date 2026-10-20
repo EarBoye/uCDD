@@ -126,6 +126,12 @@ class Matrix:
         for axis, words in self.data.get('words', {}).items():
             fields[f'{axis}_word'] = words.get(str(run['config'][axis]), run['config'][axis])
         fields['build'] = run['build']
+        # the build's directory as bset.sh names it ($UCDD_TREE and
+        # $UCDD_SUFFIX are the caller's: the worktree and bset's suffix)
+        fields['build_dir'] = '-' if run['build'] == '-' else \
+            self.data.get('build_dirs', {}).get(run['build'], run['build'])
+        # a test's own arguments for its runner (SBT16's case list)
+        fields['args'] = entry.get('args', '')
         runner = self.runners[entry['runner']]
         template = runner['command']
         if run['config']['mode'] == 'base':
@@ -197,7 +203,9 @@ def git(*args):
 
 def changed_files(base):
     files = set(git('diff', '--name-only', base).split())
-    files |= set(git('ls-files', '--others', '--exclude-standard').split())
+    # new files not yet added count only when they are code: bset.sh leaves
+    # its build directories and logs untracked in the worktree
+    files |= {name for name in git('ls-files', '--others', '--exclude-standard').split() if is_code(name)}
     return sorted(files)
 
 

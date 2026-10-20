@@ -74,7 +74,7 @@ def label(options):
     words = options.split()
     period = words[words.index('--audio-period-frames') + 1] if '--audio-period-frames' in words else ''
     extra = [word.removeprefix('--') for word in words
-             if word.startswith('--') and word not in ('--resident-audio', '--audio-period-frames')]
+             if word.startswith('--') and word not in ('--resident-audio', '--no-refill-hint', '--audio-period-frames')]
     return ' '.join([*extra, f'p{period}' if period else '']).strip() or options
 
 

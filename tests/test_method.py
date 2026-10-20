@@ -75,7 +75,7 @@ class HookTests(unittest.TestCase):
         return subprocess.run([sys.executable, *map(str, args)], cwd=self.tree,
                               capture_output=True, text=True)
 
-    def build(self, options='--resident-audio --audio-period-frames 128'):
+    def build(self, options='--resident-audio --no-refill-hint --audio-period-frames 128'):
         shutil.rmtree(self.tree / 'build', ignore_errors=True)
         subprocess.run([sys.executable, 'scripts/build.py', *options.split()], cwd=self.tree,
                        capture_output=True, check=True)

@@ -74,15 +74,16 @@ marker = '(?i)\b(joined from|called (from|with)|far entry|on (both|every|each) p
 refs = ["HEAD", "sound-engine-library", "spec-first", "origin/sound-engine-library", "origin/spec-first"]
 paths = ["ISSUES.md", "docs/*.md"]
 
-# The builds compared for "Evidence: none". The bset.sh variants.
+# The builds compared for "Evidence: none". The bset.sh variants, with the
+# options bset.sh passes (every one has --no-refill-hint; checked 20 Oct).
 [identical]
 variants = [
-    "--resident-audio --audio-period-frames 32",
-    "--resident-audio --audio-period-frames 128",
-    "--resident-audio --audio-period-frames 256",
-    "--resident-audio --verify-mix --audio-period-frames 128",
-    "--resident-audio --virtual-ess --audio-period-frames 32",
-    "--resident-audio --virtual-ess --audio-period-frames 128",
+    "--resident-audio --no-refill-hint --audio-period-frames 32",
+    "--resident-audio --no-refill-hint --audio-period-frames 128",
+    "--resident-audio --no-refill-hint --audio-period-frames 256",
+    "--resident-audio --no-refill-hint --audio-period-frames 128 --verify-mix",
+    "--resident-audio --no-refill-hint --audio-period-frames 32 --virtual-ess",
+    "--resident-audio --no-refill-hint --audio-period-frames 128 --virtual-ess",
 ]
 compare = ["*.EXE", "*.BIN", "*.COM"]
 

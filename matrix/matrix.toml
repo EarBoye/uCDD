@@ -77,8 +77,22 @@ need = { physical = ["sb16"] }
 engaged = "ucdd"
 free = "ucdd"
 base = "jemm"
+# fixtest.py's --vmodel numbers
+[words.vmodel]
+sb16 = "0"
+pro = "1"
+sb2 = "3"
+ess = "4"
+# fixtest.py's card options: 86Box's card (--sound) and UCDD.CFG's (--card);
+# without --sound fixtest uses the template's ES1688
+[words.physical]
+sb16 = "--sound sb16 --card sb16"
+es1688 = "--card essfast"
 
-# The environment each value sets for game_live.py and sndreg (check).
+# The environment each value sets: game_live.py, sndreg and probe_test.py
+# read GL_IRQ, GL_VIRQ, GL_VMODEL and GL_CFG_V4 (always,fast); fixtest.py
+# reads RIG_CFG_V4 and takes the IRQs as --irq (its runner below). Checked
+# against the bench, 20 Oct.
 [env.pirq]
 "*" = "GL_IRQ={}"
 [env.virq]
@@ -89,20 +103,31 @@ pro = "GL_VMODEL=1"
 sb2 = "GL_VMODEL=3"
 ess = "GL_VMODEL=4"
 [env.mode]
-engaged = "GL_CFG_V4=1,0"
-free = "GL_CFG_V4=0,0"
+engaged = "GL_CFG_V4=1,0 RIG_CFG_V4=1,0"
+free = "GL_CFG_V4=0,0 RIG_CFG_V4=0,0"
 base = "GL_MODE=base"
 [env.midi]
 gm = "GL_MIDI=1"
 
-# What each build is (bset.sh makes them; check the suffixes there).
+# What each build is: the options bset.sh passes (every build has
+# --no-refill-hint), and the directory it puts the build in. $UCDD_TREE (the
+# uCDD worktree) and $UCDD_SUFFIX (bset.sh's suffix) are set by the caller.
+# Checked against runs/bset.sh, 20 Oct.
 [builds]
-p32 = "--resident-audio --audio-period-frames 32"
-p128 = "--resident-audio --audio-period-frames 128"
-p256 = "--resident-audio --audio-period-frames 256"
-verify128 = "--resident-audio --verify-mix --audio-period-frames 128"
-ess32 = "--resident-audio --virtual-ess --audio-period-frames 32"
-ess128 = "--resident-audio --virtual-ess --audio-period-frames 128"
+p32 = "--resident-audio --no-refill-hint --audio-period-frames 32"
+p128 = "--resident-audio --no-refill-hint --audio-period-frames 128"
+p256 = "--resident-audio --no-refill-hint --audio-period-frames 256"
+verify128 = "--resident-audio --no-refill-hint --audio-period-frames 128 --verify-mix"
+ess32 = "--resident-audio --no-refill-hint --audio-period-frames 32 --virtual-ess"
+ess128 = "--resident-audio --no-refill-hint --audio-period-frames 128 --virtual-ess"
+
+[build_dirs]
+p32 = "$UCDD_TREE/build_32$UCDD_SUFFIX"
+p128 = "$UCDD_TREE/build_128$UCDD_SUFFIX"
+p256 = "$UCDD_TREE/build_256$UCDD_SUFFIX"
+verify128 = "$UCDD_TREE/build_v128$UCDD_SUFFIX"
+ess32 = "$UCDD_TREE/build_32${UCDD_SUFFIX}_ess"
+ess128 = "$UCDD_TREE/build_128${UCDD_SUFFIX}_ess"
 
 [run]
 # Probes may share the machine; a recording never does (lesson L6).
@@ -110,20 +135,46 @@ probe_parallel = 7
 # Groups only --group brings in: runs on the PC are Michael's evenings.
 optional_groups = ["pc"]
 
-# How each runner is started, from the bench directory (check). $GAMES is
-# the game library. {name} is a run's value for an axis, {mode_word} its
-# word, {id} the run, {tag} the plan, {env} the environment above. A run
-# without uCDD (mode base) uses base_command where there is one, and its
-# {build} is "-".
+# How each runner is started, from the bench directory. $UCDD_FIXTEST is the
+# bench's fixtest.py and $UCDD_KIT its kit folder (the caller sets both, as it
+# sets $UCDD_TREE and $UCDD_SUFFIX). {name} is a run's value for an axis, {name_word} its word, {id} the
+# run, {tag} the plan, {env} the environment above, {build_dir} the build's
+# directory ([build_dirs]), {args} the test's own arguments. A run without
+# uCDD (mode base) uses base_command where there is one; uCDD is then copied
+# but not loaded, so any build directory does. Checked against the bench,
+# 20 Oct.
 [runner.probe]
+# DOS tools in one boot; PROBE_RUN="TAG:PROGRAM ARGS,..." in the test's env
+# (a "!" command goes into AUTOEXEC as it stands); output C:\OUT\TAG.TXT
 kind = "probe"
-command = "{env} python3 runs/probe_test.py {build} {id} {vmodel} {mode_word}"
+command = "{env} python3 runs/probe_test.py {build_dir} {id} {vmodel} {mode_word}"
+base_command = "{env} python3 runs/probe_test.py $UCDD_TREE/build_128$UCDD_SUFFIX {id} {vmodel} jemm"
+[runner.perf]
+# the standard regression's SBT16 and verify rows: fixtest.py perf, steps
+# "OUT:PROGRAM ARGS,..." in {args}; rsum.py compares them with a base run
+kind = "probe"
+command = "{env} python3 $UCDD_FIXTEST perf {build_dir} \"{args}\" {physical_word} --vmodel {vmodel_word} --irq {pirq}/{virq} --id {id}"
+base_command = "{env} python3 $UCDD_FIXTEST perf $UCDD_TREE/build_128$UCDD_SUFFIX \"{args}\" {physical_word} --vmodel {vmodel_word} --irq {pirq}/{virq} --jemm --id {id}"
+[runner.verify]
+# the verify-mix build: fixtest.py perf --verify (MEMFIND dumps MIXVERIF after
+# the steps); rsum.py's "verify rows" read the bad-sample counts
+kind = "probe"
+command = "{env} python3 $UCDD_FIXTEST perf {build_dir} \"{args}\" --verify {physical_word} --vmodel {vmodel_word} --irq {pirq}/{virq} --id {id}"
+[runner.mpu]
+kind = "probe"
+command = "{env} python3 runs/mpu_test.py {build_dir} {id}"
 [runner.game]
+# NOT a judged runner: game_live.py only starts a live 86Box session, to be
+# driven by hand (the bench's livebox.py). No test uses it; a game test runs
+# through sndreg, which records and judges.
 kind = "recording"
-command = "{env} python3 runs/game_live.py {id} {build} $GAMES/{library} {game} {physical}"
+command = "{env} python3 runs/game_live.py {id} {build_dir} $GAMES/{library} {game}"
 [runner.sndreg]
+# records the game under the build and judges it against the stored
+# references (the bench's sndref store); the game must be in runs/sndreg/games.py. The
+# run's id is sndreg's tag: runs/sr_ID_MODEL_GAME, runs/sndreg_ID.txt
 kind = "recording"
-command = "{env} python3 runs/sndreg/sndreg.py check {build} {tag} -m {vmodel} {game}"
+command = "{env} python3 runs/sndreg/sndreg.py check {build_dir} {id} -m {vmodel} {game}"
 base_command = "{env} python3 runs/sndreg/sndreg.py refs -m {vmodel} {game}"
 [runner.pc]
 kind = "hardware"
@@ -135,137 +186,206 @@ command = "on the PC with the kit of {build}: RUN {game}"
 # findings: the rows it checks. repeat: runs per configuration, for faults
 # that come and go. todo: what it lacks before it can run.
 
-# Probes (regress.sh list a). PROBE_RUN names the program (check).
+# Probes (regress.sh list a), checked against the bench 20 Oct. PROBE_RUN
+# is "TAG:PROGRAM ARGS,..."; the perf and verify runners take the same steps
+# as {args}. The case lists are regress.sh's.
 [[test]]
 name = "SBT16"
-runner = "probe"
-env = "PROBE_RUN=SBT16"
+runner = "perf"
+args = "S0:SBT16.COM C6 00 22050,S1:SBT16.COM C0 00 22050,S2:SBT16.COM C2 20 22050,S3:SBT16.COM C6 10 22050,S4:SBT16.COM B0 10 22050,S5:SBT16.COM B6 30 44100,S6:SBT16.COM 14 00 22050 Q,S7:SBT16.COM C0 00 22050 Q,S8:SBT16.COM C6 00 22050 M"
 groups = ["core", "probes", "irq"]
-secs = 30
-note = "the DSP's command set against the virtual model"
+allow = { vmodel = ["sb16"] }
+secs = 90
+note = "SBT16's SB16 transfers (C6h, C0h, C2h, B0h, B6h, 14h, the queue and M): interrupts and the end state, against a bare SB16 (rsum.py)"
+
+[[test]]
+name = "SBT16-legacy"
+runner = "perf"
+args = "L0:SBT16.COM 14 00 22050,L1:SBT16.COM 1C 00 22050,L2:SBT16.COM 91 00 44100,L3:SBT16.COM 90 00 44100,L4:SBT16.COM 90 20 22050,L5:SBT16.COM 91 20 22050,L6:SBT16.COM 14 00 22050 Q,L7:SBT16.COM 1C 00 11025"
+groups = ["core", "probes", "irq"]
+allow = { vmodel = ["pro", "sb2"] }
+secs = 90
+note = "the legacy commands the SB Pro and SB 2.0 know (14h, 1Ch, 90h, 91h, SB Pro stereo), against the bare SB Pro and SB 2.0 (rsum.py)"
+
+[[test]]
+name = "SBT16-input"
+runner = "perf"
+args = "I0:SBT16.COM 24 00 11025,I1:SBT16.COM 2C 00 11025,I2:SBT16.COM 99 00 22050,I3:SBT16.COM 98 00 22050,I5:SBT16.COM C8 00 22050,I6:SBT16.COM CE 10 22050,I7:SBT16.COM B8 10 22050,I8:SBT16.COM BE 30 22050,I9:SBT16.COM CE 20 22050,IA:SBT16.COM B8 00 22050"
+groups = ["probes"]
+allow = { vmodel = ["sb16"] }
+secs = 90
+note = "the input (recording) commands on the virtual SB16, against a bare SB16"
+
+[[test]]
+name = "SBT16-input-pro"
+runner = "perf"
+args = "I0:SBT16.COM 24 00 11025,I1:SBT16.COM 2C 00 11025,I2:SBT16.COM 99 00 22050,I3:SBT16.COM 98 00 22050,I4:SBT16.COM 98 20 11025"
+groups = ["probes"]
+allow = { vmodel = ["pro"] }
+secs = 90
+note = "the input commands on the virtual SB Pro, against a bare SB Pro"
+
+[[test]]
+name = "ADPCM"
+runner = "perf"
+args = 'A:ESSRUN.COM C:\SBADPCM.SCR'
+groups = ["probes"]
+allow = { vmodel = ["sb16", "pro", "sb2"] }
+secs = 60
+note = "the ADPCM commands through a script (ESSRUN), against the bare cards"
 
 [[test]]
 name = "SADUMP"
-runner = "probe"
-env = "PROBE_RUN=SADUMP"
+runner = "perf"
+args = "D:SADUMP.COM"
 groups = ["probes"]
 secs = 30
-note = "the DSP test output, compared byte for byte between builds"
+note = "the driver's state for the step-aside leak test (QPI entry, fault byte, ...), compared line by line between builds"
 
 [[test]]
 name = "E2TEST"
-runner = "probe"
-env = "PROBE_RUN=E2TEST"
+runner = "perf"
+args = "T:E2TEST.COM"
 groups = ["probes"]
+allow = { vmodel = ["sb16"] }
 secs = 30
-note = "DSP E2h, the DMA identification"
-
-[[test]]
-name = "E41TEST"
-runner = "probe"
-env = "PROBE_RUN=E41TEST"
-groups = ["probes"]
-secs = 30
-note = "the 41h and 42h rates (check)"
-
-[[test]]
-name = "TONE4"
-runner = "probe"
-env = "PROBE_RUN=TONE4"
-groups = ["probes", "mixer"]
-secs = 30
-note = "known tones through the virtual card"
-
-[[test]]
-name = "F2TEST"
-runner = "probe"
-env = "PROBE_RUN=F2TEST"
-groups = ["irq", "probes"]
-secs = 30
-note = "F2h's interrupt: latency and merging"
-
-[[test]]
-name = "DMACNT"
-runner = "probe"
-env = "PROBE_RUN=DMACNT"
-groups = ["probes", "irq"]
-secs = 30
-note = "the 8237 count against the played position (check)"
+note = "DSP E2h, the DMA identification: expect 40 30 F3 98 /02 after a reset, 40 with the channel masked"
 
 [[test]]
 name = "SBPROBE"
 runner = "probe"
-env = "PROBE_RUN=SBPROBE"
+env = "PROBE_RUN='PROBE:SBPROBE.COM'"
 groups = ["probes"]
-secs = 30
-todo = "say what it checks"
+allow = { vmodel = ["sb16", "pro", "sb2"] }
+secs = 60
+note = "the DSP's ports during and after a reset, argument counts, E0h/E8h/F8h/D8h/E3h, the mixer after a reset, read-back pairs, 82h with an MPU-401 acknowledge waiting: against the bare card and the firmware (rsum.py, fw_expect.py)"
 
 [[test]]
 name = "SBQUEUE"
 runner = "probe"
-env = "PROBE_RUN=SBQUEUE"
+env = "PROBE_RUN='QL:SBQUEUE.COM L,QS:SBQUEUE.COM S,QD:SBQUEUE.COM D'"
 groups = ["probes"]
+allow = { vmodel = ["sb16", "pro", "sb2"] }
+secs = 60
+note = "a single-cycle command sent while a transfer runs (L, S, D): the interrupts and the 8237 count at each, against the guide"
+
+[[test]]
+name = "SBQUEUE-16"
+runner = "probe"
+env = "PROBE_RUN='QC:SBQUEUE.COM C,QB:SBQUEUE.COM B'"
+groups = ["probes"]
+allow = { vmodel = ["sb16"] }
+secs = 60
+note = "the same behind C6h and B6h auto-init (the SB16's commands)"
+
+[[test]]
+name = "MPUTONE"
+runner = "mpu"
+groups = ["midi"]
+allow = { vmodel = ["sb16"], pirq = [5], virq = [5] }
+secs = 60
+note = "runs/mpu_test.py: a tone through the SB while MPU-401 acknowledges raise interrupts on the SB16's line (82h bit 2): blocks, MPU interrupts, acknowledges, stalls (mpu_test.py sets its own card)"
+
+[[test]]
+name = "DPMIG"
+runner = "probe"
+env = "PROBE_TIMEOUT=150 PROBE_RUN='GA:DPMIG.COM,GZ:DPMIG.COM Z,GV:DPMIG.COM V'"
+groups = ["host"]
+fixed = { client = "dpmi16" }
+allow = { vmodel = ["sb16"], pirq = [5], virq = [5] }
+secs = 150
+note = "the raw DPMI client: its checks (A), a client ended from real mode (Z) and another client after it (V), in one boot; rsum.py says DID NOT FINISH when the boot hung"
+
+[[test]]
+name = "verify-mix"
+runner = "verify"
+args = "S0:SBT16.COM C6 00 22050,S1:SBT16.COM C0 00 22050,S2:SBT16.COM C2 20 22050,S3:SBT16.COM C6 10 22050,S4:SBT16.COM B0 10 22050,S5:SBT16.COM B6 30 44100,S6:SBT16.COM 14 00 22050 Q,S7:SBT16.COM C0 00 22050 Q,S8:SBT16.COM C6 00 22050 M"
+groups = ["core", "mixer"]
+fixed = { build = "verify128" }
+allow = { vmodel = ["sb16"] }
+secs = 120
+note = "the verify-mix build under SBT16's SB16 cases: rsum.py's verify rows read bad 0/0"
+
+[[test]]
+name = "verify-mix-legacy"
+runner = "verify"
+args = "L0:SBT16.COM 14 00 22050,L1:SBT16.COM 1C 00 22050,L2:SBT16.COM 91 00 44100,L3:SBT16.COM 90 00 44100,L4:SBT16.COM 90 20 22050,L5:SBT16.COM 91 20 22050,L6:SBT16.COM 14 00 22050 Q,L7:SBT16.COM 1C 00 11025"
+groups = ["core", "mixer"]
+fixed = { build = "verify128" }
+allow = { vmodel = ["pro"] }
+secs = 120
+note = "the same under the legacy cases on the virtual SB Pro"
+
+[[test]]
+name = "F2TEST"
+runner = "probe"
+env = "PROBE_RUN='F2:F2TEST.COM'"
+groups = ["irq", "probes"]
 secs = 30
-note = "the DSP's command queue (check)"
+note = "F2h's interrupt: latency in PIT counts and two F2h merged or not, against a bare card"
+todo = "a verdict: compare its table with a run without uCDD (not in rsum.py yet)"
+
+[[test]]
+name = "E41TEST"
+runner = "probe"
+env = "PROBE_RUN='E41:E41TEST.COM 41 E2'"
+groups = ["probes"]
+fixed = { vmodel = "ess", physical = "es1688", build = "ess128" }
+secs = 30
+note = "a rate set by a one-byte time constant (40h, or 41h as the ESS takes it), five 14h blocks: the measured rate, TIMEOUT if an interrupt never came (an ESS test)"
+
+[[test]]
+name = "TONE4"
+runner = "probe"
+env = "PROBE_WAV=1 PROBE_RUN='T:TONE4.COM S'"
+groups = ["mixer"]
+allow = { vmodel = ["sb16"] }
+secs = 45
+note = "a 5512.5 Hz tone for about 30 s: the output's envelope (fast-mode pair averaging); TONE4 E on the ESS shows the SB Pro filter"
+todo = "a verdict: runs/tonechk.py on the recording"
+
+[[test]]
+name = "DMACNT"
+runner = "probe"
+env = "PROBE_RUN='F:DMACNT.COM F,N:DMACNT.COM N'"
+groups = ["probes", "irq"]
+allow = { vmodel = ["sb16"], mode = ["engaged", "base"] }
+secs = 30
+note = "how the 16-bit auto-init count moves when read as fast as possible (ns per read, run lengths, steps, Battle Race 95's two-reads-agree tries); 86Box steps one word at a time, the CT2290 decides"
+todo = "a verdict: compare with the CT2290's numbers (vsb/hw)"
+
+[[test]]
+name = "CDRS"
+runner = "probe"
+env = "PROBE_WAV=1 PROBE_EXTRA=\"$UCDD_KIT/CDRS|CDRS\" PROBE_RUN='M:MSCDEX.EXE /D:UCDD0001 /L:G,U:!C:\\UCDD\\UCDD.EXE -mount C:\\CDRS\\RESTART.CUE -drive G,R:CDRS.COM G 2,P:CDRS.COM G 2 P'"
+groups = ["cd"]
+secs = 90
+note = "the CD restart tool on a synthetic disc: PLAY, the Q-channel, STOP twice and PLAY again, five times (Mortal Kombat Trilogy's pattern), in real and protected mode: each PLAY's duration and the music's gaps"
+todo = "a verdict: runs/gaps.py on the recording against kit/CDRS/restart_ref.npy"
 
 [[test]]
 name = "ESSSTAT"
 runner = "probe"
-env = "PROBE_RUN=ESSSTAT"
+env = "PROBE_RUN='S:ESSSTAT.COM'"
 groups = ["probes"]
 fixed = { vmodel = "ess", physical = "es1688", build = "ess128" }
 secs = 30
 note = "the ESS status sweep, 2xCh through a block"
 
+# One or two games per family (sndreg, regress.sh list c): each must be in
+# runs/sndreg/games.py with references in the bench's sndref store. Checked
+# 20 Oct.
 [[test]]
-name = "MPUTONE"
-runner = "probe"
-env = "PROBE_RUN=MPUTONE"
-groups = ["midi"]
-fixed = { midi = "gm" }
-allow = { vmodel = ["sb16", "pro", "sb2"] }
-secs = 30
-note = "MPU-401 bytes to the wavetable; on the virtual SB16 its interrupt is on the card's line, on the older models the program polls"
+name = "MKTRIL"
+runner = "sndreg"
+game = "MKTRIL"
+family = "Miles MSS 3"
+client = "dos4gw"
+groups = ["families", "host", "irq", "cd"]
+findings = ["F14"]
+secs = 120
+note = "the Miles F14 canary, with its CD music (the restart repeats show here)"
 
-[[test]]
-name = "DPMIG-Z"
-runner = "probe"
-env = "PROBE_RUN=DPMIG PROBE_EXTRA=Z"
-groups = ["host"]
-fixed = { client = "dpmi16" }
-allow = { vmodel = ["sb16"], pirq = [5], virq = [5] }
-secs = 30
-note = "the raw DPMI client, mode Z (check)"
-
-[[test]]
-name = "DPMIG-V"
-runner = "probe"
-env = "PROBE_RUN=DPMIG PROBE_EXTRA=V"
-groups = ["host"]
-fixed = { client = "dpmi16" }
-allow = { vmodel = ["sb16"], pirq = [5], virq = [5] }
-secs = 30
-note = "the raw DPMI client, mode V (check)"
-
-[[test]]
-name = "CDRS"
-runner = "probe"
-env = "PROBE_RUN=CDRS"
-groups = ["cd"]
-secs = 30
-note = "CD reads through MSCDEX (check)"
-
-[[test]]
-name = "verify-mix"
-runner = "probe"
-env = "PROBE_RUN=TONE4"
-groups = ["core", "mixer"]
-fixed = { build = "verify128" }
-secs = 45
-note = "the verify build's bad-sample count reads 0 (check: which program drives it)"
-
-# One game per family (sndreg, regress.sh list c). games.py holds eleven
-# games; move the other three here.
 [[test]]
 name = "THEMHOSP"
 runner = "sndreg"
@@ -274,8 +394,8 @@ family = "Miles MSS 3"
 client = "dos4gw"
 groups = ["families", "host"]
 findings = ["F14"]
-secs = 90
-note = "data-only disc: held on, or uCDD steps aside onto the bare card (L7)"
+secs = 120
+note = "data-only disc: held on, or uCDD steps aside onto the bare card (L7); D7 fails it at 2.38x"
 
 [[test]]
 name = "DESCENT"
@@ -284,7 +404,17 @@ game = "DESCENT"
 family = "HMI SOS"
 client = "dos4gw"
 groups = ["families"]
-secs = 90
+secs = 120
+
+[[test]]
+name = "HEXENBEY"
+runner = "sndreg"
+game = "HEXENBEY"
+family = "DMX"
+client = "dos4gw"
+groups = ["families", "cd"]
+secs = 120
+note = "a 50 s moment from its CD track's start"
 
 [[test]]
 name = "DUKE3D"
@@ -293,24 +423,29 @@ game = "DUKE3D"
 family = "Apogee Sound System"
 client = "dos4gw"
 groups = ["families"]
-secs = 90
+secs = 120
 note = "takes its IRQ from DUKE3D.CFG (F16): the bench sets it to the card's"
 
 [[test]]
 name = "XCOMUF"
 runner = "sndreg"
 game = "XCOMUF"
-groups = ["families"]
-secs = 90
-todo = "family and client"
+family = "DigPak"
+client = "dos4gw"
+groups = ["families", "host"]
+findings = ["F14"]
+allow = { vmodel = ["sb16"] }
+secs = 120
+note = "SB16 only: its SB Pro and SB 2.0 drivers are packed in DRIVERS.CAT"
 
 [[test]]
 name = "GK1"
 runner = "sndreg"
 game = "GK1"
 family = "Sierra SCI"
-groups = ["families", "midi"]
-secs = 90
+client = "dos4gw"
+groups = ["families"]
+secs = 120
 
 [[test]]
 name = "JILLJUNG"
@@ -321,7 +456,7 @@ client = "real"
 groups = ["families"]
 findings = ["F17"]
 allow = { vmodel = ["sb16", "pro"] }
-secs = 90
+secs = 120
 note = "no SB 2.0 reference: Jill stops at its logo on 86Box's own SB 2.0"
 
 [[test]]
@@ -329,76 +464,84 @@ name = "SWDFORC"
 runner = "sndreg"
 game = "SWDFORC"
 family = "iMUSE (LucasArts)"
+client = "dos4gw"
 groups = ["families"]
-secs = 90
+allow = { vmodel = ["sb16"] }
+secs = 120
+note = "SB16 only: on an SB Pro or SB 2.0 its setup file (binary) must be rewritten"
+
+[[test]]
+name = "SSTRDUST"
+runner = "sndreg"
+game = "SSTRDUST"
+family = "MIDAS"
+client = "dos4gw"
+groups = ["families"]
+secs = 120
 
 [[test]]
 name = "KYRA1"
 runner = "sndreg"
 game = "KYRA1"
 family = "own code (Westwood)"
+client = "real"
 groups = ["families"]
-secs = 90
+secs = 120
 
-# The findings' own cases (docs/sound-engines/findings.md).
+# The findings' own cases (docs/sound-engines/findings.md), through sndreg.
 [[test]]
-name = "MKTRIL"
-runner = "game"
-game = "MKTRIL"
-library = "DOS_ACT"
-family = "Miles MSS 3"
+name = "F4-highspeed"
+runner = "sndreg"
+game = "HEXENBEY"
+family = "DMX"
 client = "dos4gw"
-groups = ["host", "irq"]
-findings = ["F14"]
-allow = { vmodel = ["sb16"] }
-secs = 90
-note = "F14: sounds about 2.3x long when the reflected EOI goes astray; fixed in stray-eoi"
+groups = ["irq"]
+findings = ["F4"]
+fixed = { pirq = 7, virq = 7 }
+allow = { vmodel = ["pro", "sb2"] }
+secs = 120
+note = "both cards on IRQ 7: 90h and DMX's stereo priming never start (F4); Hexen's SB Pro and SB 2.0 references are on IRQ 7"
 
 [[test]]
 name = "DUNGKE01"
-runner = "game"
-game = "DUNGKE01"
+runner = "sndreg"
+game = "DUNGKEEP"
 library = "DOS_THNK"
 family = "Miles MSS 3"
 client = "dos4gw"
 groups = ["host", "irq"]
 findings = ["F14"]
 allow = { vmodel = ["sb16"] }
-secs = 90
+secs = 120
+todo = "an entry in runs/sndreg/games.py (a moment past the intro) and its references"
 
 [[test]]
 name = "F1-probe"
-runner = "game"
+runner = "sndreg"
+game = "SYSTEMSH"
+library = "DOS_ACT"
 family = "Miles MSS 3 (1994 SB16.DIG)"
+client = "dos4gw"
 groups = ["irq"]
 findings = ["F1"]
 fixed = { pirq = 7, virq = 7, vmodel = "sb16" }
 repeat = 6
-secs = 60
-todo = "the launcher ID of Warcraft or System Shock"
+secs = 120
 note = "both cards on IRQ 7: the one-sample probe interrupt is lost in 5 of 6 runs"
-
-[[test]]
-name = "F4-highspeed"
-runner = "game"
-family = "DMX"
-groups = ["irq"]
-findings = ["F4"]
-fixed = { pirq = 7, virq = 7 }
-allow = { vmodel = ["pro", "sb2"] }
-secs = 60
-todo = "the launcher ID of Doom, Hexen or Raptor"
-note = "both cards on IRQ 7: 90h and DMX's stereo priming never start"
+todo = "an entry in runs/sndreg/games.py and its references (System Shock; Warcraft carries the same driver)"
 
 [[test]]
 name = "F15-fade"
-runner = "game"
+runner = "sndreg"
+game = "FADETOBL"
+library = "DOS_ACT"
 family = "Miles MSS 3"
+client = "dos4gw"
 groups = ["irq"]
 findings = ["F15"]
 allow = { vmodel = ["sb16"] }
-secs = 90
-todo = "the launcher ID of Fade to Black"
+secs = 120
+todo = "an entry in runs/sndreg/games.py and its references (Fade to Black carries the one untraced SB16.DIG, 0c12adc1)"
 
 [[test]]
 name = "HWPROBE"
@@ -567,6 +710,7 @@ inventory = ["own: SB + AdLib", "own: SB"]
 "SBDIG.ADV" = { vmodel = "sb2" }
 "SBPDIG.ADV" = { vmodel = "pro" }
 
-# Where the census's folder name is not the launcher's (check).
+# Where the census's folder name is not the launcher's. game_live.py takes
+# the first numbered launcher of a folder by itself (DUNGKEEP: DUNGKE01).
 [launchers]
 DUNGKEEP = "DUNGKE01"
