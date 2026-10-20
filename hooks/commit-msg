@@ -1,29 +1,12 @@
 #!/usr/bin/env python3
-"""The change loop's checks on a commit message.
-
-A code commit (method.toml, [commit] code) must name its row in an Issue:
-trailer, and the row must already be committed (step 5: the row before the
-fix). It must carry Evidence: trailers with a grade, one of them the data
-sheet (rule 1). A plan named in an emulator line must be in the results
-ledger with every run passed on the binaries this commit builds. "Evidence:
-none" claims no change in behaviour, and the hook proves it by building the
-parent and the staged tree. Notes commits are exempt; banned words are
-refused in every commit's message and added lines.
-"""
+"""The change loop's checks on a commit about to be made (lib/checks.py)."""
 
 from pathlib import Path
 import fnmatch
-import re
-import shutil
-import subprocess
 import sys
-import tempfile
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / 'lib'))
-import methodlib  # noqa: E402
-
-CONFIG = methodlib.CONFIG
-PLAN_TAG = re.compile(r'\bplan ([0-9a-f]{8})\b')
+import checks  # noqa: E402
 
 EXAMPLE = """\
 Example: the last paragraph of the message, one trailer a line:
@@ -39,14 +22,6 @@ Or, for a change the binaries do not see:
     Evidence: none: comments at the join labels"""
 
 
-def git(*args, input=None, check=True):
-    result = subprocess.run(['git', *args], input=input, capture_output=True,
-                            text=True)
-    if check and result.returncode:
-        raise SystemExit(f'commit-msg: git {" ".join(args)} failed:\n{result.stderr}')
-    return result
-
-
 def message_text(path):
     # What git will store: comment lines and everything after the scissors go.
     lines = []
@@ -58,289 +33,12 @@ def message_text(path):
     return '\n'.join(lines).strip() + '\n'
 
 
-def trailers(message):
-    parsed = git('interpret-trailers', '--parse', input=message).stdout
-    found = []
-    for line in parsed.splitlines():
-        key, _, value = line.partition(':')
-        found.append((key.strip().lower(), value.strip()))
-    return found
-
-
-def grade_of(value):
-    head, _, text = value.partition(':')
-    word = head.split(',')[0].strip().lower()
-    for grade, words in CONFIG['grades'].items():
-        if word in words:
-            return grade, text.strip()
-    return None, value
-
-
-def staged_files():
-    out = git('diff', '--cached', '--name-only', '-z').stdout
-    return [name for name in out.split('\0') if name]
-
-
-def added_lines():
-    # File, line number and text of every line the commit adds.
-    diff = git('diff', '--cached', '-U0', '--no-color', '--no-ext-diff').stdout
-    name, number = None, 0
-    for line in diff.splitlines():
-        if line.startswith('+++ '):
-            name = line[6:] if line.startswith('+++ b/') else None
-        elif line.startswith('@@'):
-            number = int(re.search(r'\+(\d+)', line).group(1))
-        elif line.startswith('+') and name:
-            yield name, number, line[1:]
-            number += 1
-
-
-def banned_problems(message, files_too):
-    problems = []
-    for rule in CONFIG.get('banned', []):
-        pattern = re.compile(rule['pattern'])
-        if pattern.search(message):
-            problems.append(f'the message has "{pattern.search(message).group(0)}": {rule["why"]}')
-        if files_too:
-            for name, number, text in added_lines():
-                match = pattern.search(text)
-                if match:
-                    problems.append(f'{name}:{number} adds "{match.group(0)}": {rule["why"]}')
-    return problems
-
-
-LABEL = re.compile(r'^(\.?[A-Za-z_?][\w.?@$#~]*):')
-
-
-def changed_lines(name):
-    # Line numbers in the staged file that the commit adds or deletes beside.
-    diff = git('diff', '--cached', '-U0', '--no-color', '--no-ext-diff', '--', name).stdout
-    lines = set()
-    for match in re.finditer(r'^@@ -\S+ \+(\d+)(?:,(\d+))? @@', diff, re.M):
-        start, count = int(match.group(1)), int(match.group(2) or 1)
-        lines.update(range(start, start + count) if count else {max(start, 1)})
-    return lines
-
-
-def joins_touched(files):
-    """The joins whose code or comment the commit changes: file, line, label, comment."""
-    marker = re.compile(CONFIG['joins']['marker'])
-    found = []
-    for name in files:
-        if not any(fnmatch.fnmatchcase(name, pattern) for pattern in CONFIG['joins']['files']):
-            continue
-        shown = git('show', f':{name}', check=False)
-        changed = changed_lines(name) if not shown.returncode else set()
-        if not changed:
-            continue
-        text = shown.stdout.splitlines()
-        labels = []
-        for number, line in enumerate(text, 1):
-            match = LABEL.match(line)
-            if match:
-                top = number
-                while top > 1 and text[top - 2].lstrip().startswith(';'):
-                    top -= 1
-                labels.append((number, top, match.group(1)))
-        scope = ''
-        for index, (number, top, label) in enumerate(labels):
-            scope = scope if label.startswith('.') else label
-            full = scope + label if label.startswith('.') else label
-            comment = ' '.join(line.strip().lstrip(';').strip() for line in text[top - 1:number - 1])
-            end = labels[index + 1][1] - 1 if index + 1 < len(labels) else len(text)
-            if marker.search(comment) and changed & set(range(top, end + 1)):
-                found.append((name, number, full, comment))
-    return found
-
-
-def named(label, text):
-    local = label.rsplit('.', 1)[-1] if '.' in label else label
-    return bool(re.search(rf'(?<![\w.])({re.escape(label)}|\.?{re.escape(local)})(?![\w])', text))
-
-
-def ref_exists(ref):
-    return not git('rev-parse', '--verify', '-q', ref + '^{commit}',
-                   check=False).returncode
-
-
-def row_committed(row):
-    paths = CONFIG['rows']['paths']
-    for ref in CONFIG['rows']['refs']:
-        if ref_exists(ref) and not git('grep', '-q', '-w', '-F', '-e', row, ref,
-                                       '--', *paths, check=False).returncode:
-            return ref
-    return None
-
-
-def export_tree(target, staged):
-    target.mkdir()
-    if staged:
-        git('checkout-index', '-a', f'--prefix={target}/')
-    else:
-        archive = subprocess.run(['git', 'archive', 'HEAD'], capture_output=True,
-                                 check=True).stdout
-        subprocess.run(['tar', '-x', '-C', str(target)], input=archive, check=True)
-
-
-def build_hashes(tree, options):
-    build = tree / 'build'
-    shutil.rmtree(build, ignore_errors=True)
-    result = subprocess.run([sys.executable, 'scripts/build.py', *options.split()],
-                            cwd=tree, capture_output=True, text=True)
-    if result.returncode:
-        return result.returncode
-    return methodlib.binaries(build)
-
-
-def listed(names):
-    return ', '.join(names[:5]) + (f' and {len(names) - 5} more' if len(names) > 5 else '')
-
-
-def ledger_problems(evidence):
-    """A plan named as emulator evidence must have passed, on these binaries."""
-    problems, tags = [], []
-    for value in evidence:
-        grade, text = grade_of(value)
-        if grade != 'emulator':
-            continue
-        found = PLAN_TAG.findall(text)
-        if not found and CONFIG['ledger'].get('require'):
-            problems.append(f'Evidence: {value}: name the plan the runners recorded ("plan <tag>"); '
-                            'emulator evidence comes from the ledger')
-        tags += found
-    if not tags:
-        return problems
-    with tempfile.TemporaryDirectory(prefix='commit-msg-') as tmp:
-        tree = Path(tmp) / 'staged'
-        export_tree(tree, staged=True)
-        built = {}
-        for tag in tags:
-            plan = methodlib.saved_plan(tag)
-            if not plan:
-                problems.append(f'plan {tag} is not in the ledger ({methodlib.ledger_dir()}): '
-                                'save it with plan.py --save and let the runners record it')
-                continue
-            if methodlib.plan_tag(plan['runs']) != tag:
-                problems.append(f'plan {tag}: the saved plan no longer matches its tag (edited?)')
-                continue
-            newest = methodlib.latest(tag)
-            missing, failed, unknown, other = [], [], [], []
-            for run in plan['runs']:
-                entry = newest.get(run['id'])
-                if not entry:
-                    missing.append(run['id'])
-                elif entry['verdict'] != 'pass':
-                    failed.append(run['id'])
-                elif run['config']['mode'] != 'base':
-                    options = run.get('build_options', '')
-                    if options not in built:
-                        built[options] = build_hashes(tree, options)
-                    expected = built[options]
-                    if not entry.get('binaries'):
-                        unknown.append(run['id'])
-                    elif isinstance(expected, int) or any(
-                            expected.get(name) != digest for name, digest in entry['binaries'].items()):
-                        other.append(run['id'])
-            for names, what in ((missing, 'have no result'), (failed, 'did not pass'),
-                                (unknown, 'recorded no binaries'),
-                                (other, 'ran other binaries than this commit builds')):
-                if names:
-                    problems.append(f'plan {tag}: {len(names)} of {len(plan["runs"])} runs {what}: '
-                                    f'{listed(names)}')
-    return problems
-
-
-def identical_problems():
-    if not ref_exists('HEAD'):
-        return ['"Evidence: none" needs a parent commit to compare with']
-    problems = []
-    with tempfile.TemporaryDirectory(prefix='commit-msg-') as tmp:
-        before, after = Path(tmp) / 'before', Path(tmp) / 'after'
-        export_tree(before, staged=False)
-        export_tree(after, staged=True)
-        for options in CONFIG['identical']['variants']:
-            old, new = build_hashes(before, options), build_hashes(after, options)
-            if old == new:
-                if isinstance(old, int):
-                    print(f'commit-msg: "{options}" builds on neither side; skipped',
-                          file=sys.stderr)
-                continue
-            # This machine has had memory faults: a difference counts only
-            # if a second pair of builds shows it too.
-            again_old, again_new = build_hashes(before, options), build_hashes(after, options)
-            if again_old == again_new:
-                print(f'commit-msg: "{options}": the first two builds differed and the '
-                      'second two agree; check the machine', file=sys.stderr)
-                continue
-            if isinstance(again_old, int) or isinstance(again_new, int):
-                side = 'the parent' if isinstance(again_old, int) else 'the staged tree'
-                problems.append(f'"{options}" does not build from {side}')
-                continue
-            changed = sorted(name for name in again_old.keys() | again_new.keys()
-                             if again_old.get(name) != again_new.get(name))
-            problems.append(f'"{options}" builds different binaries: {", ".join(changed)}')
-            break
-    if problems:
-        problems.append('so this is a change in behaviour: give it its grades, not "none"')
-    return problems
-
-
-def code_problems(message, code):
-    found = trailers(message)
-    rows = [value for key, value in found if key == 'issue']
-    evidence = [value for key, value in found if key == 'evidence']
-    paths = ' '.join(value for key, value in found if key == 'paths')
-    problems = []
-    if not rows:
-        problems.append('no Issue: trailer naming the row this change answers')
-    for row in rows:
-        if not row_committed(row):
-            problems.append(f'Issue: {row} is not in a committed row ({", ".join(CONFIG["rows"]["paths"])} '
-                            f'at {", ".join(CONFIG["rows"]["refs"])}): commit the row first (step 5)')
-    if not evidence:
-        problems.append('no Evidence: trailer')
-    grades = set()
-    for value in evidence:
-        grade, text = grade_of(value)
-        if not grade:
-            problems.append(f'Evidence: {value}: the grade must be one of {", ".join(CONFIG["grades"])}')
-        elif not text:
-            problems.append(f'Evidence: {value}: say what the {grade} evidence is')
-        else:
-            grades.add(grade)
-    if 'none' in grades:
-        if grades != {'none'}:
-            problems.append('"Evidence: none" says nothing changed; it cannot stand beside other grades')
-        elif not problems:
-            problems += identical_problems()
-    elif grades and CONFIG['commit'].get('require_data_sheet') and 'data sheet' not in grades:
-        problems.append('no "Evidence: data sheet:" line (rule 1): cite the document, '
-                        'or write "data sheet: silent" and what decided instead')
-    if not problems:
-        problems += ledger_problems(evidence)
-    if 'none' not in grades:
-        for name, number, label, comment in joins_touched(code):
-            if not named(label, paths):
-                shown = comment if len(comment) <= 160 else comment[:157] + '...'
-                problems.append(f'{name}:{number} changes {label}, a join (lesson L2): check every '
-                                f'path into it against its comment, bring the comment up to date, and '
-                                f'name it in a "Paths: {label}" trailer. The comment: "{shown}"')
-    return problems
-
-
 def main(path):
-    message = message_text(path)
-    branch = git('symbolic-ref', '-q', '--short', 'HEAD', check=False).stdout.strip()
+    branch = checks.git('symbolic-ref', '-q', '--short', 'HEAD', check=False).stdout.strip()
     if any(fnmatch.fnmatchcase(branch, pattern)
-           for pattern in CONFIG['commit']['skip_branches']):
+           for pattern in checks.CONFIG['commit']['skip_branches']):
         return 0
-    merging = Path(git('rev-parse', '--git-path', 'MERGE_HEAD').stdout.strip()).exists()
-    problems = banned_problems(message, files_too=not merging)
-    files = [] if merging else staged_files()
-    code = [name for name in files
-            if any(fnmatch.fnmatchcase(name, pattern) for pattern in CONFIG['commit']['code'])]
-    if code:
-        problems += code_problems(message, code)
+    problems, code = checks.check(message_text(path), checks.Target())
     if not problems:
         return 0
     shown = ', '.join(code[:4]) + (', ...' if len(code) > 4 else '')
@@ -350,8 +48,8 @@ def main(path):
         print(f'  - {problem}', file=sys.stderr)
     if code:
         print('\n' + EXAMPLE, file=sys.stderr)
-    print(f'\nThe message is kept in {git("rev-parse", "--git-path", "COMMIT_EDITMSG").stdout.strip()}.',
-          file=sys.stderr)
+    kept = checks.git('rev-parse', '--git-path', 'COMMIT_EDITMSG').stdout.strip()
+    print(f'\nThe message is kept in {kept}.', file=sys.stderr)
     return 1
 
 

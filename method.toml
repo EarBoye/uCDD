@@ -80,3 +80,17 @@ variants = [
     "--resident-audio --virtual-ess --audio-period-frames 128",
 ]
 compare = ["*.EXE", "*.BIN", "*.COM"]
+
+# The checks on GitHub (tools/ci.py, run by the workflow on fixes). Every
+# branch head is built with the [identical] variants and its headroom
+# reported. Commits made after check_after (an ISO date, such as
+# "2026-10-21T00:00:00+11:00"; empty: none yet) get the hook's checks, apart
+# from the ledger, which lives on the bench. Set it to the time the hook was
+# installed: commits before that were never asked for trailers.
+[ci]
+check_after = ""
+skip_branches = ["archive/*"]
+# build.py's limits, against the sizes it prints: UCDD.EXE with its header
+# must leave the host's overlay alone, the host fits a segment, UCDDPLAY's
+# image keeps its stack word, UCDDSET's payload fits a segment.
+limits = { "UCDD.EXE" = 65536, "UCDDHOST.BIN" = 65535, "UCDDPLAY.BIN" = 65534, "UCDDSET.EXE" = 65568 }

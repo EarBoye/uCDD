@@ -10,6 +10,7 @@ outside one.
 """
 
 from pathlib import Path
+import datetime
 import itertools
 import json
 import os
@@ -257,6 +258,34 @@ class HookTests(unittest.TestCase):
         self.git('reset', '-q', '--hard')
         self.append('ISSUES.md', '\nThanks to vorvek for the driver.\n')
         self.assertEqual(self.commit('ISSUES: thanks\n').returncode, 0)
+
+    def since(self):
+        moment = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(seconds=2)
+        return moment.isoformat(timespec='seconds')
+
+    def test_ci_flags_a_commit_made_without_the_hook(self):
+        since = self.since()
+        self.append('src/audio/irq.asm', '; x\n')
+        self.git('add', '-A')
+        subprocess.run(['git', '-c', 'core.hooksPath=/dev/null', '-c', 'user.name=Test',
+                        '-c', 'user.email=test@example.com', 'commit', '-q', '-m', 'IRQ: no trailers'],
+                       cwd=self.tree, check=True)
+        head = self.git('rev-parse', 'HEAD').stdout.strip()
+        result = self.tool(PACKAGE / 'tools/ci.py', '--dry-run', '--branch', head, '--check-after', since)
+        self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
+        self.assertIn('no Issue: trailer', result.stdout)
+        self.assertIn('1 checked, 1 with problems', result.stdout)
+
+    def test_ci_passes_the_row_and_its_fix(self):
+        since = self.since()
+        self.add_row('test-row-p')
+        self.append('src/audio/irq.asm', '; x\n')
+        self.assertEqual(self.commit(GOOD.format(row='test-row-p')).returncode, 0)
+        head = self.git('rev-parse', 'HEAD').stdout.strip()
+        result = self.tool(PACKAGE / 'tools/ci.py', '--dry-run', '--branch', head, '--check-after', since)
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertIn('2 checked, 0 with problems', result.stdout)
+        self.assertIn('UCDDHOST.BIN', result.stdout)
 
     def test_notes_are_exempt(self):
         self.append('ISSUES.md', '\nA note from the 86Box run, the original trigger.\n')

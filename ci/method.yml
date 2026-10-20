@@ -1,0 +1,40 @@
+# The method's checks on GitHub (tools/ci.py on the method branch): every
+# branch head built with each variant and its headroom reported; commits
+# made after [ci] check_after given the commit-msg hook's checks. Results are
+# commit statuses (method/build, method/commits) and the run's summary. It
+# runs in this fork only and sends nothing anywhere else.
+name: method checks
+
+on:
+  push:
+  schedule:
+    - cron: '23 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  statuses: write
+
+concurrency:
+  group: method-checks
+  cancel-in-progress: false
+
+jobs:
+  check:
+    if: github.repository == 'EarBoye/uCDD'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ vars.METHOD_REF || 'claude/brave-franklin-6h9xzo' }}
+          path: .method
+      - name: Install NASM
+        run: sudo apt-get update -q && sudo apt-get install -y -q nasm
+      - name: Build every branch and check new commits
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 .method/tools/ci.py --repo "$GITHUB_REPOSITORY"

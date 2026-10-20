@@ -11,6 +11,7 @@ order of work into these pieces:
 | `tools/ledger.py` | The results ledger: the runners record each verdict and the binaries it was for; the hook reads it |
 | `guard/guard.py` | A Claude Code hook: no `--no-verify`, no hand-written ledger, nothing to the upstream |
 | `tools/trailers.py` | Counts Issue:, Lesson: and Evidence: trailers in the history |
+| `tools/ci.py`, `ci/method.yml` | The checks on GitHub: every branch built with its headroom, and the hook's checks on commits made after the hook went in |
 | `install.sh`, `tests/test_method.py`, `lib/methodlib.py` | Install per worktree; self-tests; what the pieces share |
 
 Standard library only: Python 3.11 or later (tomllib), git, sh.
@@ -215,6 +216,39 @@ repository, gh and GitHub-tool writes there, and a `gh pr create` that does
 not name `--repo EarBoye/uCDD` (in a fork, gh and GitHub's own page offer
 the original repository as the target).
 
+## On GitHub
+
+The workflow lives on `fixes` as `.github/workflows/method.yml` (a copy of
+`ci/method.yml`; Michael, 20 Oct: acceptable on fixes for now, to be
+reviewed). It runs only in this fork.
+
+- **When:** on a push to a branch that has the file (fixes, and branches
+  made from it or merged with it after the file went in), every hour for
+  every branch, and from the Actions tab (Run workflow).
+- **What:**
+  - Every branch head with scripts/build.py is built with each variant in
+    `[identical] variants`, and the headroom of UCDD.EXE, the host,
+    UCDDPLAY and UCDDSET is reported against build.py's limits, naming the
+    build where each is tightest.
+  - Every commit made after `[ci] check_after` gets the hook's checks, apart
+    from the ledger, which is on the bench. A commit made with the hook off,
+    or from another clone, shows up here.
+- **Where the results go:** commit statuses (`method/build` on a head,
+  `method/commits` on each commit; a commit that has one is not checked
+  again) and the run's summary. GitHub tells the account that last changed
+  the schedule in the workflow file when a scheduled run fails.
+- **Turning it on:**
+  - If the Actions tab says workflows are not run on this fork, enable them
+    there.
+  - Set `[ci] check_after` to the time the hook went in (a commit on this
+    branch). Until then only the builds are checked.
+  - If this branch is renamed, set the repository variable `METHOD_REF` to
+    the new name.
+- **What it cannot do:** run 86Box, the games or the PC; read the ledger.
+
+Locally: `python3 tools/ci.py --dry-run [--branch NAME] [--check-after DATE]`
+from a clone.
+
 ## The tally
 
     python3 ../method/tools/trailers.py [--since 2026-10-01] [refs]
@@ -254,8 +288,8 @@ cross-check: every trailer should have its hit line in the register.
   The plan names each as a warning when its area is hit.
 - **The test bench is not versioned.** Once it is, the matrix belongs with
   it, and `[rows] refs` in method.toml may need its branch.
-- **A GitHub Action** (builds, segment headroom, the trailers checked on
-  GitHub) waits on Michael's choice of where its file lives.
+- **`[ci] check_after`** is empty: GitHub builds every branch but checks no
+  commits until it is set to the time the hook went in.
 - **An amend** can fold a row into the code commit it should precede. The
   hook sees only the parent.
 

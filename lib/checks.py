@@ -1,0 +1,345 @@
+"""The change loop's checks on a commit, staged (the hook) or made (on GitHub).
+
+A code commit (method.toml, [commit] code) must name its row in an Issue:
+trailer, and the row must already be committed (step 5: the row before the
+fix). It must carry Evidence: trailers with a grade, one of them the data
+sheet (rule 1). A plan named in an emulator line must be in the results
+ledger with every run passed on the binaries this commit builds. "Evidence:
+none" claims no change in behaviour, and the check proves it by building the
+parent and the commit. A commit that changes a join names it in Paths:.
+Notes commits are exempt; banned patterns are refused in every commit's
+message and added lines.
+"""
+
+from pathlib import Path
+import fnmatch
+import re
+import shutil
+import subprocess
+import sys
+import tempfile
+
+import methodlib
+
+CONFIG = methodlib.CONFIG
+PLAN_TAG = re.compile(r'\bplan ([0-9a-f]{8})\b')
+LABEL = re.compile(r'^(\.?[A-Za-z_?][\w.?@$#~]*):')
+EMPTY_TREE = '4b825dc642cb6eb9a060e54bf8d69288fbee4904'
+
+
+def git(*args, input=None, check=True):
+    result = subprocess.run(['git', *args], input=input, capture_output=True, text=True)
+    if check and result.returncode:
+        raise SystemExit(f'git {" ".join(args)} failed:\n{result.stderr}')
+    return result
+
+
+def ref_exists(ref):
+    return not git('rev-parse', '--verify', '-q', ref + '^{commit}', check=False).returncode
+
+
+class Target:
+    """What the checks read: the staged tree (commit None) or a commit."""
+
+    def __init__(self, commit=None):
+        self.commit = commit
+        if commit:
+            self.parents = git('rev-list', '--parents', '-n', '1', commit).stdout.split()[1:]
+            self.date = git('log', '-1', '--format=%cI', commit).stdout.strip()
+
+    def merging(self):
+        if self.commit:
+            return len(self.parents) > 1
+        return Path(git('rev-parse', '--git-path', 'MERGE_HEAD').stdout.strip()).exists()
+
+    def parent(self):
+        """The commit this one is compared with, or None for a first commit."""
+        if self.commit:
+            return self.parents[0] if self.parents else None
+        return 'HEAD' if ref_exists('HEAD') else None
+
+    def diff(self, *args):
+        base = ['--cached'] if not self.commit else [self.parent() or EMPTY_TREE, self.commit]
+        return git('diff', *base, '--no-color', '--no-ext-diff', *args).stdout
+
+    def files(self):
+        return [name for name in self.diff('--name-only', '-z').split('\0') if name]
+
+    def show(self, name):
+        shown = git('show', f'{self.commit or ""}:{name}', check=False)
+        return None if shown.returncode else shown.stdout
+
+    def export(self, target, parent=False):
+        target.mkdir()
+        if not parent and not self.commit:
+            git('checkout-index', '-a', f'--prefix={target}/')
+            return
+        archive = subprocess.run(['git', 'archive', self.parent() if parent else self.commit],
+                                 capture_output=True, check=True).stdout
+        subprocess.run(['tar', '-x', '-C', str(target)], input=archive, check=True)
+
+    def row_refs(self):
+        """The refs a row must already be on: as they stood when the commit was made."""
+        refs = []
+        for ref in CONFIG['rows']['refs']:
+            if ref == 'HEAD':
+                ref = self.parent()
+            elif self.commit and ref_exists(ref):
+                ref = git('rev-list', '-1', f'--before={self.date}', ref).stdout.strip() or None
+            if ref and ref_exists(ref):
+                refs.append(ref)
+        return refs
+
+
+def trailers(message):
+    parsed = git('interpret-trailers', '--parse', input=message).stdout
+    found = []
+    for line in parsed.splitlines():
+        key, _, value = line.partition(':')
+        found.append((key.strip().lower(), value.strip()))
+    return found
+
+
+def grade_of(value):
+    head, _, text = value.partition(':')
+    word = head.split(',')[0].strip().lower()
+    for grade, words in CONFIG['grades'].items():
+        if word in words:
+            return grade, text.strip()
+    return None, value
+
+
+def added_lines(target):
+    """File, line number and text of every line the commit adds."""
+    name, number = None, 0
+    for line in target.diff('-U0').splitlines():
+        if line.startswith('+++ '):
+            name = line[6:] if line.startswith('+++ b/') else None
+        elif line.startswith('@@'):
+            number = int(re.search(r'\+(\d+)', line).group(1))
+        elif line.startswith('+') and name:
+            yield name, number, line[1:]
+            number += 1
+
+
+def banned_problems(message, target, files_too):
+    problems = []
+    for rule in CONFIG.get('banned', []):
+        pattern = re.compile(rule['pattern'])
+        if pattern.search(message):
+            problems.append(f'the message has "{pattern.search(message).group(0)}": {rule["why"]}')
+        if files_too:
+            for name, number, text in added_lines(target):
+                match = pattern.search(text)
+                if match:
+                    problems.append(f'{name}:{number} adds "{match.group(0)}": {rule["why"]}')
+    return problems
+
+
+def changed_lines(target, name):
+    """Line numbers in the new file that the commit adds or deletes beside."""
+    lines = set()
+    for match in re.finditer(r'^@@ -\S+ \+(\d+)(?:,(\d+))? @@', target.diff('-U0', '--', name), re.M):
+        start, count = int(match.group(1)), int(match.group(2) or 1)
+        lines.update(range(start, start + count) if count else {max(start, 1)})
+    return lines
+
+
+def joins_touched(target, files):
+    """The joins whose code or comment the commit changes: file, line, label, comment."""
+    marker = re.compile(CONFIG['joins']['marker'])
+    found = []
+    for name in files:
+        if not any(fnmatch.fnmatchcase(name, pattern) for pattern in CONFIG['joins']['files']):
+            continue
+        shown = target.show(name)
+        changed = changed_lines(target, name) if shown is not None else set()
+        if not changed:
+            continue
+        text = shown.splitlines()
+        labels = []
+        for number, line in enumerate(text, 1):
+            match = LABEL.match(line)
+            if match:
+                top = number
+                while top > 1 and text[top - 2].lstrip().startswith(';'):
+                    top -= 1
+                labels.append((number, top, match.group(1)))
+        scope = ''
+        for index, (number, top, label) in enumerate(labels):
+            scope = scope if label.startswith('.') else label
+            full = scope + label if label.startswith('.') else label
+            comment = ' '.join(line.strip().lstrip(';').strip() for line in text[top - 1:number - 1])
+            end = labels[index + 1][1] - 1 if index + 1 < len(labels) else len(text)
+            if marker.search(comment) and changed & set(range(top, end + 1)):
+                found.append((name, number, full, comment))
+    return found
+
+
+def named(label, text):
+    local = label.rsplit('.', 1)[-1] if '.' in label else label
+    return bool(re.search(rf'(?<![\w.])({re.escape(label)}|\.?{re.escape(local)})(?![\w])', text))
+
+
+def row_committed(row, refs):
+    paths = CONFIG['rows']['paths']
+    return any(not git('grep', '-q', '-w', '-F', '-e', row, ref, '--', *paths, check=False).returncode
+               for ref in refs)
+
+
+def build(tree, options):
+    """Build a tree; the hash of each binary by name, or the exit code of a failed build."""
+    shutil.rmtree(tree / 'build', ignore_errors=True)
+    result = subprocess.run([sys.executable, 'scripts/build.py', *options.split()],
+                            cwd=tree, capture_output=True, text=True)
+    if result.returncode:
+        return result.returncode
+    return methodlib.binaries(tree / 'build')
+
+
+def listed(names):
+    return ', '.join(names[:5]) + (f' and {len(names) - 5} more' if len(names) > 5 else '')
+
+
+def ledger_problems(target, evidence):
+    """A plan named as emulator evidence must have passed, on these binaries."""
+    problems, tags = [], []
+    for value in evidence:
+        grade, text = grade_of(value)
+        if grade != 'emulator':
+            continue
+        found = PLAN_TAG.findall(text)
+        if not found and CONFIG['ledger'].get('require'):
+            problems.append(f'Evidence: {value}: name the plan the runners recorded ("plan <tag>"); '
+                            'emulator evidence comes from the ledger')
+        tags += found
+    if not tags:
+        return problems
+    with tempfile.TemporaryDirectory(prefix='method-') as tmp:
+        tree = Path(tmp) / 'commit'
+        target.export(tree)
+        built = {}
+        for tag in tags:
+            plan = methodlib.saved_plan(tag)
+            if not plan:
+                problems.append(f'plan {tag} is not in the ledger ({methodlib.ledger_dir()}): '
+                                'save it with plan.py --save and let the runners record it')
+                continue
+            if methodlib.plan_tag(plan['runs']) != tag:
+                problems.append(f'plan {tag}: the saved plan no longer matches its tag (edited?)')
+                continue
+            newest = methodlib.latest(tag)
+            missing, failed, unknown, other = [], [], [], []
+            for run in plan['runs']:
+                entry = newest.get(run['id'])
+                if not entry:
+                    missing.append(run['id'])
+                elif entry['verdict'] != 'pass':
+                    failed.append(run['id'])
+                elif run['config']['mode'] != 'base':
+                    options = run.get('build_options', '')
+                    if options not in built:
+                        built[options] = build(tree, options)
+                    expected = built[options]
+                    if not entry.get('binaries'):
+                        unknown.append(run['id'])
+                    elif isinstance(expected, int) or any(
+                            expected.get(name) != digest for name, digest in entry['binaries'].items()):
+                        other.append(run['id'])
+            for names, what in ((missing, 'have no result'), (failed, 'did not pass'),
+                                (unknown, 'recorded no binaries'),
+                                (other, 'ran other binaries than this commit builds')):
+                if names:
+                    problems.append(f'plan {tag}: {len(names)} of {len(plan["runs"])} runs {what}: '
+                                    f'{listed(names)}')
+    return problems
+
+
+def identical_problems(target):
+    if not target.parent():
+        return ['"Evidence: none" needs a parent commit to compare with']
+    problems = []
+    with tempfile.TemporaryDirectory(prefix='method-') as tmp:
+        before, after = Path(tmp) / 'before', Path(tmp) / 'after'
+        target.export(before, parent=True)
+        target.export(after)
+        for options in CONFIG['identical']['variants']:
+            old, new = build(before, options), build(after, options)
+            if old == new:
+                if isinstance(old, int):
+                    print(f'"{options}" builds on neither side; skipped', file=sys.stderr)
+                continue
+            # This machine has had memory faults: a difference counts only
+            # if a second pair of builds shows it too.
+            again_old, again_new = build(before, options), build(after, options)
+            if again_old == again_new:
+                print(f'"{options}": the first two builds differed and the second two agree; '
+                      'check the machine', file=sys.stderr)
+                continue
+            if isinstance(again_old, int) or isinstance(again_new, int):
+                side = 'the parent' if isinstance(again_old, int) else 'the commit'
+                problems.append(f'"{options}" does not build from {side}')
+                continue
+            changed = sorted(name for name in again_old.keys() | again_new.keys()
+                             if again_old.get(name) != again_new.get(name))
+            problems.append(f'"{options}" builds different binaries: {", ".join(changed)}')
+            break
+    if problems:
+        problems.append('so this is a change in behaviour: give it its grades, not "none"')
+    return problems
+
+
+def code_problems(message, target, code, ledger):
+    found = trailers(message)
+    rows = [value for key, value in found if key == 'issue']
+    evidence = [value for key, value in found if key == 'evidence']
+    paths = ' '.join(value for key, value in found if key == 'paths')
+    problems = []
+    if not rows:
+        problems.append('no Issue: trailer naming the row this change answers')
+    refs = target.row_refs()
+    for row in rows:
+        if not row_committed(row, refs):
+            problems.append(f'Issue: {row} is not in a committed row ({", ".join(CONFIG["rows"]["paths"])} '
+                            f'at {", ".join(CONFIG["rows"]["refs"])}): commit the row first (step 5)')
+    if not evidence:
+        problems.append('no Evidence: trailer')
+    grades = set()
+    for value in evidence:
+        grade, text = grade_of(value)
+        if not grade:
+            problems.append(f'Evidence: {value}: the grade must be one of {", ".join(CONFIG["grades"])}')
+        elif not text:
+            problems.append(f'Evidence: {value}: say what the {grade} evidence is')
+        else:
+            grades.add(grade)
+    if 'none' in grades:
+        if grades != {'none'}:
+            problems.append('"Evidence: none" says nothing changed; it cannot stand beside other grades')
+        elif not problems:
+            problems += identical_problems(target)
+    elif grades and CONFIG['commit'].get('require_data_sheet') and 'data sheet' not in grades:
+        problems.append('no "Evidence: data sheet:" line (rule 1): cite the document, '
+                        'or write "data sheet: silent" and what decided instead')
+    if ledger and not problems:
+        problems += ledger_problems(target, evidence)
+    if 'none' not in grades:
+        for name, number, label, comment in joins_touched(target, code):
+            if not named(label, paths):
+                shown = comment if len(comment) <= 160 else comment[:157] + '...'
+                problems.append(f'{name}:{number} changes {label}, a join (lesson L2): check every '
+                                f'path into it against its comment, bring the comment up to date, and '
+                                f'name it in a "Paths: {label}" trailer. The comment: "{shown}"')
+    return problems
+
+
+def check(message, target, ledger=True):
+    """The problems with a commit, and the code files it changes."""
+    merging = target.merging()
+    problems = banned_problems(message, target, files_too=not merging)
+    files = [] if merging else target.files()
+    code = [name for name in files
+            if any(fnmatch.fnmatchcase(name, pattern) for pattern in CONFIG['commit']['code'])]
+    if code:
+        problems += code_problems(message, target, code, ledger)
+    return problems, code
