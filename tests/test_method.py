@@ -515,10 +515,14 @@ class PlannerTests(unittest.TestCase):
         result = plan.build_plan(m, chosen, baseline=True)
         modes = [run['config']['mode'] for run in result['runs']]
         self.assertEqual(modes.count('base'), modes.count('engaged'))
+        engaged = {json.dumps(dict(run['config'], mode='base'), sort_keys=True): run
+                   for run in result['runs'] if run['config']['mode'] == 'engaged'}
         for run in result['runs']:
             if run['config']['mode'] == 'base':
                 self.assertEqual(run['build'], '-')
-                self.assertIn(' refs ', run['command'])
+                self.assertIn('GL_MODE=base', run['env'])
+                twin = engaged[json.dumps(run['config'], sort_keys=True)]
+                self.assertNotEqual(run['command'], twin['command'])
 
     def test_tag_is_stable(self):
         m = self.matrix
