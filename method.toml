@@ -11,6 +11,11 @@ skip_branches = ["archive/*"]
 # Rule 1: a code commit cites its document, or says the documents are
 # silent ("Evidence: data sheet: silent; ...").
 require_data_sheet = true
+# Rule 10: a code commit names the sound engine family its fault belongs to
+# ("Family: creative"), whose page in the library must already name the row,
+# or says why it is no one family's ("Family: none: the host's EOI path").
+# The families and the library are in matrix/matrix.toml.
+require_family = true
 
 # Evidence grades and the words accepted for each. The grade is what an
 # Evidence: trailer starts with, up to the first colon or comma.

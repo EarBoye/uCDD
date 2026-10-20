@@ -495,3 +495,78 @@ name = "build script"
 paths = ["scripts/build.py"]
 groups = ["core"]
 vary = ["build"]
+
+# Sound engine families (mantra rule 10: fix by family, not by game). The
+# library on the sound-engine-library branch is the source: page is the
+# family's page in docs/sound-engines, which must name a finding before its
+# fix (the hook checks); census lists its sections in census.md, surveyed as
+# one traced game per driver version; inventory lists its names in the Engine
+# column of inventory.md, for engines built into the game, which have no
+# driver file (every traced game is surveyed). survey: the census files a
+# family survey runs by default (the digital drivers); --driver picks others.
+[library]
+refs = ["HEAD", "sound-engine-library", "origin/sound-engine-library"]
+dir = "docs/sound-engines"
+
+[families.miles]
+page = "miles.md"
+census = ["Miles MSS 3, digital", "Miles MSS 3, music", "Miles AIL 2"]
+survey = ["SB16.DIG", "SBPRO.DIG", "SBLASTER.DIG", "SBDIG.ADV", "SBPDIG.ADV"]
+inventory = ["Miles MSS 3", "Miles AIL 2", "Miles AIL/32", "Miles"]
+
+[families.hmi-sos]
+page = "hmi-sos.md"
+census = ["HMI SOS"]
+survey = ["HMIDRV.386"]
+inventory = ["HMI SOS"]
+
+[families.digpak]
+page = "digpak.md"
+census = ["DigPak / MidPak"]
+survey = ["SOUNDRV.COM"]
+inventory = ["DigPak/MidPak"]
+
+[families.sierra-sci]
+page = "sierra-sci.md"
+census = ["Sierra SCI"]
+survey = ["AUDBLAST.DRV", "SNDBLAST.DRV"]
+inventory = ["Sierra SCI"]
+
+[families.creative]
+page = "creative.md"
+census = ["Creative"]
+survey = ["CT-VOICE.DRV"]
+inventory = ["Creative drv"]
+
+[families.dmx]
+page = "dmx.md"
+inventory = ["DMX"]
+
+[families.apogee]
+page = "apogee.md"
+inventory = ["Apogee SS"]
+
+[families.lucasarts]
+page = "lucasarts.md"
+inventory = ["iMUSE"]
+
+[families.others]
+page = "others.md"
+inventory = ["DSMI", "MIDAS", "Allegro", "Loudness SS", "MicroProse", "Sound Images",
+             "DiamondWare", "AdLib driver", "CMS"]
+
+[families.own-code]
+page = "own-code.md"
+inventory = ["own: SB + AdLib", "own: SB"]
+
+# What a survey run of a driver file is set to: the card model whose driver
+# it is. Files not named here run at the defaults.
+[census_files]
+"SBPRO.DIG" = { vmodel = "pro" }
+"SBLASTER.DIG" = { vmodel = "sb2" }
+"SBDIG.ADV" = { vmodel = "sb2" }
+"SBPDIG.ADV" = { vmodel = "pro" }
+
+# Where the census's folder name is not the launcher's (check).
+[launchers]
+DUNGKEEP = "DUNGKE01"

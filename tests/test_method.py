@@ -11,6 +11,7 @@ outside one.
 
 from pathlib import Path
 import datetime
+import hashlib
 import itertools
 import json
 import os
@@ -29,6 +30,7 @@ GOOD = """IRQ: a change
 Issue: {row}
 Evidence: data sheet: SBG 6-12
 Evidence: emulator: 86Box, D10, by hand
+Family: none: the interrupt path, every engine
 """
 LEDGER = tempfile.TemporaryDirectory(prefix='method-ledger-')
 os.environ['UCDD_LEDGER'] = LEDGER.name
@@ -287,6 +289,66 @@ class HookTests(unittest.TestCase):
         self.assertIn('2 checked, 0 with problems', result.stdout)
         self.assertIn('UCDDHOST.BIN', result.stdout)
 
+    def test_family_needed(self):
+        self.add_row('test-row-q')
+        self.append('src/audio/irq.asm', '; x\n')
+        message = GOOD.format(row='test-row-q').replace('Family: none: the interrupt path, every engine\n', '')
+        result = self.commit(message)
+        self.assertEqual(result.returncode, 1)
+        self.assertIn('no Family: trailer', result.stderr)
+
+    def family_message(self, row, family='creative'):
+        return GOOD.format(row=row).replace('Family: none: the interrupt path, every engine',
+                                            f'Family: {family}: its CT-VOICE path')
+
+    def test_family_page_must_name_the_row(self):
+        self.add_row('test-row-r')
+        self.append('src/audio/irq.asm', '; x\n')
+        result = self.commit(self.family_message('test-row-r'))
+        self.assertEqual(result.returncode, 1)
+        self.assertIn('is not on docs/sound-engines/creative.md', result.stderr)
+
+    def test_family_page_written_first(self):
+        self.add_row('test-row-s')
+        (self.tree / 'docs/sound-engines').mkdir(parents=True, exist_ok=True)
+        self.append('docs/sound-engines/creative.md', '\nSeen on this family: test-row-s.\n')
+        self.assertEqual(self.commit('Sound engine library: test-row-s on its family\n').returncode, 0)
+        self.append('src/audio/irq.asm', '; x\n')
+        result = self.commit(self.family_message('test-row-s'))
+        self.assertEqual(result.returncode, 0, result.stderr)
+
+    def test_family_unknown(self):
+        self.add_row('test-row-t')
+        self.append('src/audio/irq.asm', '; x\n')
+        result = self.commit(self.family_message('test-row-t', family='nosuch'))
+        self.assertEqual(result.returncode, 1)
+        self.assertIn('is not a family', result.stderr)
+
+    def test_family_survey_in_the_cited_plan(self):
+        self.add_row('test-row-u')
+        (self.tree / 'docs/sound-engines').mkdir(parents=True, exist_ok=True)
+        self.append('docs/sound-engines/creative.md', '\nSeen on this family: test-row-u.\n')
+        self.commit('Sound engine library: test-row-u on its family\n')
+        build = self.build()
+        tag, run = self.saved_plan()
+        self.tool(PACKAGE / 'tools/ledger.py', 'record', tag, run, 'pass', '--build-dir', build)
+        self.append('src/audio/irq.asm', '; a comment only\n')
+        message = self.family_message('test-row-u').replace('86Box, D10, by hand', f'plan {tag}, 1 run')
+        result = self.commit(message)
+        self.assertEqual(result.returncode, 1)
+        self.assertIn('no cited plan surveys creative', result.stderr)
+        survey = self.tool(PACKAGE / 'matrix/plan.py', '--family', 'creative', '--save', '--format', 'json')
+        if survey.returncode:
+            self.skipTest('no census on the library refs here')
+        plan = json.loads(survey.stdout)
+        for each in plan['runs']:
+            self.tool(PACKAGE / 'tools/ledger.py', 'record', plan['tag'], each['id'], 'pass',
+                      '--build-dir', build)
+        message = self.family_message('test-row-u').replace(
+            '86Box, D10, by hand', f'plan {tag}, 1 run; plan {plan["tag"]}, the creative survey')
+        result = self.commit(message)
+        self.assertEqual(result.returncode, 0, result.stderr)
+
     def test_notes_are_exempt(self):
         self.append('ISSUES.md', '\nA note from the 86Box run, the original trigger.\n')
         self.assertEqual(self.commit('ISSUES: a note\n').returncode, 0)
@@ -417,6 +479,56 @@ class PlannerTests(unittest.TestCase):
         chosen, hit, unmatched, *_ = plan.select(m, ['src/a_new_file.asm'])
         self.assertEqual(unmatched, ['src/a_new_file.asm'])
         self.assertTrue(chosen)
+
+    def library(self):
+        try:
+            return plan.library_text(self.matrix, 'census.md')
+        except SystemExit:
+            self.skipTest('no census on the library refs here')
+
+    def test_survey_covers_every_traced_version(self):
+        census, m = self.library(), self.matrix
+        for slug, family in m.data['families'].items():
+            if not family.get('census'):
+                continue
+            tests, untraced = plan.survey(m, slug)
+            versions = plan.census_versions(census, family['census'], family['survey'])
+            for driver, version, traced, _ in versions:
+                if traced:
+                    self.assertTrue(any(f'{game}:{driver}' in tests for game in traced),
+                                    (slug, driver, version))
+                else:
+                    self.assertIn(f'{driver} {version}', [what for what, _ in untraced])
+
+    def test_survey_reaches_games_with_a_built_in_driver(self):
+        self.library()
+        tests, _ = plan.survey(self.matrix, 'creative')
+        self.assertIn('JILLJUNG:creative', tests)
+
+    def test_game_intake(self):
+        sys.path.insert(0, str(PACKAGE / 'tools'))
+        import game
+        census = ('## Miles MSS 3, digital\n\n### SB16.DIG: 2 games\n\n| Version | Games | Traced | Games |\n'
+                  '|---|---|---|---|\n| aaaaaaaa | 1 | GAMEA | GAMEA |\n| bbbbbbbb | 1 | **none** | GAMEB |\n')
+        index, names = game.census_index(census)
+        inventory = game.inventory_index('| GAMEA | Miles MSS 3, DigPak/MidPak | SB | | yes |\n'
+                                         '| GAMEC | Brand New SS | SB | | no |\n')
+        with tempfile.TemporaryDirectory() as tmp:
+            for name, content in (('GAMEA', b'a'), ('GAMEB', b'b'), ('GAMEC', b'c')):
+                (Path(tmp) / name).mkdir()
+                (Path(tmp) / name / 'SB16.DIG').write_bytes(content)
+            first = hashlib.md5(b'a').hexdigest()[:8]
+            index[('SB16.DIG', first)] = ('Miles MSS 3, digital', ['GAMEA'])
+            lines, missing = game.look(self.matrix, Path(tmp) / 'GAMEA', index, names, inventory, {})
+            self.assertFalse(missing, lines)
+            self.assertIn('  family: digpak (digpak.md); findings on its page: none', lines)
+            self.assertIn('  family: miles (miles.md); findings on its page: none', lines)
+            lines, missing = game.look(self.matrix, Path(tmp) / 'GAMEB', index, names, inventory, {})
+            self.assertTrue(missing)
+            self.assertTrue(any('not in inventory.md' in line for line in lines))
+            self.assertTrue(any('NEW version' in line for line in lines))
+            lines, missing = game.look(self.matrix, Path(tmp) / 'GAMEC', index, names, inventory, {})
+            self.assertTrue(any('has no family' in line for line in lines))
 
     def test_recordings_after_probes(self):
         m = self.matrix

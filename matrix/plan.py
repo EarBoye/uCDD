@@ -2,7 +2,8 @@
 """Turn a change into the matrix runs it needs.
 
     plan.py [plan] [--base REF | --files F ...] [--area A] [--group G]
-                   [--test T] [--baseline] [--format md|tsv|json]
+                   [--test T] [--family F [--driver FILE]] [--baseline]
+                   [--save] [--format md|tsv|json]
     plan.py check
 
 A plan takes the changed files to their areas in matrix.toml, the areas to
@@ -23,6 +24,7 @@ import argparse
 import fnmatch
 import itertools
 import json
+import re
 import subprocess
 import sys
 import tomllib
@@ -258,6 +260,108 @@ def select(matrix, files, areas=(), groups=(), tests=()):
     return chosen, hit, unmatched, cover, todo
 
 
+def library_text(matrix, name):
+    """A page of the sound engine library, from the first library ref that has it."""
+    library = matrix.data['library']
+    for ref in library['refs']:
+        shown = subprocess.run(['git', 'show', f'{ref}:{library["dir"]}/{name}'],
+                               capture_output=True, text=True)
+        if not shown.returncode:
+            return shown.stdout
+    raise SystemExit(f'{library["dir"]}/{name} is on none of {", ".join(library["refs"])}: '
+                     'fetch the library branch')
+
+
+def census_versions(text, sections, files):
+    """(file, version, traced games, carriers) for each driver version in the sections."""
+    found, section, driver = [], None, None
+    for line in text.splitlines():
+        if line.startswith('## '):
+            section = line[3:].strip()
+        elif line.startswith('### '):
+            driver = line[4:].split(':')[0].strip()
+        elif line.startswith('| ') and section in sections and driver in files:
+            cells = [cell.strip() for cell in line.strip().strip('|').split('|')]
+            if len(cells) == 4 and re.fullmatch(r'[0-9a-f]{8}', cells[0]):
+                traced = [] if 'none' in cells[2] else [game.strip() for game in cells[2].split(',')]
+                found.append((driver, cells[0], traced, cells[3]))
+    return found
+
+
+def census_text(text, sections, files):
+    """The census's text under the family's sections and the given files."""
+    kept, section, driver = [], None, None
+    for line in text.splitlines():
+        if line.startswith('## '):
+            section, driver = line[3:].strip(), None
+        elif line.startswith('### '):
+            driver = line[4:].split(':')[0].strip()
+        if section in sections and driver in files:
+            kept.append(line)
+    return '\n'.join(kept)
+
+
+def inventory_games(text, names):
+    """The traced games whose engine is one of the names."""
+    games = []
+    for line in text.splitlines():
+        cells = [cell.strip() for cell in line.strip().strip('|').split('|')]
+        if len(cells) >= 5 and re.fullmatch(r'[A-Z0-9!_-]+', cells[0]):
+            engines = {engine.replace('(on its disc)', '').strip() for engine in cells[1].split(',')}
+            if engines & set(names) and cells[4].startswith('yes'):
+                games.append(cells[0])
+    return games
+
+
+def survey(matrix, slug, drivers=()):
+    """Tests for a family survey (rule 10), and the driver versions nothing can run yet.
+
+    A family with driver files gets the fewest traced games that cover every
+    traced version of its survey files, each run as its driver's card, and
+    every traced game of its engine the census does not name (its driver is
+    built into the game). An engine built into every game gets every traced
+    game. A census row names the games traced on a version, so a game listed
+    on two versions of one file is taken to cover both; the census shortens
+    long game lists, so a game it names only past "and N more" is surveyed
+    again from the inventory.
+    """
+    families = matrix.data.get('families', {})
+    if slug not in families:
+        raise SystemExit(f'no family "{slug}" in the matrix: {", ".join(families)}')
+    family, chosen, untraced = families[slug], [], []
+    if family.get('census'):
+        census, files = library_text(matrix, 'census.md'), drivers or family.get('survey', [])
+        versions = census_versions(census, family['census'], files)
+        untraced = [(f'{driver} {version}', f'no traced game; carried by {carriers}')
+                    for driver, version, traced, carriers in versions if not traced]
+        uncovered = {(driver, version) for driver, version, traced, _ in versions if traced}
+        while uncovered:
+            reach = {}
+            for driver, version, traced, _ in versions:
+                if (driver, version) in uncovered:
+                    for game in traced:
+                        reach.setdefault((game, driver), set()).add((driver, version))
+            pick = max(sorted(reach), key=lambda key: len(reach[key]))
+            uncovered -= reach[pick]
+            chosen.append(pick)
+        named = set(re.findall(r'[A-Z0-9!_-]{3,}', census_text(census, family['census'], files)))
+    else:
+        named = set()
+    if not drivers:
+        chosen += [(game, None) for game in inventory_games(library_text(matrix, 'inventory.md'),
+                                                          family.get('inventory', []))
+                   if game not in named]
+    launchers = matrix.data.get('launchers', {})
+    tests = {}
+    for game, driver in chosen:
+        tests[f'{game}:{driver or slug}'] = {
+            'name': f'{game}:{driver or slug}', 'runner': 'game', 'game': launchers.get(game, game),
+            'family': slug, 'groups': ['survey'], 'secs': 90,
+            'fixed': dict(matrix.data.get('census_files', {}).get(driver, {})),
+        }
+    return tests, untraced
+
+
 def build_plan(matrix, chosen, baseline=False):
     runs, blocked, skipped = [], [], []
     for test, why in chosen.items():
@@ -345,12 +449,14 @@ def show_markdown(matrix, plan, files, base, hit, unmatched, cover, todo):
                        + ' | '.join(str(shown[axis]) for axis in axes)
                        + f' | {", ".join(run["why"])} |')
         out.append('')
-    if plan['blocked']:
+    if plan['blocked'] or plan.get('untraced'):
         out += ['## Blocked: needed, but not runnable yet', '']
         for test, reason, rows, repeat in plan['blocked']:
             findings = matrix.tests[test].get('findings')
             note = f' ({", ".join(findings)})' if findings else ''
             out.append(f'- {test}{note}: {reason}; would run {len(rows) * repeat} times')
+        for what, why in plan.get('untraced', []):
+            out.append(f'- driver {what}: {why}; trace one of them before the family is covered')
         out.append('')
     seen, gaps = coverage(matrix, runs, cover)
     out += ['## Coverage', '']
@@ -418,6 +524,11 @@ def check(matrix):
         if matrix.broken(matrix.config(name)):
             problems.append(f'test {name}: its own configuration is impossible: '
                             f'{matrix.broken(matrix.config(name))}')
+    for slug, family in matrix.data.get('families', {}).items():
+        if not family.get('page') or not (family.get('census') or family.get('inventory')):
+            problems.append(f'family {slug}: needs a page and census or inventory names')
+    for driver, overrides in matrix.data.get('census_files', {}).items():
+        values_ok(f'census_files {driver}', overrides, single=True)
     for kind in {runner.get('kind') for runner in matrix.runners.values()} - set(PHASES):
         problems.append(f'runner kind "{kind}" is not one of {", ".join(PHASES)}')
     for area in matrix.areas:
@@ -447,6 +558,10 @@ def main():
     parser.add_argument('--area', action='append', default=[], help='add an area by name')
     parser.add_argument('--group', action='append', default=[], help='add a test group')
     parser.add_argument('--test', action='append', default=[], help='add a test')
+    parser.add_argument('--family', action='append', default=[],
+                        help='add the survey of a sound engine family (rule 10)')
+    parser.add_argument('--driver', action='append', default=[],
+                        help='survey these census files instead of the family\'s own list')
     parser.add_argument('--baseline', action='store_true',
                         help='add a run without uCDD (mode base) beside each run (step 3)')
     parser.add_argument('--format', choices=('md', 'tsv', 'json'), default='md')
@@ -461,17 +576,26 @@ def main():
         if not problems:
             print('matrix.toml: no problems')
         return 1 if problems else 0
-    asked = args.area or args.group or args.test
+    asked = args.area or args.group or args.test or args.family
     base = args.base or 'HEAD'
     files = args.files or ([] if asked and not args.base else changed_files(base))
     if not files and not asked:
         raise SystemExit(f'nothing changed against {base}: give --base, --files, --area, --group or --test')
     chosen, hit, unmatched, cover, todo = select(matrix, files, args.area, args.group, args.test)
+    untraced = []
+    for slug in args.family:
+        tests, missing = survey(matrix, slug, args.driver)
+        matrix.tests.update(tests)
+        for name in tests:
+            chosen.setdefault(name, {'why': [], 'vary': set(), 'full': set()})['why'].append(f'family {slug}')
+        untraced += [(f'{what} ({slug})', why) for what, why in missing]
     if not chosen:
         raise SystemExit('the change reaches no test (notes only?)')
     plan = build_plan(matrix, chosen, args.baseline)
+    plan['families'], plan['untraced'] = args.family, untraced
     if args.save:
-        saved = methodlib.save_plan({'tag': plan['tag'], 'files': files, 'runs': plan['runs']})
+        saved = methodlib.save_plan({'tag': plan['tag'], 'files': files, 'families': args.family,
+                                     'runs': plan['runs']})
         print(f'plan {plan["tag"]} saved: {saved}', file=sys.stderr)
     if args.format == 'json':
         print(json.dumps(plan, indent=1))

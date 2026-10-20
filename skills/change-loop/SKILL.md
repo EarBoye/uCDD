@@ -29,10 +29,21 @@ then the hardware (rule 1).
 
 ## 2. Family
 
-Look the game up in docs/sound-engines (inventory.md, census.md): its
-engine, its driver version, the other games on the same driver. A fault is
-one game's own only after its family has been tried (rule 10). Note what the
-family page predicts before running anything.
+Before any game runs, new or known: `python3 METHOD/tools/game.py <its
+folder>`. It finds the game's driver files, hashes them as the census does,
+and looks up the game, each driver version and its family in the library,
+with the findings its family page names. When it says the notes lack
+something, add it before the run:
+- a game not in inventory.md: scan it for the engines' signatures, add its row;
+- a driver version not in census.md: add its row, and trace it, or its
+  family's survey cannot cover it;
+- an engine with no family: write its page in docs/sound-engines and give it
+  a `[families]` entry in matrix.toml.
+
+Then read the family page: what it predicts, the findings already on it. A
+fault is one game's own only after its family has been tried (rule 10):
+`plan.py --family <family>` plans the survey, one traced game per driver
+version and every traced game whose engine is built in.
 
 ## 3. Baseline
 
@@ -51,8 +62,11 @@ fix will stand on reading: decide that now and write it in the row, not after.
 
 Write the row in ISSUES.md or findings.md: symptom, citation, family,
 baseline, reproducer, hypothesis, and the plan tag from step 7's command run
-now. Commit it on its own (a notes commit). The hook accepts a code commit
-only when its `Issue:` row is already committed.
+now. Write the row's ID on its family's page too, so every game of the
+family carries the knowledge, not only the one that showed it. Commit both
+on their own (notes commits). The hook accepts a code commit only when its
+`Issue:` row is already committed and, under `Family:`, already on that
+family's page.
 
 ## 6. Fix
 
@@ -69,7 +83,8 @@ changes a join without naming it.
 
 1. The reproducer from step 4 passes on the new build.
 2. From the uCDD worktree: `python3 METHOD/matrix/plan.py --base <where the
-   topic started> --save`. Run it through the runners: phase 1 (probes, up
+   topic started> --family <family> --save` (the family survey belongs in
+   the plan the commit cites). Run it through the runners: phase 1 (probes, up
    to seven at a time), then phase 2 (recordings, one at a time with nothing
    else running, L6). Phase 3, on the PC, only when Michael is running the
    kit. The runners record each verdict in the ledger; you never do.
@@ -92,9 +107,13 @@ Commit with the trailers in the last paragraph of the message:
     Evidence: emulator: plan 3f2a91c4, 46 runs, all passed (ledger), D10 against D9: F17 gone
     Evidence: hardware: the PC, D10 kit, Jill on the CT2290
     Paths: audio_irq.acknowledged, all four incoming paths checked
+    Family: creative: CT-VOICE's 14h blocks, surveyed in plan 3f2a91c4
     Lesson: L7
 
-Then the row gets its result and grade. A lesson that applied and was
+`Family:` names the sound engine family (matrix.toml `[families]`), or says
+`none` and why the fault is no one family's (the host's EOI path, the
+platform). Then the row gets its result and grade, and the family page gets
+the result beside the row's ID. A lesson that applied and was
 missed gets its hit line in LESSONS.md (date, severity 1 to 4, relearned or
 applied) and `lessons.py` is run to re-rank; the `Lesson:` trailer only
 links the commit to it.
@@ -121,7 +140,8 @@ it is found.
 
 A session with no stake in the fix checks it:
 1. It reads the row, the diff and the evidence, and says whether the
-   evidence supports the claim.
+   evidence supports the claim, and whether the family page carries the row
+   and its result.
 2. `ledger.py spot <tag>` picks two passed runs at random; it re-runs each
    with the command shown (UCDD_SPOT=1 marks the result as a spot check).
 3. `ledger.py audit <tag>`: a disagreement stops the merge. It is a finding

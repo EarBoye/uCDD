@@ -6,7 +6,9 @@ fix). It must carry Evidence: trailers with a grade, one of them the data
 sheet (rule 1). A plan named in an emulator line must be in the results
 ledger with every run passed on the binaries this commit builds. "Evidence:
 none" claims no change in behaviour, and the check proves it by building the
-parent and the commit. A commit that changes a join names it in Paths:.
+parent and the commit. A commit that changes a join names it in Paths:. A
+commit names its sound engine family in Family:, whose library page must
+already name the row, and a plan it cites must survey that family.
 Notes commits are exempt; banned patterns are refused in every commit's
 message and added lines.
 """
@@ -78,17 +80,17 @@ class Target:
                                  capture_output=True, check=True).stdout
         subprocess.run(['tar', '-x', '-C', str(target)], input=archive, check=True)
 
-    def row_refs(self):
-        """The refs a row must already be on: as they stood when the commit was made."""
-        refs = []
-        for ref in CONFIG['rows']['refs']:
+    def row_refs(self, refs=None):
+        """Refs as they stood when the commit was made: the parent for HEAD."""
+        found = []
+        for ref in CONFIG['rows']['refs'] if refs is None else refs:
             if ref == 'HEAD':
                 ref = self.parent()
             elif self.commit and ref_exists(ref):
                 ref = git('rev-list', '-1', f'--before={self.date}', ref).stdout.strip() or None
-            if ref and ref_exists(ref):
-                refs.append(ref)
-        return refs
+            if ref and ref_exists(ref) and ref not in found:
+                found.append(ref)
+        return found
 
 
 def trailers(message):
@@ -289,6 +291,49 @@ def identical_problems(target):
     return problems
 
 
+def on_page(row, page, refs):
+    return any(not git('grep', '-q', '-w', '-F', '-e', row, ref, '--', page, check=False).returncode
+               for ref in refs)
+
+
+def family_problems(target, found, rows, evidence, ledger):
+    """Rule 10: the family is named, its page already names the row, a cited plan surveys it."""
+    families, library = methodlib.MATRIX.get('families', {}), methodlib.MATRIX.get('library', {})
+    values = [value for key, value in found if key == 'family']
+    if not values:
+        return ['no Family: trailer (rule 10): name the sound engine family whose page notes this '
+                f'row ({", ".join(families)}), or "Family: none: <why it is no one family\'s>"']
+    problems, named = [], []
+    for value in values:
+        head, _, text = value.partition(':')
+        slugs = [slug.strip().lower() for slug in head.split(',') if slug.strip()]
+        if slugs == ['none']:
+            if not text.strip():
+                problems.append('"Family: none" says why the fault is no one family\'s')
+            continue
+        for slug in slugs:
+            if slug in families:
+                named.append(slug)
+            else:
+                problems.append(f'Family: {slug} is not a family in matrix.toml ({", ".join(families)})')
+    refs = target.row_refs(library.get('refs', []))
+    for slug in named:
+        page = f'{library["dir"]}/{families[slug]["page"]}'
+        for row in rows:
+            if not on_page(row, page, refs):
+                problems.append(f'{row} is not on {page}: write it on the family\'s page first, so '
+                                'the whole family knows (rule 10)')
+    plans = [methodlib.saved_plan(tag) for value in evidence if grade_of(value)[0] == 'emulator'
+             for tag in PLAN_TAG.findall(value)] if ledger else []
+    surveyed = {slug for plan in plans if plan for slug in plan.get('families', [])}
+    if any(plans):
+        for slug in named:
+            if slug not in surveyed:
+                problems.append(f'no cited plan surveys {slug}: plan.py --family {slug} --save, '
+                                'and let the runners record it')
+    return problems
+
+
 def code_problems(message, target, code, ledger):
     found = trailers(message)
     rows = [value for key, value in found if key == 'issue']
@@ -323,6 +368,8 @@ def code_problems(message, target, code, ledger):
                         'or write "data sheet: silent" and what decided instead')
     if ledger and not problems:
         problems += ledger_problems(target, evidence)
+    if 'none' not in grades and CONFIG['commit'].get('require_family'):
+        problems += family_problems(target, found, rows, evidence, ledger)
     if 'none' not in grades:
         for name, number, label, comment in joins_touched(target, code):
             if not named(label, paths):

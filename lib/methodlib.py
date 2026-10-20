@@ -9,6 +9,7 @@ import tomllib
 
 PACKAGE = Path(__file__).resolve().parent.parent
 CONFIG = tomllib.loads((PACKAGE / 'method.toml').read_text())
+MATRIX = tomllib.loads((PACKAGE / 'matrix' / 'matrix.toml').read_text())
 
 
 def ledger_dir():

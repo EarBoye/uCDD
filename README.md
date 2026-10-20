@@ -11,6 +11,7 @@ order of work into these pieces:
 | `tools/ledger.py` | The results ledger: the runners record each verdict and the binaries it was for; the hook reads it |
 | `guard/guard.py` | A Claude Code hook: no `--no-verify`, no hand-written ledger, nothing to the upstream |
 | `tools/trailers.py` | Counts Issue:, Lesson: and Evidence: trailers in the history |
+| `tools/game.py` | Before a game runs: its engine, driver versions and family, looked up in the library; what the notes lack |
 | `tools/ci.py`, `ci/method.yml` | The checks on GitHub: every branch built with its headroom, and the hook's checks on commits made after the hook went in |
 | `install.sh`, `tests/test_method.py`, `lib/methodlib.py` | Install per worktree; self-tests; what the pieces share |
 
@@ -86,6 +87,13 @@ trailers in the last paragraph of its message:
   checked against the comment (lesson L2). It is recall at the moment of
   the change, not proof: the hook shows the comment and asks for the name.
   An `Evidence: none` commit is exempt.
+- **`Family:`** names the sound engine family the fault belongs to (rule 10),
+  from `[families]` in matrix.toml, or says `none` and why it is no one
+  family's. The family's page in the library (`HEAD` or the
+  sound-engine-library branch) must already name the row: the knowledge goes
+  back to the whole family before the fix. When the commit cites plans, one
+  of them must survey the family (`plan.py --family`). An `Evidence: none`
+  commit is exempt.
 - **Refused in every commit**, in the message and in every added line: the
   bench's nickname (rule 7), and an @mention of the upstream author or a
   link to one of his issues or pull requests. The patterns are in
@@ -161,6 +169,29 @@ read the matrix instead of keeping their own lists:
 
   Once they do, delete the lists in regress.sh (a, b, c), MODELS in
   sndreg/games.py and fixtest.SOUNDS.
+
+## Fix by family (rule 10)
+
+The sound engine library on `sound-engine-library` is the source; the tools
+read it rather than keep their own copy.
+
+- **Before a game runs:** `python3 ../method/tools/game.py <its folder>` finds
+  its driver files by the names the census knows, hashes them as the census
+  does, and looks up the game in inventory.md, each version in census.md and
+  its families in matrix.toml, with the findings its family page names. It
+  exits 1 and says what to add when the notes lack a game, a driver version,
+  a trace or a family. Engines built into the game have no driver file: the
+  inventory row is their only record. A game that runs from its disc image
+  keeps its drivers there, to be scanned by hand.
+- **The survey:** `plan.py --family <family>` plans one traced game per driver
+  version of the family's digital drivers (`survey` in `[families]`;
+  `--driver` for others), each run as its driver's card, plus every traced
+  game of the family whose engine is built in. A version nobody has traced
+  is listed under Blocked with the games that carry it. Survey games are
+  named as the census names them; `[launchers]` maps a folder name to its
+  launcher where they differ.
+- **The commit:** `Family:`, the row on the family page first, and the survey
+  in the cited plan (see "The hook").
 
 ## The ledger
 
