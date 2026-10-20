@@ -1,0 +1,49 @@
+# Settings for the commit-msg hook (hooks/commit-msg). The matrix planner
+# has its own file, matrix/matrix.toml.
+
+[commit]
+# A commit that touches one of these paths changes code and needs an
+# Issue: trailer and Evidence: trailers. Anything else is a notes commit
+# and is exempt. Patterns are shell globs; * also matches a /.
+code = ["src/*", "scripts/build.py"]
+# Branches the hook leaves alone (shell globs).
+skip_branches = ["archive/*"]
+# Rule 1: a code commit cites its document, or says the documents are
+# silent ("Evidence: data sheet: silent; ...").
+require_data_sheet = true
+
+# Evidence grades and the words accepted for each. The grade is what an
+# Evidence: trailer starts with, up to the first colon or comma.
+[grades]
+hardware = ["hardware", "hw"]
+emulator = ["emulator", "emu", "86box", "dosbox-x", "qemu", "trace"]
+"data sheet" = ["data sheet", "datasheet", "doc", "spec"]
+# Step 4 found no failing check: the fix stands on reading, and says so.
+reading = ["reading"]
+# No change in behaviour (comments, names, layout). The hook proves it by
+# building the parent and the staged tree and comparing the binaries.
+none = ["none"]
+
+# Words that never go into a message or an added line (mantra rule 7: no
+# test-bench nicknames). Python regular expressions.
+[[banned]]
+pattern = '(?i)\brig(86)?\b'
+why = "no test-bench nicknames (mantra rule 7)"
+
+# Where an Issue: row must already be committed: the parent commit and the
+# notes branches. A ref that does not exist here is skipped.
+[rows]
+refs = ["HEAD", "sound-engine-library", "spec-first", "origin/sound-engine-library", "origin/spec-first"]
+paths = ["ISSUES.md", "docs/*.md"]
+
+# The builds compared for "Evidence: none". The bset.sh variants.
+[identical]
+variants = [
+    "--resident-audio --audio-period-frames 32",
+    "--resident-audio --audio-period-frames 128",
+    "--resident-audio --audio-period-frames 256",
+    "--resident-audio --verify-mix --audio-period-frames 128",
+    "--resident-audio --virtual-ess --audio-period-frames 32",
+    "--resident-audio --virtual-ess --audio-period-frames 128",
+]
+compare = ["*.EXE", "*.BIN", "*.COM"]

@@ -1,0 +1,248 @@
+#!/usr/bin/env python3
+"""Self-tests for the hook, the guard and the planner.
+
+    UCDD_REPO=<a uCDD clone> UCDD_REF=irq-counters python3 tests/test_method.py
+
+The hook tests make commits in a temporary worktree of UCDD_REF (default
+HEAD) and remove it afterwards; nothing else in the clone changes. Without
+UCDD_REPO they use the clone the current directory is in, and are skipped
+outside one.
+"""
+
+from pathlib import Path
+import itertools
+import json
+import os
+import subprocess
+import sys
+import tempfile
+import unittest
+
+PACKAGE = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(PACKAGE / 'matrix'))
+import plan  # noqa: E402
+
+GOOD = """IRQ: a change
+
+Issue: {row}
+Evidence: data sheet: SBG 6-12
+Evidence: emulator: 86Box, plan 00000000, 1 run
+"""
+
+
+def repository():
+    root = os.environ.get('UCDD_REPO') or subprocess.run(
+        ['git', 'rev-parse', '--show-toplevel'], capture_output=True, text=True).stdout.strip()
+    if not root or not (Path(root) / '.git').exists():
+        return None
+    ref = os.environ.get('UCDD_REF', 'HEAD')
+    probe = subprocess.run(['git', '-C', root, 'cat-file', '-e', f'{ref}:src/audio/irq.asm'],
+                           capture_output=True)
+    return (root, ref) if not probe.returncode else None
+
+
+@unittest.skipUnless(repository(), 'needs a uCDD clone (UCDD_REPO, UCDD_REF)')
+class HookTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        root, ref = repository()
+        cls.root = root
+        cls.tmp = tempfile.TemporaryDirectory(prefix='method-test-')
+        cls.tree = Path(cls.tmp.name) / 'tree'
+        subprocess.run(['git', '-C', root, 'worktree', 'add', '-q', '--detach', str(cls.tree), ref],
+                       check=True)
+
+    @classmethod
+    def tearDownClass(cls):
+        subprocess.run(['git', '-C', cls.root, 'worktree', 'remove', '--force', str(cls.tree)],
+                       check=True)
+        cls.tmp.cleanup()
+
+    def setUp(self):
+        self.git('reset', '-q', '--hard')
+        self.start = self.git('rev-parse', 'HEAD').stdout.strip()
+
+    def tearDown(self):
+        self.git('reset', '-q', '--hard', self.start)
+
+    def git(self, *args, input=None, check=True):
+        return subprocess.run(['git', '-c', f'core.hooksPath={PACKAGE / "hooks"}',
+                               '-c', 'user.name=Test', '-c', 'user.email=test@example.com',
+                               *args], cwd=self.tree, input=input, capture_output=True,
+                              text=True, check=check)
+
+    def commit(self, message):
+        self.git('add', '-A')
+        return self.git('commit', '-q', '-F', '-', input=message, check=False)
+
+    def append(self, name, text):
+        with open(self.tree / name, 'a') as file:
+            file.write(text)
+
+    def add_row(self, row):
+        self.append('ISSUES.md', f'\n| `{row}` | a test row |\n')
+        self.assertEqual(self.commit(f'ISSUES: {row}\n').returncode, 0)
+
+    def test_code_needs_trailers(self):
+        self.append('src/audio/irq.asm', '; x\n')
+        result = self.commit('IRQ: a change\n')
+        self.assertEqual(result.returncode, 1)
+        self.assertIn('no Issue: trailer', result.stderr)
+        self.assertIn('no Evidence: trailer', result.stderr)
+
+    def test_row_committed_first(self):
+        self.add_row('test-row-a')
+        self.append('src/audio/irq.asm', '; x\n')
+        self.assertEqual(self.commit(GOOD.format(row='test-row-a')).returncode, 0)
+
+    def test_row_in_the_same_commit_is_refused(self):
+        self.append('ISSUES.md', '\n| `test-row-b` | a test row |\n')
+        self.append('src/audio/irq.asm', '; x\n')
+        result = self.commit(GOOD.format(row='test-row-b'))
+        self.assertEqual(result.returncode, 1)
+        self.assertIn('commit the row first', result.stderr)
+
+    def test_data_sheet_needed(self):
+        self.add_row('test-row-c')
+        self.append('src/audio/irq.asm', '; x\n')
+        result = self.commit('IRQ: x\n\nIssue: test-row-c\nEvidence: emulator: 86Box\n')
+        self.assertEqual(result.returncode, 1)
+        self.assertIn('data sheet', result.stderr)
+
+    def test_unknown_grade(self):
+        self.add_row('test-row-d')
+        self.append('src/audio/irq.asm', '; x\n')
+        result = self.commit('IRQ: x\n\nIssue: test-row-d\nEvidence: hunch: it felt right\n')
+        self.assertEqual(result.returncode, 1)
+        self.assertIn('the grade must be one of', result.stderr)
+
+    def test_none_with_a_comment(self):
+        self.add_row('test-row-e')
+        self.append('src/audio/irq.asm', '; only a comment\n')
+        result = self.commit('IRQ: a comment\n\nIssue: test-row-e\nEvidence: none: a comment\n')
+        self.assertEqual(result.returncode, 0, result.stderr)
+
+    def test_none_with_code(self):
+        self.add_row('test-row-f')
+        path = self.tree / 'src/audio/irq.asm'
+        text = path.read_text()
+        path.write_text(text.replace('\n    ret\n', '\n    nop\n    ret\n', 1))
+        result = self.commit('IRQ: sneak\n\nIssue: test-row-f\nEvidence: none: just a nop\n')
+        self.assertEqual(result.returncode, 1)
+        self.assertIn('builds different binaries', result.stderr)
+
+    def test_none_beside_other_grades(self):
+        self.add_row('test-row-g')
+        self.append('src/audio/irq.asm', '; x\n')
+        result = self.commit('IRQ: x\n\nIssue: test-row-g\nEvidence: none: x\n'
+                             'Evidence: data sheet: y\n')
+        self.assertEqual(result.returncode, 1)
+
+    def test_notes_are_exempt(self):
+        self.append('ISSUES.md', '\nA note from the 86Box run, the original trigger.\n')
+        self.assertEqual(self.commit('ISSUES: a note\n').returncode, 0)
+
+    def test_nickname_refused(self):
+        word = 'r' + 'ig'
+        self.append('ISSUES.md', f'\nA note from the {word} run.\n')
+        result = self.commit('ISSUES: a note\n')
+        self.assertEqual(result.returncode, 1)
+        self.assertIn('ISSUES.md:', result.stderr)
+        self.assertEqual(self.commit(f'ISSUES: the {word}86 note\n').returncode, 1)
+
+
+class GuardTests(unittest.TestCase):
+    def guard(self, command):
+        return subprocess.run([sys.executable, str(PACKAGE / 'guard/no_verify.py')],
+                              input=json.dumps({'tool_input': {'command': command}}),
+                              capture_output=True, text=True).returncode
+
+    def test_refused(self):
+        for command in ('git commit -n -m x', 'git commit -nm x', 'git commit -m x --no-verify',
+                        'cd w && git -c core.hooksPath=/dev/null commit -m x',
+                        'git config --worktree core.hooksPath /x', 'git merge --no-verify t',
+                        'echo; git commit -an', 'A=1 /usr/bin/git commit -n'):
+            self.assertEqual(self.guard(command), 2, command)
+
+    def test_allowed(self):
+        for command in ('git commit -m x', 'git commit -am "fix -n"', 'git merge -n t',
+                        'git log -n 5', 'git config --get core.hooksPath',
+                        'git status && git commit -m "a; b -n"', 'python3 x.py --no-verify'):
+            self.assertEqual(self.guard(command), 0, command)
+
+
+class PlannerTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.matrix = plan.load()
+
+    def test_matrix_has_no_problems(self):
+        problems, _ = plan.check(self.matrix)
+        self.assertEqual(problems, [])
+
+    def test_rows_cover_values_pairs_and_full_axes(self):
+        m = self.matrix
+        for area in m.areas:
+            chosen, *_ = plan.select(m, [], areas=[area['name']])
+            for test, why in chosen.items():
+                rows, _ = m.rows(test, why['vary'], why['full'])
+                fixed_parked = any(m.is_parked(axis, value)
+                                   for axis, value in m.tests[test].get('fixed', {}).items())
+                for row in rows:
+                    self.assertIsNone(m.broken(row), (test, row))
+                    if not fixed_parked:
+                        self.assertEqual(m.parked_values(row), [], (test, row))
+                varied = [axis for axis in m.axes if axis in why['vary']
+                          and axis not in m.tests[test].get('fixed', {}) and axis != 'client'
+                          and len(m.domain(test, axis)) > 1]
+                possible = [m.config(test, dict(zip(varied, values)))
+                            for values in itertools.product(*(m.domain(test, axis) for axis in varied))]
+                possible = [row for row in possible if not m.broken(row)]
+                for a, b in itertools.combinations(varied, 2):
+                    wanted = {(row[a], row[b]) for row in possible}
+                    got = {(row[a], row[b]) for row in rows}
+                    self.assertEqual(wanted, got, (area['name'], test, a, b))
+                full = [axis for axis in why['full'] if axis in varied]
+                if full:
+                    wanted = {tuple(row[axis] for axis in full) for row in possible}
+                    got = {tuple(row[axis] for axis in full) for row in rows}
+                    self.assertEqual(wanted, got, (area['name'], test, full))
+
+    def test_held_on_unless_asked(self):
+        m = self.matrix
+        chosen, *_ = plan.select(m, ['src/audio/irq.asm', 'src/audio/trap.asm', 'src/host/dpmi.asm'])
+        result = plan.build_plan(m, chosen)
+        self.assertTrue(result['runs'])
+        self.assertEqual({run['config']['mode'] for run in result['runs']}, {'engaged'})
+
+    def test_baseline_twins(self):
+        m = self.matrix
+        chosen, *_ = plan.select(m, [], tests=['JILLJUNG'])
+        result = plan.build_plan(m, chosen, baseline=True)
+        modes = [run['config']['mode'] for run in result['runs']]
+        self.assertEqual(modes.count('base'), modes.count('engaged'))
+        for run in result['runs']:
+            if run['config']['mode'] == 'base':
+                self.assertEqual(run['build'], '-')
+                self.assertIn(' refs ', run['command'])
+
+    def test_tag_is_stable(self):
+        m = self.matrix
+        chosen, *_ = plan.select(m, ['src/audio/irq.asm'])
+        self.assertEqual(plan.build_plan(m, chosen)['tag'], plan.build_plan(m, chosen)['tag'])
+
+    def test_unmatched_code_gets_the_fallback(self):
+        m = self.matrix
+        chosen, hit, unmatched, *_ = plan.select(m, ['src/a_new_file.asm'])
+        self.assertEqual(unmatched, ['src/a_new_file.asm'])
+        self.assertTrue(chosen)
+
+    def test_recordings_after_probes(self):
+        m = self.matrix
+        chosen, *_ = plan.select(m, ['src/audio/irq.asm'])
+        phases = [run['phase'] for run in plan.build_plan(m, chosen)['runs']]
+        self.assertEqual(phases, sorted(phases))
+
+
+if __name__ == '__main__':
+    unittest.main()

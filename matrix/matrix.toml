@@ -1,0 +1,497 @@
+# The uCDD test matrix: one definition of what a test run can be set to,
+# which tests exist, and which tests a change to which files needs.
+#
+# plan.py reads it to turn a diff into a list of runs; regress.sh and
+# sndreg are meant to read it too (plan.py load(), or "plan.py ... --format
+# tsv"), so that the lists in regress.sh, MODELS in sndreg/games.py and
+# fixtest.SOUNDS stop being separate definitions.
+#
+# Seeded on 20 Oct 2026 from the code at irq-counters a544f38 and
+# sound-engine-library b198237 and from the bench's own report. Lines
+# marked "check" are the seed's best reading and need the bench's word.
+
+version = 1
+
+# Every value an axis can take.
+[axes]
+physical = ["sb16", "es1688"]
+pirq = [5, 7]
+vmodel = ["sb16", "pro", "sb2", "ess"]
+virq = [5, 7]
+# engaged: uCDD held on (lesson L7). base: no uCDD, the bench's own card of
+# the model, for references. free: uCDD may step aside.
+mode = ["engaged", "base", "free"]
+midi = ["off", "gm"]
+# Which kind of program the test runs. A property of the test, not set by
+# the bench; the planner reports which clients a plan covers.
+client = ["real", "dos4gw", "dpmi16"]
+build = ["p32", "p128", "p256", "verify128", "ess32", "ess128"]
+
+# Kept here, left out of every plan until taken off this list: the ESS work
+# is parked (20 Oct).
+[parked]
+physical = ["es1688"]
+vmodel = ["ess"]
+build = ["ess32", "ess128"]
+
+# Used only by a test that names them in its own allow or fixed lists.
+[opt_in]
+mode = ["base", "free"]
+build = ["verify128"]
+
+# A run takes these unless its test or a varied axis sets them. The PC's
+# card: an SB16 (CT2290) at 220h, IRQ 5, DMA 1 and 5.
+[defaults]
+physical = "sb16"
+pirq = 5
+vmodel = "sb16"
+virq = 5
+mode = "engaged"
+midi = "off"
+client = "real"
+build = "p128"
+
+# Conditional defaults, in order, for axes nothing else has set: the older
+# models' line as Michael set it (20 Oct).
+[[default]]
+when = { vmodel = ["pro", "sb2"] }
+set = { virq = 7 }
+
+[[constraint]]
+why = "the ESS build presents only the virtual ESS (config.asm)"
+when = { build = ["ess32", "ess128"] }
+need = { vmodel = ["ess"] }
+
+[[constraint]]
+why = "a virtual ESS only on a physical ESS (UCDDSET, virtual_model_list)"
+when = { vmodel = ["ess"] }
+need = { physical = ["es1688"], build = ["ess32", "ess128"] }
+
+[[constraint]]
+why = "General MIDI goes to the wavetable header on the physical SB16"
+when = { midi = ["gm"] }
+need = { physical = ["sb16"] }
+
+# The words the runners put on their command lines.
+[words.mode]
+engaged = "ucdd"
+free = "ucdd"
+base = "jemm"
+
+# The environment each value sets for game_live.py and sndreg (check).
+[env.pirq]
+"*" = "GL_IRQ={}"
+[env.virq]
+"*" = "GL_VIRQ={}"
+[env.vmodel]
+sb16 = "GL_VMODEL=0"
+pro = "GL_VMODEL=1"
+sb2 = "GL_VMODEL=3"
+ess = "GL_VMODEL=4"
+[env.mode]
+engaged = "GL_CFG_V4=1,0"
+free = "GL_CFG_V4=0,0"
+base = "GL_MODE=base"
+[env.midi]
+gm = "GL_MIDI=1"
+
+# What each build is (bset.sh makes them; check the suffixes there).
+[builds]
+p32 = "--resident-audio --audio-period-frames 32"
+p128 = "--resident-audio --audio-period-frames 128"
+p256 = "--resident-audio --audio-period-frames 256"
+verify128 = "--resident-audio --verify-mix --audio-period-frames 128"
+ess32 = "--resident-audio --virtual-ess --audio-period-frames 32"
+ess128 = "--resident-audio --virtual-ess --audio-period-frames 128"
+
+[run]
+# Probes may share the machine; a recording never does (lesson L6).
+probe_parallel = 7
+# Groups only --group brings in: runs on the PC are Michael's evenings.
+optional_groups = ["pc"]
+
+# How each runner is started, from the bench directory (check). $GAMES is
+# the game library. {name} is a run's value for an axis, {mode_word} its
+# word, {id} the run, {tag} the plan, {env} the environment above. A run
+# without uCDD (mode base) uses base_command where there is one, and its
+# {build} is "-".
+[runner.probe]
+kind = "probe"
+command = "{env} python3 runs/probe_test.py {build} {id} {vmodel} {mode_word}"
+[runner.game]
+kind = "recording"
+command = "{env} python3 runs/game_live.py {id} {build} $GAMES/{library} {game} {physical}"
+[runner.sndreg]
+kind = "recording"
+command = "{env} python3 runs/sndreg/sndreg.py check {build} {tag} -m {vmodel} {game}"
+base_command = "{env} python3 runs/sndreg/sndreg.py refs -m {vmodel} {game}"
+[runner.pc]
+kind = "hardware"
+command = "on the PC with the kit of {build}: RUN {game}"
+
+# Tests. groups: which area lists reach it ("core" runs for every code
+# change). fixed: values the test always runs with. allow: the values it
+# may be varied over (default: every value not parked or opt-in).
+# findings: the rows it checks. repeat: runs per configuration, for faults
+# that come and go. todo: what it lacks before it can run.
+
+# Probes (regress.sh list a). PROBE_RUN names the program (check).
+[[test]]
+name = "SBT16"
+runner = "probe"
+env = "PROBE_RUN=SBT16"
+groups = ["core", "probes", "irq"]
+secs = 30
+note = "the DSP's command set against the virtual model"
+
+[[test]]
+name = "SADUMP"
+runner = "probe"
+env = "PROBE_RUN=SADUMP"
+groups = ["probes"]
+secs = 30
+note = "the DSP test output, compared byte for byte between builds"
+
+[[test]]
+name = "E2TEST"
+runner = "probe"
+env = "PROBE_RUN=E2TEST"
+groups = ["probes"]
+secs = 30
+note = "DSP E2h, the DMA identification"
+
+[[test]]
+name = "E41TEST"
+runner = "probe"
+env = "PROBE_RUN=E41TEST"
+groups = ["probes"]
+secs = 30
+note = "the 41h and 42h rates (check)"
+
+[[test]]
+name = "TONE4"
+runner = "probe"
+env = "PROBE_RUN=TONE4"
+groups = ["probes", "mixer"]
+secs = 30
+note = "known tones through the virtual card"
+
+[[test]]
+name = "F2TEST"
+runner = "probe"
+env = "PROBE_RUN=F2TEST"
+groups = ["irq", "probes"]
+secs = 30
+note = "F2h's interrupt: latency and merging"
+
+[[test]]
+name = "DMACNT"
+runner = "probe"
+env = "PROBE_RUN=DMACNT"
+groups = ["probes", "irq"]
+secs = 30
+note = "the 8237 count against the played position (check)"
+
+[[test]]
+name = "SBPROBE"
+runner = "probe"
+env = "PROBE_RUN=SBPROBE"
+groups = ["probes"]
+secs = 30
+todo = "say what it checks"
+
+[[test]]
+name = "SBQUEUE"
+runner = "probe"
+env = "PROBE_RUN=SBQUEUE"
+groups = ["probes"]
+secs = 30
+note = "the DSP's command queue (check)"
+
+[[test]]
+name = "ESSSTAT"
+runner = "probe"
+env = "PROBE_RUN=ESSSTAT"
+groups = ["probes"]
+fixed = { vmodel = "ess", physical = "es1688", build = "ess128" }
+secs = 30
+note = "the ESS status sweep, 2xCh through a block"
+
+[[test]]
+name = "MPUTONE"
+runner = "probe"
+env = "PROBE_RUN=MPUTONE"
+groups = ["midi"]
+fixed = { midi = "gm" }
+allow = { vmodel = ["sb16", "pro", "sb2"] }
+secs = 30
+note = "MPU-401 bytes to the wavetable; on the virtual SB16 its interrupt is on the card's line, on the older models the program polls"
+
+[[test]]
+name = "DPMIG-Z"
+runner = "probe"
+env = "PROBE_RUN=DPMIG PROBE_EXTRA=Z"
+groups = ["host"]
+fixed = { client = "dpmi16" }
+allow = { vmodel = ["sb16"], pirq = [5], virq = [5] }
+secs = 30
+note = "the raw DPMI client, mode Z (check)"
+
+[[test]]
+name = "DPMIG-V"
+runner = "probe"
+env = "PROBE_RUN=DPMIG PROBE_EXTRA=V"
+groups = ["host"]
+fixed = { client = "dpmi16" }
+allow = { vmodel = ["sb16"], pirq = [5], virq = [5] }
+secs = 30
+note = "the raw DPMI client, mode V (check)"
+
+[[test]]
+name = "CDRS"
+runner = "probe"
+env = "PROBE_RUN=CDRS"
+groups = ["cd"]
+secs = 30
+note = "CD reads through MSCDEX (check)"
+
+[[test]]
+name = "verify-mix"
+runner = "probe"
+env = "PROBE_RUN=TONE4"
+groups = ["core", "mixer"]
+fixed = { build = "verify128" }
+secs = 45
+note = "the verify build's bad-sample count reads 0 (check: which program drives it)"
+
+# One game per family (sndreg, regress.sh list c). games.py holds eleven
+# games; move the other three here.
+[[test]]
+name = "THEMHOSP"
+runner = "sndreg"
+game = "THEMHOSP"
+family = "Miles MSS 3"
+client = "dos4gw"
+groups = ["families", "host"]
+findings = ["F14"]
+secs = 90
+note = "data-only disc: held on, or uCDD steps aside onto the bare card (L7)"
+
+[[test]]
+name = "DESCENT"
+runner = "sndreg"
+game = "DESCENT"
+family = "HMI SOS"
+client = "dos4gw"
+groups = ["families"]
+secs = 90
+
+[[test]]
+name = "DUKE3D"
+runner = "sndreg"
+game = "DUKE3D"
+family = "Apogee Sound System"
+client = "dos4gw"
+groups = ["families"]
+secs = 90
+note = "takes its IRQ from DUKE3D.CFG (F16): the bench sets it to the card's"
+
+[[test]]
+name = "XCOMUF"
+runner = "sndreg"
+game = "XCOMUF"
+groups = ["families"]
+secs = 90
+todo = "family and client"
+
+[[test]]
+name = "GK1"
+runner = "sndreg"
+game = "GK1"
+family = "Sierra SCI"
+groups = ["families", "midi"]
+secs = 90
+
+[[test]]
+name = "JILLJUNG"
+runner = "sndreg"
+game = "JILLJUNG"
+family = "Creative drivers"
+client = "real"
+groups = ["families"]
+findings = ["F17"]
+allow = { vmodel = ["sb16", "pro"] }
+secs = 90
+note = "no SB 2.0 reference: Jill stops at its logo on 86Box's own SB 2.0"
+
+[[test]]
+name = "SWDFORC"
+runner = "sndreg"
+game = "SWDFORC"
+family = "iMUSE (LucasArts)"
+groups = ["families"]
+secs = 90
+
+[[test]]
+name = "KYRA1"
+runner = "sndreg"
+game = "KYRA1"
+family = "own code (Westwood)"
+groups = ["families"]
+secs = 90
+
+# The findings' own cases (docs/sound-engines/findings.md).
+[[test]]
+name = "MKTRIL"
+runner = "game"
+game = "MKTRIL"
+library = "DOS_ACT"
+family = "Miles MSS 3"
+client = "dos4gw"
+groups = ["host", "irq"]
+findings = ["F14"]
+allow = { vmodel = ["sb16"] }
+secs = 90
+note = "F14: sounds about 2.3x long when the reflected EOI goes astray; fixed in stray-eoi"
+
+[[test]]
+name = "DUNGKE01"
+runner = "game"
+game = "DUNGKE01"
+library = "DOS_THNK"
+family = "Miles MSS 3"
+client = "dos4gw"
+groups = ["host", "irq"]
+findings = ["F14"]
+allow = { vmodel = ["sb16"] }
+secs = 90
+
+[[test]]
+name = "F1-probe"
+runner = "game"
+family = "Miles MSS 3 (1994 SB16.DIG)"
+groups = ["irq"]
+findings = ["F1"]
+fixed = { pirq = 7, virq = 7, vmodel = "sb16" }
+repeat = 6
+secs = 60
+todo = "the launcher ID of Warcraft or System Shock"
+note = "both cards on IRQ 7: the one-sample probe interrupt is lost in 5 of 6 runs"
+
+[[test]]
+name = "F4-highspeed"
+runner = "game"
+family = "DMX"
+groups = ["irq"]
+findings = ["F4"]
+fixed = { pirq = 7, virq = 7 }
+allow = { vmodel = ["pro", "sb2"] }
+secs = 60
+todo = "the launcher ID of Doom, Hexen or Raptor"
+note = "both cards on IRQ 7: 90h and DMX's stereo priming never start"
+
+[[test]]
+name = "F15-fade"
+runner = "game"
+family = "Miles MSS 3"
+groups = ["irq"]
+findings = ["F15"]
+allow = { vmodel = ["sb16"] }
+secs = 90
+todo = "the launcher ID of Fade to Black"
+
+[[test]]
+name = "HWPROBE"
+runner = "pc"
+game = "HWPROBE"
+groups = ["pc"]
+findings = ["F7", "F8", "F9", "F10", "F11", "F12", "F13"]
+allow = { mode = ["engaged", "base"] }
+secs = 60
+note = "the CT2290 bare and through uCDD, TSC timed"
+
+# Areas: a change to these paths needs these groups (and tests), varied
+# over these axes. "full" axes are covered in every combination; the rest
+# pairwise. A code path no area names gets the fallback groups.
+[fallback]
+groups = ["probes", "families"]
+
+[[area]]
+name = "virtual card"
+paths = ["src/audio/trap.asm", "src/audio/ess/*", "src/audio/ess_fifo.asm",
+         "src/audio/sb_adpcm.asm", "src/audio/sb_mixer.asm", "src/audio/sb_patch.asm",
+         "src/audio/sb_state.inc", "src/audio/wss_codec.asm", "src/audio/wss_state.inc",
+         "src/audio/wss_input.inc", "src/audio/high_dma.asm", "src/audio/direct_*.asm",
+         "src/audio/ports.inc"]
+groups = ["probes", "families"]
+vary = ["vmodel"]
+
+[[area]]
+name = "interrupts"
+paths = ["src/audio/irq.asm", "src/audio/background.asm", "src/host/pic.asm",
+         "src/host/interrupts.asm", "src/host/vectors.asm"]
+groups = ["irq", "families", "host", "midi"]
+vary = ["pirq", "virq", "vmodel"]
+full = ["pirq", "virq"]
+cover = ["client"]
+
+[[area]]
+name = "physical output"
+paths = ["src/audio/sb16.asm", "src/audio/pro_output.asm", "src/audio/wss_output.asm",
+         "src/audio/speaker.asm", "src/platform.asm"]
+groups = ["probes", "families", "midi"]
+vary = ["pirq", "build"]
+
+[[area]]
+name = "mixer and stream"
+paths = ["src/audio/mix.asm", "src/audio/mix_run.asm", "src/audio/mix_verify.asm",
+         "src/audio/mixer.asm", "src/audio/cd_resample.asm", "src/audio/deemphasis.asm",
+         "src/audio/stream.asm"]
+groups = ["mixer", "families"]
+vary = ["build", "vmodel"]
+
+[[area]]
+name = "CD and MSCDEX"
+paths = ["src/audio/mounted.asm", "src/audio/disk_cache.asm", "src/driver.asm", "src/cue.asm",
+         "src/mdm.asm", "src/mdm_helper.asm", "src/disc.inc", "src/disk_scan.asm"]
+groups = ["cd", "families"]
+
+[[area]]
+name = "step aside"
+paths = ["src/audio/standby.asm", "src/audio/pairing.asm"]
+groups = ["probes", "families"]
+vary = ["vmodel"]
+todo = "a step-aside test that allows mode free: the transitions, IVT, PIC, DMA and mixer byte for byte"
+
+[[area]]
+name = "DPMI host"
+paths = ["src/host/*"]
+groups = ["host", "irq"]
+cover = ["client"]
+
+[[area]]
+name = "install and resident"
+paths = ["src/ucdd.asm", "src/helper.asm", "src/config_path.asm", "src/notice.inc",
+         "src/audio/host_jemm.asm", "src/audio/host_jemm_init.asm", "src/audio/resident*.asm",
+         "src/audio/layout.inc", "src/audio/config.asm", "src/audio/configure.asm",
+         "src/audio/guest_config.asm", "src/audio/pm_bridge.inc", "src/audio/profile.inc",
+         "src/audio/sb_state.inc", "src/audio/wss_state.inc"]
+groups = ["probes", "families", "host"]
+
+[[area]]
+name = "UCDDSET"
+paths = ["src/setup.asm", "src/setup/*"]
+groups = ["probes"]
+todo = "UCDDSET's own checks: the Test at IRQ 5 and 7, the display adapters, UCDD.CFG versions"
+
+[[area]]
+name = "UCDDPLAY"
+paths = ["src/play.asm", "src/play/*"]
+groups = []
+todo = "playcheck compare and fuzz against the base revision"
+
+[[area]]
+name = "build script"
+paths = ["scripts/build.py"]
+groups = ["core"]
+vary = ["build"]
