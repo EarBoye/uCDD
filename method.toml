@@ -94,7 +94,7 @@ compare = ["*.EXE", "*.BIN", "*.COM"]
 # from the ledger, which lives on the bench. Set it to the time the hook was
 # installed: commits before that were never asked for trailers.
 [ci]
-check_after = ""
+check_after = "2026-10-20T13:14:06+11:00"
 skip_branches = ["archive/*"]
 # build.py's limits, against the sizes it prints: UCDD.EXE with its header
 # must leave the host's overlay alone, the host fits a segment, UCDDPLAY's
