@@ -30,6 +30,16 @@ none = ["none"]
 pattern = '(?i)\brig(86)?\b'
 why = "no test-bench nicknames (mantra rule 7)"
 
+# Lesson L2: code on a shared path keeps what every path into it carries.
+# A label whose comment names its incoming paths (the data-flow pass wrote
+# them) is a join. A code commit that changes the code under one names it in
+# a Paths: trailer, after checking every path into it against the comment.
+# This is recall at the moment of the change, not evidence: the trailer is
+# the author's word.
+[joins]
+files = ["*.asm", "*.inc"]
+marker = '(?i)\b(joined from|called (from|with)|far entry|on (both|every|each) paths?)\b'
+
 # Where an Issue: row must already be committed: the parent commit and the
 # notes branches. A ref that does not exist here is skipped.
 [rows]

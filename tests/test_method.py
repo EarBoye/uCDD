@@ -138,6 +138,35 @@ class HookTests(unittest.TestCase):
                              'Evidence: data sheet: y\n')
         self.assertEqual(result.returncode, 1)
 
+    def touch_join(self):
+        path = self.tree / 'src/audio/sb16.asm'
+        lines = path.read_text().splitlines(keepends=True)
+        for number, line in enumerate(lines):
+            if line.startswith('.acknowledged:'):
+                lines.insert(number + 1, '    ; touched\n')
+                path.write_text(''.join(lines))
+                return
+        self.skipTest('no .acknowledged join in sb16.asm at this ref')
+
+    def test_join_needs_paths(self):
+        self.add_row('test-row-h')
+        self.touch_join()
+        result = self.commit(GOOD.format(row='test-row-h'))
+        self.assertEqual(result.returncode, 1)
+        self.assertIn('audio_irq.acknowledged, a join', result.stderr)
+
+    def test_join_named_in_paths(self):
+        self.add_row('test-row-i')
+        self.touch_join()
+        message = GOOD.format(row='test-row-i') + 'Paths: .acknowledged, all four paths checked\n'
+        self.assertEqual(self.commit(message).returncode, 0)
+
+    def test_join_comment_only_with_none(self):
+        self.add_row('test-row-j')
+        self.touch_join()
+        result = self.commit('IRQ: a comment\n\nIssue: test-row-j\nEvidence: none: a comment\n')
+        self.assertEqual(result.returncode, 0, result.stderr)
+
     def test_notes_are_exempt(self):
         self.append('ISSUES.md', '\nA note from the 86Box run, the original trigger.\n')
         self.assertEqual(self.commit('ISSUES: a note\n').returncode, 0)

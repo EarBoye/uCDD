@@ -70,6 +70,13 @@ trailers in the last paragraph of its message:
   each variant in method.toml and compares the EXE and BIN files, which takes
   about 15 seconds. On a mismatch it builds both sides again before refusing,
   because this machine has had memory faults.
+- **`Paths:`** is needed when the commit changes code under a join: a label
+  whose comment names its incoming paths, as the data-flow pass wrote them
+  ("Joined from", "Called from", "On both paths"; 16 such labels on
+  irq-counters). The trailer names the label, after every path into it was
+  checked against the comment (lesson L2). It is recall at the moment of
+  the change, not proof: the hook shows the comment and asks for the name.
+  An `Evidence: none` commit is exempt.
 - **The bench's nickname** is refused in every commit, in the message and in
   every added line (rule 7). The pattern is in method.toml.
 - **Not checked:** merge commits are checked for the nickname in their
@@ -148,11 +155,14 @@ read the matrix instead of keeping their own lists:
     python3 ../method/tools/trailers.py [--since 2026-10-01] [refs]
 
 This counts each Issue:, Lesson: and Evidence: grade across the history,
-with dates. Two uses:
-- A row that keeps coming back in Issue: trailers is a fault that was not
-  fixed by family.
-- A `Lesson: Ln` trailer on a commit that hit a known lesson gives
-  LESSONS.md its hit count from the record instead of by hand.
+with dates. A row that keeps coming back in Issue: trailers is a fault that
+was not fixed by family.
+
+The lessons' weights are not computed here. LESSONS.md and its
+`lessons.py` hold them: each hit scored by its severity (1 to 4) and doubled
+when the answer was already written and not used. A `Lesson: Ln` trailer
+only links a commit to the lesson it hit, so the Lesson counts here are a
+cross-check: every trailer should have its hit line in the register.
 
 ## Not done yet
 

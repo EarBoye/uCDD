@@ -106,6 +106,55 @@ def banned_problems(message, files_too):
     return problems
 
 
+LABEL = re.compile(r'^(\.?[A-Za-z_?][\w.?@$#~]*):')
+
+
+def changed_lines(name):
+    # Line numbers in the staged file that the commit adds or deletes beside.
+    diff = git('diff', '--cached', '-U0', '--no-color', '--no-ext-diff', '--', name).stdout
+    lines = set()
+    for match in re.finditer(r'^@@ -\S+ \+(\d+)(?:,(\d+))? @@', diff, re.M):
+        start, count = int(match.group(1)), int(match.group(2) or 1)
+        lines.update(range(start, start + count) if count else {max(start, 1)})
+    return lines
+
+
+def joins_touched(files):
+    """The joins whose code or comment the commit changes: file, line, label, comment."""
+    marker = re.compile(CONFIG['joins']['marker'])
+    found = []
+    for name in files:
+        if not any(fnmatch.fnmatchcase(name, pattern) for pattern in CONFIG['joins']['files']):
+            continue
+        shown = git('show', f':{name}', check=False)
+        changed = changed_lines(name) if not shown.returncode else set()
+        if not changed:
+            continue
+        text = shown.stdout.splitlines()
+        labels = []
+        for number, line in enumerate(text, 1):
+            match = LABEL.match(line)
+            if match:
+                top = number
+                while top > 1 and text[top - 2].lstrip().startswith(';'):
+                    top -= 1
+                labels.append((number, top, match.group(1)))
+        scope = ''
+        for index, (number, top, label) in enumerate(labels):
+            scope = scope if label.startswith('.') else label
+            full = scope + label if label.startswith('.') else label
+            comment = ' '.join(line.strip().lstrip(';').strip() for line in text[top - 1:number - 1])
+            end = labels[index + 1][1] - 1 if index + 1 < len(labels) else len(text)
+            if marker.search(comment) and changed & set(range(top, end + 1)):
+                found.append((name, number, full, comment))
+    return found
+
+
+def named(label, text):
+    local = label.rsplit('.', 1)[-1] if '.' in label else label
+    return bool(re.search(rf'(?<![\w.])({re.escape(label)}|\.?{re.escape(local)})(?![\w])', text))
+
+
 def ref_exists(ref):
     return not git('rev-parse', '--verify', '-q', ref + '^{commit}',
                    check=False).returncode
@@ -181,10 +230,11 @@ def identical_problems():
     return problems
 
 
-def code_problems(message):
+def code_problems(message, code):
     found = trailers(message)
     rows = [value for key, value in found if key == 'issue']
     evidence = [value for key, value in found if key == 'evidence']
+    paths = ' '.join(value for key, value in found if key == 'paths')
     problems = []
     if not rows:
         problems.append('no Issue: trailer naming the row this change answers')
@@ -211,6 +261,13 @@ def code_problems(message):
     elif grades and CONFIG['commit'].get('require_data_sheet') and 'data sheet' not in grades:
         problems.append('no "Evidence: data sheet:" line (rule 1): cite the document, '
                         'or write "data sheet: silent" and what decided instead')
+    if 'none' not in grades:
+        for name, number, label, comment in joins_touched(code):
+            if not named(label, paths):
+                shown = comment if len(comment) <= 160 else comment[:157] + '...'
+                problems.append(f'{name}:{number} changes {label}, a join (lesson L2): check every '
+                                f'path into it against its comment, bring the comment up to date, and '
+                                f'name it in a "Paths: {label}" trailer. The comment: "{shown}"')
     return problems
 
 
@@ -226,7 +283,7 @@ def main(path):
     code = [name for name in files
             if any(fnmatch.fnmatchcase(name, pattern) for pattern in CONFIG['commit']['code'])]
     if code:
-        problems += code_problems(message)
+        problems += code_problems(message, code)
     if not problems:
         return 0
     shown = ', '.join(code[:4]) + (', ...' if len(code) > 4 else '')

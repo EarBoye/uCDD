@@ -14,8 +14,10 @@ real path (`readlink -f` on the skill directory).
 
 ## 0. Lessons
 
-Search LESSONS.md for the situation before starting. A lesson that applies
-and was missed earns a hit there and a `Lesson: Ln` trailer on the commit.
+Run the register's checklist for the kind of work before starting:
+`python3 context/lessons.py TAG` (fix, blame for a game fault, code, run,
+probe, kit), heaviest first. When something goes wrong, search LESSONS.md
+before anything else.
 
 ## 1. Specification
 
@@ -57,6 +59,12 @@ only when its `Issue:` row is already committed.
 Fix the shared cause, once, for the family; no special case for one game
 (rules 1 and 10). The build stops at the segment limits: note the headroom.
 
+Code under a join (a label whose comment names its incoming paths: "Joined
+from", "Called from", "On both paths") is shared by every path into it
+(L2). Check each path against the comment, bring the comment up to date,
+and name the label in a `Paths:` trailer. The hook refuses a commit that
+changes a join without naming it.
+
 ## 7. Prove
 
 1. The reproducer from step 4 passes on the new build.
@@ -79,10 +87,13 @@ Commit with the trailers in the last paragraph of the message:
     Evidence: data sheet: SBG 6-12, a 14h block ends on its last byte
     Evidence: emulator: plan 3f2a91c4, 46 runs, D10 against D9, F17 gone, the rest unchanged
     Evidence: hardware: the PC, D10 kit, Jill on the CT2290
+    Paths: audio_irq.acknowledged, all four incoming paths checked
     Lesson: L7
 
-Then the row gets its result and grade, and any join label you touched gets
-its incoming-state comment brought up to date.
+Then the row gets its result and grade. A lesson that applied and was
+missed gets its hit line in LESSONS.md (date, severity 1 to 4, relearned or
+applied) and `lessons.py` is run to re-rank; the `Lesson:` trailer only
+links the commit to it.
 
 | Grade | Means |
 |---|---|
