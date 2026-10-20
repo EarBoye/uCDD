@@ -9,7 +9,7 @@ order of work into these pieces:
 | `hooks/commit-msg`, `method.toml` | A git hook that refuses a code commit without its row and its evidence |
 | `matrix/matrix.toml`, `matrix/plan.py` | One definition of the test matrix, and a planner that turns a diff into the runs it needs |
 | `tools/ledger.py` | The results ledger: the runners record each verdict and the binaries it was for; the hook reads it |
-| `guard/guard.py` | A Claude Code hook: no `--no-verify`, no hand-written ledger, nothing to the upstream |
+| `guard/guard.py` | A Claude Code hook: no `--no-verify`, no hand-written ledger, no write into the game library, no commits through the GitHub tools, nothing to the upstream |
 | `tools/trailers.py` | Counts Issue:, Lesson: and Evidence: trailers in the history |
 | `tools/game.py` | Before a game runs: its engine, driver versions and family, looked up in the library; what the notes lack |
 | `tools/ci.py`, `ci/method.yml` | The checks on GitHub: every branch built with its headroom, and the hook's checks on commits made after the hook went in |
@@ -94,6 +94,14 @@ trailers in the last paragraph of its message:
   back to the whole family before the fix. When the commit cites plans, one
   of them must survey the family (`plan.py --family`). An `Evidence: none`
   commit is exempt.
+- **Game code, refused in every commit** (Michael, 20 Oct 2026: we never
+  ship, patch or alter game code; any game as it was sold must run with uCDD
+  alone): a program, driver or disc file by its suffix (`[games] suffixes`),
+  a file the census knows as a game's driver under any name, three or more
+  lines of a disassembly listing, and a game's folder name or a program name
+  in a string in driver code (a special case; comments may name games). Run
+  over the last 120 commits of fixes, irq-counters and sound-engine-library,
+  it finds nothing (one false alarm, a web address, was fixed on the way).
 - **Refused in every commit**, in the message and in every added line: the
   bench's nickname (rule 7), and an @mention of the upstream author or a
   link to one of his issues or pull requests. The patterns are in
@@ -230,6 +238,25 @@ them as spot checks. Then `ledger.py audit <tag>` compares each with its
 first verdict. A disagreement stops the merge: it is a finding about the fix
 or about the instrument (L11).
 
+## Game code
+
+We never ship, patch or alter game code. Any DOS game, as it was sold, must
+run with uCDD as it would on the real hardware, with no patch, extra file or
+setting for that game. Decompiled or traced code only teaches what a game
+expects of the hardware; the notes say it in words.
+
+- **The hook** refuses game files, listings and games named in driver code
+  (see "The hook").
+- **The guard** refuses a write into the game library: an edit, an overwrite
+  (`cp` onto it, `>`, `dd of=`, `xxd -r`), a move or a removal, and an in-place
+  `sed`/`perl`. Reading, hex dumps, disassembling into another directory and
+  copying out are allowed, and so are the runners, which set a game's own
+  configuration as its setup program would. Set `[games] paths` in
+  method.toml to the library and its disc images (or `UCDD_GAMES`).
+- **The GitHub tools** cannot commit files (the guard refuses
+  `create_or_update_file`, `push_files` and `delete_file`): commits are made
+  with git, where the hook sees them.
+
 ## Nothing goes upstream
 
 Nothing from this fork goes to vorvek (Michael, 20 Oct 2026). What reaches
@@ -296,6 +323,8 @@ cross-check: every trailer should have its hit line in the register.
 
 ## Not done yet
 
+- **`[games] paths` is empty.** The bench sets it to the game library and its
+  disc images, or the guard cannot protect them.
 - **The runners do not record yet.** regress.sh, sndreg, game_live.py and
   probe_test.py each need a `ledger.py record` call after a run is judged,
   with the build directory, the tools and the outputs; then `[ledger]

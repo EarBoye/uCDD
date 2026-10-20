@@ -12,6 +12,20 @@ the lessons register came back.
 METHOD below is the method worktree: two directories above this skill's
 real path (`readlink -f` on the skill directory).
 
+## Game code: never shipped, never altered
+
+Any DOS game, as it was sold, runs with uCDD as it would on the real
+hardware: no patch to the game, no extra file and no setting for that game
+(Michael, 20 Oct 2026). Decompiled, disassembled or traced game code is only
+a way to learn what a game expects of the hardware.
+- It stays outside the repository. The notes say in words what the code
+  does, never as a listing; the hook refuses listings and game files.
+- Nothing in the game library is edited, moved or removed (the guard refuses
+  it). Copy out what you study. A game's own configuration is set through
+  the runner, as its own setup program would set it.
+- The fix is in the driver, for every game. A game's name in driver code is
+  a special case, and the hook refuses it.
+
 ## 0. Lessons
 
 Run the register's checklist for the kind of work before starting:

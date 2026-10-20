@@ -8,7 +8,11 @@ Refuses, with exit 2 and the reason shown to Claude:
   files, a shell command that names them, or ledger.py record typed by hand;
 - anything that reaches the upstream author: a push to his repository, a
   pull request, issue or comment there (gh or the GitHub tools), and a gh
-  pr create that does not name the fork.
+  pr create that does not name the fork;
+- a write into the game library (method.toml [games] paths): we never patch
+  or alter game code, so nothing there is edited, moved, removed or
+  overwritten; reading and copying out are fine;
+- a commit made through the GitHub tools, which skips the commit-msg hook.
 A person who needs the escape types the command in their own shell.
 """
 
@@ -28,6 +32,15 @@ LEDGER = ('Only the runners write the ledger, after a run is judged. Read it wit
           'ledger.py show, spot or audit.')
 UPSTREAM = ('Nothing from this fork goes to the upstream author (Michael, 20 Oct 2026). '
             'Pull requests, if any, go to {fork} only.')
+GAMES = ('We never patch or alter game code (Michael, 20 Oct 2026): every game runs as it was '
+         'sold. Copy what you need to study out of the library; the fix belongs in the driver.')
+GITHUB_FILES = ('Commits go through git on the bench, where the commit-msg hook checks them; the '
+                'GitHub tools would skip it.')
+# Commands that change the files they are given, and those that change only
+# their last argument.
+CHANGES_ARGS = {'rm', 'mv', 'truncate', 'touch', 'chmod', 'chown', 'tee', 'patch', 'shred', 'ln'}
+CHANGES_LAST = {'cp', 'install', 'rsync', 'xxd'}
+EDITS_IN_PLACE = {'sed', 'perl', 'ruby'}
 # git commit's short options that take a value: the rest of the cluster is
 # that value, so an "n" after one of them is not --no-verify.
 COMMIT_VALUE_OPTIONS = set('mFCctSu')
@@ -112,6 +125,45 @@ def gh_refusal(args):
     return None
 
 
+def library_paths():
+    import os
+    given = os.environ.get('UCDD_GAMES')
+    paths = given.split(os.pathsep) if given else methodlib.CONFIG.get('games', {}).get('paths', [])
+    return [Path(path).expanduser().resolve() for path in paths if path]
+
+
+def in_library(word, libraries):
+    word = word.split('=', 1)[1] if word.startswith('of=') else word
+    if not word or word.startswith('-'):
+        return False
+    path = Path(word).expanduser()
+    if not path.is_absolute():
+        return False
+    path = path.resolve()
+    return any(path == library or path.is_relative_to(library) for library in libraries)
+
+
+def library_refusal(words, libraries):
+    program, args = words[0].split('/')[-1], words[1:]
+    targets = []
+    for index, word in enumerate(words):
+        if word in ('>', '>>', '>|', '&>') and index + 1 < len(words):
+            targets.append(words[index + 1])
+        elif word.startswith('>') and len(word) > 1:
+            targets.append(word.lstrip('>|&'))
+    operands = [word for word in args if not word.startswith('-')]
+    if program in CHANGES_ARGS:
+        targets += operands
+    elif program in CHANGES_LAST and operands and (program != 'xxd' or '-r' in args):
+        targets.append(operands[-1])
+    elif program in EDITS_IN_PLACE and any(word.startswith('-i') or word == '--in-place' for word in args):
+        targets += operands
+    elif program == 'dd':
+        targets += [word for word in args if word.startswith('of=')]
+    found = [target for target in targets if in_library(target, libraries)]
+    return (f'a write into the game library ({found[0]})', GAMES) if found else None
+
+
 def names_ledger(words):
     ledger = methodlib.ledger_dir()
     marks = (str(ledger), 'runs.jsonl', f'{ledger.name}/plans')
@@ -135,6 +187,9 @@ def bash_refusal(line, cwd):
             found = 'a shell command on the ledger files', LEDGER
         else:
             found = None
+        libraries = library_paths()
+        if not found and libraries:
+            found = library_refusal(words, libraries)
         if found:
             return found
     return None
@@ -151,7 +206,11 @@ def refusal(call):
         path = given.get('file_path') or given.get('notebook_path') or ''
         if path and Path(path).resolve().is_relative_to(methodlib.ledger_dir().resolve()):
             return f'an edit of {path}', LEDGER
+        if path and in_library(path, library_paths()):
+            return f'an edit in the game library ({path})', GAMES
     name = tool.split('__')[-1]
+    if tool.startswith('mcp__github__') and name in ('create_or_update_file', 'push_files', 'delete_file'):
+        return f'{name} through the GitHub tools', GITHUB_FILES
     if tool.startswith('mcp__github__') and not (name.startswith(READ_PREFIXES) or name.endswith('_read')):
         if OWNER in str(given.get('owner', '')).lower() or OWNER in str(given.get('repo', '')).lower():
             return f'{name} on the upstream repository', UPSTREAM

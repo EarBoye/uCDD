@@ -41,6 +41,31 @@ why = "no test-bench nicknames (mantra rule 7)"
 pattern = '(?i)@vorvek\b|vorvek/ucdd(#\d+|/(issues|pull)/\d+)'
 why = "it would notify the upstream author; nothing from this fork goes to him"
 
+# We never ship, patch or alter game code (Michael, 20 Oct 2026). Any DOS
+# game, as it was sold, must run with uCDD as it would on the real hardware:
+# no patch to the game, no extra file and no setting for that game.
+# Decompiled or traced game code is only a way to learn what a game expects
+# of the hardware; the notes say it in words. The hook refuses a commit that
+# adds a program or driver file, a file the census knows as a game's driver
+# under any name, a disassembly listing, or a string naming a game in driver
+# code (a special case). The guard refuses writes into the game library.
+[games]
+# The game library and its disc images on the bench: absolute paths, set by
+# the bench (UCDD_GAMES, os.pathsep-separated, overrides).
+paths = []
+suffixes = [".exe", ".com", ".ovl", ".ovr", ".dig", ".mdi", ".adv", ".drv", ".386", ".dll",
+            ".bin", ".cue", ".iso", ".img", ".ima", ".mdf", ".ccd", ".sub", ".voc", ".xmi"]
+# The project's own files with those suffixes.
+allowed = ["src/play/assets.bin"]
+# A line of a disassembly listing: an address, two or more bytes, a mnemonic.
+listing = '^\s*(?:[0-9A-Fa-f]{4}:[0-9A-Fa-f]{4,8}|[0-9A-Fa-f]{8})\s+(?:[0-9A-Fa-f]{2}\s?){2,}\s+[a-z]{2,7}\b'
+listing_lines = 3
+# Driver code, where a game's name in a string would be a special case; the
+# player's and the setup program's screens are not driver code.
+driver_code = ["src/*"]
+not_driver_code = ["src/play/*", "src/play.asm", "src/setup/*", "src/setup.asm"]
+own_programs = ["UCDD.EXE", "UCDDSET.EXE", "UCDDPLAY.EXE", "COMMAND.COM"]
+
 # What the guard keeps away from the upstream: pushes to his repository,
 # pull requests, issues and comments there.
 [upstream]

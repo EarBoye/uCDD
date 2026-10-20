@@ -9,12 +9,14 @@ none" claims no change in behaviour, and the check proves it by building the
 parent and the commit. A commit that changes a join names it in Paths:. A
 commit names its sound engine family in Family:, whose library page must
 already name the row, and a plan it cites must survey that family.
-Notes commits are exempt; banned patterns are refused in every commit's
-message and added lines.
+Notes commits are exempt from those. Every commit is refused banned patterns
+in its message and added lines, and game code: a program or driver file, a
+disassembly listing, a game named in driver code.
 """
 
 from pathlib import Path
 import fnmatch
+import hashlib
 import re
 import shutil
 import subprocess
@@ -30,7 +32,9 @@ EMPTY_TREE = '4b825dc642cb6eb9a060e54bf8d69288fbee4904'
 
 
 def git(*args, input=None, check=True):
-    result = subprocess.run(['git', *args], input=input, capture_output=True, text=True)
+    # errors='replace': a diff may hold bytes that are not UTF-8 (DOS text, CP437 art).
+    result = subprocess.run(['git', *args], input=input, capture_output=True,
+                            encoding='utf-8', errors='replace')
     if check and result.returncode:
         raise SystemExit(f'git {" ".join(args)} failed:\n{result.stderr}')
     return result
@@ -66,6 +70,11 @@ class Target:
 
     def files(self):
         return [name for name in self.diff('--name-only', '-z').split('\0') if name]
+
+    def blob(self, name):
+        shown = subprocess.run(['git', 'cat-file', 'blob', f'{self.commit or ""}:{name}'],
+                               capture_output=True)
+        return None if shown.returncode else shown.stdout
 
     def show(self, name):
         shown = git('show', f'{self.commit or ""}:{name}', check=False)
@@ -380,10 +389,72 @@ def code_problems(message, target, code, ledger):
     return problems
 
 
+def library_page(target, name):
+    library = methodlib.MATRIX.get('library', {})
+    for ref in target.row_refs(library.get('refs', [])):
+        shown = git('show', f'{ref}:{library["dir"]}/{name}', check=False)
+        if not shown.returncode:
+            return shown.stdout
+    return ''
+
+
+def strings(code):
+    """The quoted strings of an assembly line, before its comment."""
+    found, quote, start = [], None, 0
+    for index, char in enumerate(code):
+        if quote:
+            if char == quote:
+                found.append(code[start:index])
+                quote = None
+        elif char in '\'"`':
+            quote, start = char, index + 1
+        elif char == ';':
+            break
+    return found
+
+
+def game_code_problems(target):
+    """We never ship game code: its files, its listings, or a special case naming a game."""
+    games, problems, why = CONFIG['games'], [], 'we never ship game code'
+    added = [name for name in target.diff('--name-only', '--diff-filter=AM', '-z').split('\0') if name]
+    census = set(re.findall(r'^\| ([0-9a-f]{8}) \|', library_page(target, 'census.md'), re.M))
+    for name in added:
+        if any(fnmatch.fnmatchcase(name, pattern) for pattern in games['allowed']):
+            continue
+        if Path(name).suffix.lower() in games['suffixes']:
+            problems.append(f'{name}: a program, driver or disc file; {why}')
+        elif census and hashlib.md5(target.blob(name) or b'').hexdigest()[:8] in census:
+            problems.append(f'{name}: the census knows this file as a game\'s driver; {why}')
+    listing, run, last = re.compile(games['listing']), 0, None
+    lines = list(added_lines(target))
+    for name, number, text in lines:
+        run = run + 1 if listing.match(text) and last == (name, number - 1) else int(bool(listing.match(text)))
+        last = (name, number)
+        if run == games['listing_lines']:
+            problems.append(f'{name}:{number}: a disassembly listing; say in words what the code does, '
+                            f'{why}')
+    inventory = set(re.findall(r'^\| ([A-Z0-9!_-]{5,}) \|', library_page(target, 'inventory.md'), re.M))
+    program = re.compile(r'(?<![\w./])[A-Z0-9!_-]{1,8}\.(?:EXE|COM|OVL|DIG|MDI|ADV|DRV|386)(?![\w./])')
+    for name, number, text in lines:
+        if not any(fnmatch.fnmatchcase(name, pattern) for pattern in games['driver_code']) or any(
+                fnmatch.fnmatchcase(name, pattern) for pattern in games['not_driver_code']):
+            continue
+        for string in strings(text):
+            found = {word for word in re.findall(r'[A-Z0-9!_-]{5,}', string) if word in inventory}
+            found |= {word for word in program.findall(string.upper()) if word not in games['own_programs']}
+            if found:
+                problems.append(f'{name}:{number} names {", ".join(sorted(found))} in driver code: a '
+                                'special case for one game; the driver answers every game as the '
+                                'hardware would (rules 1 and 10)')
+    return problems
+
+
 def check(message, target, ledger=True):
     """The problems with a commit, and the code files it changes."""
     merging = target.merging()
     problems = banned_problems(message, target, files_too=not merging)
+    if not merging:
+        problems += game_code_problems(target)
     files = [] if merging else target.files()
     code = [name for name in files
             if any(fnmatch.fnmatchcase(name, pattern) for pattern in CONFIG['commit']['code'])]

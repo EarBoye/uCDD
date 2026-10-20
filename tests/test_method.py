@@ -349,6 +349,36 @@ class HookTests(unittest.TestCase):
         result = self.commit(message)
         self.assertEqual(result.returncode, 0, result.stderr)
 
+    def test_game_file_refused(self):
+        (self.tree / 'GAMES/SOUND').mkdir(parents=True)
+        (self.tree / 'GAMES/SOUND/SB16.DIG').write_bytes(b'not really a driver')
+        result = self.commit('Notes: a driver to study\n')
+        self.assertEqual(result.returncode, 1)
+        self.assertIn('a program, driver or disc file; we never ship game code', result.stderr)
+
+    def test_listing_refused(self):
+        listing = ''.join(f'0000{n:04X}  B8 00 4C  mov ax,0x4c00\n' for n in range(3))
+        self.append('ISSUES.md', '\n' + listing)
+        result = self.commit('ISSUES: the probe\n')
+        self.assertEqual(result.returncode, 1)
+        self.assertIn('a disassembly listing', result.stderr)
+        self.git('reset', '-q', '--hard')
+        self.append('ISSUES.md', '\nThe probe writes D1h, then 40h and the time constant A5h.\n')
+        self.assertEqual(self.commit('ISSUES: the probe in words\n').returncode, 0)
+
+    def test_game_named_in_driver_code(self):
+        self.add_row('test-row-v')
+        self.append('src/audio/irq.asm', "special db 'DOOM.EXE',0\n")
+        result = self.commit(GOOD.format(row='test-row-v'))
+        self.assertEqual(result.returncode, 1)
+        self.assertIn('names DOOM.EXE in driver code', result.stderr)
+
+    def test_game_named_in_a_comment(self):
+        self.add_row('test-row-w')
+        self.append('src/audio/irq.asm', "; Seen first in DOOM.EXE's DMX path (F4).\n")
+        result = self.commit(GOOD.format(row='test-row-w'))
+        self.assertEqual(result.returncode, 0, result.stderr)
+
     def test_notes_are_exempt(self):
         self.append('ISSUES.md', '\nA note from the 86Box run, the original trigger.\n')
         self.assertEqual(self.commit('ISSUES: a note\n').returncode, 0)
@@ -379,6 +409,27 @@ class GuardTests(unittest.TestCase):
         for command in ('python3 tools/ledger.py show abc12345', 'python3 matrix/plan.py --save',
                         'bash runs/regress.sh src d10 p'):
             self.assertEqual(self.guard(command), 0, command)
+
+    def test_game_library_refused(self):
+        with tempfile.TemporaryDirectory() as library:
+            game = f'{library}/DOOM'
+            os.environ['UCDD_GAMES'] = library
+            try:
+                for command in (f'sed -i s/a/b/ {game}/DOOM.EXE', f'cp /tmp/x {game}/SB16.DIG',
+                                f'echo x > {game}/DEFAULT.CFG', f'dd if=/tmp/x of={game}/DOOM.EXE',
+                                f'xxd -r dump {game}/DOOM.EXE', f'rm -rf {game}'):
+                    self.assertEqual(self.guard(command), 2, command)
+                self.assertEqual(self.guard(tool='Write', file_path=f'{game}/X.EXE', content='x'), 2)
+                for command in (f'cp {game}/DOOM.EXE /tmp/study/', f'xxd {game}/DOOM.EXE',
+                                f'ndisasm {game}/DOOM.EXE > /tmp/doom.asm',
+                                f'python3 runs/game_live.py ID B {library} DOOM sb16'):
+                    self.assertEqual(self.guard(command), 0, command)
+            finally:
+                del os.environ['UCDD_GAMES']
+
+    def test_github_file_tools_refused(self):
+        for name in ('push_files', 'create_or_update_file', 'delete_file'):
+            self.assertEqual(self.guard(tool=f'mcp__github__{name}', owner='EarBoye', repo='uCDD'), 2)
 
     def test_upstream_refused(self):
         for command in ('git push https://github.com/vorvek/uCDD fixes',
