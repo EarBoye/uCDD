@@ -26,6 +26,13 @@ rate [trace]. On a 4.xx, 42h sets the same rate register as 41h, so this
 works on a real SB16 (vsb-spec.md section 13); the virtual SB16 takes 42h
 as 41h.
 
+Findings: C-Dogs writes the 8237's mode and count and unmasks the channel
+only after its 90h; a real DSP waits for the channel and plays, uCDD's
+never starts ([findings.md](findings.md) F5; confirmed on the CT2290
+[hw, 19 Oct]: the bare card starts within 1 ms of the unmask, D7 never).
+Cyberdogs' polled count went up between reads 13 times in 234 (F2, open;
+the reads were far apart, so less sure).
+
 ## MIDAS Sound System (Sahara Surfers)
 
 Super Stardust [trace]: E1h, 41h 22050 Hz, **B4h mode 10h** (16-bit mono,
@@ -34,6 +41,10 @@ Super Stardust [trace]: E1h, 41h 22050 Hz, **B4h mode 10h** (16-bit mono,
 44h-47h, treble and bass, 80h); **176 reads of the reset port 2x6h** (a delay
 loop); the position by polling channel 5's count (409 byte reads), D8h
 cleared before each. Like DSMI, the interrupt is almost unused.
+
+Finding: Super Stardust's polled count went up between reads 28 times in
+203 in the first run, none in two repeats ([findings.md](findings.md) F2,
+open, timing-sensitive).
 
 ## Allegro (Shawn Hargreaves)
 

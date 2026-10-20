@@ -73,6 +73,8 @@ Older versions, smaller blocks [trace]:
 | Address, not count | reads channel 5's current address and its page | the 8237's address register must move with the output, as the count does, and the page register must read back | host-cdrom-spec.md section 5 |
 | 42h | sets the input rate too | on the 4.xx one rate register serves 40h and 41h-43h, so 42h sets the output rate as well; the virtual SB16 takes 42h as 41h | vsb-spec.md section 13 |
 | D0h then D3h at set-up | pause, speaker off | harmless with no transfer running | |
+| IRQ from the config | takes BlasterInterrupt (and the card type, bits, channels) from its config, not from BLASTER or the card | nothing from the card: the config must name the card's IRQ, as the setup program writes it | [findings.md](findings.md) F16: Duke's copy still named eXo's IRQ 7 with the cards on 5; it fails the same way without uCDD ("Playback failed, possibly due to an invalid or conflicting IRQ"); set to 5 it plays under uCDD on the SB16, SB Pro and SB 2.0 [86Box, 20 Oct]. Not a uCDD fault |
+| SB Pro path | Duke with an SB Pro type: 90h high speed, mono (pre-sb16.md) | 90h started and interrupting | [findings.md](findings.md) F6: never started on the virtual SB Pro with eXo's SB16 and IRQ 7 settings; set up for an SB Pro on IRQ 7 it plays [86Box, 20 Oct]; open until a trace on that set-up shows 90h running |
 
 **Open:** Blood's trace stopped at 150 accesses, just after D1h: whether
 its 44 kHz output then started on the virtual card is not in the trace.

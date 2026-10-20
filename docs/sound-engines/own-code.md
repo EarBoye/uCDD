@@ -64,6 +64,12 @@ in turn, before it settles. The games that acknowledged in the run read
 used a DMA mode or a position method the engine pages do not already
 cover.
 
+Findings that touch own-code games: Stargunner's 90h high-speed output
+never starts with both cards on IRQ 7 on the virtual SB Pro and SB 2.0,
+and plays at IRQ 5 ([findings.md](findings.md) F4, open); Battle Race 95
+stops in a "two reads agree" loop on the polled count, the same field as
+F2 (host-cdrom-spec.md section 10).
+
 Their FM habits (38 games wrote the chip):
 
 | Status reads per register write | Games | What it is |

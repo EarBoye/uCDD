@@ -79,7 +79,8 @@ before each block.
 |---|---|---|
 | 81h written | sets DMA select to 02h | the CT2290 takes it: its 80h and 81h are writable (software-configured) [hw, 19 Oct, [ct2290.md](ct2290.md)]; the virtual card ignores the write (F12) |
 | Both acknowledges | reads 2xFh and 2xEh on every interrupt | a 2xFh read with no 16-bit request must not disturb the 8-bit one |
-| Channel unmasked after the start | DSP first, DMA unmask second | the virtual DSP must wait for the channel, not fail |
+| Channel unmasked after the start | DSP first, DMA unmask second (mode and count set before the command) | the virtual DSP must wait for the channel, not fail; DigPak plays, where C-Dogs, which also sets mode and count after the command, does not ([findings.md](findings.md) F5) |
+| Real-mode handler under DOS/4GW | X-COM's SB16 driver: DOS/4GW passes the IRQ down to it with an INT to the hardware vector | its EOI counted as the game's | [findings.md](findings.md) F14: swallowed as stray as often as blocks ended, no overruns (another EOI ended the interrupt in time) and no audible harm; none with the fix [86Box, 19 Oct] |
 | 21h = 00h | opens every line | the driver's own IRQ handlers must cope with a line opened behind their back |
 
 ## Music and timer [trace]

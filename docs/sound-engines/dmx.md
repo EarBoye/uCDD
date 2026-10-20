@@ -74,6 +74,7 @@ the preamble (the game's voice code or a launcher) is not known.
 | Demand mode | 8237 mode 19h | demand accepted as single (the emulation moves data a period at a time) | host-cdrom-spec.md D4 |
 | Count read in the handler | twice, to find the block | a count that is not ahead of the mix | ISSUES.md `virtual-timing` |
 | IRQ 7 timing | Doom's timedemo, used as uCDD's speed check | | 1807/1787 realtics on the PC (ES22), about 1640 in 86Box |
+| Count steps back | Hexen 14 of 135 count reads went up (98 bytes), Raptor 1 of 106 | a count that never rises | [findings.md](findings.md) F2, open (timing-sensitive) |
 
 ## Music and timer [trace]
 

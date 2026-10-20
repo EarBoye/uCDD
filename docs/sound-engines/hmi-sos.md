@@ -109,6 +109,7 @@ bytes.
 | No version check | goes straight to 83h and 41h | the configured card must accept 41h (an SB16 or ESS command) | |
 | 0Ch before D8h | wrong controller's flip-flop | channel 5's flip-flop must survive 0Ch writes | host-cdrom-spec.md D5 |
 | No acknowledge needed | plays on with its interrupt lost | the output must keep running when the game never acknowledges | see below |
+| SB Pro module (E001h) at shared IRQ 7 | Rayman: 90h high speed on the virtual SB Pro and SB 2.0 | 90h starting with both cards on IRQ 7 | [findings.md](findings.md) F4: never starts at shared IRQ 7, plays at IRQ 5 [trace]; open |
 
 **Not settled [trace, 86Box, 19 Oct]:** in Descent's run with the card on
 IRQ 7 (the game configured for IRQ 5, so the virtual interrupt was raised

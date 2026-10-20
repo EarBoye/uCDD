@@ -165,6 +165,8 @@ test fail and the game run silent. uCDD holds an F2h that comes within
 | Shared IRQ 7 | the 1994 drivers' probe interrupt | delivery to the game's handler with the physical card on the same line | [findings.md](findings.md) F1, open |
 | 80h/81h | trusted for IRQ and DMA | the card's real IRQ and DMA in 80h/81h | vsb-spec.md 9.4 |
 | Smacker video with Miles | Star Command's intro stalls under the DPMI host (timer delivered 20000 times a second) | open | host-cdrom-spec.md section 10 |
+| Real-mode handler under DOS/4GW | DOS/4GW passes the card's IRQ down to the driver's real-mode handler with an INT to the hardware vector; the handler sends its own EOI | that EOI counted as the game's | [findings.md](findings.md) F14: the host swallowed it; fixed on stray-eoi (D8). MKT and Theme Hospital play at 1.00 against runs without uCDD, D7 at 2.38 [86Box, 20 Oct]; PC test pending |
+| SB16.DIG 0c12adc1 | the one Miles SB16 driver version never traced; only Fade to Black carries it ([census.md](census.md)) | not known yet | [findings.md](findings.md) F15: 79-84% of its block ends overrun with or without the F14 fix, no EOI swallowed [trace, 19 Oct]; open |
 
 ## Music and timer [trace]
 

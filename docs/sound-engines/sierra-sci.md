@@ -83,6 +83,8 @@ open for the mouse) [trace].
 | Single-byte count reads | no flip-flop clear | the flip-flop toggles on every read, as the 8237's does |
 | 48h before 14h | sets a block size it does not use | 48h stored, not acted on |
 | 16 KB single-cycle blocks | 1.5 s each at 11111 Hz | chained by the handler; the count must fall steadily |
+| Count steps back | King's Quest V's polled count read higher than the read before in 166 of 260 reads (16-17 bytes) | a single-cycle count that never rises | [findings.md](findings.md) F2, open |
+| Count hovers | King's Quest V's last 16 KB block stayed within 0A30h-0A6Eh for 120 reads, where it should end 1.5 s after it started | the transfer ends, and its interrupt comes | [findings.md](findings.md) F3, open |
 
 ## Music and timer [trace]
 
