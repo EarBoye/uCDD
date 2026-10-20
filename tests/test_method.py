@@ -366,6 +366,12 @@ class HookTests(unittest.TestCase):
         self.append('ISSUES.md', '\nThe probe writes D1h, then 40h and the time constant A5h.\n')
         self.assertEqual(self.commit('ISSUES: the probe in words\n').returncode, 0)
 
+    def test_decompiled_code_refused(self):
+        self.append('ISSUES.md', '\nundefined4 FUN_0001a2b4(void) {\n  DAT_0002c000 = in_AX;\n}\n')
+        result = self.commit('ISSUES: the probe\n')
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("a decompiler's names", result.stderr)
+
     def test_game_named_in_driver_code(self):
         self.add_row('test-row-v')
         self.append('src/audio/irq.asm', "special db 'DOOM.EXE',0\n")

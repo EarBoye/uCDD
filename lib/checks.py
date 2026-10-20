@@ -433,6 +433,12 @@ def game_code_problems(target):
         if run == games['listing_lines']:
             problems.append(f'{name}:{number}: a disassembly listing; say in words what the code does, '
                             f'{why}')
+    decompiled = re.compile(games['decompiled'])
+    seen = [(name, number) for name, number, text in lines if decompiled.search(text)]
+    if len(seen) >= games['decompiled_hits']:
+        name, number = seen[0]
+        problems.append(f'{name}:{number}: a decompiler\'s names ({len(seen)} lines); say in words '
+                        f'what the code does, {why}')
     inventory = set(re.findall(r'^\| ([A-Z0-9!_-]{5,}) \|', library_page(target, 'inventory.md'), re.M))
     program = re.compile(r'(?<![\w./])[A-Z0-9!_-]{1,8}\.(?:EXE|COM|OVL|DIG|MDI|ADV|DRV|386)(?![\w./])')
     for name, number, text in lines:

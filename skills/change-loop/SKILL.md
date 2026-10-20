@@ -19,7 +19,8 @@ hardware: no patch to the game, no extra file and no setting for that game
 (Michael, 20 Oct 2026). Decompiled, disassembled or traced game code is only
 a way to learn what a game expects of the hardware.
 - It stays outside the repository. The notes say in words what the code
-  does, never as a listing; the hook refuses listings and game files.
+  does, never as a listing or decompiled code; the hook refuses both, and
+  game files.
 - Nothing in the game library is edited, moved or removed (the guard refuses
   it). Copy out what you study. A game's own configuration is set through
   the runner, as its own setup program would set it.

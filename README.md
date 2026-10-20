@@ -98,10 +98,13 @@ trailers in the last paragraph of its message:
   ship, patch or alter game code; any game as it was sold must run with uCDD
   alone): a program, driver or disc file by its suffix (`[games] suffixes`),
   a file the census knows as a game's driver under any name, three or more
-  lines of a disassembly listing, and a game's folder name or a program name
+  lines of a disassembly listing, two or more lines with a decompiler's own
+  names (Ghidra's `FUN_0001a2b4`, `DAT_`, `undefined4`, `unaff_`, `in_AX`),
+  and a game's folder name or a program name
   in a string in driver code (a special case; comments may name games). Run
-  over the last 120 commits of fixes, irq-counters and sound-engine-library,
-  it finds nothing (one false alarm, a web address, was fixed on the way).
+  over 187 recent commits of fixes, irq-counters, sound-engine-library and
+  spec-first, it finds nothing (two false alarms were fixed on the way: a web
+  address, and the English word "undefined").
 - **Refused in every commit**, in the message and in every added line: the
   bench's nickname (rule 7), and an @mention of the upstream author or a
   link to one of his issues or pull requests. The patterns are in

@@ -60,6 +60,10 @@ allowed = ["src/play/assets.bin"]
 # A line of a disassembly listing: an address, two or more bytes, a mnemonic.
 listing = '^\s*(?:[0-9A-Fa-f]{4}:[0-9A-Fa-f]{4,8}|[0-9A-Fa-f]{8})\s+(?:[0-9A-Fa-f]{2}\s?){2,}\s+[a-z]{2,7}\b'
 listing_lines = 3
+# A decompiler's own names (Ghidra's FUN_0001a2b4, DAT_, undefined4,
+# unaff_, in_AX): two in a commit is decompiled code pasted in.
+decompiled = '\b(?:FUN|DAT|LAB|PTR|SUB|thunk_FUN)_[0-9a-fA-F]{4,}\b|\bundefined[1248]\b|\bunaff_\w+|\bin_[A-Z]{2,3}\b|\bextraout_\w+'
+decompiled_hits = 2
 # Driver code, where a game's name in a string would be a special case; the
 # player's and the setup program's screens are not driver code.
 driver_code = ["src/*"]
