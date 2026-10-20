@@ -175,7 +175,9 @@ command = "{env} python3 runs/game_live.py {id} {build_dir} $GAMES/{library} {ga
 # run's id is sndreg's tag: runs/sr_ID_MODEL_GAME, runs/sndreg_ID.txt
 kind = "recording"
 command = "{env} python3 runs/sndreg/sndreg.py check {build_dir} {id} -m {vmodel} {game}"
-base_command = "{env} python3 runs/sndreg/sndreg.py refs -m {vmodel} {game}"
+# without uCDD: recorded on 86Box's own card and judged against the stored
+# references (refs makes new references; a plan never overwrites them)
+base_command = "{env} python3 runs/sndreg/sndreg.py check - {id} --base -m {vmodel} {game}"
 [runner.pc]
 kind = "hardware"
 command = "on the PC with the kit of {build}: RUN {game}"
@@ -632,6 +634,14 @@ name = "UCDDPLAY"
 paths = ["src/play.asm", "src/play/*"]
 groups = []
 todo = "playcheck compare and fuzz against the base revision"
+
+[[area]]
+name = "sound check"
+# No source paths: the standard regression asks for it by name (regress.sh
+# list c): every family game on every card model it allows, through sndreg.
+paths = []
+groups = ["families"]
+vary = ["vmodel"]
 
 [[area]]
 name = "build script"
