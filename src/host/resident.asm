@@ -983,18 +983,13 @@ resident_io:
     je .split_done
     ror dword [esp], 16
 .split_done:
-    pop eax
-    pop esi
-    pop edx
-    pop ebx
     clc
-    ret
+    ; CF is set on the jump from a trapped byte.
 .split_bad:
     pop eax
     pop esi
     pop edx
     pop ebx
-    stc
     ret
 .callback:
     lea edi, [ebp+mon_rm_regs]

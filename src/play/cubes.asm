@@ -3,10 +3,7 @@
 
 ; Eight perspective cubes follow separate frequency bands.
 draw_cubes:
-    mov word [clip_left], SCROLL_X0
-    mov word [clip_right], SCROLL_X1
-    mov word [clip_top], SCROLL_Y0
-    mov word [clip_bottom], SCROLL_Y1
+    call clip_scroll
     mov word [cube_index], 0
 .cube:
     imul ax, [cube_index], ANA_BARS

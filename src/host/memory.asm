@@ -60,13 +60,7 @@ dpmi_memory_info:
     call dpmi_buffer
     jc dpmi_error
     mov edi, eax
-    pushad
-    mov ax, 0de03h
-    call far [ebp+mon_server]
-    mov [esp+20], edx
-    popad
-    add edx, [ebp+dpmi_pool_count]
-    add edx, [ebp+dpmi_parked+4]
+    call dpmi_free_pages
     sub edx, 64
     jnc .count
     xor edx, edx
@@ -233,13 +227,7 @@ dpmi_memory_allocate:
     cmp dword [ebp+dpmi_map_source], 0
     jne .place
     ; Refuse a block larger than the free pages before any page moves.
-    pushad
-    mov ax, 0de03h
-    call far [ebp+mon_server]
-    mov [esp+20], edx
-    popad
-    add edx, [ebp+dpmi_pool_count]
-    add edx, [ebp+dpmi_parked+4]
+    call dpmi_free_pages
     cmp eax, edx
     ja .full
 .place:
@@ -417,9 +405,7 @@ dpmi_memory_grow:
 ; frees and allocates again at the same address reuses its pages.
 dpmi_memory_park:
     pushad
-    push esi
     call dpmi_parked_drop
-    pop esi
     mov eax, [esi]
     mov [ebp+dpmi_parked], eax
     mov eax, [esi+4]
@@ -430,6 +416,17 @@ dpmi_memory_park:
     mov [esi+8], eax
     mov [esi+12], eax
     popad
+    ret
+
+; EDX=free pages of the server, the pool, and the parked block.
+dpmi_free_pages:
+    pushad
+    mov ax, 0de03h
+    call far [ebp+mon_server]
+    mov [esp+20], edx
+    popad
+    add edx, [ebp+dpmi_pool_count]
+    add edx, [ebp+dpmi_parked+4]
     ret
 
 dpmi_parked_drop:

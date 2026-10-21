@@ -89,30 +89,7 @@ cd_timer_refill:
     jmp .done
 .synchronous:
 %endif
-    mov byte [busy], 1
-    mov [cd_call_ss], ss
-    mov [cd_call_sp], sp
-%ifdef EXTERNAL_CD_BUFFERS
-    mov ax, [cd_work_segment]
-%else
-    mov ax, cs
-%endif
-    mov ss, ax
-    mov sp, cd_stack_top
-%ifdef RESIDENT_AUDIO
-    call cd_refill_mask
-%endif
-    sti
-    cld
-    call cd_foreground
-    cli
-%ifdef RESIDENT_AUDIO
-    call cd_refill_unmask
-%endif
-    mov byte [cd_background_reads], 0
-    mov ss, [cd_call_ss]
-    mov sp, [cd_call_sp]
-    mov byte [busy], 0
+    call cd_refill_run
 %ifdef OWN_HOST
     cmp word [cd_host_hold+2], 0
     je .done
@@ -165,6 +142,24 @@ cd_deferred_refill:
     ja .cancel
     mov byte [cd_refill_pending], 0
     mov word [cd_host_missed], 0
+    mov byte [cd_background_reads], 1
+    call cd_refill_run
+    jmp .done
+.cancel:
+    mov byte [cd_refill_pending], 0
+.done:
+    pop gs
+    pop fs
+    pop es
+    pop ds
+    popad
+    popf
+    retf
+cd_refill_pending db 0
+%endif
+
+; Run the refill on the CD stack. Interrupts are off.
+cd_refill_run:
     mov byte [busy], 1
     mov [cd_call_ss], ss
     mov [cd_call_sp], sp
@@ -175,7 +170,6 @@ cd_deferred_refill:
 %endif
     mov ss, ax
     mov sp, cd_stack_top
-    mov byte [cd_background_reads], 1
 %ifdef RESIDENT_AUDIO
     call cd_refill_mask
 %endif
@@ -190,19 +184,7 @@ cd_deferred_refill:
     mov ss, [cd_call_ss]
     mov sp, [cd_call_sp]
     mov byte [busy], 0
-    jmp .done
-.cancel:
-    mov byte [cd_refill_pending], 0
-.done:
-    pop gs
-    pop fs
-    pop es
-    pop ds
-    popad
-    popf
-    retf
-cd_refill_pending db 0
-%endif
+    ret
 
 cd_bios:
     pushf
@@ -248,8 +230,7 @@ cd_refill_mask:
     call physical_read
     mov [cd_refill_old_mask], al
     or al, 2
-    call physical_write
-    ret
+    jmp physical_write
 
 cd_refill_unmask:
     mov dx, 21h
@@ -257,8 +238,7 @@ cd_refill_unmask:
     mov ah, [cd_refill_old_mask]
     or ah, 0fdh
     and al, ah
-    call physical_write
-    ret
+    jmp physical_write
 
 cd_refill_old_mask db 0
 

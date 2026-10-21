@@ -1,3 +1,13 @@
+# Beta 0.9.4-a5
+
+## Changes in 0.9.4-a5
+
+- Read small CD-ROM data requests from raw images with one disk read for six sectors. Small data reads are about four times faster, and the intro video of The End of the World now plays at about native speed. The CD work buffer is about 10 KB larger. It goes to upper memory when a UMB is free; otherwise it uses conventional memory.
+- DPMI host: pass the mouse event handler call (INT 33h function 0Ch) from protected-mode programs to the mouse driver. This fixes the mouse in Igor: Objetivo Uikokahonia.
+- Remove duplicate code in the driver and the DPMI host.
+- Add a Fireworks visualization to UCDDPLAY. Rockets rise on bass hits and burst into gold, chrome, and burgundy sparks. Louder music starts more rockets.
+- Add Future Dimension, Igor: Objetivo Uikokahonia (Spanish CD version), Mortal Kombat Trilogy, PowerSlave, Sensible World of Soccer, Sensible World of Soccer 96/97, and Witchaven to the [compatibility list](https://github.com/vorvek/uCDD/wiki/Compatibility).
+
 # Beta 0.9.4-a4
 
 ## Changes in 0.9.4-a4

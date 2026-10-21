@@ -595,13 +595,9 @@ dpmi_dos16:
     pop edi
     mov esi, [ebp+dpmi_xfer_linear]
     mov ax, [esi+128]
-    ; Environment selector 0 keeps the parent environment (Crusade).
-    test ax, ax
-    jz .exec_env
+    ; Environment selector 0 stays 0: the parent environment (Crusade).
     call .segment
     jc .bad_pointer
-.exec_env:
-    mov esi, [ebp+dpmi_xfer_linear]
     mov [esi+128], ax
     mov eax, 130
     mov ecx, 160

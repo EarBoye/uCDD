@@ -145,6 +145,9 @@ mdm_record:
     pop di
     mov ax, [candidate]
     mov [es:di+HANDLE], ax
+%ifdef DRIVER_STAGE
+    mov byte [cs:stage_valid], 0
+%endif
     mov eax, [candidate_sectors]
     mov [es:di+SECTORS], eax
     mov byte [es:di+CHANGED], 0ffh
@@ -716,6 +719,9 @@ mdm_switch:
     cmp ax, 0ffffh
     je .done
     mov [si+HANDLE], ax
+%ifdef DRIVER_STAGE
+    mov byte [cs:stage_valid], 0
+%endif
     mov eax, [eject_sectors]
     mov [si+SECTORS], eax
     mov byte [si+CHANGED], 0ffh

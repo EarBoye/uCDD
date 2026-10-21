@@ -268,6 +268,7 @@ error_exit:
 %include "play/cubes.asm"
 %include "play/balls.asm"
 %include "play/dancers.asm"
+%include "play/fireworks.asm"
 %include "play/ui.asm"
 %include "play/input.asm"
 %include "play/text.asm"
@@ -480,6 +481,11 @@ dancer_kick times DANCERS dw 0
 dancer_side dw 0
 dancer_wave dw 0
 dancer_hi db 0
+fw_rockets times FW_ROCKETS*8 db 0
+fw_sparks times FW_SPARKS*10 db 0
+fw_bass_avg dw 0
+fw_cool db 0
+fw_next db 0
 cube_yaw_s dw 0
 cube_yaw_c dw 0
 cube_pitch_s dw 0

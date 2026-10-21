@@ -2,6 +2,8 @@
 ; SPDX-License-Identifier: GPL-3.0-only
 
 %define MAX_UNITS 4
+; Raw sectors that one short data read stages in the CD work buffer.
+%define CD_STAGE_SECTORS 6
 %define MAX_TRACKS 99
 %define TRACK_SIZE 12
 %define TRACK_START 0

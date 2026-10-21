@@ -4,10 +4,7 @@
 ; A chorus line of gold and chrome vector dancers with linked arms. A wave of
 ; kicks moves along the line. Louder frequency bands give higher kicks.
 draw_dancers:
-    mov word [clip_left], SCROLL_X0
-    mov word [clip_right], SCROLL_X1
-    mov word [clip_top], SCROLL_Y0
-    mov word [clip_bottom], SCROLL_Y1
+    call clip_scroll
     mov ax, SCROLL_X0
     mov bx, SCROLL_Y1
 .floor:
@@ -242,17 +239,15 @@ dancer_polar:
 
 ; AX = x, BX = y, DL = color. Draw one pixel inside the clip window.
 dancer_dot:
-    cmp ax, [clip_left]
-    jl .done
-    cmp ax, [clip_right]
-    jg .done
-    cmp bx, [clip_top]
-    jl .done
-    cmp bx, [clip_bottom]
-    jg .done
     push word [draw_color]
     mov [draw_color], dl
-    call put_pixel
+    push cx
+    push dx
+    ; A line of one point uses the clip test of draw_line.
+    mov cx, ax
+    mov dx, bx
+    call draw_line
+    pop dx
+    pop cx
     pop word [draw_color]
-.done:
     ret

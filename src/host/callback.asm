@@ -407,6 +407,29 @@ dpmi_callback_stubs:
 %assign slot slot+1
 %endrep
     times 0 / (($-dpmi_callback_stubs) = 16*6) db 0
+; INT 33h 0Ch handler. Keep the event: dpmi_mouse_deliver calls the client's
+; handler outside this IRQ (Igor reads the disk in its timer handler).
+dpmi_mouse_stub:
+    cmp word [cs:dpmi_mouse_vector+4], 0
+    je .done
+    pushf
+    cli
+    cmp byte [cs:dpmi_mouse_pending], 0
+    je .new
+    or [cs:dpmi_mouse_regs], ax
+    jmp .stored
+.new:
+    mov [cs:dpmi_mouse_regs], ax
+.stored:
+    mov [cs:dpmi_mouse_regs+2], bx
+    mov [cs:dpmi_mouse_regs+4], cx
+    mov [cs:dpmi_mouse_regs+6], dx
+    mov [cs:dpmi_mouse_regs+8], si
+    mov [cs:dpmi_mouse_regs+10], di
+    mov byte [cs:dpmi_mouse_pending], 1
+    popf
+.done:
+    retf
 dpmi_callback_enter:
     pushf
     cli
@@ -472,6 +495,11 @@ dpmi_callback_real_return:
     iret
 
 dpmi_callback_active db 0
+dpmi_mouse_pending db 0
+dpmi_mouse_depth db 0
+dpmi_mouse_vector dd 0
+    dw 0
+dpmi_mouse_regs times 6 dw 0
 dpmi_callback_index dw 0
 dpmi_callback_regs times 50 db 0
 dpmi_callback_resume dd 0

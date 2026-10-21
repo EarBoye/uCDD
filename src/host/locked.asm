@@ -226,6 +226,36 @@ dpmi_deliver_locked:
     mov word [edi+2], DPMI_STUB16
     mov word [edi+4], 2
 .framed:
+    shr byte [ebp+dpmi_mouse_frame], 1
+    jnc .frame_ready
+    ; A mouse handler returns with RETF to an IRET.
+    cmp byte [ebp+dpmi_client16], 0
+    jne .word_return
+    sub edi, 8
+    mov dword [edi], dpmi_mouse_return
+    mov dword [edi+4], 3bh
+    jmp .mouse_registers
+.word_return:
+    sub edi, 4
+    mov word [edi], dpmi_mouse_return
+    mov word [edi+2], DPMI_STUB16
+.mouse_registers:
+    xor eax, eax
+    mov [ebx], eax
+    mov [ebx+4], eax
+    mov ax, [ebp+dpmi_mouse_regs]
+    mov [ebx+36], eax
+    mov ax, [ebp+dpmi_mouse_regs+2]
+    mov [ebx+24], eax
+    mov ax, [ebp+dpmi_mouse_regs+4]
+    mov [ebx+32], eax
+    mov ax, [ebp+dpmi_mouse_regs+6]
+    mov [ebx+28], eax
+    mov ax, [ebp+dpmi_mouse_regs+8]
+    mov [ebx+12], eax
+    mov ax, [ebp+dpmi_mouse_regs+10]
+    mov [ebx+8], eax
+.frame_ready:
     sub edi, DPMI_LOCK_BASE
     mov [ebx+52], edi
     mov dword [ebx+56], DPMI_IRQ_SS
@@ -246,6 +276,15 @@ dpmi_deliver_locked:
 dpmi_locked_return:
     int 0f4h
     ud2
+dpmi_mouse_return:
+    iret
+
+; EBX=frame. Call the client's INT 33h 0Ch handler with the last event.
+dpmi_mouse_deliver:
+    mov byte [ebp+dpmi_mouse_pending], 0
+    mov byte [ebp+dpmi_mouse_frame], 1
+    lea esi, [ebp+dpmi_mouse_vector]
+    jmp dpmi_deliver_hardware
 
 dpmi_locked_done:
     DPMI_DEBUG_STOP
@@ -374,6 +413,7 @@ dpmi_stack_release:
     ret
 
 dpmi_stack_depth dd 0
+dpmi_mouse_frame db 0
 dpmi_stack_cursors times DPMI_LOCK_LEVELS dd 0
 
 dpmi_locked_abort:

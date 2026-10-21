@@ -446,10 +446,10 @@ dpmi_deliver_interrupt:
 %ifdef RESIDENT_HOST
     ; A parent's handler returns through the host to get the parent's state
     ; (Judge Dredd: JD.EXE calls INT 08h, LAW.EXE handles it).
-    cmp byte [ebp+dpmi_parent_mode], 0
-    jne .own
     cmp byte [ebp+dpmi_nested_depth], 0
     je .own
+    cmp byte [ebp+dpmi_parent_mode], 0
+    jne .own
     movzx eax, word [esi+4]
     shr eax, 3
     bt [ebp+dpmi_parent_map], eax

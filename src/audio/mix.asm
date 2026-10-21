@@ -890,8 +890,7 @@ sb_adpcm_sample:
     sub cx, [adpcm_next]
     cmp cx, -2
     je .previous
-    cmp cx, -1
-    je .current
+    ; -1 is the current sample.
     cmp cx, 2048
     jae .current
     inc cx
@@ -950,17 +949,16 @@ adpcm_decode:
     mov ah, al
     and ah, [adpcm_mask]
     movzx bx, byte [adpcm_level]
-    mov cl, [adpcm_bits]
-    dec cl
+    ; CL=8-bits. 7-CL=bits-1.
+    xor cl, 7
     shl bx, cl
     add bl, ah
     add bx, [adpcm_map]
     movzx cx, byte [bx]
     movzx bx, byte [adpcm_value]
-    mov dl, [adpcm_mask]
-    inc dl
-    test al, dl
-    jz .up
+    ; The sign bit is the only bit outside the magnitude mask.
+    cmp al, ah
+    je .up
     sub bx, cx
     jns .value
     xor bx, bx

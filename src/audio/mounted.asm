@@ -9,7 +9,7 @@
 %define EXTERNAL_CD_BUFFERS 1
 %define cd_half 0
 %define cd_stage 0
-%define cd_stack_top (CD_READ_BYTES+2048)
+%define cd_stack_top (CD_STAGE_SECTORS*2352+2048)
 %define SB_TAIL_PARAS 128
 %define CD_HALF_DATA_PARAS ((CD_HALF_BYTES+15)/16)
 %define CD_HALF_PARAS (CD_HALF_DATA_PARAS+SB_TAIL_PARAS)
@@ -677,6 +677,9 @@ cd_head:
     ret
 
 cd_foreground:
+%ifdef DRIVER_STAGE
+    mov byte [stage_valid], 0
+%endif
 %ifdef OWN_HOST
     cmp byte [cd_background_reads], 0ffh
     je .done

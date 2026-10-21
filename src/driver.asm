@@ -58,6 +58,15 @@ read_remaining dw 0
 read_completed dw 0
 read_bytes dw 0
 read_destination dd 0
+%ifdef RESIDENT_AUDIO
+%define DRIVER_STAGE 1
+stage_valid db 0
+stage_unit dw 0
+stage_handle dw 0
+stage_first dd 0
+stage_count dd 0
+stage_next dd 0
+%endif
 units_base dw 0
 
 strategy:
@@ -482,6 +491,14 @@ read_sectors:
     mov edx, [si+TRACKS+TRACK_CONTROL]
     shr edx, 8
     sub eax, edx
+%ifdef RESIDENT_AUDIO
+    ; Short raw reads: one DOS read stages several sectors.
+    cmp word [si+STRIDE], 2048
+    je .direct
+    cmp word [read_remaining], CD_STAGE_SECTORS
+    jbe read_staged
+.direct:
+%endif
     movzx edx, word [si+STRIDE]
     imul eax, edx
     movzx edx, word [si+PAYLOAD]
@@ -578,6 +595,89 @@ read_sectors:
 .range:
     mov ax, 8108h
     ret
+
+%ifdef RESIDENT_AUDIO
+; EAX=image sector of the first sector, SI=unit. Copy the payloads from the stage.
+read_staged:
+    mov [stage_next], eax
+    mov bx, [si+HANDLE]
+    cmp bx, [cd_handle]
+    jne .position_ready
+    mov byte [cd_seek], 1
+.position_ready:
+    call dos_enter
+.next:
+    mov si, [unit_pointer]
+    mov eax, [stage_next]
+    cmp byte [stage_valid], 0
+    je .fill
+    cmp si, [stage_unit]
+    jne .fill
+    mov bx, [si+HANDLE]
+    cmp bx, [stage_handle]
+    jne .fill
+    sub eax, [stage_first]
+    jb .fill
+    cmp eax, [stage_count]
+    jb .copy
+.fill:
+    mov byte [stage_valid], 0
+    mov eax, [stage_next]
+    movzx edx, word [si+STRIDE]
+    imul eax, edx
+    mov dx, ax
+    shr eax, 16
+    mov cx, ax
+    mov bx, [si+HANDLE]
+    mov ax, 4200h
+    int 21h
+    jc read_sectors.io_failure
+    mov ax, CD_STAGE_SECTORS
+    mul word [si+STRIDE]
+    mov cx, ax
+    mov bx, [si+HANDLE]
+    push ds
+    mov ds, [cd_work_segment]
+    xor dx, dx
+    mov ah, 3fh
+    int 21h
+    pop ds
+    jc read_sectors.io_failure
+    xor dx, dx
+    div word [si+STRIDE]
+    movzx eax, ax
+    test eax, eax
+    jz read_sectors.io_failure
+    mov [stage_count], eax
+    mov eax, [stage_next]
+    mov [stage_first], eax
+    mov [stage_unit], si
+    mov bx, [si+HANDLE]
+    mov [stage_handle], bx
+    mov byte [stage_valid], 1
+    xor eax, eax
+.copy:
+    movzx edx, word [si+STRIDE]
+    imul eax, edx
+    movzx edx, word [si+PAYLOAD]
+    add eax, edx
+    push ds
+    push es
+    les di, [read_destination]
+    mov ds, [cd_work_segment]
+    mov si, ax
+    mov cx, 512
+    cld
+    rep movsd
+    pop es
+    pop ds
+    add word [read_destination+2], 128
+    inc dword [stage_next]
+    inc word [read_completed]
+    dec word [read_remaining]
+    jnz .next
+    jmp read_sectors.read_done
+%endif
 
 compact_raw_read:
     push bx
@@ -1114,6 +1214,9 @@ mount_image:
     jc .reject
     mov ax, [candidate]
     mov [si+HANDLE], ax
+%ifdef DRIVER_STAGE
+    mov byte [cs:stage_valid], 0
+%endif
     mov eax, [candidate_sectors]
     mov [si+SECTORS], eax
     mov eax, [candidate_total]
@@ -1205,6 +1308,9 @@ clear_unit:
     mov dword [si+AUDIO_ENTRY], 0
 %endif
     mov word [si+HANDLE], 0ffffh
+%ifdef DRIVER_STAGE
+    mov byte [cs:stage_valid], 0
+%endif
     mov dword [si+SECTORS], 0
     mov byte [si+CHANGED], 0ffh
     clc

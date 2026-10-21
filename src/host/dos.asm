@@ -261,6 +261,11 @@ dpmi_dos_tile_room:
     ret
 
 dpmi_dos_translate:
+    cmp byte [ebp+dpmi_reflect_vector], 33h
+    jne .mux
+    cmp word [ebx+36], 0ch
+    je dpmi_mouse_handler
+.mux:
     cmp byte [ebp+dpmi_reflect_vector], 2fh
     jne .dos
     cmp word [ebx+36], 168ah
@@ -298,25 +303,20 @@ dpmi_dos_translate:
     cmp byte [ebp+dpmi_client16], 0
     jne dpmi_dos16
     ; 32-bit clients get the calls that pass a path or a short buffer.
-    mov al, [ebx+37]
-    cmp al, 39h
-    jb .ordinary
-    cmp al, 3dh
-    jbe dpmi_dos16
-    cmp al, 3fh
-    je dpmi_dos16
-    cmp al, 40h
-    je dpmi_dos16
-    cmp al, 41h
-    je dpmi_dos16
-    cmp al, 43h
-    je dpmi_dos16
-    cmp al, 47h
-    je dpmi_dos16
+    movzx eax, byte [ebx+37]
     cmp al, 5bh
     je dpmi_dos16
     cmp al, 6ch
     je dpmi_dos16
+    sub al, 39h
+    cmp al, 15
+    jae .ordinary
+    ; 39h-3Dh, 3Fh-41h, 43h, 47h
+    push edx
+    mov edx, 45dfh
+    bt edx, eax
+    pop edx
+    jc dpmi_dos16
     jmp .ordinary
 .psp:
     call dpmi_dos_frame
@@ -368,13 +368,8 @@ dpmi_dos_translate:
 .ordinary:
     call dpmi_dos_frame
     mov al, [ebp+dpmi_reflect_vector]
-    sub al, [ebp+mon_master]
-    cmp al, 8
-    jb .hardware
-    mov al, [ebp+dpmi_reflect_vector]
-    sub al, [ebp+mon_slave]
-    cmp al, 8
-    jb .hardware
+    call dpmi_vector_irq
+    jc .hardware
     call dpmi_register_interrupt
     jnc .hardware
     mov ax, [ebx+4]
@@ -445,19 +440,37 @@ dpmi_dos_translate:
     push dword [ebp+dpmi_irq_reflecting]
     ; A real-mode hook can chain to the bridge stub. The stub must not pass this IRQ up again.
     movzx eax, byte [ebp+dpmi_reflect_vector]
-    sub al, [ebp+mon_master]
-    cmp al, 8
-    jb .irq_bit
-    mov al, [ebp+dpmi_reflect_vector]
-    sub al, [ebp+mon_slave]
-    cmp al, 8
-    jae .irq_ready
-    add al, 8
-.irq_bit:
+    call dpmi_vector_irq
+    jnc .irq_ready
     bts [ebp+dpmi_irq_reflecting], eax
 .irq_ready:
     lea esi, [ebp+mon_real_irq]
     jmp .reflect_call
+
+; INT 33h 0Ch from protected mode: the driver calls dpmi_mouse_stub (Igor).
+dpmi_mouse_handler:
+    mov byte [ebp+dpmi_mouse_pending], 0
+    mov ax, [ebx]
+    mov [ebp+dpmi_mouse_vector+4], ax
+    mov eax, [ebx+28]
+    DPMI_OFFSET16 eax, ax
+    mov [ebp+dpmi_mouse_vector], eax
+%ifdef RESIDENT_HOST
+    mov al, [ebp+dpmi_nested_depth]
+    mov [ebp+dpmi_mouse_depth], al
+%endif
+    call dpmi_dos_frame
+    mov word [edi+28], 0ch
+    mov ax, [ebx+32]
+    mov [edi+24], ax
+    mov word [edi+20], dpmi_mouse_stub
+    mov eax, [ebp+mon_real_base]
+    shr eax, 4
+    mov [edi+34], ax
+    mov word [edi+32], 202h
+    mov eax, 33h
+    call mon_real_int
+    jmp mon_dpmi.done
 
 ; Carry clear if the supported service has no segment-pointer inputs.
 dpmi_register_interrupt:

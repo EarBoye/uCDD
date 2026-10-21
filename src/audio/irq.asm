@@ -223,15 +223,13 @@ virtual_pic_read:
 
 virtual_pic_write:
     ; ICW2-ICW4 follow ICW1 on the data port (pMAX under VCPI).
-    cmp byte [pic_init_words], 0
-    je .command
     cmp dx, 21h
     jne .command
+    cmp byte [pic_init_words], 0
+    je .mask
     dec byte [pic_init_words]
     jmp .physical
 .command:
-    cmp dx, 21h
-    je .mask
     test al, 10h
     jnz .init
     cmp al, 48h

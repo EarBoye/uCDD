@@ -491,7 +491,7 @@ audio_irq:
     jz .ended
     mov al, [sb_irq]
     or al, 60h
-    mov dx, 20h
+    ; DX=20h after physical_pic_isr.
     call physical_write
 .ended:
     pop dx

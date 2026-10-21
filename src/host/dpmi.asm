@@ -68,7 +68,7 @@ dpmi_cpu_detect:
     jz .done
     mov eax, 1
     db 0fh, 0a2h
-    shr ax, 8
+    mov al, ah
     and al, 0fh
     cmp al, 4
     jbe .done
@@ -392,6 +392,13 @@ mon_iret:
     jz .no_irq
     call dpmi_hardware_room
     jc .no_irq
+    cmp byte [ebp+dpmi_mouse_pending], 0
+    je .irq_check
+    call dpmi_top_level
+    jc .irq_check
+    mov ebx, esp
+    jmp dpmi_mouse_deliver
+.irq_check:
     call dpmi_pic_audio_allowed
     jc .pic_only
     cmp byte [ebp+dpmi_sti_sb_held], 0
@@ -1001,6 +1008,14 @@ dpmi_finish:
 %endif
     mov byte [ebp+dpmi_callback_active], 0
     mov byte [ebp+dpmi_exception_active], 0
+%ifdef RESIDENT_HOST
+    mov al, [ebp+dpmi_nested_depth]
+    cmp [ebp+dpmi_mouse_depth], al
+    jb .mouse_kept
+%endif
+    mov word [ebp+dpmi_mouse_vector+4], 0
+    mov byte [ebp+dpmi_mouse_pending], 0
+.mouse_kept:
     lea esi, [ebp+dpmi_exit_frame]
     lea edi, [ebp+mon_return]
     mov ecx, 9

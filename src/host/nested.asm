@@ -371,9 +371,11 @@ dpmi_nested_toggle:
     popad
     ret
 .swap:
+    ; XCHG with memory locks the bus.
     mov eax, [esi]
-    xchg eax, [edi]
-    mov [esi], eax
+    mov ebx, [edi]
+    mov [edi], eax
+    mov [esi], ebx
     add esi, 4
     add edi, 4
     loop .swap

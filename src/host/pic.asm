@@ -8,7 +8,7 @@ dpmi_pic_reset:
     mov byte [ebp+dpmi_real_priority], 0ffh
     mov word [ebp+dpmi_pic_special], 0
     mov word [ebp+dpmi_pic_read_mode], 0a0ah
-    mov word [ebp+dpmi_pic_lowest], 0707h
+    mov word [ebp+dpmi_pic_highest], 0
     in al, 21h
     mov [ebp+dpmi_pic_mask], al
     in al, 0a1h
@@ -70,9 +70,7 @@ dpmi_pic_next:
 .slave_priority:
     ; The highest priority follows the lowest level (C0h-C7h).
     push ecx
-    mov cl, [ebp+dpmi_pic_lowest+1]
-    inc cl
-    and ecx, 7
+    movzx ecx, byte [ebp+dpmi_pic_highest+1]
     ror al, cl
     movzx eax, al
     mov edx, esi
@@ -93,9 +91,7 @@ dpmi_pic_next:
     pop ecx
 .master:
     mov edx, ecx
-    mov cl, [ebp+dpmi_pic_lowest]
-    inc cl
-    and cl, 7
+    mov cl, [ebp+dpmi_pic_highest]
     ror dl, cl
     ror bl, cl
     movzx eax, dl
@@ -133,15 +129,8 @@ dpmi_pic_next:
 dpmi_pic_reflect:
     pushad
     movzx eax, byte [ebp+dpmi_reflect_vector]
-    sub al, [ebp+mon_master]
-    cmp al, 8
-    jb .clear
-    mov al, [ebp+dpmi_reflect_vector]
-    sub al, [ebp+mon_slave]
-    cmp al, 8
-    jae .done
-    add eax, 8
-.clear:
+    call dpmi_vector_irq
+    jnc .done
     bt [ebp+dpmi_pic_service], eax
     jnc .done
     btr [ebp+dpmi_pic_service], eax
@@ -204,9 +193,7 @@ dpmi_pic_audio_allowed:
     push ecx
     ; CL=the guest level and levels above it, CH=levels above it.
     push edx
-    mov dl, [ebp+dpmi_pic_lowest]
-    inc dl
-    and dl, 7
+    mov dl, [ebp+dpmi_pic_highest]
     mov cl, [ebp+dpmi_guest_irq]
     mov dh, 1
     shl dh, cl
@@ -299,9 +286,7 @@ dpmi_pic_io:
 .eoi_priority:
     ; The highest priority follows the lowest level.
     movzx eax, al
-    mov cl, [ebp+dpmi_pic_lowest+ebx]
-    inc cl
-    and cl, 7
+    mov cl, [ebp+dpmi_pic_highest+ebx]
     ror al, cl
     bsf eax, eax
     jz .forward
@@ -321,8 +306,9 @@ dpmi_pic_io:
     mov [ebp+dpmi_pic_read_mode+ebx], al
     jmp .forward
 .rotate:
+    inc eax
     and al, 7
-    mov [ebp+dpmi_pic_lowest+ebx], al
+    mov [ebp+dpmi_pic_highest+ebx], al
     jmp .forward
 .mask:
     mov [ebp+dpmi_pic_mask+ebx], al
@@ -411,7 +397,7 @@ dpmi_pic_restore:
     pushad
     xor ebx, ebx
 .controller:
-    cmp byte [ebp+dpmi_pic_lowest+ebx], 7
+    cmp byte [ebp+dpmi_pic_highest+ebx], 0
     je .special
     mov dx, 20h
     test ebx, ebx
@@ -421,7 +407,7 @@ dpmi_pic_restore:
     mov al, 0c7h
     mov ecx, 0101h
     call dpmi_pic_backend
-    mov byte [ebp+dpmi_pic_lowest+ebx], 7
+    mov byte [ebp+dpmi_pic_highest+ebx], 0
 .special:
     cmp byte [ebp+dpmi_pic_special+ebx], 0
     je .next
@@ -527,4 +513,5 @@ dpmi_pic_backend:
 dpmi_pic_mask dw 0ffffh
 dpmi_pic_read_mode dw 0a0ah
 dpmi_pic_special dw 0
-dpmi_pic_lowest dw 0707h
+; Level with the highest priority: one above the lowest (C0h-C7h).
+dpmi_pic_highest dw 0

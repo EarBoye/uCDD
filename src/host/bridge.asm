@@ -259,22 +259,27 @@ dpmi_bridge_real_vector:
 ; stub must then continue to the saved vector, or the BIOS timer stops.
 dpmi_bridge_mark_irq:
     push eax
-    sub al, [ebp+mon_master]
-    cmp al, 8
-    jb .mark
-    mov al, [esp]
-    sub al, [ebp+mon_slave]
-    cmp al, 8
-    jae .none
-    add al, 8
+    call dpmi_vector_irq
+    jc .mark
+    mov al, -1
 .mark:
     inc eax
     mov [ebp+dpmi_bridge_irq_chain], al
     pop eax
     ret
-.none:
-    mov byte [ebp+dpmi_bridge_irq_chain], 0
-    pop eax
+
+; AL=vector. CF set and AL=IRQ 0-15 for a PIC vector.
+dpmi_vector_irq:
+    sub al, [ebp+mon_master]
+    cmp al, 8
+    jb .done
+    add al, [ebp+mon_master]
+    sub al, [ebp+mon_slave]
+    cmp al, 8
+    jae .done
+    add al, 8
+    stc
+.done:
     ret
 
 ; The reflection starts at the saved vector. Clear the marks of this IRQ, or
@@ -675,7 +680,7 @@ dpmi_bridge_irq_%+irq:
     pushf
     cmp byte [cs:dpmi_bridge_irq_chain], irq+1
     je .chained
-    test word [cs:dpmi_irq_reflecting], 1<<irq
+    test byte [cs:dpmi_irq_reflecting+(irq>>3)], 1<<(irq&7)
     jnz .chained
 %if irq < 2
     push byte irq
@@ -711,7 +716,7 @@ dpmi_bridge_irq_%+irq:
 .chained:
     ; The hook chains once. A later IRQ at this stub is a new one.
     mov byte [cs:dpmi_bridge_irq_chain], 0
-    and word [cs:dpmi_irq_reflecting], 0ffffh & ~(1<<irq)
+    and byte [cs:dpmi_irq_reflecting+(irq>>3)], 0ffh & ~(1<<(irq&7))
 .chain:
     popf
     jmp far [cs:dpmi_bridge_vectors+irq*4]

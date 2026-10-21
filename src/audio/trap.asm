@@ -598,9 +598,7 @@ port_callback:
     mov byte [si+DMA_MASK], 4
 .all_output:
     or al, ah
-    mov bl, al
     call dma_output_channel
-    mov al, bl
     cmp ah, 0ffh
     je .all_write
     mov cl, ah
@@ -751,14 +749,15 @@ port_callback:
     mov [reply], ax
     mov byte [reply_count], 2
     jmp .done
+.asp_two:
+    mov bl, 2
+    jmp .asp
 .asp_one:
+    mov bl, 1
+.asp:
     ; ASP commands (Tornado): an SB16 without ASP takes the arguments and does not reply.
     mov byte [dsp_command], 0
-    mov byte [arguments], 1
-    jmp .done
-.asp_two:
-    mov byte [dsp_command], 0
-    mov byte [arguments], 2
+    mov [arguments], bl
     jmp .done
 .continue8:
     cmp byte [game_irq_bit], 2
@@ -1527,7 +1526,7 @@ port_callback:
     cmp dx, 2
     je .dma_read
     cmp dx, 0bh
-    je .dma_mode_read
+    je .dma_physical_read
     cmp dx, 0dh
     je .dma_physical_read
     cmp dx, 0fh
@@ -1544,11 +1543,6 @@ port_callback:
     sub dx, 0ah
     shl dx, 1
     add dx, 0d4h
-    jmp .dma_mode_physical
-.dma_mode_read:
-    cmp si, dma16
-    jne .dma_mode_physical
-    mov dl, 0d6h
 .dma_mode_physical:
     call physical_read
     jmp .result
@@ -1857,10 +1851,8 @@ adpcm_start:
     imul bx, 7
     mov eax, [adpcm_params+bx-7]
     mov [adpcm_bits], eax
-    mov al, [adpcm_params+bx-3]
-    mov [adpcm_top], al
-    mov ax, [adpcm_params+bx-2]
-    mov [adpcm_map], ax
+    mov eax, [adpcm_params+bx-4]
+    mov [adpcm_up], eax
     pop bx
     mov di, [game_dma]
     mov ax, [di+DMA_POSITION]
@@ -1890,30 +1882,15 @@ pending_stop:
 .done:
     ret
 
+; AL bits 0-1: channel. The output channel stays as it is.
 dma_unowned_write:
-%ifdef RESIDENT_AUDIO
-    cmp byte [sb_running], 0
+    call dma_output_channel
+    cmp ah, 0ffh
     je dma_shared_write
-    mov ah, al
-    and ah, 3
-    cmp byte [sound_card], 0
-    je .high_output
-    cmp si, dma8
-    jne dma_shared_write
-    cmp ah, [sb_dma8]
-    je .done
-    jmp dma_shared_write
-.high_output:
-    cmp si, dma16
-    jne dma_shared_write
-    add ah, 4
-    cmp ah, [sb_dma16]
-    jne dma_shared_write
-.done:
+    xor ah, al
+    test ah, 3
+    jnz dma_shared_write
     ret
-%else
-    jmp dma_shared_write
-%endif
 
 ; SI: controller. AH: the output channel on it, or 0FFh.
 dma_output_channel:
