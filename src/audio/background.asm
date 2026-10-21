@@ -50,6 +50,11 @@ cd_timer_refill:
     jne .done
     cmp byte [cd_bios_busy], 0
     jne .done
+%ifdef RESIDENT_AUDIO
+    ; The game is between the bytes of a DSP command (Prototype).
+    call cd_dsp_wait
+    jc .done
+%endif
     call physical_pic_isr
     or al, [virtual_pic_service]
     jnz .done
@@ -94,10 +99,16 @@ cd_timer_refill:
 %endif
     mov ss, ax
     mov sp, cd_stack_top
+%ifdef RESIDENT_AUDIO
+    call cd_refill_mask
+%endif
     sti
     cld
     call cd_foreground
     cli
+%ifdef RESIDENT_AUDIO
+    call cd_refill_unmask
+%endif
     mov byte [cd_background_reads], 0
     mov ss, [cd_call_ss]
     mov sp, [cd_call_sp]
@@ -134,6 +145,8 @@ cd_deferred_refill:
     jne .done
     cmp byte [cd_bios_busy], 0
     jne .done
+    call cd_dsp_wait
+    jc .done
     call physical_pic_isr
     or al, [virtual_pic_service]
     jnz .done
@@ -163,10 +176,16 @@ cd_deferred_refill:
     mov ss, ax
     mov sp, cd_stack_top
     mov byte [cd_background_reads], 1
+%ifdef RESIDENT_AUDIO
+    call cd_refill_mask
+%endif
     sti
     cld
     call cd_foreground
     cli
+%ifdef RESIDENT_AUDIO
+    call cd_refill_unmask
+%endif
     mov byte [cd_background_reads], 0
     mov ss, [cd_call_ss]
     mov sp, [cd_call_sp]
@@ -219,6 +238,46 @@ cd_background_remove:
     mov byte [cd_background_set], 0
 .done:
     ret
+
+%ifdef RESIDENT_AUDIO
+; A refill runs on top of the interrupted game code. A game keyboard handler
+; that does not return (Prototype skips its intro so) leaves the refill and
+; DOS busy. Hold the keyboard IRQ until the refill ends.
+cd_refill_mask:
+    mov dx, 21h
+    call physical_read
+    mov [cd_refill_old_mask], al
+    or al, 2
+    call physical_write
+    ret
+
+cd_refill_unmask:
+    mov dx, 21h
+    call physical_read
+    mov ah, [cd_refill_old_mask]
+    or ah, 0fdh
+    and al, ah
+    call physical_write
+    ret
+
+cd_refill_old_mask db 0
+
+; CF set: wait until the game sends the rest of a DSP command, for a few calls.
+cd_dsp_wait:
+    cmp byte [dsp_arguments], 0
+    je .free
+    cmp byte [cd_dsp_waits], 8
+    jae .free
+    inc byte [cd_dsp_waits]
+    stc
+    ret
+.free:
+    mov byte [cd_dsp_waits], 0
+    clc
+    ret
+
+cd_dsp_waits db 0
+%endif
 
 cd_old_timer dd 0
 cd_old_bios dd 0

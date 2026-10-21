@@ -34,6 +34,9 @@ mdm_move:
     dd 0
 mdm_old_key dd 0
 mdm_old_timer dd 0
+%ifdef RESIDENT_AUDIO
+mdm_old_mouse dd 0
+%endif
 
 ; DS:DX contains the list name, count, image records and transient scratch.
 mdm_mount:
@@ -272,6 +275,15 @@ mdm_hooks:
     mov dx, mdm_timer
     mov ax, 2508h
     int 21h
+%ifdef RESIDENT_AUDIO
+    mov ax, 3515h
+    int 21h
+    mov [mdm_old_mouse], bx
+    mov [mdm_old_mouse+2], es
+    mov dx, mdm_mouse
+    mov ax, 2515h
+    int 21h
+%endif
 .done:
     ret
 
@@ -301,6 +313,76 @@ mdm_key:
     call far [cs:mdm_old_key]
     mov byte [cs:mdm_key_active], 0
     iret
+
+%ifdef RESIDENT_AUDIO
+; The BIOS mouse service (INT 15h AH=C2h) sends a mouse command and takes the
+; next byte as the reply. A moving mouse can leave a data byte from the last
+; call in the controller when the caller has IF clear, and the setup fails.
+; Remove such bytes, and do not trap port 60h during the call.
+mdm_mouse:
+    cmp ah, 0c2h
+    jne .chain
+    cmp al, 6
+    ja .chain
+    push bp
+    mov bp, sp
+    test byte [bp+7], 2
+    pop bp
+    jnz .trap
+    push ax
+    push cx
+    mov cx, 400
+.drain:
+    in al, 64h
+    and al, 21h
+    cmp al, 21h
+    jne .idle
+    in al, 60h
+    mov cx, 400
+.idle:
+    loop .drain
+    pop cx
+    pop ax
+.trap:
+    cmp byte [cs:callback_set], 0
+    je .chain
+    push ax
+    smsw ax
+    test al, 1
+    pop ax
+    jz .chain
+    push ax
+    mov ax, 1a0ah
+    call .port
+    pop ax
+    pushf
+    call far [cs:mdm_old_mouse]
+    push ax
+    pushf
+    mov ax, 1a09h
+    call .port
+    popf
+    pop ax
+    ; Return CF in the caller's flags, so that its IF stays as it was.
+    push bp
+    mov bp, sp
+    jc .carry
+    and byte [bp+6], 0feh
+    pop bp
+    iret
+.carry:
+    or byte [bp+6], 1
+    pop bp
+    iret
+.chain:
+    jmp far [cs:mdm_old_mouse]
+.port:
+    pushad
+    mov dx, 60h
+    call far [cs:qpi]
+    popad
+    ret
+%endif
 
 ; Observe set-1 bytes without acknowledging the keyboard or PIC.
 mdm_scan:

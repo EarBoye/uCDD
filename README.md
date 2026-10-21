@@ -184,7 +184,7 @@ These are games known to work, not a list of every game that may work.
 
 - 3D Hero
 - 4-4-2 Soccer
-- A.D Cop
+- A.D. Cop
 - A.R.S.E.N.A.L: Taste the Power
 - Absolute Pinball
 - Abyss of Pandemonium
@@ -242,7 +242,6 @@ These are games known to work, not a list of every game that may work.
 - Diggers 2: Extractors
 - Dominus
 - Double Agent
-- Drascula: The Vampire Strikes Back
 - Drilling Billy
 - Dráscula: The Vampire Strikes Back (English edition)
 - Dungeon Keeper
@@ -256,7 +255,6 @@ These are games known to work, not a list of every game that may work.
 - Eternam
 - Exploration
 - Extreme Assault
-- Fantasy General
 - Fascination
 - Fatal Racing / Whiplash
 - FIFA International Soccer ‡
@@ -271,12 +269,11 @@ These are games known to work, not a list of every game that may work.
 - Gobliins 2: The Prince Buffoon
 - Goblins Quest 3
 - Golden Immortal
-- Grand Theft Auto (start through the K.EXE launcher)
+- Grand Theft Auto (start with GTADOS.BAT)
 - Great Naval Battles Vol. III: Fury in the Pacific, 1941-44
 - Great Naval Battles Vol. IV
 - Hariboy's Quest
 - Heimdall 2
-- Heroes of Might and Magic II (Deluxe Edition)
 - Heroes of Might and Magic II: The Succession Wars (DOS base game from Deluxe Edition)
 - Hexen: Beyond Heretic
 - Hound of the Baskervilles
@@ -285,7 +282,6 @@ These are games known to work, not a list of every game that may work.
 - Inca II: Wiracocha
 - Incredible Hulk: The Pantheon Saga
 - Inferno
-- Iron Man / X-O Manowar in Heavy Metal
 - Iron Man and X-O Manowar in Heavy Metal
 - Jetstrike
 - Judge Dredd
@@ -333,7 +329,6 @@ These are games known to work, not a list of every game that may work.
 - Pro Pinball: The Web
 - Pro Pinball: Timeshock!
 - Project Paradise
-- Prototype
 - Punky Duck
 - Q.A.D: Quintessential Art of Destruction
 - Quake
@@ -359,7 +354,6 @@ These are games known to work, not a list of every game that may work.
 - Rugby World Cup 95 ‡
 - SAF: Secret Armored Force
 - Sandwarriors
-- Savage Warriors
 - Screamer
 - Screamer 2
 - Screamer Rally
@@ -418,7 +412,7 @@ These are games known to work, not a list of every game that may work.
 - William Shatner's TekWar
 - Wingstar
 - Wipeout
-- World of Aden: Thunderscape
+- World of Aden: Thunderscape (do not move the mouse or push keys during the SSI logo)
 - World Rally Fever: Born on the Road
 - Worms United
 - WWF in Your House

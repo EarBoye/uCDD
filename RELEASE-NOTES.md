@@ -1,3 +1,26 @@
+# Beta 0.9.4-a3
+
+## Changes in 0.9.4-a3
+
+- Play single-cycle Creative ADPCM sound. μCDD converts it to PCM and mixes it with the CD-Audio. This fixes the missing sound effects in Tornado, The Patrician, and Town With No Name.
+- Accept short Sound Blaster DMA blocks, blocks shorter than one output period, and DMA buffers up to 64 KB. This fixes the sound in The Incredible Machine 2 and Alien Terminator.
+- Accept DSP commands 00h and 38h, the busy bit on DSP status reads, the length of DSP 4 Cxh commands, starts without arguments, and DSP commands 04h, 05h, 0Eh, and 0Fh. This fixes the sound startup in The Case of the Cautious Condor, Murder Makes Strange Deadfellows, Necromantics, Panic Soldier, Tornado, and Unlimited Warriors.
+- Trap the DMA master clear and mask-all ports, and split word writes to the PIC and wide Sound Blaster port access into bytes. This fixes the sound in Assault Rigs, Oscar, and The End of the World.
+- Pass the PIC initialization words, follow the rotated PIC priority, and send the EOI to the hardware for an owned interrupt that is in service. Sound no longer stops while the mouse moves in Magic Carpet 2 and XS, and Creature Shock starts.
+- Fill the CD-Audio queue from the Sound Blaster interrupt when a game stops the timer. This fixes the CD-Audio in Future Dimension and Judge Dredd.
+- Do not let a key that skips an intro stop a CD-Audio refill in DOS. Wait for the rest of a DSP command before a refill. This fixes the stopped CD-Audio and the hang in Prototype.
+- Remove old mouse bytes before each BIOS mouse setup call. The mouse no longer stays still in On the Ball, Golden Immortal, Syndicate Wars, Thunderscape, and XS when it moves while the game loads.
+- Ignore the request length of CD-ROM IOCTL and read requests, and stop reads at the lead-out. This fixes the CD access in Jetstrike, Lollypop, Tao, Angst, Necromantics, and Pinball Prelude.
+- Mount CUE sheets that have only audio tracks. This fixes Edna and Defender of the Crown.
+- Return the status for a repeated INIT request and follow the file table entry of open handles. This fixes Ultimate Body Blows.
+- Start the disk cache after DOS starts. This fixes the exception when MechWarrior 2: Ghost Bear's Legacy asks for the next disc during installation.
+- DPMI host: run the handlers of a parent program with the parent's settings while a child program runs, and share the parent's descriptors, callbacks, and interrupt vectors. This fixes the start and the sound effects of Judge Dredd, and Track Attack and Maximum Roadkill.
+- DPMI host: reflect INT 2Bh, translate DOS EXEC and more 32-bit DOS calls, and pass register-only mouse and multiplex calls. This fixes B.I.G., Genocide 2, Crusade, and Napion 3D.
+- DPMI host: report the real memory totals, detect the CPU, clear new pages, reuse freed blocks, and find free linear space faster. This fixes Hardball 4, X-Men: Children of the Atom, and Tao, and makes Mr. Tomato, Star Command: Revolution, and Queen: The Eye load faster.
+- DPMI host: handle STI, interrupt-flag, and INT nn faults from programs, and deliver real-mode interrupts that wait at the end of the audio interrupt. This fixes the Command & Conquer expansions, On the Ball, and Metal Rage.
+- Add a Chorus Line visualization to UCDDPLAY. A row of gold and chrome vector dancers with linked arms kicks in a wave. Louder frequency bands give higher kicks.
+- Add 133 games to the list of working Redbook-audio games. FIFA International Soccer and Rugby World Cup 95 need `UCDD -install -vcpi`.
+
 # Beta 0.9.4-a2
 
 ## Changes in 0.9.4-a2
