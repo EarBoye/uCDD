@@ -125,6 +125,7 @@ audio_cleanup:
     mov ah, 49h
     int 21h
     mov word [output_allocation], 0
+    mov word [sb_record_segment], 0
 .xms:
     call cd_close
     cmp word [cd_half_allocation], 0

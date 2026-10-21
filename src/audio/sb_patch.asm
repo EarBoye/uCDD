@@ -44,22 +44,7 @@ sb_patch:
     mov byte [game_start_pending], 2
     cmp eax, [sb_patch_limit]
     jae .restore
-    and ax, PERIOD_FRAMES-1
-    shl ax, 2
-    test byte [sound_card], 1
-    jz .offset
-    shr ax, 2
-    and ax, 0fffeh
-    cmp byte [sound_card], 3
-    jne .offset
-    shr ax, 1
-.offset:
-    add ax, [sb_patch_base]
-    mov di, ax
-    mov es, [output_segment]
-    mov byte [sb_patch_active], 1
-    call mix_half
-    mov byte [sb_patch_active], 0
+    call sb_remix
     call virtual_irq_tick
 .restore:
     popf
@@ -70,6 +55,283 @@ sb_patch:
     mov byte [sb_patch_available], 0
 .done:
     ret
+
+; Mix [sb_patch_clock, sb_patch_limit) again. A frame f is at ring frame
+; f mod 2*PERIOD_FRAMES. The new game part replaces the stored one.
+sb_remix:
+    mov eax, [sb_patch_limit]
+    mov [sb_remix_end], eax
+    call sb_filter_seed
+.part:
+    mov eax, [sb_patch_clock]
+    or eax, PERIOD_FRAMES*2-1
+    inc eax
+    cmp eax, [sb_remix_end]
+    jb .split
+    mov eax, [sb_remix_end]
+.split:
+    mov [sb_patch_limit], eax
+    mov ax, [sb_patch_clock]
+    and ax, PERIOD_FRAMES*2-1
+    shl ax, 2
+    test byte [sound_card], 1
+    jz .offset
+    shr ax, 2
+    and ax, 0fffeh
+    cmp byte [sound_card], 3
+    jne .offset
+    shr ax, 1
+.offset:
+    mov di, ax
+    mov es, [output_segment]
+    mov byte [sb_patch_active], 1
+    call mix_half
+    mov byte [sb_patch_active], 0
+    mov eax, [sb_patch_limit]
+    mov [sb_patch_clock], eax
+    cmp eax, [sb_remix_end]
+    jb .part
+    ret
+
+; The legacy filter of a remix starts at the stored output before it.
+sb_filter_seed:
+    cmp byte [sb_filter_legacy], 0
+    je .done
+    cmp word [sb_record_segment], 0
+    je .done
+    push es
+    mov si, [sb_patch_clock]
+    dec si
+    and si, PERIOD_FRAMES*2-1
+    shl si, 2
+    add si, [sb_record_bias]
+    and si, RING_BYTES*2-1
+    mov es, [sb_record_segment]
+%macro seed_channel 1
+    movsx eax, word [es:si+%1/4]
+    shl eax, 15
+    cdq
+    mov ecx, [sb_pcm_gain+%1/2]
+    test ecx, ecx
+    jz %%zero
+    idiv ecx
+    cmp eax, 32767
+    jle %%low
+    mov eax, 32767
+%%low:
+    cmp eax, -32767
+    jge %%ready
+    mov eax, -32767
+    jmp %%ready
+%%zero:
+    xor eax, eax
+%%ready:
+    imul edx, eax, -7966
+    mov [sb_filter_state+%1+4], edx
+    imul eax, 15746
+    mov [sb_filter_state+%1], eax
+%endmacro
+    seed_channel 0
+    seed_channel 8
+%unmacro seed_channel 1
+    pop es
+.done:
+    ret
+
+; ES:DI: start of an output half. Its stored game part becomes zero.
+sb_record_clear:
+    cmp word [sb_record_segment], 0
+    je .done
+    pushad
+    push es
+    mov ax, di
+    shr ax, OUTPUT_SHIFT+2
+    and al, 1
+    inc ax
+    or [sb_record_halves], al
+    mov es, [sb_record_segment]
+    add di, [sb_record_bias]
+    and di, RING_BYTES*2-1
+    mov cx, RING_BYTES*2
+    sub cx, di
+    cmp cx, PERIOD_BYTES
+    jbe .first
+    mov cx, PERIOD_BYTES
+.first:
+    mov bx, PERIOD_BYTES
+    sub bx, cx
+    shr cx, 1
+    xor ax, ax
+    rep stosw
+    mov cx, bx
+    shr cx, 1
+    xor di, di
+    rep stosw
+    pop es
+    popad
+.done:
+    ret
+
+; ES:DI: an output half mixed without stored game parts.
+sb_record_lost:
+    push ax
+    mov ax, di
+    shr ax, OUTPUT_SHIFT+2
+    and al, 1
+    inc ax
+    not al
+    and [sb_record_halves], al
+    pop ax
+    ret
+
+; EAX: game part of the word at ES:DI. Returns EAX minus the stored part
+; and stores EAX.
+sb_record_word:
+    cmp word [sb_record_segment], 0
+    je .done
+    push es
+    push si
+    push edx
+    mov si, di
+    add si, [sb_record_bias]
+    and si, RING_BYTES*2-1
+    mov es, [sb_record_segment]
+    movsx edx, word [es:si]
+    mov [es:si], ax
+    sub eax, edx
+    pop edx
+    pop si
+    pop es
+.done:
+    ret
+
+; SI: DMA channel whose address changed. AL: 1 if the frames already mixed can
+; be mixed again. A game that moves the address of a running auto-init
+; transfer at each block end (Savage Warriors) plays its next block from the
+; new buffer.
+sb_dma_switch:
+    cmp si, [game_dma]
+    jne .done
+    cmp byte [game_active], 0
+    je .done
+    cmp byte [game_start_pending], 0
+    jne .done
+    cmp byte [sb_single], 0
+    jne .done
+    cmp byte [game_source], 0
+    jne .done
+    cmp byte [sb_input], 0
+    jne .done
+    cmp byte [game_adpcm], 0
+    jne .done
+    cmp dword [game_limit], 0
+    je .done
+%ifdef OWN_HOST
+    cmp dword [game_physical], 0
+    jne .done
+%endif
+    pushad
+    push es
+    pushf
+    cli
+    mov [sb_switch_remix], al
+    ; The new buffer has the same size and is below 1 MiB.
+    movzx ebx, word [si+DMA_COUNT]
+    inc ebx
+    movzx eax, word [si+DMA_ADDRESS]
+    movzx ecx, byte [si+DMA_PAGE]
+    cmp si, dma16
+    jne .units
+    shl ebx, 1
+    shl eax, 1
+    and cl, 0feh
+.units:
+    shl ecx, 16
+    add ecx, eax
+    mov eax, [game_limit]
+    shr eax, 16
+    mov dl, cl
+    mov cl, [game_frame_shift]
+    shl eax, cl
+    mov cl, dl
+    cmp eax, ebx
+    jne .restore
+    add ebx, ecx
+    cmp ebx, 100000h
+    ja .restore
+    mov bx, cx
+    and bx, 15
+    shr ecx, 4
+    cmp cx, [game_segment]
+    jne .moved
+    cmp bx, [game_offset]
+    je .restore
+.moved:
+    ; With the old block end in the tail copy, the ring wrap reads the new buffer.
+    cmp byte [sb_tail_valid], 0
+    je .wrap
+    call .switch
+    jmp .restore
+.wrap:
+    ; Else the ring wrap must be in the frames mixed ahead.
+    mov edi, [periods]
+    add edi, 2
+    shl edi, OUTPUT_SHIFT
+    lea eax, [edi-1]
+    sub eax, [game_started]
+    mul dword [game_step]
+    add eax, [game_origin]
+    adc edx, 0
+    div dword [game_limit]
+    mov eax, edx
+    xor edx, edx
+    div dword [game_step]
+    cmp eax, PERIOD_FRAMES*2
+    jae .restore
+    call .switch
+    cmp byte [sb_switch_remix], 0
+    je .restore
+    cmp word [sb_record_segment], 0
+    je .restore
+    neg eax
+    lea eax, [edi+eax-1]
+    mov [sb_patch_clock], eax
+    mov [sb_patch_limit], edi
+    call output_clock
+    add eax, 32
+    cmp eax, [sb_patch_clock]
+    jae .start
+    mov eax, [sb_patch_clock]
+.start:
+    cmp eax, edi
+    jae .restore
+    mov [sb_patch_clock], eax
+    ; Both halves of the frames need stored game parts.
+    mov cl, OUTPUT_SHIFT
+    shr eax, cl
+    and al, 1
+    inc ax
+    test [sb_record_halves], al
+    jz .restore
+    mov eax, edi
+    dec eax
+    shr eax, cl
+    and al, 1
+    inc ax
+    test [sb_record_halves], al
+    jz .restore
+    call sb_remix
+.restore:
+    popf
+    pop es
+    popad
+.done:
+    ret
+.switch:
+    mov [game_segment], cx
+    mov [game_offset], bx
+    ret
+sb_switch_remix db 0
 
 %ifdef OWN_HOST
 sb_real_irq:

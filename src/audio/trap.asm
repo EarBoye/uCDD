@@ -635,6 +635,16 @@ port_callback:
     add bx, cx
     mov [si+bx], al
     xor byte [si+DMA_FLIP], 1
+%ifdef RESIDENT_AUDIO
+    cmp bx, DMA_ADDRESS+1
+    jne .done
+    mov al, 1
+    cmp dword [ss:ebp+12], 1
+    jne .switch
+    dec ax
+.switch:
+    call sb_dma_switch
+%endif
     jmp .done
 .command:
     cmp byte [arguments], 0
@@ -1864,6 +1874,7 @@ adpcm_start:
     sub edx, eax
     movzx eax, byte [adpcm_per]
     imul edx, eax
+    test edx, edx
     jnz .samples
     inc edx
 .samples:

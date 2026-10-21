@@ -47,6 +47,14 @@ audio_activate:
 .align_dma:
     add ax, RING_PARAS-1
     and ax, ~(RING_PARAS-1)
+    ; The free part of the allocation keeps the game part of each output word.
+    mov bx, ax
+    sub bx, [output_allocation]
+    shl bx, 4
+    add bx, RING_BYTES
+    mov [sb_record_bias], bx
+    mov bx, [output_allocation]
+    mov [sb_record_segment], bx
 .dma_ready:
     mov [output_segment], ax
     mov word [audio_error_text], cd_half_memory_message

@@ -50,7 +50,10 @@ mix_half:
     shl eax, OUTPUT_SHIFT
 %ifdef RESIDENT_AUDIO
     cmp byte [sb_patch_active], 0
-    je .normal_half
+    jne .patch_half
+    call sb_record_clear
+    jmp .normal_half
+.patch_half:
     mov eax, [sb_patch_clock]
 .normal_half:
 %endif
@@ -148,6 +151,7 @@ mix_half:
     jnz .cd_only_frame
     jmp .half_complete
 .fast_active:
+    call sb_record_lost
     cmp byte [game_source], 0
     jne .frame
     cmp byte [sb_single], 0
@@ -495,12 +499,24 @@ mix_half:
     stosb
     jmp .left_stored
 .left_word:
+    push edx
     cmp byte [sb_patch_active], 0
-    je .left_save
+    je .left_record
+    call sb_record_word
     movsx edx, word [es:di]
     add eax, edx
     call .clip
+    jmp .left_save
+.left_record:
+    cmp byte [game_active], 0
+    je .left_save
+    push eax
+    mov eax, edx
+    call .clip
+    call sb_record_word
+    pop eax
 .left_save:
+    pop edx
 %endif
     stosw
 %ifdef RESIDENT_AUDIO
@@ -590,10 +606,20 @@ mix_half:
     jmp .right_stored
 .right_word:
     cmp byte [sb_patch_active], 0
-    je .right_save
+    je .right_record
+    call sb_record_word
     movsx edx, word [es:di]
     add eax, edx
     call .clip
+    jmp .right_save
+.right_record:
+    cmp byte [game_active], 0
+    je .right_save
+    push eax
+    mov eax, esi
+    call .clip
+    call sb_record_word
+    pop eax
 .right_save:
 %endif
     stosw

@@ -344,9 +344,6 @@ audio_irq:
 %endif
     mov es, [output_segment]
     mov di, [next_half]
-%ifdef RESIDENT_AUDIO
-    mov [sb_patch_base], di
-%endif
     mov ax, PERIOD_BYTES
     test byte [sound_card], 1
     jz .half_size

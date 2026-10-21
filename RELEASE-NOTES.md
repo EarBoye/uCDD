@@ -1,3 +1,11 @@
+# Beta 0.9.4-a4
+
+## Changes in 0.9.4-a4
+
+- Mix game sound correctly when a game starts a new sound block before the old block ends, or changes its DMA buffer at a block end. This fixes the crackling sound effects in Prototype and the echoes and crackling in Savage Warriors. The resident driver uses about 0.9 KB more upper memory. Conventional memory use does not change.
+- Give the DPMI host's locked interrupt stack eight levels instead of four, and keep two levels free for software interrupts. This fixes Fantasy General, which stopped on the map when the mouse moved.
+- Move the list of working games to the [compatibility list](https://github.com/vorvek/uCDD/wiki/Compatibility) in the wiki. Add Prototype, Savage Warriors, and Fantasy General to the list.
+
 # Beta 0.9.4-a3
 
 ## Changes in 0.9.4-a3

@@ -3,7 +3,7 @@
 
 HOST_PROTECTED
 %define DPMI_LOCK_BASE 3e0000h
-%define DPMI_LOCK_LEVELS 4
+%define DPMI_LOCK_LEVELS 8
 %define DPMI_HARDWARE_FRAME 68
 dpmi_locked_init:
     pushad
@@ -36,7 +36,7 @@ dpmi_locked_init:
     inc ebx
     cmp ebx, DPMI_LOCK_PAGES
     jb .page
-    mov dword [ebp+dpmi_ldt+6*8], 00003fffh
+    mov dword [ebp+dpmi_ldt+6*8], 00007fffh
     mov dword [ebp+dpmi_ldt+6*8+4], 0040f23eh
     mov dword [ebp+dpmi_ldt+7*8], 0e0000fffh
     mov dword [ebp+dpmi_ldt+7*8+4], 0040f23fh
@@ -335,7 +335,8 @@ dpmi_hardware_room:
     cmp byte [ebp+resident_refill_busy], 0
     jne .full
 %endif
-    cmp dword [ebp+dpmi_stack_depth], DPMI_LOCK_LEVELS
+    ; Keep two levels for software interrupts and exceptions in a handler.
+    cmp dword [ebp+dpmi_stack_depth], DPMI_LOCK_LEVELS-2
     jb .available
 .full:
     stc
@@ -381,6 +382,7 @@ dpmi_locked_abort:
     jmp dpmi_finish
 
 dpmi_locked_linear dd 3fe000h,DPMI_LOCK_BASE,3fa000h,3fb000h,DPMI_LOCK_BASE+4096,DPMI_LOCK_BASE+8192,DPMI_LOCK_BASE+12288
+    dd DPMI_LOCK_BASE+16384,DPMI_LOCK_BASE+20480,DPMI_LOCK_BASE+24576,DPMI_LOCK_BASE+28672
 dpmi_locked_pages times DPMI_LOCK_PAGES dd 0
 dpmi_locked_ptes times DPMI_LOCK_PAGES dd 0
 dpmi_locked_cursor dd 4096
