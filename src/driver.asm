@@ -956,6 +956,20 @@ STATUS_BYTES equ 4+IRQ_COUNTERS*4+4
     mov si, irq_counters+4
     mov cx, IRQ_COUNTERS-1
     rep movsd
+    ; irq_ticks holds the tick at the start: report the ticks since in its
+    ; place in the copy, counted back from the last counter, irq_stray
+    ; (the BIOS count at 0040:006Ch, a dword the timer interrupt updates,
+    ; wraps at midnight, 1800B0h ticks a day). Interrupts are off here.
+    push fs
+    push 40h
+    pop fs
+    mov eax, [fs:6ch]
+    pop fs
+    sub eax, [irq_ticks]
+    jns .ticks_since
+    add eax, 1800b0h
+.ticks_since:
+    mov [es:di-(irq_stray+4-irq_ticks)], eax
     cmp word [control_op], 11
     jne .status_faults
     mov eax, [periods]
@@ -966,6 +980,12 @@ STATUS_BYTES equ 4+IRQ_COUNTERS*4+4
     mov dword [si], 0
     add si, 4
     loop .status_clear
+    push fs
+    push 40h
+    pop fs
+    mov eax, [fs:6ch]
+    pop fs
+    mov [irq_ticks], eax
 .status_faults:
     sti
     mov al, [fault]

@@ -576,6 +576,13 @@ align 4
 irq_counters:
 irq_periods_base dd 0  ; [periods] at the reset (reported: the periods since)
 irq_spurious dd 0      ; IRQ 7 entries with nothing in service (sb16.asm)
+irq_late_half dd 0     ; output periods refilled more than half a period
+                       ; after their interrupt was due (sb16.asm)
+irq_late_whole dd 0    ; refilled a whole period late: the card had already
+                       ; played the old half (sb16.asm); two periods or
+                       ; more alias and show only against irq_ticks
+irq_ticks dd 0         ; the BIOS timer tick at the start (reported: the
+                       ; ticks since, 18.2 a second: driver.asm)
 irq_raised dd 0        ; requests to the virtual PIC: an edge on the line
 irq_taken dd 0         ; virtual interrupts given to a handler
 irq_ended dd 0         ; virtual interrupts ended by the game's EOI
@@ -583,7 +590,9 @@ irq_overrun dd 0       ; block ends with the line still high (unacknowledged)
 irq_reraised dd 0      ; requests raised again after a whole period with
                        ; nothing acknowledged, requested or in service
 irq_stray dd 0         ; EOIs swallowed as stray: the DPMI host had ended
-                       ; the IRQ at the controller (here and host/pic.asm)
+                       ; the IRQ at the controller (here and host/pic.asm);
+                       ; last, as the host finds it 4 bytes before
+                       ; sb_stray_eoi (cdf5_count_check)
 IRQ_COUNTERS equ ($-irq_counters)/4
 %ifdef RESIDENT_AUDIO
 sb_stray_eoi db 0

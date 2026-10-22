@@ -97,6 +97,14 @@ audio_activate:
     call cd_open
     jc .cleanup
     call virtual_irq_init
+    ; The tick the counters start from (UCDD -STATUS: ticks since). Here at
+    ; install only: audio_engage calls virtual_irq_init again later.
+    push fs
+    push 40h
+    pop fs
+    mov eax, [fs:6ch]
+    pop fs
+    mov [irq_ticks], eax
     mov ax, [output_segment]
     mov es, ax
     xor di, di

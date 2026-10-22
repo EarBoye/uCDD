@@ -377,7 +377,8 @@ audio_irq:
 ; Joined from the SB16 path above and from .pro_audio, .wss and .codec below,
 ; once the card's own interrupt is acknowledged. On every path: the handler's
 ; stack with PUSHAD, ES and FS saved, DS=CS, DF clear, the IRQ masked at the
-; controller; ES and DI are not set yet.
+; controller; ES and DI are not set yet; EBX holds nothing needed after here
+; (the lateness check below uses it).
 .acknowledged:
 %ifdef RESIDENT_AUDIO
     call sb_patch
@@ -385,6 +386,24 @@ audio_irq:
     inc dword [periods]
 %ifdef MOUNTED_AUDIO
     call output_clock
+    ; How late this interrupt is: on time, the clock has just entered the
+    ; period [periods] now names. Past half of it: late by over half a
+    ; period. In the next one: a whole period late, and the card has played
+    ; the half this refill is for. Two periods or more alias (output_clock
+    ; sees two periods of ring) and show only as periods lost against the
+    ; timer ticks (UCDD -STATUS). EBX is free on every path into here.
+    mov ebx, eax
+    shr ebx, OUTPUT_SHIFT
+    cmp ebx, [periods]
+    jb .late_done
+    ja .late_whole
+    test eax, PERIOD_FRAMES/2
+    jz .late_done
+    inc dword [irq_late_half]
+    jmp .late_done
+.late_whole:
+    inc dword [irq_late_whole]
+.late_done:
     shr eax, OUTPUT_SHIFT
     mov [periods], eax
     and ax, 1

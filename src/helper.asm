@@ -750,8 +750,9 @@ usage_message db 'UCDD mounts CD images as CD-ROM drives.',13,10,13,10
     db '  -drive d   uCDD drive letter.',13,10,'$'
 %ifdef RESIDENT_AUDIO
 ; In the order of the counters (audio/irq.asm, irq_counters).
-status_labels dw status_periods, status_spurious, status_raised, status_taken
-    dw status_ended, status_overrun, status_reraised, status_stray, status_faults
+status_labels dw status_periods, status_spurious, status_late_half, status_late_whole
+    dw status_ticks, status_raised, status_taken, status_ended, status_overrun
+    dw status_reraised, status_stray, status_faults
 status_labels_end:
 status_title db 'Sound interrupts since uCDD started (or the last -status -reset):',13,10,'$'
 status_periods db '  Output periods (card interrupts)   $'
@@ -762,10 +763,14 @@ status_ended db '    ended by the game', 39, 's EOI          $'
 status_overrun db '    blocks ended unacknowledged      $'
 status_reraised db '    raised again, no acknowledge     $'
 status_stray db '    EOIs taken as stray              $'
+status_late_half db '  Output periods refilled late       $'
+status_late_whole db '    a whole period late              $'
+status_ticks db '  Timer ticks (18.2 a second)        $'
 status_faults db '  Fault codes                       $'
 status_note db 13,10,13,10
     db 'Healthy: taken and ended close to raised; the four below them and',13,10
-    db 'the fault codes near 0.',13,10,'$'
+    db 'the fault codes near 0; few periods refilled late, none a whole',13,10
+    db 'period; periods close to what the ticks give at the output rate.',13,10,'$'
 line_end db 13,10,'$'
 status_buffer times 4+4*IRQ_COUNTERS+4 db 0
 %endif
