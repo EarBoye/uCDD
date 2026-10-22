@@ -61,7 +61,8 @@ why = "it would notify the upstream author; nothing from this fork goes to him"
 # beside this file and ignored by git, or in UCDD_GAMES (os.pathsep apart).
 paths = []
 suffixes = [".exe", ".com", ".ovl", ".ovr", ".dig", ".mdi", ".adv", ".drv", ".386", ".dll",
-            ".bin", ".cue", ".iso", ".img", ".ima", ".mdf", ".ccd", ".sub", ".voc", ".xmi"]
+            ".bin", ".cue", ".iso", ".img", ".ima", ".mdf", ".ccd", ".sub", ".voc", ".xmi",
+            ".pak", ".vxd"]
 # The project's own files with those suffixes.
 allowed = ["src/play/assets.bin"]
 # A line of a disassembly listing: an address, two or more bytes, a mnemonic.

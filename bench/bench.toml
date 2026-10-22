@@ -1,16 +1,16 @@
-# What the bench repository (private) may hold. Its pre-commit hook
+# What a bench repository may hold. Its pre-commit check
 # (bench/hooks/pre-commit) refuses the rest. The game, program and disc file
 # suffixes are method.toml's [games] suffixes; these are added to them.
 
 # Recordings of game sound, ROMs, machine and disk images: kept on the
-# bench and backed up apart, never pushed (game content, licensed software,
+# bench and backed up apart, never committed (game content, licensed software,
 # or simply too big).
-refuse = [".wav", ".flac", ".mp3", ".ogg", ".raw", ".pcm", ".rom", ".vhd", ".vhdx",
+refuse = [".wav", ".flac", ".mp3", ".ogg", ".m4a", ".raw", ".pcm", ".rom", ".vhd", ".vhdx",
           ".qcow2", ".vdi", ".vmdk", ".86f", ".hdi", ".hdf", ".chd", ".zip", ".7z", ".rar"]
 
 # No single file larger than this goes in (GitHub refuses 100 MB; the bench
 # stays small enough to clone onto a new machine in minutes).
 max_mb = 20
 
-# Exceptions are listed in the bench repository's own .bench-allow file, one
+# Exceptions are listed in each bench repository's own .bench-allow file, one
 # shell glob a line, each with a comment saying why.

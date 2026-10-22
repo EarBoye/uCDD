@@ -6,6 +6,8 @@
 #   sh install.sh --remove WORKTREE ...   the hook out of them again
 #   sh install.sh --claude DIR            the skill linked into DIR/.claude,
 #                                         and the settings lines to add there
+#   sh install.sh --bench REPO            the bench's check linked into a
+#                                         bench repository's .git/hooks
 #
 # All worktrees share one hooks directory, so the hook is set per worktree
 # (git config --worktree core.hooksPath) and the others never see it.
@@ -43,6 +45,25 @@ Add this to $1/.claude/settings.json (merge it with what is there):
 EOF
 }
 
+# A bench repository reads its check from .git/hooks. core.hooksPath is left
+# alone: the guard refuses any change to it, as a moved hooks path is how a
+# uCDD commit would skip its hook.
+bench() {
+    if path=$(git -C "$1" config core.hooksPath); then
+        echo "install.sh: $1: core.hooksPath is set ($path), so git does not read" \
+             ".git/hooks there; the backup still runs the check itself" >&2
+        exit 1
+    fi
+    hooks=$(cd "$1" && cd "$(git rev-parse --git-common-dir)" && pwd)/hooks
+    mkdir -p "$hooks"
+    if [ -e "$hooks/pre-commit" ] && [ ! -L "$hooks/pre-commit" ]; then
+        echo "$hooks/pre-commit exists and is not a link; left alone" >&2
+        exit 1
+    fi
+    ln -sfn "$here/bench/hooks/pre-commit" "$hooks/pre-commit"
+    echo "bench check: $hooks/pre-commit -> $here/bench/hooks/pre-commit"
+}
+
 worktree() {
     top=$(git -C "$1" rev-parse --show-toplevel)
     if [ "$(git -C "$top" config --bool core.bare || echo false)" = true ] ||
@@ -61,11 +82,12 @@ worktree() {
     fi
 }
 
-[ $# -gt 0 ] || { sed -n '2,12p' "$0" | sed 's/^# \{0,1\}//'; exit 1; }
+[ $# -gt 0 ] || { sed -n '2,14p' "$0" | sed 's/^# \{0,1\}//'; exit 1; }
 while [ $# -gt 0 ]; do
     case "$1" in
         --remove) remove=1 ;;
         --claude) shift; claude "$1" ;;
+        --bench) shift; bench "$1" ;;
         *) worktree "$1" ;;
     esac
     shift

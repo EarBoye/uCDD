@@ -434,11 +434,16 @@ class BenchTests(unittest.TestCase):
         self.top = Path(self.tmp.name) / 'top'
         self.remote = Path(self.tmp.name) / 'remote.git'
         subprocess.run(['git', 'init', '-q', '--bare', str(self.remote)], check=True)
-        subprocess.run(['git', 'init', '-q', '-b', 'main', str(self.top)], check=True)
-        for key, value in (('core.hooksPath', str(PACKAGE / 'bench/hooks')), ('user.name', 'Test'),
-                           ('user.email', 'test@example.com')):
-            self.git('config', key, value)
+        self.make(self.top)
+        installed = subprocess.run(['sh', str(PACKAGE / 'install.sh'), '--bench', str(self.top)],
+                                   capture_output=True, text=True)
+        self.assertEqual(installed.returncode, 0, installed.stderr)
         self.git('remote', 'add', 'origin', str(self.remote))
+
+    def make(self, top):
+        subprocess.run(['git', 'init', '-q', '-b', 'main', str(top)], check=True)
+        for key, value in (('user.name', 'Test'), ('user.email', 'test@example.com')):
+            subprocess.run(['git', 'config', key, value], cwd=top, check=True)
 
     def tearDown(self):
         self.tmp.cleanup()
@@ -458,7 +463,7 @@ class BenchTests(unittest.TestCase):
 
     def test_game_and_heavy_files_stay_out(self):
         for name in ('kit/UCDD.EXE', 'dos/SBT16.COM', 'runs/sr_x/sound.wav', 'roms/bios.rom',
-                     'machines/dos.vhd', 'GAMES/SOUND/SB16.DIG'):
+                     'machines/dos.vhd', 'GAMES/SOUND/SB16.DIG', 'hwlog/PAK0.PAK', 'phone/take.m4a'):
             result = self.commit(name)
             self.assertEqual(result.returncode, 1, name)
             self.assertIn('pre-commit: refused', result.stderr)
@@ -490,6 +495,41 @@ class BenchTests(unittest.TestCase):
         again = subprocess.run(backup, capture_output=True, text=True)
         self.assertEqual(again.returncode, 0, again.stderr)
         self.assertNotIn('backed up', again.stdout)
+
+    def backup(self, top):
+        return subprocess.run(['sh', str(PACKAGE / 'bench/backup.sh'), str(top)],
+                              capture_output=True, text=True)
+
+    def test_backup_without_remote_keeps_history(self):
+        notes = Path(self.tmp.name) / 'notes'
+        self.make(notes)
+        for text in ('first\n', 'second\n'):
+            (notes / 'LESSONS.md').write_text(text)
+            result = self.backup(notes)
+            self.assertEqual(result.returncode, 0, result.stderr)
+        log = subprocess.run(['git', 'log', '--oneline'], cwd=notes, capture_output=True, text=True)
+        self.assertEqual(log.stdout.count('Backup:'), 2)
+
+    def test_backup_checks_without_the_hook(self):
+        notes = Path(self.tmp.name) / 'notes'
+        self.make(notes)
+        (notes / 'take1.m4a').write_bytes(b'x')
+        result = self.backup(notes)
+        self.assertEqual(result.returncode, 1)
+        self.assertIn('pre-commit: refused', result.stderr)
+        self.assertIn('not backed up', result.stderr)
+        head = subprocess.run(['git', 'rev-parse', '-q', '--verify', 'HEAD'], cwd=notes,
+                              capture_output=True)
+        self.assertNotEqual(head.returncode, 0)
+
+    def test_install_leaves_hooks_path_alone(self):
+        self.assertEqual(self.git('config', 'core.hooksPath').returncode, 1)
+        self.assertTrue((self.top / '.git/hooks/pre-commit').is_symlink())
+        self.git('config', 'core.hooksPath', str(self.top / 'elsewhere'))
+        refused = subprocess.run(['sh', str(PACKAGE / 'install.sh'), '--bench', str(self.top)],
+                                 capture_output=True, text=True)
+        self.assertEqual(refused.returncode, 1)
+        self.assertIn('core.hooksPath is set', refused.stderr)
 
 
 class GuardTests(unittest.TestCase):

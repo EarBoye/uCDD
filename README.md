@@ -13,7 +13,7 @@ order of work into these pieces:
 | `tools/trailers.py` | Counts Issue:, Lesson: and Evidence: trailers in the history |
 | `tools/game.py` | Before a game runs: its engine, driver versions and family, looked up in the library; what the notes lack |
 | `tools/ci.py`, `ci/method.yml` | The checks on GitHub: every branch built with its headroom, and the hook's checks on commits made after the hook went in |
-| `bench/` | The bench as a private repository: its .gitignore, a pre-commit hook against game and heavy files, the hourly backup, and how to restore it on a new machine (bench/README.md) |
+| `bench/` | The bench's backups: the bench folder in a private repository, the notes versioned on the machine only, a pre-commit check against game and heavy files, the hourly backup, and how to restore it all on a new machine (bench/README.md) |
 | `install.sh`, `tests/test_method.py`, `lib/methodlib.py` | Install per worktree; self-tests; what the pieces share |
 
 Standard library only: Python 3.11 or later (tomllib), git, sh.
@@ -60,7 +60,8 @@ From the uCDD clone:
 - **The skill link and the guard** in Claude Code's settings:
   `sh install.sh --claude <dir>` prints the lines to compare.
 - **The ledger** (`ledger/`, or `[ledger] path`): its results and saved plans
-  exist only where the runners wrote them. Keep it in the bench repository
+  exist only where the runners wrote them. Keep it in the bench's top
+  folder, versioned on the machine and copied to the backup disk
   (bench/README.md); a lost ledger means plans are saved and run again
   before a commit can cite them.
 - **The self-tests** need `UCDD_REPO` (a uCDD clone) and `UCDD_REF`, and NASM
@@ -260,7 +261,7 @@ each verdict once a run is judged:
 
 - **What an entry holds:** the time, the plan and run, the verdict, the hash
   of every EXE and BIN in the build directory, the hash of each tool given
-  (the bench is not versioned, so this pins the instruments), the hash of
+  (it pins the instrument exactly, whatever its folder's history says), the hash of
   each output, and the host.
 - **Where it lives:** `ledger/` beside this README (ignored by git), or
   `[ledger] path` in method.toml, or `UCDD_LEDGER`. The ledger is append
@@ -394,8 +395,10 @@ cross-check: every trailer should have its hit line in the register.
   - playcheck for UCDDPLAY.
 
   The plan names each as a warning when its area is hit.
-- **The test bench is not versioned.** Once it is, the matrix belongs with
-  it, and `[rows] refs` in method.toml may need its branch.
+- **The matrix is kept here, not with the bench folder it describes.** The
+  bench folder is versioned now, in a private repository (bench/README.md),
+  but the hook, the planner and GitHub's checks read the matrix from this
+  branch and cannot see that repository.
 - **`[ci] check_after`** is empty: GitHub builds every branch but checks no
   commits until it is set to the time the hook went in.
 - **An amend** can fold a row into the code commit it should precede. The

@@ -1,13 +1,14 @@
-# The bench repository's .gitignore (copy it to .gitignore at its top).
+# The top folder's .gitignore (copy it to .gitignore there, bench/README.md).
 # Everything is ignored unless listed: a game, a disc image or a recording
-# cannot come in by accident. Name what the bench keeps below.
+# cannot come in by accident. Name what the top folder keeps below: the
+# notes, Claude's settings, the ledger and the folders backup.sh mirrors in.
+# Never the bench folder or another folder that is its own repository: git
+# would record only a bare link to it.
 
 /*
 !/.gitignore
 !/.bench-allow
-# The bench's folders, for example its runners, its notes, Claude's
-# settings, the ledger and the mirrored folders (backup.sh --mirror):
-# !/<the bench folder>/
+!/method.local.toml
 # !/<the notes folder>/
 # !/.claude/
 # !/ledger/
@@ -20,10 +21,12 @@ build_*/
 *.lst
 *.wav
 *.flac
+*.m4a
 *.raw
 *.img
 *.vhd
 *.86f
+*.pak
 __pycache__/
 *.pyc
 *.swp
