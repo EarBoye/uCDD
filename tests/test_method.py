@@ -143,6 +143,22 @@ class HookTests(unittest.TestCase):
         result = self.commit('IRQ: a comment\n\nIssue: test-row-e\nEvidence: none: a comment\n')
         self.assertEqual(result.returncode, 0, result.stderr)
 
+    def test_none_unproved_without_nasm(self):
+        self.add_row('test-row-x')
+        self.append('src/audio/irq.asm', '; only a comment\n')
+        self.git('add', '-A')
+        with tempfile.TemporaryDirectory() as tools:
+            for name in ('git', 'tar', 'python3'):
+                found = sys.executable if name == 'python3' else shutil.which(name)
+                os.symlink(found, Path(tools) / name)
+            result = subprocess.run(
+                ['git', '-c', f'core.hooksPath={PACKAGE / "hooks"}', '-c', 'user.name=Test',
+                 '-c', 'user.email=test@example.com', 'commit', '-q', '-F', '-'],
+                cwd=self.tree, input='IRQ: a comment\n\nIssue: test-row-x\nEvidence: none: a comment\n',
+                capture_output=True, text=True, env=dict(os.environ, PATH=tools))
+        self.assertEqual(result.returncode, 1, result.stderr)
+        self.assertIn('is NASM on PATH?', result.stderr)
+
     def test_none_with_code(self):
         self.add_row('test-row-f')
         path = self.tree / 'src/audio/irq.asm'

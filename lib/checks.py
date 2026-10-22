@@ -269,7 +269,7 @@ def ledger_problems(target, evidence):
 def identical_problems(target):
     if not target.parent():
         return ['"Evidence: none" needs a parent commit to compare with']
-    problems = []
+    problems, compared = [], 0
     with tempfile.TemporaryDirectory(prefix='method-') as tmp:
         before, after = Path(tmp) / 'before', Path(tmp) / 'after'
         target.export(before, parent=True)
@@ -279,6 +279,8 @@ def identical_problems(target):
             if old == new:
                 if isinstance(old, int):
                     print(f'"{options}" builds on neither side; skipped', file=sys.stderr)
+                else:
+                    compared += 1
                 continue
             # This machine has had memory faults: a difference counts only
             # if a second pair of builds shows it too.
@@ -297,6 +299,10 @@ def identical_problems(target):
             break
     if problems:
         problems.append('so this is a change in behaviour: give it its grades, not "none"')
+    elif not compared:
+        # Nothing built on either side (no NASM on PATH, say): nothing was proved.
+        problems.append('no build variant built on either side, so "Evidence: none" is unproved: '
+                        'is NASM on PATH?')
     return problems
 
 

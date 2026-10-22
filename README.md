@@ -46,6 +46,29 @@ From the uCDD clone:
 - **The self-tests:** they make commits in a temporary worktree of
   `UCDD_REF` and remove it afterwards, with a temporary ledger.
 
+## What is not in git (redo it on a new machine)
+
+- **NASM on PATH** wherever commits are made: the hook builds to prove
+  `Evidence: none` and to compare a plan's binaries, and refuses when nothing
+  builds.
+- **`method.local.toml`**: `[games] paths` and the bench's banned words.
+- **`GAMES`** in the runners' environment: the game runner's command reads
+  `$GAMES/{library}`.
+- **The hook**, per worktree: `sh install.sh <worktree> ...` (it is safe to
+  run again).
+- **The skill link and the guard** in Claude Code's settings:
+  `sh install.sh --claude <dir>` prints the lines to compare.
+- **The ledger** (`ledger/`, or `[ledger] path`): its results and saved plans
+  exist only where the runners wrote them. Keep it on storage that is backed
+  up; a lost ledger means plans are saved and run again before a commit can
+  cite them.
+- **The self-tests** need `UCDD_REPO` (a uCDD clone) and `UCDD_REF`, and NASM
+  on PATH, or most of them skip.
+
+There are no other environment variables: `UCDD_LEDGER`, `UCDD_GAMES` and
+`UCDD_METHOD_LOCAL` only override method.toml, and `UCDD_SPOT=1` marks a
+spot check.
+
 ## The hook
 
 A commit that touches `src/` or `scripts/build.py` is a code commit. Any
