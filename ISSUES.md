@@ -395,6 +395,42 @@ changed volumes.
 
 ## Performance
 
+### IRQCOST: the fixed cost of each card interrupt (23 Oct 2026)
+
+- Symptom: at 32 frames (the period for all testing since 22 Oct) the
+  card interrupts 1378 times a second, four times as often as at 128.
+  On the PC (hardware, PLKIT) Hexen's timedemo took 415 realtics on
+  period-late at 32 frames against 369 on D7 at 128: 12.5% slower.
+- Citation: data sheet: silent. The cost is the driver's own plumbing, not
+  the card's behaviour; nothing a game sees may change.
+- Family: none (every engine pays it).
+- Where it goes (period-late a1ec3ec, read in the code): every port the
+  handler touches is trapped, because the physical card shares 220h with
+  the virtual one, so each access is a call into JemmEx's API (function
+  1Ah, served by host_gate): 13 per period on the SB16 (mask 2, mixer
+  82h 2, acknowledge 1, the DMA count read twice by output_clock 6, end
+  of interrupt 1, unmask 1). A game's read of the virtual DMA count takes
+  output_clock's 6 too. With a protected-mode client running, the host
+  bridges to the real-mode handler by a VCPI round trip (two CR3 loads).
+  While CD audio plays, the handler asks for a refill bridge whenever the
+  queue is not full enough to skip, and the refill often cancels on
+  arrival because the queue is above CD_QUEUE_BYTES-64 KB.
+- Measured [86Box, profile build, Hexen timedemo]: the handler without
+  mixing 4355 cycles a period at 32 frames, 4360 at 128; mixing 1412 and
+  3463; the host's entry from protected mode, handler included, 9514 and
+  10126. On the PC 18 Oct (TKIT): ~19000 cycles per interrupt.
+- Changes on irq-batch, one at a time: (1) the port accesses batched into
+  a few host_gate calls, the same ports in the same order (the DMA count
+  read twice as one call; mask, mixer 82h and the 16-bit acknowledge as
+  one when the MPU-401 is not signalling); (2) no refill request when the
+  queue is above the refill's own cancel line. Later, if needed: the
+  virtual interrupt's take inside the audio bridge, then the card's
+  interrupt without leaving protected mode.
+- Proof: the profile build's per-period cycles before and after in 86Box,
+  and on the PC (PROFKIT, with UNITCOST for one access's cost); the
+  standard regression and the sound check unchanged.
+
+
 Measured in 86Box (13 Oct 2026): a Pentium MMX 233 with the
 ES1688 for the ES1868, an Am386DX-40 with 8 MB and a 486DX2-66 with 16 MB,
 each with MS-DOS 7.1 and JEMMEX 5.86. Ratios between builds on one machine
