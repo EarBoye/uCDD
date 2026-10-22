@@ -1,0 +1,57 @@
+#!/usr/bin/env python3
+"""The bench repository's pre-commit check: no game, program, disc or big file.
+
+The bench is private, but we never ship game code anywhere, and a backup is
+only useful if it can be cloned onto a new machine in minutes. Built
+binaries (UCDD.EXE, the test .COM programs, the kits) come back from their
+sources and are not kept. Exceptions go in .bench-allow at the top of the
+bench repository: one shell glob a line, # comments allowed.
+"""
+
+from pathlib import Path
+import fnmatch
+import subprocess
+import sys
+import tomllib
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent / 'lib'))
+import methodlib  # noqa: E402
+
+BENCH = tomllib.loads((Path(__file__).resolve().parent.parent / 'bench.toml').read_text())
+REFUSED = set(methodlib.CONFIG['games']['suffixes']) | set(BENCH['refuse'])
+
+
+def git(*args):
+    return subprocess.run(['git', *args], capture_output=True, check=True).stdout
+
+
+def main():
+    top = Path(git('rev-parse', '--show-toplevel').decode().strip())
+    allow_file = top / '.bench-allow'
+    allowed = [line.split('#')[0].strip() for line in allow_file.read_text().splitlines()] \
+        if allow_file.exists() else []
+    allowed = [pattern for pattern in allowed if pattern]
+    names = [name for name in git('diff', '--cached', '--name-only', '--diff-filter=AM', '-z')
+             .decode('utf-8', 'replace').split('\0') if name]
+    problems = []
+    for name in names:
+        if any(fnmatch.fnmatchcase(name, pattern) for pattern in allowed):
+            continue
+        if Path(name).suffix.lower() in REFUSED:
+            problems.append(f'{name}: a game, program, disc, recording or image file; keep it on the '
+                            'bench, backed up apart (or rebuild it from its source)')
+            continue
+        size = int(git('cat-file', '-s', f':{name}').decode().strip())
+        if size > BENCH['max_mb'] * 1024 * 1024:
+            problems.append(f'{name}: {size // (1024 * 1024)} MB, over {BENCH["max_mb"]} MB')
+    if not problems:
+        return 0
+    print('pre-commit: refused (bench/bench.toml in the method package)', file=sys.stderr)
+    for problem in problems:
+        print(f'  - {problem}', file=sys.stderr)
+    print('An exception goes in .bench-allow with a comment saying why.', file=sys.stderr)
+    return 1
+
+
+if __name__ == '__main__':
+    sys.exit(main())

@@ -420,6 +420,72 @@ class HookTests(unittest.TestCase):
         self.assertEqual(self.commit(f'ISSUES: the {word}86 note\n').returncode, 1)
 
 
+class BenchTests(unittest.TestCase):
+    """The bench repository's pre-commit hook and its backup script."""
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory(prefix='bench-test-')
+        self.top = Path(self.tmp.name) / 'top'
+        self.remote = Path(self.tmp.name) / 'remote.git'
+        subprocess.run(['git', 'init', '-q', '--bare', str(self.remote)], check=True)
+        subprocess.run(['git', 'init', '-q', '-b', 'main', str(self.top)], check=True)
+        for key, value in (('core.hooksPath', str(PACKAGE / 'bench/hooks')), ('user.name', 'Test'),
+                           ('user.email', 'test@example.com')):
+            self.git('config', key, value)
+        self.git('remote', 'add', 'origin', str(self.remote))
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def git(self, *args):
+        return subprocess.run(['git', *args], cwd=self.top, capture_output=True, text=True)
+
+    def commit(self, name, content=b'x'):
+        path = self.top / name
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(content)
+        self.git('add', '-A')
+        return self.git('commit', '-q', '-m', 'Bench: a change')
+
+    def test_scripts_go_in(self):
+        self.assertEqual(self.commit('runs/plan_run.py', b'print(1)\n').returncode, 0)
+
+    def test_game_and_heavy_files_stay_out(self):
+        for name in ('kit/UCDD.EXE', 'dos/SBT16.COM', 'runs/sr_x/sound.wav', 'roms/bios.rom',
+                     'machines/dos.vhd', 'GAMES/SOUND/SB16.DIG'):
+            result = self.commit(name)
+            self.assertEqual(result.returncode, 1, name)
+            self.assertIn('pre-commit: refused', result.stderr)
+            self.git('reset', '-q')
+            (self.top / name).unlink()
+
+    def test_big_file_stays_out(self):
+        result = self.commit('runs/huge.log', b'0' * (21 * 1024 * 1024))
+        self.assertEqual(result.returncode, 1)
+        self.assertIn('over 20 MB', result.stderr)
+
+    def test_allowed_by_name(self):
+        (self.top / '.bench-allow').write_text('dos/FIXTURE.COM  # a 12-byte test fixture\n')
+        self.assertEqual(self.commit('dos/FIXTURE.COM').returncode, 0)
+
+    def test_backup_commits_and_pushes(self):
+        memory = Path(self.tmp.name) / 'memory'
+        memory.mkdir()
+        (memory / 'MEMORY.md').write_text('a note\n')
+        (self.top / 'notes.md').write_text('notes\n')
+        backup = ['sh', str(PACKAGE / 'bench/backup.sh'), str(self.top), str(memory)]
+        first = subprocess.run(backup, capture_output=True, text=True)
+        self.assertEqual(first.returncode, 0, first.stderr)
+        self.assertIn('backed up', first.stdout)
+        self.assertTrue((self.top / 'mirror/memory/MEMORY.md').exists())
+        pushed = subprocess.run(['git', '--git-dir', str(self.remote), 'log', '--oneline', 'main'],
+                                capture_output=True, text=True).stdout
+        self.assertIn('Backup:', pushed)
+        again = subprocess.run(backup, capture_output=True, text=True)
+        self.assertEqual(again.returncode, 0, again.stderr)
+        self.assertNotIn('backed up', again.stdout)
+
+
 class GuardTests(unittest.TestCase):
     def guard(self, command=None, tool='Bash', **given):
         call = {'tool_name': tool, 'tool_input': {'command': command} if command else given}

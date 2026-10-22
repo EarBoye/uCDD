@@ -1,0 +1,30 @@
+# The bench repository's .gitignore (copy it to .gitignore at its top).
+# Everything is ignored unless listed: a game, a disc image or a recording
+# cannot come in by accident. Name what the bench keeps below.
+
+/*
+!/.gitignore
+!/.bench-allow
+# The bench's folders, for example its runners, its notes, Claude's
+# settings, the ledger and the mirrored folders (backup.sh --mirror):
+# !/<the bench folder>/
+# !/<the notes folder>/
+# !/.claude/
+# !/ledger/
+# !/mirror/
+
+# Inside them, never: build outputs (they come back from the sources),
+# recordings and images (kept on the bench, backed up apart).
+build/
+build_*/
+*.lst
+*.wav
+*.flac
+*.raw
+*.img
+*.vhd
+*.86f
+__pycache__/
+*.pyc
+*.swp
+backup.log

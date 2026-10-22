@@ -13,6 +13,7 @@ order of work into these pieces:
 | `tools/trailers.py` | Counts Issue:, Lesson: and Evidence: trailers in the history |
 | `tools/game.py` | Before a game runs: its engine, driver versions and family, looked up in the library; what the notes lack |
 | `tools/ci.py`, `ci/method.yml` | The checks on GitHub: every branch built with its headroom, and the hook's checks on commits made after the hook went in |
+| `bench/` | The bench as a private repository: its .gitignore, a pre-commit hook against game and heavy files, the hourly backup, and how to restore it on a new machine (bench/README.md) |
 | `install.sh`, `tests/test_method.py`, `lib/methodlib.py` | Install per worktree; self-tests; what the pieces share |
 
 Standard library only: Python 3.11 or later (tomllib), git, sh.
@@ -59,9 +60,9 @@ From the uCDD clone:
 - **The skill link and the guard** in Claude Code's settings:
   `sh install.sh --claude <dir>` prints the lines to compare.
 - **The ledger** (`ledger/`, or `[ledger] path`): its results and saved plans
-  exist only where the runners wrote them. Keep it on storage that is backed
-  up; a lost ledger means plans are saved and run again before a commit can
-  cite them.
+  exist only where the runners wrote them. Keep it in the bench repository
+  (bench/README.md); a lost ledger means plans are saved and run again
+  before a commit can cite them.
 - **The self-tests** need `UCDD_REPO` (a uCDD clone) and `UCDD_REF`, and NASM
   on PATH, or most of them skip.
 
