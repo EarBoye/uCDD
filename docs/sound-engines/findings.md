@@ -87,6 +87,20 @@ which holds every lower line, IRQ 5 and 7 among them, until then. DMX's
 answer to a step back across a block boundary: it mixes a block it has
 already mixed, and every sound playing skips 11.6 ms.
 
+
+22 Oct 2026, a measurement to make (branch period-late, from irq-counters):
+how late the card's period interrupts come on the PC. The refill deadline
+is one output period after each interrupt: 0.73 ms at 32 frames (the rule
+for all testing since 22 Oct), 2.9 ms at 128. DMX runs its mixing job on
+its 140 Hz timer before that timer's EOI, which holds IRQ 5 off meanwhile
+(dmx.md). An interrupt more than a period late is also where the output
+clock aliases (the 20 Oct reading of Hexen's 98-byte steps). Three
+counters in UCDD -STATUS: periods refilled more than half a period late;
+periods refilled a whole period late (the card played the old half); and
+the BIOS timer's ticks, so that periods lost to a longer delay show
+against the time. Proved first on a planted delay (a program holding
+interrupts off for set times, lesson L10), then on the PC at 32 frames
+with Hexen and Doom.
 ### F3. A single-cycle count that hovers (King's Quest V)
 
 At the end of King's Quest V's run the count of a 16 KB single-cycle
