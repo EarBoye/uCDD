@@ -101,6 +101,19 @@ the BIOS timer's ticks, so that periods lost to a longer delay show
 against the time. Proved first on a planted delay (a program holding
 interrupts off for set times, lesson L10), then on the PC at 32 frames
 with Hexen and Doom.
+
+23 Oct 2026, the PC [hardware: PLKIT, period-late a1ec3ec at 32 frames,
+the CT2290 on IRQ 5]: idle, no period refilled late in 20 s (periods
+equal to the timer's ticks within 0.1%); held off by CLIGAP 0.5 ms, 9
+late and none a whole period; 1 ms, 21 and 38; 4 ms, 80 a whole period
+and about 1.6 periods a hold lost against the ticks (the card stopping
+its DMA while unacknowledged, as M3 measured on 19 Oct, rather than the
+clock aliasing as in 86Box [inference]). Hexen's timedemo (20 s): 4 late,
+6 a whole period; Hexen played (about 2 minutes): 3 and 10; DMX's 10788
+virtual interrupts all taken and ended. Michael heard nothing wrong. The
+price: the timedemo took 415 realtics against D7's 369 at 128 frames
+(12.5% slower; the builds differ in more than the period, so the share
+that is the period is not yet measured).
 ### F3. A single-cycle count that hovers (King's Quest V)
 
 At the end of King's Quest V's run the count of a 16 KB single-cycle

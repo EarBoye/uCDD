@@ -136,6 +136,8 @@ program [code]. The sequence is the same in all of them.
     what the buffer held one lap (186 ms) earlier (finding F18).
     22 Oct: not seen in 86Box even with D9 at 256 frames (findings.md
     F18); the check itself is not yet proved on a planted fault.
+    23 Oct, the PC at 32 frames (findings.md F2): Hexen refilled a whole
+    period late about once in 12 s of play; nothing heard.
 17. The "count twice" in the traces is step 15's retry: one read after
     the interrupt still in the old block, a second at the next tick.
 
