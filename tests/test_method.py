@@ -17,6 +17,7 @@ import json
 import os
 import shutil
 import subprocess
+import tomllib
 import sys
 import tempfile
 import unittest
@@ -75,7 +76,12 @@ class HookTests(unittest.TestCase):
         return subprocess.run([sys.executable, *map(str, args)], cwd=self.tree,
                               capture_output=True, text=True)
 
-    def build(self, options='--resident-audio --no-refill-hint --audio-period-frames 128'):
+    def build(self, options=None):
+        # The matrix's default build (32 frames since 22 Oct 2026), which a
+        # plan's runs and so the hook's own build use.
+        if options is None:
+            matrix = tomllib.loads((PACKAGE / 'matrix' / 'matrix.toml').read_text())
+            options = matrix['builds'][matrix['defaults']['build']]
         shutil.rmtree(self.tree / 'build', ignore_errors=True)
         subprocess.run([sys.executable, 'scripts/build.py', *options.split()], cwd=self.tree,
                        capture_output=True, check=True)

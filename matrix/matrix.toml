@@ -25,7 +25,7 @@ midi = ["off", "gm"]
 # Which kind of program the test runs. A property of the test, not set by
 # the bench; the planner reports which clients a plan covers.
 client = ["real", "dos4gw", "dpmi16"]
-build = ["p32", "p128", "p256", "verify128", "ess32", "ess128"]
+build = ["p32", "p128", "p256", "verify32", "verify128", "ess32", "ess128"]
 
 # Kept here, left out of every plan until taken off this list: the ESS work
 # is parked (20 Oct).
@@ -37,7 +37,7 @@ build = ["ess32", "ess128"]
 # Used only by a test that names them in its own allow or fixed lists.
 [opt_in]
 mode = ["base", "free"]
-build = ["verify128"]
+build = ["verify32", "verify128"]
 
 # A run takes these unless its test or a varied axis sets them. The PC's
 # card: an SB16 (CT2290) at 220h, IRQ 5, DMA 1 and 5.
@@ -49,7 +49,9 @@ virq = 5
 mode = "engaged"
 midi = "off"
 client = "real"
-build = "p128"
+# 32 frames for all testing (Michael, 22 Oct 2026); 128 and 256 only as
+# named comparisons.
+build = "p32"
 
 # Conditional defaults, in order, for axes nothing else has set: the older
 # models' line as Michael set it (20 Oct).
@@ -117,14 +119,16 @@ gm = "GL_MIDI=1"
 p32 = "--resident-audio --no-refill-hint --audio-period-frames 32"
 p128 = "--resident-audio --no-refill-hint --audio-period-frames 128"
 p256 = "--resident-audio --no-refill-hint --audio-period-frames 256"
+verify32 = "--resident-audio --no-refill-hint --audio-period-frames 32 --verify-mix"
 verify128 = "--resident-audio --no-refill-hint --audio-period-frames 128 --verify-mix"
 ess32 = "--resident-audio --no-refill-hint --audio-period-frames 32 --virtual-ess"
 ess128 = "--resident-audio --no-refill-hint --audio-period-frames 128 --virtual-ess"
 
 [build_dirs]
 p32 = "$UCDD_TREE/build_32$UCDD_SUFFIX"
-p128 = "$UCDD_TREE/build_128$UCDD_SUFFIX"
+p128 = "$UCDD_TREE/build_32$UCDD_SUFFIX"
 p256 = "$UCDD_TREE/build_256$UCDD_SUFFIX"
+verify32 = "$UCDD_TREE/build_v32$UCDD_SUFFIX"
 verify128 = "$UCDD_TREE/build_v128$UCDD_SUFFIX"
 ess32 = "$UCDD_TREE/build_32${UCDD_SUFFIX}_ess"
 ess128 = "$UCDD_TREE/build_128${UCDD_SUFFIX}_ess"
@@ -148,13 +152,13 @@ optional_groups = ["pc"]
 # (a "!" command goes into AUTOEXEC as it stands); output C:\OUT\TAG.TXT
 kind = "probe"
 command = "{env} python3 runs/probe_test.py {build_dir} {id} {vmodel} {mode_word}"
-base_command = "{env} python3 runs/probe_test.py $UCDD_TREE/build_128$UCDD_SUFFIX {id} {vmodel} jemm"
+base_command = "{env} python3 runs/probe_test.py $UCDD_TREE/build_32$UCDD_SUFFIX {id} {vmodel} jemm"
 [runner.perf]
 # the standard regression's SBT16 and verify rows: fixtest.py perf, steps
 # "OUT:PROGRAM ARGS,..." in {args}; rsum.py compares them with a base run
 kind = "probe"
 command = "{env} python3 $UCDD_FIXTEST perf {build_dir} \"{args}\" {physical_word} --vmodel {vmodel_word} --irq {pirq}/{virq} --id {id}"
-base_command = "{env} python3 $UCDD_FIXTEST perf $UCDD_TREE/build_128$UCDD_SUFFIX \"{args}\" {physical_word} --vmodel {vmodel_word} --irq {pirq}/{virq} --jemm --id {id}"
+base_command = "{env} python3 $UCDD_FIXTEST perf $UCDD_TREE/build_32$UCDD_SUFFIX \"{args}\" {physical_word} --vmodel {vmodel_word} --irq {pirq}/{virq} --jemm --id {id}"
 [runner.verify]
 # the verify-mix build: fixtest.py perf --verify (MEMFIND dumps MIXVERIF after
 # the steps); rsum.py's "verify rows" read the bad-sample counts
@@ -303,7 +307,7 @@ name = "verify-mix"
 runner = "verify"
 args = "S0:SBT16.COM C6 00 22050,S1:SBT16.COM C0 00 22050,S2:SBT16.COM C2 20 22050,S3:SBT16.COM C6 10 22050,S4:SBT16.COM B0 10 22050,S5:SBT16.COM B6 30 44100,S6:SBT16.COM 14 00 22050 Q,S7:SBT16.COM C0 00 22050 Q,S8:SBT16.COM C6 00 22050 M"
 groups = ["core", "mixer"]
-fixed = { build = "verify128" }
+fixed = { build = "verify32" }
 allow = { vmodel = ["sb16"] }
 secs = 120
 note = "the verify-mix build under SBT16's SB16 cases: rsum.py's verify rows read bad 0/0"
@@ -313,7 +317,7 @@ name = "verify-mix-legacy"
 runner = "verify"
 args = "L0:SBT16.COM 14 00 22050,L1:SBT16.COM 1C 00 22050,L2:SBT16.COM 91 00 44100,L3:SBT16.COM 90 00 44100,L4:SBT16.COM 90 20 22050,L5:SBT16.COM 91 20 22050,L6:SBT16.COM 14 00 22050 Q,L7:SBT16.COM 1C 00 11025"
 groups = ["core", "mixer"]
-fixed = { build = "verify128" }
+fixed = { build = "verify32" }
 allow = { vmodel = ["pro"] }
 secs = 120
 note = "the same under the legacy cases on the virtual SB Pro"
