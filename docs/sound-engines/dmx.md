@@ -134,6 +134,8 @@ program [code]. The sequence is the same in all of them.
     card or emulation that takes data beyond the count it reports spends
     that margin; past it, the start of a block, or a whole block, plays
     what the buffer held one lap (186 ms) earlier (finding F18).
+    22 Oct: not seen in 86Box even with D9 at 256 frames (findings.md
+    F18); the check itself is not yet proved on a planted fault.
 17. The "count twice" in the traces is step 15's retry: one read after
     the interrupt still in the old block, a second at the next tick.
 

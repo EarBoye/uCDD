@@ -332,6 +332,22 @@ position ran ahead of what was taken [reading]. A fix needs the survey
 of every engine that reads the count, by which side of it each writes
 (rule 10), and keeps the ESS separate (rule 6).
 
+22 Oct 2026, the known-bad case (lesson L4) [86Box, D9 c24d232 at 256
+frames, SB16 on IRQ 5, Hexen's 50 s moment with its CD music]: the
+stale-block check (stale.py) shows no DMX block played a lap late. Hits
+per block phase are flat (best 56, next 53; the reference 37 and 37), no
+match is 128 or 256 samples long, as in the reference, the control and
+D9 at 32 and 128 frames. The 256-frame run has about 45% more short
+(16-32 sample) matches than the reference, spread over every phase, not
+on DMX's block grid; cause not known. The sound check failed it on the
+CD music (6 windows off its lag, the control's 2), not on the game's
+sounds (on time 0.92, the control's 1.00). So at 86Box's timing even 256
+frames does not make DMX mix a block uCDD has taken, or the check cannot
+see it: not decided until a planted fault (a count trailing by several
+more periods) shows stale blocks to the check. The count rule is in
+vsb-spec 7.8 (irq-counters 3cecfc5); no fix until a check fails on the
+build it fixes.
+
 F5's confirmation is above. The card also settles three things the
 virtual card already does right: no lockout during 90h on the 4.13 (D0h,
 D4h and E1h are taken), FAh has no reply and swallows what follows until
