@@ -392,6 +392,58 @@ output (SBG:1446-1464, 3395-3421). uCDD has no recording source: the
 virtual card records silence (80h for 8-bit unsigned, 0 for signed)
 [design, as the direct ADC 20h answers 80h today].
 
+### 7.8 The count a program reads (22 Oct 2026; F2, F8, F18)
+
+What a real card does:
+- The 8237's current word count drops by one after each transfer
+  (8237A.txt:253-256): it marks what the card has fetched, not the sample
+  being heard. The DSP interrupts "after transferring the programmed
+  number of bytes" (SBG:1590). [doc]
+- The CT2290's count steps one word at a time at the programmed rate, with
+  no bursts, and two reads agree at the first try; at every block's
+  interrupt it sits exactly on the block boundary; its FIFO holds 16
+  samples, so what is heard trails the count by at most 16 samples, 0.73
+  ms at 22050 Hz (fork docs/sound-engines/ct2290.md, HWKIT 19 Oct). [hw]
+- On a real card a program cannot tell the count from the sound; under
+  uCDD it can, because between them lies uCDD's pipeline: what it has
+  taken from the game's buffer leads what is heard by one to two output
+  periods (1.5 ms at 32 frames, 5.8 ms at 128, 11.6 ms at 256).
+
+What the engines that read the count need (fork docs/sound-engines):
+- HMI rewrites the buffer right up to the count, reading it hundreds of
+  times a second: the count must never pass what uCDD has taken, and must
+  move smoothly, not in whole periods (hmi-sos.md).
+- DMX mixes the block after the one the count is in, one block (11.6 ms)
+  ahead, from a 140 Hz timer: the count must not trail what uCDD has taken
+  by much, or DMX mixes a block uCDD has already taken and the old lap
+  plays (F18; dmx.md).
+- Any engine that compares two reads: the count must never move back
+  within a lap (F2: a count stepping back makes DMX mix a block twice).
+
+The rule for the virtual Sound Blasters: one position, the card's fetch
+point. The count a program reads moves sample by sample at the programmed
+rate, never passes what uCDD has taken, never moves back within a lap, and
+the block interrupt comes when that same position crosses a block's end,
+so the count sits on the boundary there as the CT2290's does. [doc, hw]
+
+Today (D9): the auto-init count follows the output clock, the frame being
+heard (trap.asm, the count read; host-cdrom-spec.md D2), one to two
+periods behind what has been taken, and the block interrupt follows the
+mix (irq.asm, virtual_irq_tick): the count is short of the boundary at
+the interrupt (F8: about 7Dh), DMX loses one to two periods of its margin
+(F18), and the clock can alias two periods back when a period interrupt
+is late (F2). The output clock was chosen on 15 Oct (5e3f364) for HMI's
+clicks on the virtual ESS, whose mixer reads a delayed ring; on the Sound
+Blaster models the mix is what uCDD has taken [reading]. The virtual ESS
+keeps its own rule (vess-spec.md, ess_fifo_count; rule 6).
+
+A candidate, not built: the position = the sound heard plus one period,
+never past what has been taken, never back; the count reads it and the
+block interrupt follows it. At 32 frames one period at 44.1 kHz is 0.73
+ms, the CT2290's FIFO at 22050 Hz. [inference] To prove first: Hexen at
+256 frames must show stale blocks under today's rule (L4), and the
+survey covers every engine that reads the count (rule 10).
+
 ## 8. Interrupts
 
 ### 8.1 Before the SB16 (SBG:954-963)
