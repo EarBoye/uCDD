@@ -482,9 +482,16 @@ audio_irq:
     jne .refill_ready
     cmp dword [cd_remaining], 0
     je .refill_ready
-    mov byte [cd_refill_pending], 1
     mov eax, [cd_produced]
     sub eax, [cd_consumed]
+    ; Above the line where the refill cancels on arrival (background.asm
+    ; cd_deferred_refill: the queue within 64 KB of full), asking would cost
+    ; the host a bridge for nothing (ISSUES.md IRQCOST): ask nothing. The
+    ; queue drains a period at a time, so a later period asks well before
+    ; it runs low; the urgent line is far below this one.
+    cmp eax, CD_REFILL_CANCEL
+    ja .refill_ready
+    mov byte [cd_refill_pending], 1
     cmp eax, CD_REFILL_URGENT
     jae .refill_ready
     mov byte [cd_refill_pending], 2

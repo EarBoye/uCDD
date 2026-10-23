@@ -3,6 +3,9 @@
 
 %ifdef OWN_HOST
 CD_REFILL_URGENT equ CD_READ_BYTES*2
+; Above this many bytes queued a refill cancels on arrival (the queue within
+; 64 KB of full); audio_irq asks for none there (ISSUES.md IRQCOST).
+CD_REFILL_CANCEL equ CD_QUEUE_BYTES-65536
 %endif
 
 cd_timer:
@@ -132,7 +135,7 @@ cd_deferred_refill:
     jne .done
     mov eax, [cd_produced]
     sub eax, [cd_consumed]
-    cmp eax, CD_QUEUE_BYTES-65536
+    cmp eax, CD_REFILL_CANCEL
     ja .cancel
     mov byte [cd_refill_pending], 0
     mov byte [busy], 1
