@@ -429,6 +429,16 @@ changed volumes.
 - Proof: the profile build's per-period cycles before and after in 86Box,
   and on the PC (PROFKIT, with UNITCOST for one access's cost); the
   standard regression and the sound check unchanged.
+- Result, changes 1 and 2 (257b4a9, c6d5c4b) [hardware: the PC, PROFKIT
+  against PK2, Hexen's timedemo with the profile builds]: the handler 11750
+  cycles a period -> 8848 (its fixed part ~7400 -> ~4700); the host's
+  protected-mode entry with the handler 20723 -> 17695; refill bridges
+  4062 -> 614; the timedemo 429 -> 406 realtics. One call into JemmEx's
+  API costs ~350 cycles over the port access itself (UNITCOST: 446
+  against 95); a port uCDD traps, 1746. [86Box] the regression the same
+  as period-late; the sound check as D9. Left: the host's own round trip
+  (~9000 cycles when the card interrupts a protected-mode client), the
+  second bridge for each virtual interrupt.
 
 
 Measured in 86Box (13 Oct 2026): a Pentium MMX 233 with the
