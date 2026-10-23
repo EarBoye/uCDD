@@ -224,20 +224,46 @@ output_clock:
 %endif
     ret
 
+; The position of the game's transfer: EAX = output frames since its start
+; (game_started). game_elapsed reads the output clock first; EBX, ECX and EDX
+; changed (output_clock), SI and DI kept.
 game_elapsed:
+    call output_clock
+; Called from game_elapsed and from virtual_irq_tick (irq.asm), whose two
+; callers (audio_irq at .acknowledged, sb_patch) have just read the clock:
+; EAX = that read, so the period handler makes no second trip to the 8237.
+game_elapsed_at:
     cmp byte [game_start_pending], 1
     je .zero
     cmp byte [game_source], 0
     jne .output
     cmp byte [sb_single], 0
     jne .output
-    mov eax, [game_mix_frame]
+    ; Auto-init: one position for the count and the block interrupt, the
+    ; card's fetch point (vsb-spec 7.8, F8): the frame being heard plus one
+    ; period, never past what the mix has taken, never back within the
+    ; transfer, held while paused. A real card's count sits on the boundary
+    ; at the block interrupt; the interrupt that followed the mix came one to
+    ; two periods before this count reached it. Single-cycle keeps the mix
+    ; for its interrupt (virtual_irq_tick): a game restarting from its
+    ; handler must still find sb_patch's one-period window open.
     cmp byte [sb_paused], 0
-    je .done
-    mov eax, [sb_pause_mix_frame]
+    jne .held
+    add eax, PERIOD_FRAMES
+    sub eax, [game_started]
+    js .held
+    cmp eax, [game_mix_frame]
+    jbe .taken
+    mov eax, [game_mix_frame]
+.taken:
+    cmp eax, [game_position]
+    jb .held
+    mov [game_position], eax
+    ret
+.held:
+    mov eax, [game_position]
     ret
 .output:
-    call output_clock
     cmp byte [sb_paused], 0
     je .sb_clock
     mov eax, [sb_pause_clock]
@@ -1680,6 +1706,7 @@ port_callback:
 %endif
     mov byte [game_start_pending], 1
     mov dword [game_exit_frame], 0
+    mov dword [game_position], 0
     mov byte [sb_paused], 0
     cmp byte [sb_single], 0
     je .duration_ready
@@ -1965,35 +1992,13 @@ port_callback:
     mov eax, [sb_tail_consumed]
     cmp byte [sb_tail_mode], 0
     jne .count_bytes
+    ; An auto-initialised transfer's count is the card's fetch point, the
+    ; frame being heard plus one period, the position its block interrupt
+    ; follows too (game_elapsed, vsb-spec 7.8). It moves sample by sample,
+    ; not in the mix's whole periods, and never passes the mix: HMI's drivers
+    ; rewrite the buffer right up to the count, and a count past what had
+    ; been taken made Descent 2 click on the virtual ESS (5e3f364).
     call game_elapsed
-    ; An auto-initialised transfer's count follows the output clock, the
-    ; frame being heard, as a real card's DMA counter does, rather than the
-    ; mix, which runs one to two periods ahead in whole periods. HMI's
-    ; drivers follow the count closely and rewrite the buffer right up to
-    ; it: at the mix they caught frames not yet played (Descent 2 on the
-    ; virtual ESS clicked about 40 times a second). The clock is never past
-    ; the mix, so everything behind it has been read.
-    cmp byte [sb_single], 0
-    jne .elapsed_ready
-    cmp byte [game_source], 0
-    jne .elapsed_ready
-    cmp byte [game_start_pending], 0
-    jne .elapsed_ready
-    push eax
-    call output_clock
-    cmp byte [sb_paused], 0
-    je .played_clock
-    mov eax, [sb_pause_clock]
-.played_clock:
-    sub eax, [game_started]
-    jns .played_ready
-    xor eax, eax
-.played_ready:
-    pop ecx
-    cmp eax, ecx
-    jbe .elapsed_ready
-    mov eax, ecx
-.elapsed_ready:
     movzx ecx, word [game_rate]
     mul ecx
     mov ecx, OUTPUT_RATE
@@ -2895,6 +2900,9 @@ copyright_length equ $-copyright_text
 game_block_bytes dd 4096
 game_exit_frame dd 0
 game_mix_frame dd 0
+; The last auto-init position game_elapsed gave, output frames since the
+; start: the count never moves back within a transfer (vsb-spec 7.8).
+game_position dd 0
 virtual_resets dw 0
 virtual_starts dw 0
 virtual_mixer_index db 0

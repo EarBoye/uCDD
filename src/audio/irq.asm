@@ -29,6 +29,10 @@ virtual_irq_reset:
     mov dword [virtual_block_seen], 0
     ret
 
+; Called from audio_irq (sb16.asm, after .acknowledged) and from sb_patch,
+; with DS=CS and interrupts off. Both read the output clock just before
+; (.acknowledged's lateness check, sb_patch's start), and the transfer's
+; position below is taken from that read (last_clock).
 virtual_irq_tick:
     call virtual_mpu_refresh
 %ifdef ESS_CARD
@@ -44,7 +48,8 @@ virtual_irq_tick:
     mov si, [game_dma]
     cmp byte [si+DMA_MASK], 0
     jne .done
-    call game_elapsed
+    mov eax, [last_clock]
+    call game_elapsed_at
 %ifdef RESIDENT_AUDIO
     cmp byte [sb_single], 0
     je .elapsed_ready
