@@ -88,6 +88,8 @@ Without `-drive`, mount uses the first empty μCDD letter and unmount uses the f
 
 `UCDD /?` and `UCDDSET /?` print command help.
 
+`UCDD -status` prints what μCDD counted since installation: sound interrupts, CD reads, and refused reads. It also shows the first sound fault and the last program that μCDD stopped. `UCDD -status -reset` prints the counts and then sets them to 0. Add this output to a bug report.
+
 ### Multiple discs
 
 Make a text file with a `.MDM` extension and one image path per line:

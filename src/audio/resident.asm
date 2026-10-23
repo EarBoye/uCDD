@@ -8,7 +8,11 @@
 %define CD_IMAGE_TEST 1
 %define VIRTUAL_IRQ 1
 %define WSS_INPUT 1
+%ifdef RESIDENT_AUDIO
+%define UCDD_DIAG 1
+%endif
 %include "audio/layout.inc"
+%include "audio/diag.inc"
 
 qpi dd 0
 output_segment dw 0
@@ -19,6 +23,89 @@ cd_half_segment dw 0
 cd_work_allocation dw 0
 cd_work_segment dw 0
 fault db 0
+%ifdef UCDD_DIAG
+; UCDD -status reads this block with control 10 and 11 (driver.asm). Counters
+; are words that wrap. diag_host and the abort record are the part that the
+; protected host writes (CDF5); the host uses the offsets DIAG_HOST_*.
+DIAG_BYTES equ 96
+DIAG_HOST_REFUSED equ 0
+DIAG_HOST_ABORT equ 20
+diag_block:
+dw 1
+dw DIAG_BYTES
+; [periods] at the last reset. The copy holds the periods since.
+diag_periods dd 0
+; The complement of the smallest queue level since the last PLAY. 0: none.
+diag_queue_low dd 0
+diag_irq:
+diag_raised dw 0
+diag_taken dw 0
+diag_ended dw 0
+diag_overrun dw 0
+diag_spurious dw 0
+; Refill runs: timer tail, audio IRQ tail, host, and request.
+diag_runs:
+diag_run_timer dw 0
+diag_run_irq dw 0
+diag_run_host dw 0
+diag_run_request dw 0
+; Refusals: queue full, driver busy, BIOS busy, DSP split, PIC in service,
+; InDOS or critical, deferred to a protected-mode client.
+diag_refused:
+diag_ref_queue dw 0
+diag_ref_busy dw 0
+diag_ref_bios dw 0
+diag_ref_dsp dw 0
+diag_ref_pic dw 0
+diag_ref_dos dw 0
+diag_ref_defer dw 0
+diag_busy dw 0
+diag_nested dw 0
+diag_busy_command dw 0
+diag_fault_site db 0
+diag_fault_value db 0
+diag_fault_port dw 0
+diag_fault_dsp db 0
+diag_fault_dma db 0
+diag_host:
+; Host refusals: STI shadow, inactive, VIF, busy, callback, exception, locked
+; stack depth, retrace wait, clock, queue wait.
+times 10 dw 0
+; The abort record: mon_status, mon_error, mon_eip, mon_cr2, mon_fault_cs
+; (copied as one run of the host's variables), exit code, count.
+diag_abort_status dw 0
+diag_abort_error dd 0
+diag_abort_eip dd 0
+diag_abort_cr2 dd 0
+diag_abort_cs dw 0
+diag_abort_exit db 0, 0
+diag_abort_count dw 0
+diag_end:
+%if diag_end-diag_block != DIAG_BYTES || diag_abort_status-diag_host != DIAG_HOST_ABORT
+%error The diagnostic block layout is wrong.
+%endif
+
+; AL: site, AH: fault value. The first fault since the reset keeps a record. The port and the
+; value are those of the last trapped access.
+fault_set:
+    cmp byte [diag_fault_site], 0
+    jne .set
+    push bx
+    mov [diag_fault_site], al
+    mov bx, [callback_port]
+    mov [diag_fault_port], bx
+    mov bl, [callback_value]
+    mov [diag_fault_value], bl
+    mov bl, [dsp_command]
+    mov [diag_fault_dsp], bl
+    mov bx, [game_dma]
+    mov bl, [bx+DMA_MODE]
+    mov [diag_fault_dma], bl
+    pop bx
+.set:
+    mov [fault], ah
+    ret
+%endif
 cd_position dw 0
 game_phase dd 0
 game_step dd 32768

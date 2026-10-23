@@ -1,6 +1,7 @@
 ; SPDX-FileCopyrightText: 2026 vorvek
 ; SPDX-License-Identifier: GPL-3.0-only
 
+%include "audio/diag.inc"
 %include "audio/sb_state.inc"
 
 trap_install:
@@ -86,7 +87,7 @@ output_clock:
 .again:
     loop .retry
 %ifdef MOUNTED_AUDIO
-    mov byte [fault], 2
+    FAULT_SET 5, 2
 %else
     mov byte [fault], 1
 %endif
@@ -390,7 +391,7 @@ port_callback:
     jmp .done
 .unsupported:
 %ifdef MOUNTED_AUDIO
-    mov byte [fault], 3
+    FAULT_SET 4, 3
 %else
     mov byte [fault], 1
 %endif
@@ -828,6 +829,7 @@ port_callback:
 .force_irq:
 %ifdef VIRTUAL_IRQ
     mov byte [virtual_dsp_irq], 1
+    DIAG_INC diag_raised
     mov al, [guest_irq_bit]
     mov [virtual_pic_request], al
 %endif

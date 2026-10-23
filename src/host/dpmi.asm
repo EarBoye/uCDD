@@ -1021,7 +1021,11 @@ dpmi_dos:
     mov al, [esp+36]
     mov [ebp+dpmi_exit_code], al
     mov word [ebp+mon_status], 0
+%ifdef RESIDENT_HOST
+    jmp dpmi_finish.clean
+%else
     jmp dpmi_finish
+%endif
 .unsupported:
     mov word [esp+36], 1
     or byte [esp+48], 1
@@ -1030,7 +1034,46 @@ dpmi_dos:
     popad
     MON_IRETD
 
+; mon_status is 0 after INT 21h 4Ch, the exception number plus 1 after an
+; unhandled exception, or one of these after an abort.
+DPMI_ABORT_CALLBACK equ 0f1h
+DPMI_ABORT_STACK equ 0f2h
+DPMI_ABORT_RETURN equ 0f3h
+%ifdef RESIDENT_HOST
+%if mon_fault_cs-mon_status != 14
+%error The abort record copy needs the mon_status to mon_fault_cs layout.
+%endif
+%endif
+
 dpmi_finish:
+%ifdef RESIDENT_HOST
+    ; Keep the abort for UCDD -status (diagnostic block, driver side). An
+    ; INT 21h 4Ch exit enters at .clean.
+    mov edi, [ebp+resident_counters]
+    test edi, edi
+    jz .clean
+    lea esi, [ebp+mon_status]
+    add edi, DIAG_HOST_ABORT
+    push 4
+    pop ecx
+    cld
+    rep movsd
+    ; mon_eip is relative to the host. The client's EIP is the raw one. An
+    ; abort has no exception, so those fields are zero.
+    mov eax, [ebp+dpmi_fault_ip]
+    cmp word [edi-16], 0f0h
+    jb .fields_valid
+    xor eax, eax
+    mov [edi-14], eax
+    mov [edi-6], eax
+    mov [edi-2], ax
+.fields_valid:
+    mov [edi-10], eax
+    mov al, [ebp+dpmi_exit_code]
+    stosb
+    inc word [edi+1]
+.clean:
+%endif
     mov byte [ebp+dpmi_sti_shadow], 0
     mov byte [ebp+dpmi_callback_sti], 0
     mov byte [ebp+dpmi_sti_sb_held], 0

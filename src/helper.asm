@@ -65,6 +65,12 @@ command_entry:
     mov di, vcpi_option
     call option_equal
     je .vcpi
+    mov di, status_option
+    call option_equal
+    je .status
+    mov di, reset_option
+    call option_equal
+    je .reset
 %ifdef EMS_QUEUE
     mov di, ems_option
     call option_equal
@@ -92,6 +98,16 @@ command_entry:
     mov [requested_units], al
     jmp .parse
 %ifdef RESIDENT_AUDIO
+.status:
+    cmp byte [operation], 0
+    jne usage
+    mov byte [operation], 4
+    jmp .parse
+.reset:
+    cmp byte [status_reset], 0
+    jne usage
+    mov byte [status_reset], 1
+    jmp .parse
 .vcpi:
     cmp byte [fs:keep_vcpi], 0
     jne usage
@@ -151,6 +167,14 @@ command_entry:
     jne usage
     jmp .parse
 .parsed:
+%ifdef RESIDENT_AUDIO
+    ; -reset belongs to -status.
+    cmp byte [status_reset], 0
+    je .reset_clear
+    cmp byte [operation], 4
+    jne usage
+.reset_clear:
+%endif
     cmp byte [operation], 3
     jne .image_command
     cmp byte [wanted_drive], 0ffh
@@ -178,6 +202,14 @@ command_entry:
     jne usage
     cmp byte [operation], 0
     je usage
+%ifdef RESIDENT_AUDIO
+    ; -status takes no drive.
+    cmp byte [operation], 4
+    jne .not_status
+    cmp byte [wanted_drive], 0ffh
+    jne usage
+.not_status:
+%endif
     cmp byte [operation], 2
     jne .enumerate
     cmp word [image_path], 0
@@ -247,6 +279,10 @@ command_entry:
     pop si
     jmp .next
 .name_ok:
+%ifdef RESIDENT_AUDIO
+    cmp byte [operation], 4
+    je status_run
+%endif
     mov al, [drive_list+si]
     cmp byte [wanted_drive], 0ffh
     je .automatic
@@ -538,8 +574,245 @@ error:
     mov ax, 4c01h
     int 21h
 
+%ifdef RESIDENT_AUDIO
+; UCDD -status: BL is the unit and control_entry the driver. Control 10 copies
+; the diagnostic block to full_path (audio/resident.asm), control 11 also
+; sets the counts to 0.
+status_run:
+    mov ax, 10
+    cmp byte [status_reset], 0
+    je .read
+    inc ax
+.read:
+    mov dx, full_path
+    call far [control_entry]
+    test ax, 8000h
+    jnz .old_driver
+    cmp word [full_path], 1
+    jne .old_driver
+    mov si, status_table
+    call status_print
+    cmp byte [full_path+50], 0
+    mov si, status_fault_table
+    jne .fault
+    mov si, status_clear_table
+.fault:
+    call status_print
+    mov ax, [full_path+76]
+    cmp word [full_path+94], 0
+    jne .stops
+    mov si, status_free_table
+    jmp .abort
+.stops:
+    mov si, status_exception_table
+    cmp ax, 0f1h
+    jb .abort
+    mov si, status_callback_table
+    je .abort
+    mov si, status_stack_table
+    cmp ax, 0f2h
+    je .abort
+    mov si, status_return_table
+.abort:
+    call status_print
+    ; Only a page fault has an address.
+    cmp word [full_path+94], 0
+    je .exit
+    cmp word [full_path+76], 0fh
+    jne .exit
+    mov si, status_page_table
+    call status_print
+.exit:
+    mov ax, 4c00h
+    int 21h
+.old_driver:
+    mov dx, status_old_message
+    jmp error
+
+; SI: a table of entries. An entry is a kind byte, a block offset byte, then
+; text that ends with '$'. The text prints first, then the value. The kind
+; FFh ends the table. Kinds: 0 no value, 1 word, 2 dword, 4 complement of a
+; dword or none, 5 hex byte, 6 hex word, 7 hex dword, 8 hex byte of the word
+; minus 1.
+status_print:
+    lodsb
+    cmp al, 0ffh
+    je .end
+    mov cl, al
+    lodsb
+    movzx bx, al
+    mov dx, si
+    mov ah, 9
+    int 21h
+.skip:
+    lodsb
+    cmp al, '$'
+    jne .skip
+    test cl, cl
+    jz status_print
+    push si
+    movzx eax, word [full_path+bx]
+    cmp cl, 1
+    je .decimal
+    cmp cl, 5
+    je .hex_byte
+    cmp cl, 6
+    je .hex_word
+    cmp cl, 8
+    je .hex_excp
+    mov eax, [full_path+bx]
+    cmp cl, 7
+    je .hex_dword
+    cmp cl, 4
+    jne .decimal
+    ; The queue low mark is stored as a complement. 0 is none.
+    test eax, eax
+    jnz .complement
+    mov dx, status_none
+    mov ah, 9
+    int 21h
+    jmp .printed
+.complement:
+    not eax
+.decimal:
+    mov di, status_number+10
+    mov byte [di], '$'
+    mov ebx, 10
+.digit:
+    xor edx, edx
+    div ebx
+    add dl, '0'
+    dec di
+    mov [di], dl
+    test eax, eax
+    jnz .digit
+    mov dx, di
+    mov ah, 9
+    int 21h
+    jmp .printed
+.hex_excp:
+    dec ax
+.hex_byte:
+    mov cl, 2
+    jmp .hex
+.hex_word:
+    mov cl, 4
+    jmp .hex
+.hex_dword:
+    mov cl, 8
+.hex:
+    movzx bx, cl
+    mov di, status_number+8
+    mov byte [di], '$'
+    mov cx, 8
+.hex_digit:
+    dec di
+    mov dl, al
+    and dl, 0fh
+    add dl, '0'
+    cmp dl, '9'
+    jbe .hex_store
+    add dl, 7
+.hex_store:
+    mov [di], dl
+    shr eax, 4
+    loop .hex_digit
+    mov dx, status_number+8
+    sub dx, bx
+    mov ah, 9
+    int 21h
+.printed:
+    pop si
+    jmp status_print
+.end:
+    ret
+
+%macro STAT 3+
+    db %1, %2, %3, '$'
+%endmacro
+
+status_table:
+    STAT 0, 0, 'uCDD status. The counts start at installation or at -reset.',13,10,'Periods: '
+    STAT 2, 4, ''
+    STAT 1, 12, 13,10,'Interrupts raised: '
+    STAT 1, 14, ', taken: '
+    STAT 1, 16, ', ended: '
+    STAT 1, 18, ', overrun: '
+    STAT 1, 20, ', not for uCDD: '
+    STAT 1, 22, '.',13,10,'Refills run: timer '
+    STAT 1, 24, ', audio IRQ '
+    STAT 1, 26, ', host '
+    STAT 1, 28, ', request '
+    STAT 1, 30, '.',13,10,'Refills refused: queue full '
+    STAT 1, 32, ', busy '
+    STAT 1, 34, ', BIOS '
+    STAT 1, 36, ', DSP '
+    STAT 1, 38, ', PIC '
+    STAT 1, 40, ', DOS '
+    STAT 1, 42, ', client '
+    STAT 1, 56, '.',13,10,'Host refused: STI '
+    STAT 1, 58, ', inactive '
+    STAT 1, 60, ', VIF '
+    STAT 1, 62, ', busy '
+    STAT 1, 64, ', callback '
+    STAT 1, 66, ', exception '
+    STAT 1, 68, ', stack '
+    STAT 1, 70, ', retrace '
+    STAT 1, 72, ', clock '
+    STAT 1, 74, ', queue '
+    STAT 4, 8, '.',13,10,'Queue low (bytes): '
+    STAT 1, 44, '.',13,10,'Driver requests refused: '
+    STAT 5, 48, ', last command '
+    STAT 1, 46, 'h.',13,10,'uCDD entered DOS again: '
+    STAT 0, 0, '.',13,10
+    db 0ffh
+status_fault_table:
+    STAT 5, 50, 'Sound fault at site '
+    STAT 6, 52, 'h: port '
+    STAT 5, 51, 'h, value '
+    STAT 5, 54, 'h, DSP command '
+    STAT 5, 55, 'h, DMA mode '
+    STAT 0, 0, 'h.',13,10
+    db 0ffh
+status_clear_table:
+    STAT 0, 0, 'No sound fault.',13,10
+    db 0ffh
+status_free_table:
+    STAT 0, 0, 'uCDD did not stop a program.',13,10
+    db 0ffh
+status_exception_table:
+    STAT 8, 76, 'uCDD stopped the program: exception '
+    STAT 6, 90, 'h at '
+    STAT 7, 82, ':'
+    STAT 7, 78, '.',13,10,'Error code '
+    STAT 1, 94, 'h. Programs stopped: '
+    STAT 0, 0, '.',13,10
+    db 0ffh
+status_page_table:
+    STAT 7, 86, 'Page address '
+    STAT 0, 0, 'h.',13,10
+    db 0ffh
+status_callback_table:
+    STAT 1, 94, 'uCDD stopped the program: a callback ended in an error. Programs stopped: '
+    STAT 0, 0, '.',13,10
+    db 0ffh
+status_stack_table:
+    STAT 1, 94, 'uCDD stopped the program: the locked stack is not valid. Programs stopped: '
+    STAT 0, 0, '.',13,10
+    db 0ffh
+status_return_table:
+    STAT 1, 94, 'uCDD stopped the program: a return from a call is not valid. Programs stopped: '
+    STAT 0, 0, '.',13,10
+    db 0ffh
+status_none db 'none$'
+status_old_message db 'This uCDD driver cannot show the status.',13,10,'$'
+status_number times 12 db 0
+%endif
 operation db 0
 requested_units db 0
+%ifdef RESIDENT_AUDIO
+status_reset db 0
+%endif
 found_ucdd db 0
 wanted_drive db 0ffh
 selected_drive db 0ffh
@@ -557,6 +830,8 @@ install_option db '-INSTALL',0
 units_option db '-UNITS',0
 %ifdef RESIDENT_AUDIO
 vcpi_option db '-VCPI',0
+status_option db '-STATUS',0
+reset_option db '-RESET',0
 %ifdef EMS_QUEUE
 ems_option db '-EMS',0
 %endif
@@ -579,7 +854,14 @@ usage_message db 'UCDD -install [-units n]'
     db 13,10
     db 'UCDD -mount image [-drive d]',13,10
     db 'UCDD -unmount [image] [-drive d]',13,10
-    db 'n: 1 to 4; d: drive letter.',13,10,'$'
+%ifdef RESIDENT_AUDIO
+    db 'UCDD -status [-reset]',13,10
+%endif
+    db 'n: 1 to 4; d: drive letter.',13,10
+%ifdef RESIDENT_AUDIO
+    db 'Use -status to see what uCDD counted. Use -reset to set the counts to 0.',13,10
+%endif
+    db '$'
 no_drives_message db 'No uCDD drive is available.',13,10,'$'
 full_message db 'No uCDD drive is free.',13,10,'$'
 empty_message db 'No image is mounted on this drive.',13,10,'$'

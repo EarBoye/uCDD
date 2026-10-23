@@ -2,6 +2,7 @@
 ; SPDX-License-Identifier: GPL-3.0-only
 
 %include "audio/sb_state.inc"
+%include "audio/diag.inc"
 
 ; One virtual, edge-triggered master-PIC input.
 virtual_irq_init:
@@ -35,6 +36,7 @@ virtual_irq_tick:
     js .silence_done
     mov byte [silence_active], 0
     or byte [virtual_dsp_irq], 1
+    DIAG_INC diag_raised
     mov al, [guest_irq_bit]
     mov [virtual_pic_request], al
 .silence_done:
@@ -140,12 +142,17 @@ virtual_irq_tick:
 .sb:
 %endif
     cmp byte [virtual_dsp_irq], 0
-    jne .done
+    jne .overrun
     mov al, [game_irq_bit]
     mov [virtual_dsp_irq], al
+    DIAG_INC diag_raised
     mov al, [guest_irq_bit]
     mov [virtual_pic_request], al
 .done:
+    ret
+; A block ended and the game had not acknowledged the last interrupt.
+.overrun:
+    DIAG_INC diag_overrun
     ret
 
 virtual_irq_take:
@@ -173,6 +180,7 @@ virtual_irq_take:
     mov byte [virtual_pic_request], 0
     mov al, [guest_irq_bit]
     mov [virtual_pic_service], al
+    DIAG_INC diag_taken
     inc bx
 .done:
     mov ax, bx
@@ -258,7 +266,7 @@ virtual_pic_write:
     jmp .physical
 .unsupported:
 %ifdef MOUNTED_AUDIO
-    mov byte [fault], 5
+    FAULT_SET 7, 5
 %else
     mov byte [fault], 1
 %endif
@@ -304,6 +312,7 @@ virtual_pic_write:
     jnz .physical_eoi
 .virtual_eoi:
     mov byte [virtual_pic_service], 0
+    DIAG_INC diag_ended
 .done:
     ret
 .physical_eoi:

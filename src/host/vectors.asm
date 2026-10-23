@@ -325,7 +325,7 @@ dpmi_exception_done:
     jmp .restored
 .bad_return:
     mov byte [ebp+dpmi_exit_code], 1
-    mov word [ebp+mon_status], 1
+    mov word [ebp+mon_status], DPMI_ABORT_RETURN
     jmp dpmi_finish
 
 dpmi_reflect:

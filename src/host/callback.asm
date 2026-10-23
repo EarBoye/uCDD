@@ -387,7 +387,7 @@ dpmi_callback_done:
     ud2
 
 dpmi_callback_abort:
-    mov word [ebp+mon_status], 14
+    mov word [ebp+mon_status], DPMI_ABORT_CALLBACK
     jmp dpmi_finish
 dpmi_callback_abort_entry:
     mov ax, 10h

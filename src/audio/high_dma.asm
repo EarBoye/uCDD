@@ -1,6 +1,7 @@
 ; SPDX-FileCopyrightText: 2026 vorvek
 ; SPDX-License-Identifier: GPL-3.0-only
 
+%include "audio/diag.inc"
 ; SI: source offset of a high source. Points FS:SI at a copy of its 256-byte page and the next
 ; 8 bytes, so a frame can cross the page end. Jemm maps the physical source for
 ; INT 15h/87h.
@@ -41,7 +42,7 @@ sb_high_map:
     mov [sb_high_tag], ebx
     jmp .cached
 .failed:
-    mov byte [fault], 3
+    FAULT_SET 2, 3
     mov byte [game_active], 0
 .cached:
     pop gs

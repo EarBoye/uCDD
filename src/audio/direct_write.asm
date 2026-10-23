@@ -1,6 +1,7 @@
 ; SPDX-FileCopyrightText: 2026 vorvek
 ; SPDX-License-Identifier: GPL-3.0-only
 
+%include "audio/diag.inc"
 ; Queue direct DAC writes in the idle DMA tail workspace.
 sb_dac_write:
     cmp byte [game_active], 0
@@ -35,7 +36,7 @@ sb_dac_write:
     jmp .restore
 .full:
 %ifdef MOUNTED_AUDIO
-    mov byte [fault], 3
+    FAULT_SET 1, 3
 %else
     mov byte [fault], 1
 %endif

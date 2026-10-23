@@ -1,6 +1,7 @@
 ; SPDX-FileCopyrightText: 2026 vorvek
 ; SPDX-License-Identifier: GPL-3.0-only
 
+%include "audio/diag.inc"
 host_emm_ports_full:
     dw 002h, emm_port_callback
     dw 003h, emm_port_callback
@@ -193,7 +194,7 @@ host_client_traps:
 .enable:
     call host_emm_register
     jnc .done
-    mov byte [fault], 3
+    FAULT_SET 3, 3
     stc
     jmp .done
 .ok:

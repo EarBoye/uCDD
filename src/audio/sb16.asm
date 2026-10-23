@@ -1,6 +1,7 @@
 ; SPDX-FileCopyrightText: 2026 vorvek
 ; SPDX-License-Identifier: GPL-3.0-only
 
+%include "audio/diag.inc"
 %include "audio/sb_state.inc"
 
 ; Configuration selects the physical card resources.
@@ -68,7 +69,7 @@ dsp_write:
     jz .ready
     loop .wait
 %ifdef MOUNTED_AUDIO
-    mov byte [fault], 4
+    FAULT_SET 6, 4
 %else
     mov byte [fault], 1
 %endif
@@ -356,6 +357,14 @@ audio_irq:
     mov byte [cd_refill_pending], 1
     mov eax, [cd_produced]
     sub eax, [cd_consumed]
+%ifdef UCDD_DIAG
+    mov edx, eax
+    not edx
+    cmp edx, [diag_queue_low]
+    jbe .queue_seen
+    mov [diag_queue_low], edx
+.queue_seen:
+%endif
     cmp eax, CD_REFILL_URGENT
     jae .refill_ready
     mov byte [cd_refill_pending], 2
@@ -456,6 +465,7 @@ audio_irq:
     call physical_write
     jmp .acknowledged
 .unowned:
+    DIAG_INC diag_spurious
     cli
     call audio_irq_unmask
     mov byte [audio_irq_busy], 0

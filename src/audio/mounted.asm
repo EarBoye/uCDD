@@ -1,6 +1,7 @@
 ; SPDX-FileCopyrightText: 2026 vorvek
 ; SPDX-License-Identifier: GPL-3.0-only
 
+%include "audio/diag.inc"
 %include "disc.inc"
 %define CD_QUEUE_BYTES 524288
 %define CD_READ_BYTES 4096
@@ -301,6 +302,7 @@ cd_request:
     jb .done
     push es
     push di
+    DIAG_INC diag_run_request
     call cd_foreground
     pop di
     pop es
@@ -335,6 +337,7 @@ cd_request:
     jb .done
     push es
     push di
+    DIAG_INC diag_run_request
     call cd_foreground
     pop di
     pop es
@@ -493,6 +496,9 @@ cd_request:
     mov [cd_offset], eax
     mov dword [cd_produced], 0
     mov dword [cd_consumed], 0
+%ifdef UCDD_DIAG
+    mov dword [diag_queue_low], 0
+%endif
     mov byte [cd_pre], 0
     mov byte [cd_deemphasis_on], 0
 %ifdef RESIDENT_AUDIO
@@ -519,6 +525,7 @@ cd_request:
     ; Play reads four times the request limit. 0FFh stays 0FFh.
     rol byte [cd_background_reads], 2
 %endif
+    DIAG_INC diag_run_request
     call cd_foreground
     cmp byte [cd_error], 0
     jne .done

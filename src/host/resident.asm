@@ -3,6 +3,10 @@
 
 %include "host/profile.inc"
 
+; Offsets in the driver's diagnostic block part that this host writes.
+DIAG_HOST_REFUSED equ 0
+DIAG_HOST_ABORT equ 20
+
 %define SPLIT_HOST 1
 %macro HOST_REAL 0
     section .gateway
@@ -95,6 +99,13 @@ resident_host_init:
     add eax, ecx
     mov [cs:resident_game_vector], eax
     push edx
+    cmp dword [ds:bp+8], 35464443h
+    jne .version4
+    movzx edx, word [ds:bp+24]
+    add edx, ecx
+    mov [cs:resident_counters], edx
+    jmp .version3
+.version4:
     cmp dword [ds:bp+8], 34464443h
     je .version3
     cmp dword [ds:bp+8], 33464443h
@@ -218,6 +229,8 @@ resident_take dd 0
 resident_wss_event dd 0
 resident_traps dd 0
 resident_game_vector dd 0
+; The driver's diagnostic block that the host writes (CDF5).
+resident_counters dd 0
 resident_ports:
 %define PORT_MIXER_LABEL resident_mixer_ports
 %include "audio/ports.inc"
@@ -624,24 +637,59 @@ resident_refill_schedule:
 resident_refill_callback:
     pushad
 resident_refill_check:
+    xor ecx, ecx
     cmp byte [ebp+dpmi_sti_shadow], 0
-    jne .done
+    jne .refuse0
     cmp byte [ebp+dpmi_active], 1
-    jne .done
+    jne .refuse1
     cmp byte [ebp+dpmi_vif], 1
-    jne .done
+    jne .refuse2
     cmp byte [ebp+resident_refill_busy], 0
-    jne .done
+    jne .refuse3
     cmp byte [ebp+dpmi_callback_active], 0
-    jne .done
+    jne .refuse4
     cmp byte [ebp+dpmi_exception_active], 0
-    jne .done
+    jne .refuse5
     cmp dword [ebp+dpmi_locked_depth], 0
-    jne .done
+    jne .refuse6
     cmp dword [ebp+dpmi_stack_depth], 0
-    jne .done
+    jne .refuse6
     cmp dword [ebp+dpmi_bridge_depth], 0
-    jne .done
+    jne .refuse6
+    jmp .clock
+; ECX counts one INC for each label from the entry to .refuse0. The count
+; is the gate in the host area of the diagnostic block. Only a pending refill
+; counts.
+.refuse9:
+    inc ecx
+.refuse8:
+    inc ecx
+.refuse7:
+    inc ecx
+.refuse6:
+    inc ecx
+.refuse5:
+    inc ecx
+.refuse4:
+    inc ecx
+.refuse3:
+    inc ecx
+.refuse2:
+    inc ecx
+.refuse1:
+    inc ecx
+.refuse0:
+    mov esi, [ebp+resident_refill_pending]
+    test esi, esi
+    jz .done
+    cmp byte [esi], 0
+    je .done
+    mov edi, [ebp+resident_counters]
+    test edi, edi
+    jz .done
+    inc word [edi+ecx*2+DIAG_HOST_REFUSED]
+    jmp .done
+.clock:
     ; Give the foreground mixer time after a retrace.
     movzx edx, byte [ebp+resident_vga_ready]
     mov edi, [ebp+resident_refill_clock]
@@ -652,14 +700,14 @@ resident_refill_check:
     mov eax, [edi]
     mov [ebp+resident_vga_clock], eax
     mov byte [ebp+resident_vga_ready], 2
-    jmp .done
+    jmp .refuse7
 .hint_waiting:
     cmp edx, 2
     jne .hint_ready
     mov eax, [edi]
     sub eax, [ebp+resident_vga_clock]
     cmp eax, 128
-    jb .done
+    jb .refuse7
     ; The checks come once per output period. With 256-frame periods a
     ; window that ends at 192 frames is missed (Earthworm Jim title).
     xor edx, edx
@@ -679,7 +727,7 @@ resident_refill_check:
     mov eax, [edi]
     sub eax, [ebp+resident_refill_last]
     cmp eax, 128
-    jb .done
+    jb .refuse8
 .refill_due:
     cmp edx, 1
     je .window
@@ -696,13 +744,13 @@ resident_refill_check:
     mov eax, [edi]
     sub eax, [ebp+resident_vga_clock]
     cmp eax, 4096
-    jb .done
+    jb .refuse9
     jmp .window
 .bios_wait:
     mov eax, [46ch]
     sub eax, [ebp+resident_vga_tick]
     cmp eax, 2
-    jb .done
+    jb .refuse9
 .window:
     mov byte [ebp+resident_refill_busy], 1
     HOST_COUNT refill, 0

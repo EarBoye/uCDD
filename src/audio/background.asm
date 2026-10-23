@@ -1,6 +1,7 @@
 ; SPDX-FileCopyrightText: 2026 vorvek
 ; SPDX-License-Identifier: GPL-3.0-only
 
+%include "audio/diag.inc"
 %ifdef OWN_HOST
 CD_REFILL_URGENT equ CD_READ_BYTES*2
 ; About 190 ms of output periods without a timer call.
@@ -39,28 +40,26 @@ cd_timer_refill:
     mov eax, [cd_produced]
     sub eax, [cd_consumed]
     cmp eax, CD_QUEUE_BYTES-65536
+%ifdef UCDD_DIAG
+    ja .queue_full
+%else
     ja .done
+%endif
     ; Between refills the read limit is the timer budget. Each tick adds a
     ; few reads, and a tick that cannot read keeps its share.
     cmp byte [cd_background_reads], CD_TIMER_MAX_READS-CD_TIMER_READS
     ja .budget
     add byte [cd_background_reads], CD_TIMER_READS
 .budget:
-    cmp byte [busy], 0
-    jne .done
-    cmp byte [cd_bios_busy], 0
-    jne .done
-%ifdef RESIDENT_AUDIO
-    ; The game is between the bytes of a DSP command (Prototype).
-    call cd_dsp_wait
+    call cd_refill_wait
     jc .done
-%endif
-    call physical_pic_isr
-    or al, [virtual_pic_service]
-    jnz .done
     les bx, [cd_indos]
     cmp word [es:bx-1], 0
+%ifdef UCDD_DIAG
+    jne .dos_busy
+%else
     jne .done
+%endif
 %ifdef OWN_HOST
     cmp byte [own_host_refill], 1
     jne .synchronous
@@ -72,8 +71,19 @@ cd_timer_refill:
     ; JEMMEX's nested execution (Earthworm Jim). The host refills when the
     ; call returns.
     mov byte [cd_refill_pending], 1
+    DIAG_INC diag_ref_defer
     jmp .done
 .synchronous:
+%endif
+%ifdef UCDD_DIAG
+%ifdef OWN_HOST
+    ; The timer tail counts at 0 and the audio IRQ tail at 1.
+    movzx bx, byte [cd_irq_forced]
+    add bx, bx
+    inc word [diag_runs+bx]
+%else
+    inc word [diag_run_timer]
+%endif
 %endif
     call cd_refill_run
 .done:
@@ -83,6 +93,14 @@ cd_timer_refill:
     pop ds
     popad
     iret
+%ifdef UCDD_DIAG
+.queue_full:
+    DIAG_INC diag_ref_queue
+    jmp .done
+.dos_busy:
+    DIAG_INC diag_ref_dos
+    jmp .done
+%endif
 
 %ifdef OWN_HOST
 cd_deferred_refill:
@@ -97,15 +115,8 @@ cd_deferred_refill:
     cli
     cmp byte [cd_refill_pending], 0
     je .done
-    cmp byte [busy], 0
-    jne .done
-    cmp byte [cd_bios_busy], 0
-    jne .done
-    call cd_dsp_wait
+    call cd_refill_wait
     jc .done
-    call physical_pic_isr
-    or al, [virtual_pic_service]
-    jnz .done
     cmp byte [cd_started], 1
     jne .cancel
     cmp byte [cd_error], 0
@@ -114,14 +125,23 @@ cd_deferred_refill:
     je .cancel
     les bx, [cd_indos]
     cmp word [es:bx-1], 0
+%ifdef UCDD_DIAG
+    jne .dos_busy
+%else
     jne .done
+%endif
     mov eax, [cd_produced]
     sub eax, [cd_consumed]
     cmp eax, CD_QUEUE_BYTES-65536
+%ifdef UCDD_DIAG
+    ja .queue_full
+%else
     ja .cancel
+%endif
     mov byte [cd_refill_pending], 0
     mov word [cd_host_missed], 0
     mov byte [cd_background_reads], 1
+    DIAG_INC diag_run_host
     call cd_refill_run
     jmp .done
 .cancel:
@@ -134,8 +154,48 @@ cd_deferred_refill:
     popad
     popf
     retf
+%ifdef UCDD_DIAG
+.queue_full:
+    DIAG_INC diag_ref_queue
+    jmp .cancel
+.dos_busy:
+    DIAG_INC diag_ref_dos
+    jmp .done
+%endif
 cd_refill_pending db 0
 %endif
+
+; CF set: the refill waits. A gate that refuses counts in the diagnostics.
+cd_refill_wait:
+    cmp byte [busy], 0
+    je .bios
+    DIAG_INC diag_ref_busy
+    stc
+    ret
+.bios:
+    cmp byte [cd_bios_busy], 0
+    je .dsp
+    DIAG_INC diag_ref_bios
+    stc
+    ret
+.dsp:
+%ifdef RESIDENT_AUDIO
+    ; The game is between the bytes of a DSP command (Prototype).
+    call cd_dsp_wait
+    jnc .pic
+    DIAG_INC diag_ref_dsp
+    ret
+.pic:
+%endif
+    call physical_pic_isr
+    or al, [virtual_pic_service]
+    jz .free
+    DIAG_INC diag_ref_pic
+    stc
+    ret
+.free:
+    clc
+    ret
 
 ; Run the refill on the CD stack. Interrupts are off.
 cd_refill_run:

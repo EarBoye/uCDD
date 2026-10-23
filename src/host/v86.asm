@@ -8,7 +8,10 @@ host_v86_prepare:
     push es
     cmp byte [cs:resident_irq_slot], 1
     jne .done
-    cmp dword [ds:bp+8], 34464443h
+    ; CDF4 and CDF5 differ in one bit.
+    mov eax, [ds:bp+8]
+    and eax, 0feffffffh
+    cmp eax, 34464443h
     jne .done
     mov si, [ds:bp+22]
     mov ax, [si]

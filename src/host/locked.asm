@@ -417,7 +417,7 @@ dpmi_mouse_frame db 0
 dpmi_stack_cursors times DPMI_LOCK_LEVELS dd 0
 
 dpmi_locked_abort:
-    mov word [ebp+mon_status], 14
+    mov word [ebp+mon_status], DPMI_ABORT_STACK
     mov byte [ebp+dpmi_exit_code], 1
     jmp dpmi_finish
 

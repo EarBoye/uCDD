@@ -1,6 +1,11 @@
 ; SPDX-FileCopyrightText: 2026 vorvek
 ; SPDX-License-Identifier: GPL-3.0-only
 
+%ifdef RESIDENT_AUDIO
+%define UCDD_DIAG 1
+%endif
+%include "audio/diag.inc"
+
 header:
     dd 0ffffffffh
     dw 0c800h
@@ -209,6 +214,11 @@ interrupt:
     les bx, [cs:request]
     cmp bx, 0fffbh
     ja .return
+%ifdef UCDD_DIAG
+    inc word [cs:diag_busy]
+    mov al, [es:bx+2]
+    mov [cs:diag_busy_command], al
+%endif
     mov word [es:bx+3], 810ch
     jmp .return
 
@@ -310,7 +320,7 @@ ioctl_input:
     mov [es:di+3], cs
     jmp request_ok
 .status:
-    xor eax, eax
+    mov eax, 400h
     cmp byte [si+LOCKED], 0
     jne .lock_status
     or ax, 2
@@ -742,7 +752,9 @@ request_not_ready:
 ; AX: 0 query, 1 mount, 2 eject, 3 describe, 4 attach, 5 detach. BL: unit.
 ; AX: 7 mount MDM, 8 copy its name (128 bytes). See MDM_INPUT_SIZE.
 ; AX: 9 set the CD sample filter of the caller, or remove it with 0:0.
-; DS:DX points to image info (1/3), the audio callback (4/5), or the filter (9).
+; AX: 10 copy the diagnostic block (UCDD -status), 11 the same and then reset it.
+; DS:DX points to image info (1/3), the audio callback (4/5), the filter (9),
+; or a buffer of DIAG_BYTES bytes (10/11).
 ; AX returns 0/1 for empty/loaded, or 8001h..8007h for an error.
 control:
     pushf
@@ -788,6 +800,10 @@ control:
     je .audio_report
     cmp word [control_op], 9
     je .filter
+    cmp word [control_op], 10
+    je .diag
+    cmp word [control_op], 11
+    je .diag
 %endif
     mov word [control_result], 8002h
     cmp byte [si+LOCKED], 0
@@ -889,6 +905,33 @@ control:
     xor ax, ax
 %endif
     stosw
+    mov word [control_result], 0
+    jmp .done
+; The block (audio/resident.asm) with the periods since the reset. The copy
+; and the reset run with interrupts off.
+.diag:
+    les di, [path_pointer]
+    cmp di, 10000h-DIAG_BYTES
+    ja .done
+    mov si, diag_block
+    mov cx, DIAG_BYTES/4
+    cli
+    rep movsd
+    mov eax, [periods]
+    sub eax, [diag_periods]
+    mov [es:di-DIAG_BYTES+4], eax
+    cmp word [control_op], 11
+    jne .diag_done
+    mov eax, [periods]
+    mov [diag_periods], eax
+    push cs
+    pop es
+    mov di, diag_queue_low
+    mov cx, (diag_end-diag_queue_low)/4
+    xor eax, eax
+    rep stosd
+.diag_done:
+    sti
     mov word [control_result], 0
     jmp .done
 .filter:
@@ -1321,6 +1364,12 @@ dos_enter:
     pushad
     push ds
     push es
+%ifdef UCDD_DIAG
+    cmp byte [cs:dos_entered], 0
+    je .first
+    inc word [cs:diag_nested]
+.first:
+%endif
     lds si, [cs:sda_pointer]
     push cs
     pop es
