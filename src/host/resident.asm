@@ -102,62 +102,49 @@ resident_host_init:
     add eax, ecx
     mov [cs:resident_game_vector], eax
     push edx
-    cmp dword [ds:bp+8], 38464443h
-    jne .version7
-    ; CDF8 adds the virtual model (resident_io .status).
-    movzx edx, word [ds:bp+38]
+    ; CDF9 (24 Oct 2026, the merge of the author's 0.9.4-a6): the author's
+    ; CDF4 (his JemmEx fields at +20 and +22, host/v86.asm), then the fork's
+    ; fields 4 bytes on: the disk IRQ mask, the stray EOI byte, the
+    ; delivered byte, the virtual card bytes the host answers itself and
+    ; the virtual model. The driver and the host are built together; the
+    ; author's own CDF4 and older are read as he reads them.
+    cmp dword [ds:bp+8], 39464443h
+    jne .version4
+    movzx edx, word [ds:bp+42]
     add edx, ecx
     mov [cs:resident_fast+24], edx
-    jmp .version7_fields
-.version7:
-    cmp dword [ds:bp+8], 37464443h
-    jne .version6
-.version7_fields:
-    ; CDF7 adds the virtual card bytes the host answers itself (resident_io).
-    movzx edx, word [ds:bp+26]
-    add edx, ecx
-    mov [cs:resident_fast], edx
-    movzx edx, word [ds:bp+28]
-    add edx, ecx
-    mov [cs:resident_fast+4], edx
+    ; The virtual card bytes the host answers itself (resident_io).
     movzx edx, word [ds:bp+30]
     add edx, ecx
-    mov [cs:resident_fast+8], edx
+    mov [cs:resident_fast], edx
     movzx edx, word [ds:bp+32]
     add edx, ecx
-    mov [cs:resident_fast+12], edx
+    mov [cs:resident_fast+4], edx
     movzx edx, word [ds:bp+34]
     add edx, ecx
-    mov [cs:resident_fast+16], edx
+    mov [cs:resident_fast+8], edx
     movzx edx, word [ds:bp+36]
     add edx, ecx
+    mov [cs:resident_fast+12], edx
+    movzx edx, word [ds:bp+38]
+    add edx, ecx
+    mov [cs:resident_fast+16], edx
+    movzx edx, word [ds:bp+40]
+    add edx, ecx
     mov [cs:resident_fast+20], edx
-.version6_fields:
-    ; CDF6 adds the delivered byte (resident_delivered_mark).
-    movzx edx, word [ds:bp+24]
+    ; The delivered byte (resident_delivered_mark).
+    movzx edx, word [ds:bp+28]
     add edx, ecx
     mov [cs:resident_delivered], edx
-.version5_fields:
-    ; CDF5 adds the stray EOI byte (resident_stray_eoi_mark).
-    movzx edx, word [ds:bp+22]
+    ; The stray EOI byte (resident_stray_eoi_mark).
+    movzx edx, word [ds:bp+26]
     add edx, ecx
     mov [cs:resident_stray_eoi], edx
-    jmp .version4_fields
-.version6:
-    cmp dword [ds:bp+8], 36464443h
-    je .version6_fields
-.version5:
-    cmp dword [ds:bp+8], 35464443h
-    je .version5_fields
-.version4:
-    cmp dword [ds:bp+8], 34464443h
-    jne .version3
-.version4_fields:
-    ; CDF4 points to the disk IRQ mask. Never the timer, keyboard, cascade,
-    ; RTC, coprocessor, or the sound card's own IRQ.
+    ; The disk IRQ mask. Never the timer, keyboard, cascade, RTC,
+    ; coprocessor, or the sound card's own IRQ.
     push bx
     push cx
-    mov bx, [ds:bp+20]
+    mov bx, [ds:bp+24]
     mov dx, [ds:bx]
     and dx, 0def8h
     movzx cx, byte [cs:dpmi_audio_irq]
@@ -169,6 +156,9 @@ resident_host_init:
     pop cx
     pop bx
     jmp .version3_fields
+.version4:
+    cmp dword [ds:bp+8], 34464443h
+    je .version3_fields
 .version3:
     cmp dword [ds:bp+8], 33464443h
     jne .version2

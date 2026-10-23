@@ -453,6 +453,15 @@ changed volumes.
   ahead (F18). His default of 128 frames gives 384 frames (8.7 ms). For
   testing at 32: --audio-ring-periods up to 4 (build.py), up to 8 in
   layout.inc. The fix, for later: a ring size apart from the write-ahead.
+- The driver's block for the host (24 Oct, found after the merge commit
+  52b2a41) [read]: both sides had grown it from CDF3, the author to his
+  CDF4 (his JemmEx fields at +20 and +22) and the fork to CDF8 (the disk
+  IRQ mask at +20, then the stray EOI byte, the delivered byte, the fast
+  ports and the model). The merge took his sb_patch.asm, so the driver sent
+  his CDF4 and the host read our CDF4 field from it: the disk mask from his
+  JemmEx field, and none of our later fields. Now CDF9: his CDF4 as it is,
+  then our fields 4 bytes on; the host reads CDF9, and his CDF4 and older
+  as he does (host/resident.asm, host/v86.asm, audio/sb_patch.asm).
 - Before any kit: regression list a at 32 frames, the sound check (with
   F14's games, Hexen, Descent), the CD mounts (an audio-only sheet, INDEX 02,
   a byte-order mark), UCDD.CFG from each older version (our 4 at 38 bytes,

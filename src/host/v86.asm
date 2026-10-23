@@ -8,8 +8,12 @@ host_v86_prepare:
     push es
     cmp byte [cs:resident_irq_slot], 1
     jne .done
+    ; The author's CDF4 fields; the fork's CDF9 keeps them where they are.
     cmp dword [ds:bp+8], 34464443h
+    je .fields
+    cmp dword [ds:bp+8], 39464443h
     jne .done
+.fields:
     mov si, [ds:bp+22]
     mov ax, [si]
     cmp ax, 5605h
