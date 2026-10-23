@@ -49,6 +49,8 @@ start:
     ; The Disk row shows what the PCI scan finds (disk_scan.asm). The driver
     ; scans for itself at install.
     call disk_scan
+    ; The chipset for fast DMA, from the same scan (platform.asm).
+    call platform_describe
     call main_menu
     jc .cancel
     cmp byte [handoff], 0
@@ -360,6 +362,25 @@ main_draw:
     mov cx, 1
     mov bl, A_BOX
     call put_repeat
+    ; The fast DMA switch's label (row 17), greyed with its box, the chipset
+    ; the scan found (row 18) and the box's help line.
+    mov bl, A_BOX
+    call fastdma_available
+    jnc .fastdma_label
+    mov bl, A_GREY
+.fastdma_label:
+    mov dx, 1107h
+    mov si, fastdma_label
+    call put_text
+    mov dx, 1228h
+    mov si, platform_text
+    mov bl, A_BOX
+    call put_text
+    mov word [main_notes+20*2], fastdma_help
+    call fastdma_available
+    jnc .fastdma_help_ready
+    mov word [main_notes+20*2], fastdma_grey
+.fastdma_help_ready:
     ; The step-aside switch's label, beside its box (row 18).
     mov dx, 1207h
     mov si, always_label
@@ -573,7 +594,7 @@ model_changed:
     clc
     ret
 
-MAIN_ITEMS equ 20
+MAIN_ITEMS equ 21
 main_items:
     item 7,16,21,0, NONE,5,NONE,1, format_choice,choice_popup,choice_cycle,model_choice
     item 7,41,3,0, NONE,6,0,2, format_choice,choice_popup,choice_cycle,port_choice
@@ -594,14 +615,100 @@ main_items:
     item 20,55,6,0, 18,NONE,15,17, format_button,save_action,0,save_label
     item 20,65,8,0, 18,NONE,16,NONE, format_button,cancel_action,0,cancel_label
     ; The step-aside switch: ticked, the driver stays on without a CD audio disc.
-    item 18,3,3,0, 19,12,NONE,NONE, format_tick,toggle_tick,0,always_tick
+    item 18,3,3,0, 20,12,NONE,NONE, format_tick,toggle_tick,0,always_tick
     ; The Disk row: an IRQ set by hand for a disk card the PCI scan misses.
-    item 17,61,4,0, 10,18,NONE,NONE, format_choice,choice_popup,choice_cycle,disk_irq_choice
+    item 17,61,4,0, 10,18,20,NONE, format_choice,choice_popup,choice_cycle,disk_irq_choice
+    ; The fast DMA switch, greyed on a chipset with no fast timing known.
+    item 17,3,3,0, 10,18,NONE,19, format_tick,toggle_tick,0,fastdma_tick
 main_notes dw 0,0,0,0,0
     dw virtual_note,virtual_note,virtual_note,virtual_note,virtual_note,wss_note,wss_note
     dw 0,0,0,0,0,0
     dw always_help
     dw disk_note
+    dw fastdma_help
+fastdma_tick:
+    tick config_fast_dma,fastdma_available
+; CF set when the platform offers no fast DMA, or its BIOS has it off.
+fastdma_available:
+    cmp byte [platform_usable], 1
+    ret
+
+; The Detected column's platform line (platform_text) and platform_usable:
+; "<chipset>: <timing>", or why there is none.
+platform_describe:
+    pusha
+    push es
+    push ds
+    pop es
+    mov di, platform_text
+    mov byte [platform_usable], 0
+    movzx bx, byte [platform_row]
+    cmp bl, 0ffh
+    je .unknown
+    shl bx, 1
+    mov si, [platform_names+bx]
+    call .copy
+    mov si, platform_separator
+    call .copy
+    movzx bx, byte [platform_method]
+    shl bx, 1
+    mov si, [platform_timings+bx-2]
+    ; SiS: Type-F only while the BIOS has 70h bit 7 set (fast_dma_sis71).
+    cmp byte [platform_method], PLATFORM_SIS71
+    jne .usable
+    mov bx, [platform_bridge]
+    push di
+    mov di, 70h
+    call pci_read_byte
+    pop di
+    jc .off
+    test cl, 80h
+    jnz .usable
+.off:
+    mov si, platform_off_text
+    jmp .last
+.usable:
+    mov byte [platform_usable], 1
+    jmp .last
+.unknown:
+    ; A PCI-to-ISA bridge the table lacks, named by its IDs.
+    mov si, platform_none_text
+    cmp word [platform_bridge_vendor], 0
+    je .last
+    mov si, platform_bridge_text
+    call .copy
+    mov ax, [platform_bridge_vendor]
+    call .hex4
+    mov al, ':'
+    stosb
+    mov ax, [platform_bridge_device]
+    call .hex4
+    mov si, platform_unknown_text
+.last:
+    call .copy
+    mov byte [di], 0
+    pop es
+    popa
+    ret
+.copy:
+    lodsb
+    test al, al
+    jz .copied
+    stosb
+    jmp .copy
+.copied:
+    ret
+.hex4:
+    mov cx, 4
+.digit:
+    rol ax, 4
+    mov bx, ax
+    and bx, 15
+    mov bl, [hex_digits+bx]
+    mov [di], bl
+    inc di
+    loop .digit
+    ret
 always_tick:
     tick config_audio_always,always_available
 ; CF set when the physical card cannot act as the virtual one (the driver's
@@ -609,6 +716,39 @@ always_tick:
 always_available:
     jmp card_pairing
 %include "audio/pairing.asm"
+platform_usable db 0
+platform_text times 40 db 0
+; Names by platform table row (platform.asm), then the EISA row.
+platform_names dw .piix, .piix3, .piix4, .sio, .m1523, .m1533, .vt586, .vt596
+    dw .vt686, .vt8231, .sis5597, .amd756, .viper, .firestar, .eisa
+.piix db 'Intel PIIX',0
+.piix3 db 'Intel PIIX3',0
+.piix4 db 'Intel PIIX4',0
+.sio db 'Intel 82378 SIO',0
+.m1523 db 'ALi M1523',0
+.m1533 db 'ALi M1533/35/43',0
+.vt586 db 'VIA VT82C586',0
+.vt596 db 'VIA VT82C596',0
+.vt686 db 'VIA VT82C686',0
+.vt8231 db 'VIA VT8231',0
+.sis5597 db 'SiS 5597/5598',0
+.amd756 db 'AMD-756',0
+.viper db 'OPTi Viper',0
+.firestar db 'OPTi FireStar',0
+.eisa db 'EISA',0
+; What each method gives, by method number.
+platform_timings dw .type_f, .type_f, .type_a, .clock, .type_f
+.type_f db 'Type F',0
+.type_a db 'Type A',0
+.clock db 'fast DMA clock',0
+platform_separator db ': ',0
+platform_off_text db 'off in BIOS',0
+platform_bridge_text db 'Bridge ',0
+platform_unknown_text db ': none known',0
+platform_none_text db 'No fast DMA known',0
+fastdma_label db 'Enable platform fast DMA',0
+fastdma_help db 'Faster sound card DMA, as the chipset allows. Untick if sound breaks.',0
+fastdma_grey db 'No fast DMA on this chipset, or its BIOS has it off.',0
 model_choice:
     choice sound_card,1,model_list,text_model,model_changed
 port_choice:
