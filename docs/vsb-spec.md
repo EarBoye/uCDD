@@ -426,23 +426,39 @@ rate, never passes what uCDD has taken, never moves back within a lap, and
 the block interrupt comes when that same position crosses a block's end,
 so the count sits on the boundary there as the CT2290's does. [doc, hw]
 
-Today (D9): the auto-init count follows the output clock, the frame being
-heard (trap.asm, the count read; host-cdrom-spec.md D2), one to two
-periods behind what has been taken, and the block interrupt follows the
-mix (irq.asm, virtual_irq_tick): the count is short of the boundary at
-the interrupt (F8: about 7Dh), DMX loses one to two periods of its margin
-(F18), and the clock can alias two periods back when a period interrupt
-is late (F2). The output clock was chosen on 15 Oct (5e3f364) for HMI's
-clicks on the virtual ESS, whose mixer reads a delayed ring; on the Sound
-Blaster models the mix is what uCDD has taken [reading]. The virtual ESS
-keeps its own rule (vess-spec.md, ess_fifo_count; rule 6).
+Today (count-position, 30c82ca, 23 Oct 2026): auto-init follows the
+rule. One position, the frame being heard plus one period, never past what
+the mix has taken, never back within the transfer, held while paused
+(trap.asm game_elapsed_at): the count reads it, the block interrupt comes
+when it crosses a block's end, and DAh and D9h end the block it is in. At
+32 frames one period at 44.1 kHz is 0.73 ms, the CT2290's FIFO at 22050 Hz.
+[emu, 86Box, regression r32cp against r32ib: the count at every auto-init
+block interrupt on the boundary or up to one period past it, where the
+mix-led interrupt read it short by one to two periods (F8)].
 
-A candidate, not built: the position = the sound heard plus one period,
-never past what has been taken, never back; the count reads it and the
-block interrupt follows it. At 32 frames one period at 44.1 kHz is 0.73
-ms, the CT2290's FIFO at 22050 Hz. [inference] To prove first: Hexen at
-256 frames must show stale blocks under today's rule (L4), and the
-survey covers every engine that reads the count (rule 10).
+Single-cycle keeps its interrupt on the mix, the moment uCDD has taken the
+block's last byte, which is also when a card's DMA has fetched it. Its
+count already sits on the boundary at the interrupt (the transfer is
+finished in the virtual card's state when the interrupt is raised), and a
+game that restarts from its handler must find uCDD's one-period write-ahead
+(sb_patch) still open, or the chain gets a gap [read]. During the block its
+count follows the output clock.
+
+Before (D9 and irq-batch): the auto-init count followed the output clock,
+one to two periods behind what had been taken, and the block interrupt the
+mix (irq.asm, virtual_irq_tick), so the count was short of the boundary at
+the interrupt (F8: about 7Dh on the PC at 128 frames) and DMX lost one to
+two periods of its margin (F18). The output clock had been chosen on 15 Oct
+(5e3f364) for HMI's clicks on the virtual ESS, whose mixer reads a delayed
+ring; on the Sound Blaster models the mix is what uCDD has taken
+[reading]. The virtual ESS keeps its own rule (vess-spec.md,
+ess_fifo_count; rule 6).
+
+Still open: the clock can alias two periods back when a period interrupt is
+late (F2): the position's clamp now holds the count, and a ring of more
+than two periods would remove the alias. A stop or pause that lands after
+the mix has taken past the position plays up to one period more than the
+card would.
 
 ## 8. Interrupts
 

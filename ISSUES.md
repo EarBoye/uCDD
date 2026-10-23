@@ -440,6 +440,27 @@ changed volumes.
 - Plan: 7ed5820d (151 runs: 29 probes, 122 recordings, about 220 min).
   Blocked: F2TEST (no verdict against a run without uCDD yet) and DMACNT's
   verdict (the CT2290's numbers).
+- Result (30c82ca, built as the hypothesis says) [86Box]: regression list a
+  at 32 frames, r32cp against r32ib: every auto-init case now reads the
+  count on the boundary or up to one period past it at each of its first
+  eight block interrupts (S0 2-12 units, a period being 16; S5 6-28 of 64;
+  L7 7-8 of 8); single-cycle on the boundary as before; everything else as
+  irq-batch, including the open interrupt-count shortfall in S5, L2, L3 and
+  L5 (86Box at 32-frame rates). Sound check on the SB16 at 32 frames (cp32):
+  as irq-batch, eight pass; Jill (F17, on time 0.44: D9 read 0.44, D7 0.42,
+  irq-batch 0.01) and Dark Forces (speed 1.05, 84 steps back; irq-batch 78)
+  fail as before, so D1 does not touch Dark Forces' fault. Driver 16 bytes
+  smaller.
+- Not run, and why: of plan 7ed5820d, the family survey's 60 game runs
+  (their runner and judge are not rebuilt; REBUILD.md), the sound check on
+  the virtual SB Pro and SB 2.0 (no references yet), Kyrandia (parked),
+  SBQUEUE, E2TEST, SADUMP and ADPCM (not rebuilt). The commit cites what ran.
+- Seen in passing, not D1's: after a DSP reset ends a high-speed transfer
+  the bare card's count stops mid-block (L3 0073h, L4 0222h) and the
+  virtual card's reads the full count (07FFh, 0FFFh), on irq-batch too; the
+  mask case is DMAMASK below.
+- Hardware: not yet (the PC runs irq-batch; a kit after the deeper ring or
+  with it).
 
 ### DMAMASK: a masked channel does not stall the virtual transfer (found 23 Oct 2026, open)
 
