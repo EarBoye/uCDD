@@ -68,7 +68,8 @@ Findings that touch own-code games: Stargunner's 90h high-speed output
 never starts with both cards on IRQ 7 on the virtual SB Pro and SB 2.0,
 and plays at IRQ 5 ([findings.md](findings.md) F4, open); Battle Race 95
 stops in a "two reads agree" loop on the polled count, the same field as
-F2 (host-cdrom-spec.md section 10).
+F2 (host-cdrom-spec.md section 10; the count and the clock fixed on
+`count-position` 24 Oct [86Box], Battle Race not yet rerun).
 
 Their FM habits (38 games wrote the chip):
 

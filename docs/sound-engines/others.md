@@ -30,8 +30,11 @@ Findings: C-Dogs writes the 8237's mode and count and unmasks the channel
 only after its 90h; a real DSP waits for the channel and plays, uCDD's
 never starts ([findings.md](findings.md) F5; confirmed on the CT2290
 [hw, 19 Oct]: the bare card starts within 1 ms of the unmask, D7 never).
-Cyberdogs' polled count went up between reads 13 times in 234 (F2, open;
-the reads were far apart, so less sure).
+Cyberdogs' polled count went up between reads 13 times in 234 (F2;
+the reads were far apart, so less sure). Since 24 Oct on `count-position`
+the count cannot step back within a transfer (F8's position, 30c82ca) and
+the clock no longer aliases after a late interrupt (7994cd1) [86Box];
+Cyberdogs itself not yet rerun.
 
 ## MIDAS Sound System (Sahara Surfers)
 

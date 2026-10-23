@@ -49,7 +49,7 @@ FEh), D3h, E0h AAh, E1h [trace].
 |---|---|---|
 | 80h/81h first | trusts the card's own IRQ/DMA registers | the card's real settings in 80h/81h |
 | Time constant on a 4.xx | 40h with C6h | the 4.xx rate register shared by 40h and 41h |
-| Count read twice | compares two counts | a count that never moves backwards (see [findings](findings.md), F2: Dark Forces' count rose by 104 bytes 19 times) |
+| Count read twice | compares two counts | a count that never moves backwards (see [findings](findings.md), F2: Dark Forces' count rose by 104 bytes 19 times; on `count-position` since 24 Oct the count cannot step back and the clock no longer aliases [86Box], yet Dark Forces' sound check is unchanged: its fault is elsewhere) |
 | Mask FEh during F2h | only the timer open | the F2h interrupt must wait for the game to open the line, as a real PIC holds the request |
 
 ## Music and timer [trace]
