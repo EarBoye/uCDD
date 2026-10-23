@@ -64,8 +64,8 @@ two_digits:
     mov byte [di+2], 0
     ret
 
-; EAX = frames. Write M:SS or MM:SS at DI.
-format_time:
+; EAX = frames. Return EAX = minutes (99 at most), DX = seconds.
+split_time:
     xor edx, edx
     mov ecx, 75
     div ecx
@@ -73,9 +73,14 @@ format_time:
     mov ecx, 60
     div ecx
     cmp eax, 99
-    jbe .minutes
+    jbe .done
     mov eax, 99
-.minutes:
+.done:
+    ret
+
+; EAX = frames. Write M:SS or MM:SS at DI.
+format_time:
+    call split_time
     push dx
     call two_digits
     mov byte [di+2], ':'
@@ -131,16 +136,7 @@ draw_lcd:
     neg eax
     mov byte [time_minus], 1
 .positive:
-    xor edx, edx
-    mov ecx, 75
-    div ecx
-    xor edx, edx
-    mov ecx, 60
-    div ecx
-    cmp eax, 99
-    jbe .minutes
-    mov eax, 99
-.minutes:
+    call split_time
     push dx
     aam
     cmp byte [time_minus], 0
@@ -280,7 +276,9 @@ draw_lcd:
     add ax, 4
     loop .cell
 .calendar:
-    mov cl, 1
+    mov cl, [first_track]
+    dec cl
+    jmp .next_number
 .number:
     cmp cl, [last_track]
     ja .done
@@ -368,7 +366,6 @@ draw_vu:
     movsx eax, ax
     imul eax, (VU_RADIUS+4)*5
     sar eax, 15
-    xor dx, dx
     mov bx, 6
     cwd
     idiv bx

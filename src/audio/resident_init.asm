@@ -20,10 +20,11 @@ audio_activate:
     call cd_memory_low
     jc .cleanup
     call sb_model
-    ; The part of the ring the card plays: all of it for 16-bit output, a
-    ; quarter for the SB Pro, an eighth for the SB 2.0, half for the ESS at
-    ; half rate. Always a power of two.
-    mov bx, RING_PARAS
+    ; The output ring and a spare of the same size in one block (the
+    ; author's 0.9.4-a6): ring_place puts the ring in the half that does not
+    ; cross a 64 KB page. The ring is the whole for 16-bit output, a quarter
+    ; for the SB Pro, an eighth for the SB 2.0, half for the ESS at half rate.
+    mov bx, RING_PARAS*2
     cmp byte [sound_card], 3
     jne .pro_size
     shr bx, 1
@@ -34,47 +35,25 @@ audio_activate:
 .half_size:
     mov cl, [ess_half]
     shr bx, cl
-    mov word [audio_error_text], dma_memory_message
-    push bx
-    ; The SB Pro start plays one byte from just past the ring (pro_start).
+    ; The SB Pro start plays one byte from just past the ring (pro_start),
+    ; which can be the end of the block.
     cmp byte [sound_card], 1
-    jne .allocate
+    jne .allocate_dma
     inc bx
-.allocate:
+.allocate_dma:
+    mov word [audio_error_text], dma_memory_message
     mov ah, 48h
     int 21h
-    pop bx
-    jc .cleanup
-    ; DMA cannot cross a 64 KB page. A block that does is replaced by one of
-    ; twice the size, and the ring starts at a multiple of its size in it.
-    mov dx, ax
-    add dx, bx
-    dec dx
-    xor dx, ax
-    test dh, 0f0h
-%ifndef TEST_RING_CROSS
-    jz .dma_block
-%endif
-    mov es, ax
-    mov ah, 49h
-    int 21h
-    jc .cleanup
-    push bx
-    shl bx, 1
-    mov ah, 48h
-    int 21h
-    pop bx
     jc .cleanup
     mov [output_allocation], ax
-    dec bx
-    add ax, bx
-    not bx
-    and ax, bx
-    jmp .dma_ready
-.dma_block:
-    mov [output_allocation], ax
-.dma_ready:
+    call ring_place
     mov [output_segment], ax
+    mov [output_spare], dx
+    test byte [sound_card], 1
+    jnz .dma_ready
+    ; The spare ring keeps the game part of each output word.
+    mov [sb_record_segment], dx
+.dma_ready:
     mov word [audio_error_text], cd_half_memory_message
     call cd_half_allocate
     jc .cleanup
@@ -83,9 +62,6 @@ audio_activate:
     jc .cleanup
 %ifdef ESS_FIFO_MODEL
     call ess_dac_allocate
-%endif
-%ifdef VERIFY_MIX
-    call verify_allocate
 %endif
     mov word [audio_error_text], xms_memory_message
 %ifdef EMS_QUEUE
@@ -105,14 +81,7 @@ audio_activate:
     mov eax, [fs:6ch]
     pop fs
     mov [irq_ticks], eax
-    mov ax, [output_segment]
-    mov es, ax
-    xor di, di
-    call mix_half
-    call mix_half
-%if RING_PERIODS > 2
-    call ring_fill
-%endif
+    call mix_fill
     mov word [audio_error_text], port_trap_rejected_message
     call trap_install
     jc .cleanup

@@ -2,17 +2,6 @@
 ; SPDX-License-Identifier: GPL-3.0-only
 
 %include "host/profile.inc"
-; Refill window after a retrace, in output frames. The output clock advances
-; about one period at a time, so the window must span a whole period or a
-; larger period steps over it and deferred CD refills never run.
-%ifndef OUTPUT_SHIFT
-%define OUTPUT_SHIFT 5
-%endif
-%if (1 << OUTPUT_SHIFT) > 64
-%define REFILL_WINDOW_END (128 + (1 << OUTPUT_SHIFT))
-%else
-%define REFILL_WINDOW_END 192
-%endif
 
 %define SPLIT_HOST 1
 %macro HOST_REAL 0
@@ -28,10 +17,17 @@
     bits 16
 %endmacro
 
+; The install code (.scratch) comes before the protected part (24 Oct 2026,
+; the merge of the author's 0.9.4-a6): it runs in real mode from the loading
+; buffer and must end below 64 KB; the protected part runs from XMS with
+; 32-bit offsets and may end above it (audio/resident_host_init.asm reads the
+; image in two parts).
 section .gateway start=0
-section .protected follows=.gateway align=16
-section .scratch follows=.protected align=16
-section .pages follows=.scratch nobits align=16
+section .scratch follows=.gateway align=16
+section .protected follows=.scratch align=16
+section .pages follows=.protected nobits align=16
+HOST_SCRATCH
+host_scratch_start:
 HOST_REAL
 cpu 386
 org 0
@@ -96,6 +92,7 @@ resident_host_init:
 .slot_ready:
     and ah, 1
     mov [cs:mon_vcpi_flags_slot], ah
+    call host_v86_prepare
     mov [cs:resident_traps], cx
     mov [cs:resident_traps+2], ds
     movzx eax, bp
@@ -266,6 +263,7 @@ resident_host_init:
     pop ds
 .vcpi_ready:
     pop ds
+    call host_v86_install
     popad
     pop es
     pop ds
@@ -310,7 +308,9 @@ resident_port_count equ ($-resident_ports)/2
 HOST_SCRATCH
 HOST_LINEAR_PAGE equ 0e0000000h
 HOST_LINEAR_PDE equ (HOST_LINEAR_PAGE >> 22)
-HOST_XMS_KIB equ ((host_ldt_end-host_protected_start+21501)/1024)
+; XMS holds the image from the gateway's last page on: the install code's
+; tail too, now that it comes before the protected part.
+HOST_XMS_KIB equ ((host_ldt_end-host_protected_start+host_image_end-host_scratch_start+16+21501)/1024)
 HOST_STACK_BYTES equ 2048
 HOST_STACK_PARAS equ (HOST_STACK_BYTES/16)
 HOST_GATEWAY_MIN_PARAS equ ((host_gateway_end-host_gateway_start+15)/16)
@@ -729,6 +729,16 @@ resident_refill_schedule:
     pop esi
 %endif
     pushad
+    test byte [esp+32+4+44], 3
+    jz resident_refill_check.done
+    test dword [esp+32+4+48], 20000h
+    jnz resident_refill_check.done
+    jmp resident_refill_check
+; A real-mode call returned to the host. A client that stays in real-mode
+; calls gets no IRQ in protected mode, so the refill runs here.
+resident_refill_callback:
+    pushad
+resident_refill_check:
     cmp byte [ebp+dpmi_sti_shadow], 0
     jne .done
     cmp byte [ebp+dpmi_active], 1
@@ -747,26 +757,6 @@ resident_refill_schedule:
     jne .done
     cmp dword [ebp+dpmi_bridge_depth], 0
     jne .done
-    test byte [esp+32+4+44], 3
-    jz .done
-    test dword [esp+32+4+48], 20000h
-    jnz .done
-    ; An almost empty CD queue cannot wait for the retrace window. A game that
-    ; waits for every retrace would otherwise never let the queue refill.
-    mov esi, [ebp+resident_refill_pending]
-    test esi, esi
-    jz .timed
-    cmp byte [esi], 2
-    jne .timed
-    mov edi, [ebp+resident_refill_clock]
-    test edi, edi
-    jz .window
-    mov eax, [edi]
-    sub eax, [ebp+resident_refill_last]
-    cmp eax, 128
-    jb .done
-    jmp .window
-.timed:
     ; Give the foreground mixer time after a retrace.
     movzx edx, byte [ebp+resident_vga_ready]
     mov edi, [ebp+resident_refill_clock]
@@ -790,8 +780,10 @@ resident_refill_schedule:
     sub eax, [ebp+resident_vga_clock]
     cmp eax, 128
     jb .done
+    ; The checks come once per output period. With 256-frame periods a
+    ; window that ends at 192 frames is missed (Earthworm Jim title).
     xor edx, edx
-    cmp eax, REFILL_WINDOW_END
+    cmp eax, 384
     seta dl
     xor dl, 1
 .hint_ready:
@@ -811,6 +803,22 @@ resident_refill_schedule:
 .refill_due:
     cmp edx, 1
     je .window
+    ; The client can stop the BIOS timer.
+    test edi, edi
+    jz .bios_wait
+    cmp byte [esi], 2
+    jne .queue_wait
+    mov eax, [edi]
+    sub eax, [ebp+resident_refill_last]
+    cmp eax, 512
+    jae .window
+.queue_wait:
+    mov eax, [edi]
+    sub eax, [ebp+resident_vga_clock]
+    cmp eax, 4096
+    jb .done
+    jmp .window
+.bios_wait:
     mov eax, [46ch]
     sub eax, [ebp+resident_vga_tick]
     cmp eax, 2
@@ -818,11 +826,18 @@ resident_refill_schedule:
 .window:
     mov byte [ebp+resident_refill_busy], 1
     HOST_COUNT refill, 0
+    ; From mon_resume this call nests in a finished real-mode call whose
+    ; caller still reads its registers (resident_audio_take). Keep them.
+    sub esp, 52
+    lea esi, [ebp+mon_rm_regs]
+    mov edi, esp
+    mov ecx, 50
+    cld
+    rep movsb
     sub esp, 52
     mov edi, esp
     xor eax, eax
     mov ecx, 13
-    cld
     rep stosd
     mov edi, esp
     mov word [edi+32], 202h
@@ -830,6 +845,11 @@ resident_refill_schedule:
     mov [edi+42], eax
     mov al, 1
     call mon_real_far
+    add esp, 52
+    mov esi, esp
+    lea edi, [ebp+mon_rm_regs]
+    mov ecx, 50
+    rep movsb
     add esp, 52
     mov esi, [ebp+resident_refill_clock]
     test esi, esi
@@ -1214,11 +1234,60 @@ resident_io:
     ret
 .word:
     cmp cl, 2
-    jne .bad
-    test ch, ch
-    jz .bad
+    jne .split
     cmp dx, [ebp+resident_mixer_ports]
-    jne .bad
+    je .callback
+.split:
+    ; Other wide access: one byte at a time, as on the ISA bus.
+    push ebx
+    push edx
+    push esi
+    push eax
+    mov bl, ch
+    mov bh, cl
+    movzx esi, cl
+.split_byte:
+    bt [ebp+mon_bitmap], edx
+    jc .split_trapped
+    mov al, [esp]
+    test bl, bl
+    jz .split_input
+    out dx, al
+    jmp .split_next
+.split_input:
+    in al, dx
+    jmp .split_store
+.split_trapped:
+    push edx
+    push esi
+    mov al, [esp+8]
+    mov cl, 1
+    mov ch, bl
+    call resident_io
+    pop esi
+    pop edx
+    jc .split_bad
+.split_store:
+    test bl, bl
+    jnz .split_next
+    mov [esp], al
+.split_next:
+    ror dword [esp], 8
+    inc edx
+    dec esi
+    jnz .split_byte
+    cmp bh, 4
+    je .split_done
+    ror dword [esp], 16
+.split_done:
+    clc
+    ; CF is set on the jump from a trapped byte.
+.split_bad:
+    pop eax
+    pop esi
+    pop edx
+    pop ebx
+    ret
 ; Joined from .regular when the access is none of the fast ports, from each
 ; fast port when the driver must see this access (a hold of 1 in progress, a
 ; read where a write was expected or the reverse), and from .word for the
@@ -1248,7 +1317,9 @@ resident_io:
     stc
     ret
 
+%include "host/v86.asm"
 %include "host/monitor.asm"
+%include "host/handoff.asm"
 
 HOST_REAL
 dpmi_sti_shadow db 0
@@ -1263,6 +1334,12 @@ host_protected_end:
 ; The LDT pages follow the image in XMS. Each client start clears them.
 dpmi_ldt equ host_protected_end
 dpmi_used equ dpmi_ldt+DPMI_LDT_COUNT*8
-host_ldt_end equ dpmi_used+DPMI_LDT_COUNT
+; The host stacks follow the LDT and need no image bytes.
+dpmi_parent_map equ dpmi_used+DPMI_LDT_COUNT
+mon_kernel_stack_top equ dpmi_parent_map+DPMI_LDT_COUNT/8+2048
+dpmi_callback_kernel_top equ mon_kernel_stack_top+1920
+host_ldt_end equ dpmi_callback_kernel_top
 HOST_SCRATCH
 host_image_end:
+; The install code runs in real mode from offsets below 64 KB.
+host_scratch_check equ 1 / ((host_gateway_end - host_gateway_start) + 16 + (host_image_end - host_scratch_start) <= 10000h)

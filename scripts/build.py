@@ -11,6 +11,7 @@ import subprocess
 
 ROOT = Path(__file__).resolve().parent.parent
 BUILD = ROOT / 'build'
+DRIVER_ENTRY_IP = 32
 
 
 def assemble(source, name, defines=(), exe=False, listing=False):
@@ -19,18 +20,39 @@ def assemble(source, name, defines=(), exe=False, listing=False):
     if not nasm:
         raise SystemExit('NASM is required.')
     output = BUILD / name
+    entry_ip = 0
+    driver = (ROOT / source).resolve() == (ROOT / 'src/ucdd.asm').resolve()
+    symbols = output.with_suffix('.map')
+    if driver:
+        entry_ip = DRIVER_ENTRY_IP
+        defines = (*defines, f'UCDD_ENTRY_IP={entry_ip}')
+        symbols.with_suffix('.inc').write_text(f'[map symbols {symbols.as_posix()}]\n')
     subprocess.run([nasm, '-f', 'bin', '-I', str(ROOT / 'src') + '/',
+                    *(['-P', str(symbols.with_suffix('.inc'))] if driver else []),
                     *(['-l', str(output.with_suffix('.lst'))] if listing else []),
                     *['-D' + value for value in defines], str(ROOT / source),
                     '-o', str(output)], check=True)
     if exe:
         payload = output.read_bytes()
         stack_segment = (len(payload) + 15) // 16
-        if len(payload) > 65536:
+        extra = 64
+        main_size = len(payload)
+        if driver:
+            # The stack is the 1 KB gap between the main segment and the helper.
+            symbols.with_suffix('.inc').unlink()
+            table = dict(line.split()[2:0:-1] for line in symbols.read_text().splitlines()
+                         if len(line.split()) == 3 and line.split()[0] != 'Real')
+            symbols.unlink()
+            stack_segment = int(table['program_end'], 16) // 16
+            main_size = stack_segment * 16 + 1024
+            extra = 1
+            if len(payload) - main_size > 65536:
+                raise ValueError('The command helper exceeds one DOS segment.')
+        if main_size > 65536:
             raise ValueError('The program exceeds one DOS segment.')
         size = 32 + len(payload)
         header = struct.pack('<14H', 0x5a4d, size % 512, (size + 511) // 512,
-                             0, 2, 64, 64, stack_segment, 1024, 0, 0, 0, 28, 0)
+                             0, 2, extra, extra, stack_segment, 1024, 0, entry_ip, 0, 28, 0)
         output.write_bytes(header.ljust(32, b'\0') + payload)
     print(f'{name}: {output.stat().st_size} bytes')
 
@@ -61,16 +83,16 @@ def main():
     parser.add_argument('--inject-register', action='store_true', help=argparse.SUPPRESS)
     parser.add_argument('--no-inject-register', dest='inject_register_off', action='store_true',
                         help='Do not recognise the flags image in a register (PUSHF, POP reg, CLI).')
-    parser.add_argument('--verify-mix', action='store_true',
-                        help='Test build: check every mix_run half against the general loop.')
     parser.add_argument('--virtual-ess', action='store_true',
                         help='Include the virtual ESS AudioDrive (virtual model 4). Left out by '
                              'default for now: the Sound Blasters take its room in the segment.')
     parser.add_argument('--audio-period-frames', type=int, choices=(32, 64, 128, 256),
-                        default=32, help='Set the resident audio output period for testing.')
+                        default=128, help='Set the resident audio output period for testing.')
+    parser.add_argument('--audio-ring-periods', type=int, choices=(2, 3, 4),
+                        default=3, help='Set the number of output periods in the DMA ring for testing.')
     args = parser.parse_args()
-    if args.audio_period_frames != 32 and not args.resident_audio:
-        parser.error('--audio-period-frames requires --resident-audio.')
+    if (args.audio_period_frames != 128 or args.audio_ring_periods != 3) and not args.resident_audio:
+        parser.error('--audio-period-frames and --audio-ring-periods require --resident-audio.')
     if args.profile_host or args.profile_driver:
         if not args.resident_audio:
             parser.error('--profile-host and --profile-driver require --resident-audio.')
@@ -79,7 +101,8 @@ def main():
     for source, name in [('src/ucdd.asm', 'UCDD.EXE'),
                          ('src/setup.asm', 'UCDDSET.EXE')]:
         if args.resident_audio and name == 'UCDD.EXE':
-            defines = [f'OUTPUT_SHIFT={args.audio_period_frames.bit_length()-1}']
+            defines = [f'OUTPUT_SHIFT={args.audio_period_frames.bit_length()-1}',
+                       f'RING_PERIODS={args.audio_ring_periods}']
             if args.no_refill_hint:
                 defines.append('NO_REFILL_HINT=1')
             if not args.split_word_io_off:
@@ -88,8 +111,6 @@ def main():
                 defines.append('FLAT_SINK=1')
             if not args.inject_register_off:
                 defines.append('INJECT_REG=1')
-            if args.verify_mix:
-                defines.append('VERIFY_MIX=1')
             if args.virtual_ess:
                 defines.append('VIRTUAL_ESS=1')
             if args.profile_driver:
@@ -118,15 +139,21 @@ def assemble_resident_host(defines=(), profile=False):
     assemble('src/host/resident.asm', 'UCDDHOST.BIN',
              (*defines, *(('HOST_PROFILE=1',) if profile else ())), listing=True)
     host = (BUILD / 'UCDDHOST.BIN').read_bytes()
-    if len(host) > 65535:
-        raise ValueError('The host exceeds one segment.')
+    # The loader reads 32 KB, then up to 64 KB less a byte; the install code's
+    # own limit is checked in src/host/resident.asm (host_scratch_check).
+    if len(host) > 0x8000 + 0xffff:
+        raise ValueError('The host exceeds what the loader reads.')
     resident_defines = ('RESIDENT_AUDIO=1', 'OWN_HOST=1', f'OWN_HOST_SIZE={len(host)}', *defines)
-    assemble('src/ucdd.asm', 'UCDD.EXE', (*resident_defines, 'OWN_HOST_OFFSET=65536'), exe=True, listing=True)
-    program = (BUILD / 'UCDD.EXE').read_bytes()
-    if len(program) > 65536:
-        raise ValueError('The driver overlaps its host overlay.')
-    (BUILD / 'UCDD.EXE').write_bytes(program.ljust(65536, b'\0') + host)
-    print(f'UCDD.EXE with internal host: {65536 + len(host)} bytes')
+    # The host follows the program image in the file.
+    offset = 0
+    while True:
+        assemble('src/ucdd.asm', 'UCDD.EXE', (*resident_defines, f'OWN_HOST_OFFSET={offset}'), exe=True, listing=True)
+        program = (BUILD / 'UCDD.EXE').read_bytes()
+        if offset == (len(program) + 15) // 16 * 16:
+            break
+        offset = (len(program) + 15) // 16 * 16
+    (BUILD / 'UCDD.EXE').write_bytes(program.ljust(offset, b'\0') + host)
+    print(f'UCDD.EXE with internal host: {offset + len(host)} bytes')
 
 
 def assemble_player():

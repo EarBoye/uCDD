@@ -102,7 +102,7 @@ Copy `UCDD.EXE` and `UCDDSET.EXE` into one directory and run `UCDDSET`.
     </td>
     <td align="center" width="33%">
       <strong>Mixer</strong><br>
-      <a href="docs/ucddset-mixer.png"><img src="docs/ucddset-mixer.png" alt="UCDDSET CD audio, game audio, and master volume controls" width="100%"></a><br>
+      <a href="docs/ucddset-mixer.png"><img src="docs/ucddset-mixer.png" alt="UCDDSET CD audio, wave, FM, and master volume controls" width="100%"></a><br>
       <sub>Set audio levels and volume steps.</sub>
     </td>
   </tr>
@@ -123,8 +123,9 @@ Copy `UCDD.EXE` and `UCDDSET.EXE` into one directory and run `UCDDSET`.
 - **Detected** shows what `UCDD -install` will find for itself: the IRQs of the PCI disk controllers (`--` with no PCI BIOS, with `UCDDPCI=OFF`, or with none found; `+?` for a controller whose IRQ the BIOS left unset), an **Other disk card IRQ** field for a controller the scan misses, such as an ISA or VLB card, and the ISA bridge: Intel PIIX, PIIX3, PIIX4 or none. IRQ 14 and 15 are always passed to DOS directly and not shown. The help line at the bottom explains the selected item, and warns when a disk IRQ is a sound card's. See BUILDING.md for what the driver does with the disk IRQs.
 - **Virtual** is what games see: a Sound Blaster (SB16, SB Pro, or SB 1.5/2.0, which report DSP 4.13, 3.02, or 2.01), or, on a physical ESS AudioDrive only, an **ESS AudioDrive** (DSP 3.01, the physical chip's own identification, the extended-mode registers behind commands C6h and C0h, 8- and 16-bit mono and stereo over the one 8-bit DMA channel at any rate the chip takes), and a WSS codec. A game set to the ESS gets 16-bit sound through μCDD's mixer and the real chip's ESFM at the FM ports, which μCDD never traps; recording is not emulated; ADPCM is (Creative's 4-, 2.6- and 2-bit kinds, as the ESS plays them), and ESS's own ESPCM plays as silence with its timing (its decoding is not documented). UCDDSET offers the virtual ESS only with a physical ESS, since on another card a game set to it would find a plain OPL3 where it expects ESFM. The WSS codec uses the DMA Low channel of the virtual Sound Blaster, and a game can move its IRQ through the WSS board register. Where possible, match the virtual model to the physical card. For example, a virtual SB Pro on an SB Pro-compatible card keeps the game sound in 8-bit stereo and avoids a 16-bit conversion.
 - **Detect** reads the physical card from the hardware. `BLASTER` only fills in values that the tests cannot find. **Test** plays a tone on each speaker. Both need DOS without the μCDD audio driver.
+- **Mixer** sets the CD-Audio, wave, FM, and master levels. The wave level applies to the game's PCM sound. The FM level scales the FM volume that the game sets through the Sound Blaster mixer. At 100 percent, the FM level that the card had before installation stays. On an SB16, the same level also applies to a MIDI daughterboard.
 
-`UCDDSET` saves to `UCDD.CFG`. A newer UCDDSET reads the file of any older version; an older one refuses a newer file and opens its menu with defaults, so keep a copy of `UCDD.CFG` before going back to an earlier build. `UCDD -install` runs `UCDDSET`, which copies the settings into the driver and sets `BLASTER` for the virtual Sound Blaster. Other `BLASTER` fields, such as `P330`, are kept. If `UCDD.CFG` is missing or from an older version, the `UCDDSET` menu opens first. Changes take effect at the next boot.
+`UCDDSET` saves to `UCDD.CFG`. A newer UCDDSET reads the file of any older version; an older one refuses a newer file and opens its menu with defaults, so keep a copy of `UCDD.CFG` before going back to an earlier build. `UCDD -install` runs `UCDDSET`, which copies the settings into the driver and sets `BLASTER` for the virtual Sound Blaster. Other `BLASTER` fields, such as `P330`, are kept. If `UCDD.CFG` is missing or not valid, the `UCDDSET` menu opens first. A file from 0.9.4-a5 or earlier loads with the default volume hotkeys. Changes take effect at the next boot.
 
 CONFIG.SYS:
 ```dos
@@ -144,7 +145,7 @@ C:\DOS\SHSUCDX.COM /D:UCDD0001 /L:F
 
 Set `UCDDPCI=OFF` in the environment to skip the PCI disk controller scan at install; IRQ 14 and 15 and the IRQ set by hand are still passed to DOS directly.
 
-Do not load the audio driver for games that use ADPCM sound on a virtual Sound Blaster. There ADPCM is not supported or passed through, and its playback commands conflict with the PCM output that μCDD mixes into. Boot without `UCDD -install` for those games, or, on a physical ESS AudioDrive, set them to the virtual ESS, which plays ADPCM. Unmounting an image does not unload the driver.
+μCDD plays single-cycle Creative ADPCM sound. It converts the ADPCM data to PCM and mixes it with the CD-Audio. μCDD does not support auto-initialize ADPCM output. For games that use it, boot without `UCDD -install`. Unmounting an image does not unload the driver.
 
 ## How it works
 
@@ -160,7 +161,11 @@ While no mounted image carries CD audio and the physical card can stand in for t
 
 ### Installation
 
-Install once per boot, before the redirector. `UCDD -install -units 2` creates two empty drives (1 to 4) with the data-only driver; the resident audio driver supports one drive and refuses more. Restart DOS to change the unit count. `LH` loads the resident driver into upper memory when UMBs are available. The driver, its buffers and the internal host take about 55 KB of upper memory in five blocks; each block falls back to conventional memory on its own.
+Install once per boot, before the redirector. `UCDD -install -units 2` creates two empty drives (1 to 4) with the data-only driver; the resident audio driver supports one drive and refuses more. Restart DOS to change the unit count. `LH` loads the resident driver into upper memory when UMBs are available. Allow about 64 KB of free upper memory for `LH`.
+
+It is recommended to load your mouse driver before μCDD.
+
+With one drive, JEMMEX, and free UMBs, a sample installation used 3,120 bytes of conventional memory with `LH UCDD -install`. When loaded low and moved to upper memory, it used 3,408 bytes.
 
 ```dos
 UCDD -mount C:\IMAGES\GAME.CUE
@@ -203,9 +208,12 @@ All listed images are opened before the mount replaces the current disc. If a li
 | Select disc 1 to 10 | Ctrl+Alt+1 to Ctrl+Alt+0 (or F1 to F10) |
 | Next / previous disc | Ctrl+Alt+PgDn / Ctrl+Alt+PgUp |
 | Eject | Ctrl+Alt+E |
-| CD-Audio volume up / down | Ctrl+Alt+Keypad + / Ctrl+Alt+Keypad - |
+| Master volume up / down | Ctrl+Alt+Keypad + / Ctrl+Alt+Keypad - |
+| CD-Audio volume up / down | Ctrl+Alt+R / Ctrl+Alt+F |
+| FM volume up / down | Ctrl+Alt+T / Ctrl+Alt+G |
+| PCM volume up / down | Ctrl+Alt+Y / Ctrl+Alt+H |
 
-The modifier keys can be any mix of Ctrl, Alt, Shift, and Win. The keys still reach the game. Key names are US layout; on other layouts, use the key in the same position.
+The modifier keys can be any mix of Ctrl, Alt, Shift, and Win. The keys still reach the game.
 
 Eject makes the drive report no disc and keeps the image open. A disc key, or next or previous disc, inserts a disc again. The hotkeys control the MDM drive, or the first μCDD drive when no MDM file is mounted.
 
@@ -256,7 +264,7 @@ Other MODE2 sector formats, compressed audio, and multi-file CUE sheets are not 
 - **OPEN** shows CD drives and the images on local hard disks. Select a CD drive to use its disc, or select a CUE sheet, an ISO or BIN image, or an MDM file to mount it. If a physical drive is selected, images mount on the first μCDD drive. **EJECT** unmounts an image or opens the physical drive tray.
 - **SHUF** plays the tracks in a random order. **REPEAT** repeats one track or all tracks.
 - The equalizer has a preamp, 10 bands from 31 Hz to 16 kHz, and presets. It changes only the CD-Audio, and only while `UCDDPLAY` runs. If the CPU is too slow for it, it stays off.
-- Push V or click the bottom window to select Warp Speed, Spectra, Firebars, Lavaflow, Bubbles, Plasma, Tunnel, or Random. Tunnel shows moving wireframe rings. Their speed changes with the audio level.
+- Push V or click the bottom window to select Warp Speed, Spectra, Firebars, Lavaflow, Bubbles, Plasma, Tunnel, Lissajous, Landscape, Cubes, Vector Balls, Chorus Line, Fireworks, or Random. Tunnel shows moving wireframe rings. Their speed changes with the audio level. Lissajous draws a stereo trace with fading trails: the left channel sets its horizontal position, and the right channel sets its vertical position. Landscape shows the frequency levels as wireframe ridges that move from the horizon toward you. Cubes shows eight rotating wireframe cubes. Their sizes change with the frequency levels. Vector Balls shows a gold and a chrome strand of shaded balls that turn as a double helix. Louder frequency bands make the helix wider and the balls larger. Chorus Line shows a row of gold and chrome vector dancers with linked arms. A wave of kicks moves along the row, and louder frequency bands give higher kicks. Fireworks shows rockets that rise on bass hits and burst into gold, chrome, and burgundy sparks. Louder music starts more rockets.
 - Push F1 to see all keys. With a mouse driver, the mouse also works.
 
 `UCDDPLAY D:` selects CD drive D:. Push D to select the next CD drive. When you exit `UCDDPLAY`, the CD-Audio stops.
@@ -269,62 +277,7 @@ Physical-disc playback uses the wave output level set in UCDDSET. The player's v
 
 ## GAMES WITH REDBOOK AUDIO THAT WORK
 
-These are games known to work, not a list of every game that may work.
-
-- Absolute Pinball
-- Alien Trilogy
-- Alone in the Dark
-- Alone in the Dark 2
-- Alone in the Dark 3
-- Amazing Learning Games with Rayman
-- An Elder Scrolls Legend: Battlespire
-- Archimedean Dynasty
-- Batman Forever: The Arcade Game
-- Battle Arena Toshinden
-- Battle Chess Enhanced CD-ROM
-- Battle Race
-- BC Racers
-- Betrayal at Krondor
-- Big Red Racing
-- Blam! Machinehead
-- Blood
-- Bust-A-Move 2 Arcade Edition
-- Carmageddon
-- Chasm: The Rift
-- Corridor 7: Alien Invasion
-- Cyber Police (CYBERPO1.EXE)
-- Cyberball
-- Descent II
-- Descent II: Vertigo Series
-- Destruction Derby
-- Destruction Derby 2
-- Fascination
-- Future Wars
-- Gobliiins
-- Gobliins 2: The Prince Buffoon
-- Goblins Quest 3
-- Little Big Adventure
-- Little Big Adventure 2
-- Loom
-- Lost in Time
-- Pro Pinball: The Web
-- Pro Pinball: Timeshock!
-- Quake
-- Rayman
-- Rayman 60 Levels
-- Rayman By His Fans
-- Rayman Designer
-- Realms of Arkania III: Shadows over Riva
-- Realms of Arkania: Blade of Destiny (German CD edition)
-- Realms of Arkania: Star Trail (German CD edition)
-- Return to Zork
-- Screamer
-- Screamer 2
-- Screamer Rally
-- ShadowCaster
-- The Manhole
-- The Secret of Monkey Island
-- Tomb Raider
+The [compatibility list](https://github.com/vorvek/uCDD/wiki/Compatibility) in the wiki gives the games that work with μCDD. For each game, it shows if CD-Audio, sound effects, and the mouse work, the first μCDD version where the game works, and the necessary settings. It also lists the games that are not confirmed, with their known state.
 
 ## Build
 

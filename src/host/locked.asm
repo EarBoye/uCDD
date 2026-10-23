@@ -3,7 +3,8 @@
 
 HOST_PROTECTED
 %define DPMI_LOCK_BASE 3e0000h
-%define DPMI_LOCK_LEVELS 4
+%define DPMI_LOCK_LEVELS 8
+%define DPMI_HARDWARE_FRAME 68
 dpmi_locked_init:
     pushad
     xor ebx, ebx
@@ -35,7 +36,7 @@ dpmi_locked_init:
     inc ebx
     cmp ebx, DPMI_LOCK_PAGES
     jb .page
-    mov dword [ebp+dpmi_ldt+21*8], 00003fffh
+    mov dword [ebp+dpmi_ldt+21*8], 00007fffh
     mov dword [ebp+dpmi_ldt+21*8+4], 0040f23eh
     mov dword [ebp+dpmi_ldt+22*8], 0e0000fffh
     mov dword [ebp+dpmi_ldt+22*8+4], 0040f23fh
@@ -165,9 +166,10 @@ dpmi_raw_segs dd 0
 ; EBX=interrupt frame, ESI=protected vector of a real-mode INT 1Ch, 23h or
 ; 24h that the bridge reflects. It takes the locked stack like a hardware
 ; interrupt (DPMI 0.9, section 3.1.2) but keeps the virtual interrupt flag
-; (section 2.4.2).
+; (section 2.4.2) and the registers the handler returns: the software form.
 dpmi_deliver_reflected:
-    mov byte [ebp+dpmi_deliver_keep_vif], 1
+    push dword 53495251h
+    jmp dpmi_deliver_locked
 dpmi_deliver_hardware:
 %ifdef RESIDENT_HOST
     ; The virtual Sound Blaster interrupt reaches the client's handler here.
@@ -180,10 +182,20 @@ dpmi_deliver_hardware:
     call resident_delivered_mark
 .marked:
 %endif
-    movzx ecx, byte [ebp+dpmi_deliver_keep_vif]
-    mov byte [ebp+dpmi_deliver_keep_vif], 0
+    push dword 48495251h
+    jmp dpmi_deliver_locked
+
+dpmi_deliver_software:
+    push dword 53495251h
+
+dpmi_deliver_locked:
     call dpmi_locked_capture
     call dpmi_stack_acquire
+%ifdef RESIDENT_HOST
+    mov ax, [esi+4]
+    call dpmi_nested_enter
+    setc [ebp+dpmi_nested_entered]
+%endif
     push esi
     mov edx, [esi]
     mov ax, [esi+4]
@@ -192,11 +204,19 @@ dpmi_deliver_hardware:
     jc dpmi_locked_abort
     mov edi, [ebp+dpmi_locked_cursor]
     mov edx, edi
-    sub edi, 28
+    sub edi, DPMI_HARDWARE_FRAME
     mov [ebp+dpmi_locked_cursor], edi
     add edi, DPMI_LOCK_BASE
     mov [edi+20], edx
-    mov dword [edi+24], 48495251h
+    pop dword [edi+24]
+    push dword [edi+24]
+    ; Keep the interrupted registers across the client handler.
+%assign saved_reg 0
+%rep 10
+    mov eax, [ebx+saved_reg]
+    mov [edi+28+saved_reg], eax
+%assign saved_reg saved_reg+4
+%endrep
     mov eax, [ebx+40]
     mov [edi], eax
     mov eax, [ebx+44]
@@ -214,6 +234,13 @@ dpmi_deliver_hardware:
     mov [edi+12], eax
     mov eax, [ebx+56]
     mov [edi+16], eax
+%ifdef RESIDENT_HOST
+    ; Bit 0 of the marker is clear when the handler belongs to the other client.
+    shr byte [ebp+dpmi_nested_entered], 1
+    jnc .size_ready
+    and byte [edi+24], 0feh
+.size_ready:
+%endif
     cmp byte [ebp+dpmi_client16], 0
     jne .word_frame
     sub edi, 12
@@ -228,6 +255,36 @@ dpmi_deliver_hardware:
     mov word [edi+2], DPMI_STUB16
     mov [edi+4], dx
 .framed:
+    shr byte [ebp+dpmi_mouse_frame], 1
+    jnc .frame_ready
+    ; A mouse handler returns with RETF to an IRET.
+    cmp byte [ebp+dpmi_client16], 0
+    jne .word_return
+    sub edi, 8
+    mov dword [edi], dpmi_mouse_return
+    mov dword [edi+4], 3bh
+    jmp .mouse_registers
+.word_return:
+    sub edi, 4
+    mov word [edi], dpmi_mouse_return
+    mov word [edi+2], DPMI_STUB16
+.mouse_registers:
+    xor eax, eax
+    mov [ebx], eax
+    mov [ebx+4], eax
+    mov ax, [ebp+dpmi_mouse_regs]
+    mov [ebx+36], eax
+    mov ax, [ebp+dpmi_mouse_regs+2]
+    mov [ebx+24], eax
+    mov ax, [ebp+dpmi_mouse_regs+4]
+    mov [ebx+32], eax
+    mov ax, [ebp+dpmi_mouse_regs+6]
+    mov [ebx+28], eax
+    mov ax, [ebp+dpmi_mouse_regs+8]
+    mov [ebx+12], eax
+    mov ax, [ebp+dpmi_mouse_regs+10]
+    mov [ebx+8], eax
+.frame_ready:
     sub edi, DPMI_LOCK_BASE
     mov [ebx+52], edi
     mov dword [ebx+56], DPMI_IRQ_SS
@@ -237,17 +294,26 @@ dpmi_deliver_hardware:
     mov [ebx+44], eax
     and word [ebx+48], 0feffh
     or word [ebx+48], 200h
-    test ecx, ecx
-    jnz .flag_ready
+    pop eax
+    cmp eax, 53495251h
+    je .software_flags
     mov word [ebp+dpmi_vif], 0
-.flag_ready:
+.software_flags:
     inc dword [ebp+dpmi_locked_depth]
     jmp mon_dpmi.done
-dpmi_deliver_keep_vif db 0
 
 dpmi_locked_return:
     int 0f4h
     ud2
+dpmi_mouse_return:
+    iret
+
+; EBX=frame. Call the client's INT 33h 0Ch handler with the last event.
+dpmi_mouse_deliver:
+    mov byte [ebp+dpmi_mouse_pending], 0
+    mov byte [ebp+dpmi_mouse_frame], 1
+    lea esi, [ebp+dpmi_mouse_vector]
+    jmp dpmi_deliver_hardware
 
 ; Entered through the interrupt gate of INT F4h when a client handler IRETs
 ; to dpmi_locked_return. Nothing of the host's is in a register: EBP is
@@ -282,18 +348,28 @@ dpmi_locked_done:
     test eax, eax
     jz dpmi_locked_abort
     shl eax, 12
-    sub eax, 28
+    sub eax, DPMI_HARDWARE_FRAME
     cmp esi, eax
     ja dpmi_locked_abort
-    sub eax, 4096-28
+    sub eax, 4096-DPMI_HARDWARE_FRAME
     cmp esi, eax
     jb dpmi_locked_abort
     add esi, DPMI_LOCK_BASE
+%ifdef RESIDENT_HOST
+    ; The interrupted code gets its code size back.
+    bts dword [esi+24], 0
+    jc .size_ready
+    call dpmi_nested_toggle
+.size_ready:
+%endif
     cmp dword [esi+24], 48495251h
+    je .marker_ready
+    cmp dword [esi+24], 53495251h
     jne dpmi_locked_abort
+.marker_ready:
     mov eax, [esi+20]
     mov edx, [esp+52]
-    add edx, 28
+    add edx, DPMI_HARDWARE_FRAME
     cmp eax, edx
     jne dpmi_locked_abort
     push esi
@@ -306,6 +382,15 @@ dpmi_locked_done:
     mov ax, [esi+16]
     call dpmi_stack_target
     jc dpmi_locked_abort
+    cmp dword [esi+24], 53495251h
+    je .registers_ready
+%assign saved_reg 0
+%rep 10
+    mov eax, [esi+28+saved_reg]
+    mov [esp+saved_reg], eax
+%assign saved_reg saved_reg+4
+%endrep
+.registers_ready:
     ; A return to the bridge keeps the carry of the handler's flags image:
     ; an INT 23h handler answers DOS with it (dpmi_bridge_done).
     xor edx, edx
@@ -332,7 +417,8 @@ dpmi_hardware_room:
     cmp byte [ebp+resident_refill_busy], 0
     jne .full
 %endif
-    cmp dword [ebp+dpmi_stack_depth], DPMI_LOCK_LEVELS
+    ; Keep two levels for software interrupts and exceptions in a handler.
+    cmp dword [ebp+dpmi_stack_depth], DPMI_LOCK_LEVELS-2
     jb .available
 .full:
     stc
@@ -369,6 +455,7 @@ dpmi_stack_release:
     pop eax
     ret
 
+dpmi_mouse_frame db 0
 dpmi_stack_cursors times DPMI_LOCK_LEVELS dd 0
 
 dpmi_locked_abort:
@@ -377,12 +464,13 @@ dpmi_locked_abort:
     jmp dpmi_finish
 
 dpmi_locked_linear dd 3fe000h,DPMI_LOCK_BASE,3fa000h,3fb000h,DPMI_LOCK_BASE+4096,DPMI_LOCK_BASE+8192,DPMI_LOCK_BASE+12288
+    dd DPMI_LOCK_BASE+16384,DPMI_LOCK_BASE+20480,DPMI_LOCK_BASE+24576,DPMI_LOCK_BASE+28672
 dpmi_locked_pages times DPMI_LOCK_PAGES dd 0
 dpmi_locked_ptes times DPMI_LOCK_PAGES dd 0
 dpmi_locked_cursor dd 4096
 HOST_REAL
 dpmi_locked_depth dd 0
-; The real-mode stubs of INT 1Ch, 23h and 24h read it (host/bridge.asm).
+; The bridge's real-mode stubs read it (host/bridge.asm).
 dpmi_stack_depth dd 0
 HOST_PROTECTED
 dpmi_exception_sp dd 0

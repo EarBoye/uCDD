@@ -29,6 +29,7 @@
 qpi dd 0
 output_segment dw 0
 output_allocation dw 0
+output_spare dw 0
 cd_half_allocation dw 0
 cd_half_segment dw 0
 cd_work_allocation dw 0
@@ -64,7 +65,6 @@ audio_linked db 0
 %include "audio/background.asm"
 %include "audio/irq.asm"
 %ifdef SB_CARDS
-%include "audio/sb_adpcm.asm"
 %endif
 %include "audio/ess_fifo.asm"
 %include "audio/ess/card.asm"
@@ -147,6 +147,7 @@ audio_cleanup:
     mov ah, 49h
     int 21h
     mov word [output_allocation], 0
+    mov word [sb_record_segment], 0
 .xms:
     call cd_close
     cmp word [cd_half_allocation], 0

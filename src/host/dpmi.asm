@@ -13,6 +13,7 @@ dpmi_install:
     int 2fh
     test ax, ax
     jz .bad
+    call dpmi_cpu_detect
     xor ax, ax
     xor bx, bx
     call monitor_init
@@ -47,6 +48,46 @@ dpmi_install:
     ret
 .bad:
     stc
+    ret
+
+; Some clients refuse the default 386 processor type.
+dpmi_cpu_detect:
+    pushad
+    pushfd
+    pop ecx
+    mov edx, 40000h
+    call .flag
+    jz .done
+    mov byte [dpmi_cpu], 4
+    mov edx, 200000h
+    call .flag
+    jz .done
+    xor eax, eax
+    db 0fh, 0a2h
+    test eax, eax
+    jz .done
+    mov eax, 1
+    db 0fh, 0a2h
+    mov al, ah
+    and al, 0fh
+    cmp al, 4
+    jbe .done
+    mov [dpmi_cpu], al
+.done:
+    popad
+    ret
+; ECX=original EFLAGS, EDX=bit. ZF=1 when the bit does not change.
+.flag:
+    mov eax, ecx
+    xor eax, edx
+    push eax
+    popfd
+    pushfd
+    pop eax
+    push ecx
+    popfd
+    xor eax, ecx
+    test eax, edx
     ret
 dpmi_remove:
     push ds
@@ -86,13 +127,24 @@ dpmi_ems:
     jne .chain
     push ds
     mov ds, [cs:dpmi_ems_gateway-dpmi_ems_base]
+    ; Stepped aside, the driver offers no DPMI: VCPI stays visible.
     cmp byte [dpmi_dormant], 0
-    jne .chain_ds
     pop ds
+    jne .chain
+    push bp
+    mov bp, sp
+    push bx
+    mov bx, [cs:dpmi_ems_gateway-dpmi_ems_base]
+    ; Keep VCPI available to the host gateway, including nested clients.
+    cmp [ss:bp+4], bx
+    jne .checked
+    cmp word [ss:bp+2], monitor_init.vcpi_query_return
+.checked:
+    pop bx
+    pop bp
+    je .chain
     mov ah, 84h
     iret
-.chain_ds:
-    pop ds
 .chain:
     jmp far [cs:dpmi_old_ems-dpmi_ems_base]
 %endif
@@ -103,7 +155,7 @@ dpmi_mux:
     jne .chain
     xor ax, ax
     mov bx, 1
-    mov cx, 3
+    movzx cx, byte [cs:dpmi_cpu]
     mov dx, 90
     xor si, si
     push cs
@@ -127,6 +179,11 @@ dpmi_entry:
     push fs
     push gs
 %ifdef RESIDENT_HOST
+    push ax
+    mov ah, 51h
+    int 21h
+    mov [cs:dpmi_nested_psp], bx
+    pop ax
     cmp byte [cs:dpmi_active], 0
     je .saved
     call dpmi_nested_save
@@ -146,6 +203,8 @@ dpmi_entry:
     jnz .bits_ready
     mov byte [cs:dpmi_client16], 1
 .bits_ready:
+    mov al, [cs:dpmi_client16]
+    mov [cs:dpmi_own16], al
     mov bp, sp
     push cs
     pop ds
@@ -176,10 +235,17 @@ dpmi_entry:
     mov [dpmi_client_ss], ax
     mov byte [dpmi_callback_active], 0
     mov dword [dpmi_pending_irqs], 0
+%ifdef RESIDENT_HOST
+    mov dword [dpmi_physical_pending], 0
+%endif
     call dpmi_ivt_snapshot
+%ifdef RESIDENT_HOST
+    mov ax, [dpmi_nested_psp]
+%else
     mov ah, 51h
     int 21h
     mov ax, bx
+%endif
     mov [dpmi_psp], ax
     push es
     mov es, [dpmi_psp]
@@ -211,8 +277,6 @@ dpmi_entry:
     je .stack_ready
     mov ax, [dpmi_bridge_real_segment]
     add ax, 128
-    cmp byte [dpmi_client16], 0
-    je .stack_ready
     add ax, DPMI_XFER_PARAS
 .stack_ready:
     mov ss, ax
@@ -223,11 +287,22 @@ dpmi_entry:
     mov sp, 2048
 %endif
     sti
+%ifdef RESIDENT_HOST
+    pushf
+    cli
+%endif
     call monitor_run
+%ifdef RESIDENT_HOST
+    call dpmi_physical_handoff
+    cmp byte [dpmi_nested_depth], 0
+    je .complete_ready
+%endif
     mov byte [dpmi_active], 0
     ; A stub still in some vector returns to its caller from now on.
     mov word [dpmi_callback_live], 0
 %ifdef RESIDENT_HOST
+.complete_ready:
+    popf
     cmp byte [dpmi_nested_depth], 0
     je .free_stack
     cli
@@ -236,6 +311,10 @@ dpmi_entry:
     mov sp, dpmi_nested_real_top
     sti
 .free_stack:
+    ; A child frees its blocks when the parent is back: DOS can call
+    ; the parent's DOS/4GW INT 2Ah hook.
+    cmp byte [dpmi_nested_depth], 0
+    jne .exit
 %endif
     call dpmi_bridge_real_free
     test ax, ax
@@ -251,12 +330,32 @@ dpmi_entry:
 %ifdef RESIDENT_HOST
     cmp byte [dpmi_nested_depth], 0
     je .terminate
+    push word [dpmi_large_stack_segment]
+    push word [dpmi_bridge_real_segment]
     call dpmi_nested_restore
+    pop bx
+    call .free_block
+    pop bx
+    call .free_block
     call dpmi_nested_pic_restore
 .terminate:
+    call dpmi_physical_complete
 %endif
     mov ah, 4ch
     int 21h
+%ifdef RESIDENT_HOST
+; BX=a DOS block or 0. AX stays.
+.free_block:
+    test bx, bx
+    jz .freed
+    push ax
+    mov es, bx
+    mov ah, 49h
+    int 21h
+    pop ax
+.freed:
+    ret
+%endif
 .bad:
     stc
     retf
@@ -427,6 +526,13 @@ mon_iret:
     jz .no_irq
     call dpmi_hardware_room
     jc .no_irq
+    cmp byte [ebp+dpmi_mouse_pending], 0
+    je .irq_check
+    call dpmi_top_level
+    jc .irq_check
+    mov ebx, esp
+    jmp dpmi_mouse_deliver
+.irq_check:
     call dpmi_pic_audio_allowed
     jc .pic_only
     cmp byte [ebp+dpmi_sti_sb_held], 0
@@ -494,41 +600,37 @@ mon_iret:
 .pic_protected:
     mov ebx, esp
     jmp dpmi_deliver_hardware
-; An injected TF image is outstanding. A pending IRQ must not wait for the
-; POPF: step to find where the client sets IF again.
+; The client runs with the virtual IF off and NT (dpmi_quiet_exit). A pending
+; IRQ must not wait for a POPF: step to find where the client sets IF again.
 .armed_wait:
-    cmp byte [ebp+dpmi_tf_armed], 0
-    je .no_irq
     cmp byte [ebp+dpmi_step_active], 0
     jne .no_irq
     test byte [esp+44], 3
     jz .no_irq
-    ; The POPF already loaded the image: IF is on again.
-    test byte [esp+49], 1
-    jz .armed_pending
-    and word [esp+48], 0feffh
-    mov byte [ebp+dpmi_tf_armed], 0
-    mov byte [ebp+dpmi_vif], 1
-    jmp .shadow_done
+    test byte [esp+50], 2
+    jnz .no_irq
+    call dpmi_top_level
+    jc .no_irq
 .armed_pending:
-    call dpmi_irq_waiting
-    jnc .no_irq
-.armed_step:
-    ; Let the region run on once more before stepping. Stepping costs a
-    ; few hundred instructions per client instruction, so a region that
-    ; ends normally (most of them, within microseconds) reaches its POPF or
-    ; STI far sooner without it. Only a region still open at the next entry
-    ; (the next IRQ, or a trap inside the region) is stepped, as before.
-    cmp byte [ebp+dpmi_armed_pass], 0
-    jne .armed_stepping
-    mov byte [ebp+dpmi_armed_pass], 1
+    movzx eax, word [ebp+dpmi_pic_mask]
+    not eax
+    and ax, [ebp+dpmi_pending_irqs]
+    jnz .armed_step
+    cmp byte [ebp+dpmi_sti_sb_held], 0
+    jne .armed_step
+%ifdef RESIDENT_HOST
+    mov esi, [ebp+resident_audio_request]
+    test esi, esi
+    jz .no_irq
+    cmp byte [esi], 0
+    je .no_irq
+%else
     jmp .no_irq
-.armed_stepping:
+%endif
+.armed_step:
     call dpmi_hardware_room
     jc .no_irq
-    call dpmi_clear_vif
-    cmp byte [ebp+dpmi_step_active], 0
-    je .no_irq
+    mov byte [ebp+dpmi_step_active], 1
     ; Decode the instruction at the resume point: it can be the POPF.
     or word [esp+48], 300h
     DPMI_STEP_NORMAL
@@ -540,6 +642,8 @@ mon_iret:
 %ifdef RESIDENT_HOST
     call resident_refill_schedule
 %endif
+    mov ebx, esp
+    call dpmi_quiet_exit
     mov ax, [esp+44]
     call dpmi_debug_arm
     pop es
@@ -609,16 +713,6 @@ dpmi_client_init:
     ; server's, and the fills below store forward.
     cld
     call dpmi_debug_reset
-    mov byte [ebp+dpmi_tf_armed], 0
-    mov byte [ebp+dpmi_armed_pass], 0
-    mov dword [ebp+dpmi_cli_site], -1
-    lea edi, [ebp+dpmi_cli_linear]
-    xor eax, eax
-    mov ecx, DPMI_CLI_SITES
-    rep stosd
-    lea edi, [ebp+dpmi_cli_score]
-    mov ecx, DPMI_CLI_SITES
-    rep stosb
     mov byte [ebp+dpmi_sti_shadow], 0
     mov byte [ebp+dpmi_callback_sti], 0
     mov byte [ebp+dpmi_sti_sb_held], 0
@@ -626,12 +720,6 @@ dpmi_client_init:
     call resident_refill_reset
 %endif
     xor eax, eax
-    lea edi, [ebp+dpmi_ldt]
-    mov ecx, DPMI_LDT_COUNT*8/4
-    rep stosd
-    lea edi, [ebp+dpmi_used]
-    mov ecx, DPMI_LDT_COUNT/4
-    rep stosd
     lea edi, [ebp+mon_vectors]
     mov ecx, 256*6/4
     rep stosd
@@ -640,21 +728,20 @@ dpmi_client_init:
     rep stosd
     mov byte [ebp+dpmi_exception_active], 0
     mov byte [ebp+dpmi_exception_chained], 0
+%ifdef RESIDENT_HOST
+    call dpmi_nested_inherit
+    jc .descriptors_ready
+%endif
     lea edi, [ebp+dpmi_callbacks]
     mov ecx, 16*20/4
     rep stosd
-%ifdef RESIDENT_HOST
-    ; The stubs of the suspended parents stay in the IVT. Their slots are
-    ; off limits, so that none of their vectors reaches a handler of this
-    ; client.
-    cmp byte [ebp+dpmi_nested_depth], 0
-    je .slots_free
-    mov ax, [ebp+dpmi_callback_inherited]
-    or ax, [ebp+dpmi_callback_live]
-.slots_free:
-    mov [ebp+dpmi_callback_inherited], ax
-%endif
-    mov word [ebp+dpmi_callback_live], 0
+    lea edi, [ebp+dpmi_ldt]
+    mov ecx, DPMI_LDT_COUNT*8/4
+    rep stosd
+    lea edi, [ebp+dpmi_used]
+    mov ecx, DPMI_LDT_COUNT/4
+    rep stosd
+.descriptors_ready:
     mov byte [ebp+dpmi_vif], 1
     mov byte [ebp+dpmi_step_active], 0
     mov byte [ebp+dpmi_first_exception], 0ffh
@@ -718,6 +805,7 @@ dpmi_enter_client:
     call dpmi_memory_init
     jc dpmi_locked_abort
     call dpmi_bridge_install
+    call dpmi_bridge_update
     push dword DPMI_CLIENT_SS
     movzx eax, word [ebp+dpmi_client_sp]
     push eax
@@ -740,60 +828,6 @@ dpmi_enter_client:
     mov eax, [ss:ebp+dpmi_client_regs+28]
     mov ebp, [ss:ebp+dpmi_client_regs+8]
     MON_IRETD
-
-; AL=the processor type 0400h reports in CL (DPMI 0.9 and 1.0: 03h 80386,
-; 04h 80486, 05h-FFh later processors): 3 when EFLAGS.AC cannot be changed,
-; 4 when EFLAGS.ID cannot, otherwise the CPUID family, with the extended
-; family added to family 0Fh. Other registers kept.
-dpmi_cpu_type:
-    push ebx
-    push ecx
-    push edx
-    pushfd
-    pop ecx
-    mov edx, 40000h
-    mov bl, 3
-    call .toggles
-    jz .done
-    mov edx, 200000h
-    mov bl, 4
-    call .toggles
-    jz .done
-    xor eax, eax
-    db 0fh, 0a2h                ; CPUID 0: the highest standard leaf
-    test eax, eax
-    jz .done
-    mov eax, 1
-    db 0fh, 0a2h                ; CPUID 1: the family in EAX bits 11:8
-    shr eax, 8
-    mov bl, al
-    and bl, 0fh
-    cmp bl, 0fh
-    jne .done
-    shr eax, 12                 ; the extended family, bits 27:20
-    add bl, al
-    jnc .done
-    mov bl, 0ffh
-.done:
-    mov al, bl
-    pop edx
-    pop ecx
-    pop ebx
-    ret
-; ECX=the flags as found, EDX=a flag bit. ZF when the bit does not change;
-; the flags are put back.
-.toggles:
-    mov eax, ecx
-    xor eax, edx
-    push eax
-    popfd
-    pushfd
-    pop eax
-    push ecx
-    popfd
-    xor eax, ecx
-    test eax, edx
-    ret
 
 dpmi_dispatch:
     mov byte [ebp+dpmi_dos_via21], 0
@@ -869,6 +903,8 @@ dpmi_dispatch:
     je dpmi_raw_addresses
     cmp eax, 0400h
     je .version
+    cmp eax, 0ff00h
+    je dpmi_vendor_ldt
     cmp eax, 0501h
     je dpmi_allocate
     cmp eax, 0500h
@@ -917,7 +953,6 @@ dpmi_dispatch:
 .enable:
     call .interrupt_state_value
     mov byte [ebp+dpmi_vif], 1
-    call dpmi_tf_disarm
     mov byte [ebp+dpmi_step_active], 0
     and word [ebx+48], 0feffh
     or word [ebx+48], 200h
@@ -932,7 +967,7 @@ dpmi_dispatch:
 .version:
     mov word [ebx+36], 90
     mov word [ebx+24], 1
-    call dpmi_cpu_type
+    mov al, [ebp+dpmi_cpu]
     mov [ebx+32], al
     mov al, [ebp+mon_master]
     mov [ebx+29], al
@@ -955,6 +990,7 @@ dpmi_dispatch:
     movzx ecx, word [ebx+32]
     cmp ecx, 2048
     ja dpmi_bad_value
+    call dpmi_mouse_wide_regs
     mov ax, [ebx+36]
     cmp al, 0
     jne .copy_stack
@@ -1003,6 +1039,36 @@ dpmi_dispatch:
 .prepare_error:
     add esp, 4
     jmp dpmi_error
+
+; DOS/4GW passes INT 33h to real mode with 16-bit BX. The SVGA mouse driver
+; of Big Red Adventure takes the cursor segment from the upper half of EBX.
+; EBX=client frame, EDI=real-mode register structure.
+dpmi_mouse_wide_regs:
+    cmp byte [ebp+dpmi_mouse_wide], 0
+    je .done
+    mov byte [ebp+dpmi_mouse_wide], 0
+    cmp byte [ebx+36], 0
+    jne .far
+    cmp byte [ebx+24], 33h
+    je .target
+    ret
+.far:
+    mov eax, [33h*4]
+    cmp eax, [edi+42]
+    jne .done
+.target:
+    mov ax, [edi+28]
+    cmp ax, [ebp+dpmi_mouse_ax]
+    jne .done
+    mov eax, [edi+16]
+    cmp eax, 0ffffh
+    ja .done
+    cmp ax, [ebp+dpmi_mouse_ebx]
+    jne .done
+    mov eax, [ebp+dpmi_mouse_ebx]
+    mov [edi+16], eax
+.done:
+    ret
 
 ; EBX=client frame, EDI=real-mode register structure, ECX=word count.
 dpmi_stack_copy:
@@ -1112,6 +1178,7 @@ dpmi_dos:
     mov ebx, esp
     call dpmi_record_segments
     call dpmi_locked_capture
+    call dpmi_quiet_entry
     call dpmi_sti_arrival
     call dpmi_tf_entry
     ; Watcom DLL loaders keep the PSP selector and GS in vector E9h for the
@@ -1191,6 +1258,14 @@ dpmi_client_release:
 %endif
     mov byte [ebp+dpmi_callback_active], 0
     mov byte [ebp+dpmi_exception_active], 0
+%ifdef RESIDENT_HOST
+    mov al, [ebp+dpmi_nested_depth]
+    cmp [ebp+dpmi_mouse_depth], al
+    jb .mouse_kept
+%endif
+    mov word [ebp+dpmi_mouse_vector+4], 0
+    mov byte [ebp+dpmi_mouse_pending], 0
+.mouse_kept:
     lea esi, [ebp+dpmi_exit_frame]
     lea edi, [ebp+mon_return]
     mov ecx, 9
@@ -1254,20 +1329,40 @@ dpmi_audio_irq db 0ffh
 dpmi_guest_irq db 5
 dpmi_guest_vector db 0dh
 dpmi_pending_irqs dd 0
+%ifdef RESIDENT_HOST
+dpmi_physical_pending dd 0
+%endif
 dpmi_sti_sb_held db 0
 dpmi_active db 0
 dpmi_audio_pm_handler db 0
 dpmi_virtual_entry dw dpmi_bridge_virtual
+dpmi_real_eoi db 0
+dpmi_real_priority db 0ffh
+%ifdef RESIDENT_HOST
+dpmi_pending_entry dw dpmi_real_pending
+dpmi_refill_flag dw resident_refill_busy
+%else
+dpmi_pending_entry dw 0
+dpmi_refill_flag dw 0
+%endif
 ; The driver sets this byte while it has stepped aside (audio/standby.asm):
 ; no DPMI is offered and VCPI stays visible, so a protected-mode game runs
-; under its own extender.
+; under its own extender. Offset 10, after the author's bytes.
 dpmi_dormant db 0
-%if dpmi_audio_pm_handler-dpmi_active != 1 || dpmi_virtual_entry-dpmi_active != 2 || dpmi_dormant-dpmi_active != 4
+%if dpmi_audio_pm_handler-dpmi_active != 1 || dpmi_virtual_entry-dpmi_active != 2 || dpmi_real_eoi-dpmi_active != 4 || dpmi_real_priority-dpmi_active != 5 || dpmi_pending_entry-dpmi_active != 6 || dpmi_refill_flag-dpmi_active != 8 || dpmi_dormant-dpmi_active != 10
     %error Invalid resident IRQ state layout
 %endif
+dpmi_cpu db 3
 dpmi_psp dw 0
 dpmi_environment dw 0
 dpmi_client16 db 0
+; The code size of the current client. dpmi_client16 has the size of the
+; client whose code runs: a parent's handler can run while its child is current.
+dpmi_own16 db 0
+dpmi_callback_flip db 0
+dpmi_raw_flip db 0
+dpmi_parent_mode db 0
+dpmi_nested_entered db 0
 dpmi_exit_code db 1
 dpmi_last_call dw 0
 dpmi_last_dos dw 0
@@ -1338,8 +1433,6 @@ dpmi_trace_end:
 dpmi_dll_vector times 6 db 0
 dpmi_fault_ip dd 0
 dpmi_fault_regs times 16 dd 0
-dpmi_fault_bytes times 8 db 0
-dpmi_fault_stack times 64 db 0
 %ifndef RESIDENT_HOST
 dpmi_ldt times DPMI_LDT_COUNT*8 db 0
 dpmi_used times DPMI_LDT_COUNT db 0

@@ -226,12 +226,12 @@ show_message:
     mov byte [label_active], 0
     ret
 
-; Return AX = the low word of the BIOS tick count.
+; Return EAX = the BIOS tick count.
 bios_ticks:
     push ds
     push 40h
     pop ds
-    mov ax, [6ch]
+    mov eax, [6ch]
     pop ds
     ret
 
@@ -317,6 +317,9 @@ random_visual:
 set_visual:
     mov [vis_mode], al
     mov word [vis_timer], 0
+    mov word [liss_head], 0
+    mov byte [land_head], 0
+    mov byte [land_phase], 0
     push es
     push ds
     pop es
@@ -626,6 +629,61 @@ draw_scope:
     cmp ax, SCROLL_X1
     jbe .point
     ret
+
+; Four XY traces share the effects workspace, oldest first.
+draw_lissajous:
+    push gs
+    mov gs, [work_seg]
+    mov si, [ring_pos]
+    sub si, LISS_POINTS*2
+    mov di, [liss_head]
+    mov cx, LISS_POINTS
+.sample:
+    and si, RING_FRAMES-1
+    imul bx, si, 4
+    movsx eax, word [ring+bx]
+    imul eax, SCROLL_W/2-11
+    sar eax, 15
+    add ax, (SCROLL_X0+SCROLL_X1)/2
+    mov [gs:W_FIRE+di], ax
+    movsx eax, word [ring+bx+2]
+    imul eax, SCROLL_H/2-2
+    sar eax, 15
+    neg ax
+    add ax, (SCROLL_Y0+SCROLL_Y1)/2
+    mov [gs:W_FIRE+di+2], ax
+    add si, 2
+    add di, 4
+    loop .sample
+    and di, LISS_BYTES*LISS_TRAILS-1
+    mov [liss_head], di
+    mov word [clip_left], SCROLL_X0+10
+    mov word [clip_right], SCROLL_X1-10
+    mov word [clip_top], SCROLL_Y0+2
+    mov word [clip_bottom], SCROLL_Y1-2
+    xor bp, bp
+.trail:
+    mov al, [liss_colors+bp]
+    mov [draw_color], al
+    mov ax, [gs:W_FIRE+di]
+    mov bx, [gs:W_FIRE+di+2]
+    mov si, LISS_POINTS-1
+.line:
+    add di, 4
+    mov cx, [gs:W_FIRE+di]
+    mov dx, [gs:W_FIRE+di+2]
+    call draw_line
+    mov ax, cx
+    mov bx, dx
+    dec si
+    jnz .line
+    add di, 4
+    and di, LISS_BYTES*LISS_TRAILS-1
+    inc bp
+    cmp bp, LISS_TRAILS
+    jb .trail
+    pop gs
+    jmp clip_full
 
 draw_waterfall:
     push es

@@ -1,8 +1,6 @@
 ; SPDX-FileCopyrightText: 2026 vorvek
 ; SPDX-License-Identifier: GPL-3.0-only
 
-    jmp command_entry
-
 header:
     dd 0ffffffffh
     dw 0c800h
@@ -14,6 +12,13 @@ unit_count db 1
     db 'uCDD'
     dw 2
     dw control, 0
+%ifndef UCDD_ENTRY_IP
+%define UCDD_ENTRY_IP 32
+%endif
+%if ($-$$) != UCDD_ENTRY_IP
+%error The driver header size does not match the EXE entry point.
+%endif
+    jmp helper_enter
 
 request dd 0
 active_request dd 0
@@ -23,11 +28,11 @@ old_sp dw 0
 resident_psp dw 0
 %ifdef RESIDENT_AUDIO
 memory_mode db 0
-%ifdef RESIDENT_AUDIO
 keep_vcpi db 0
 %endif
-%endif
 caller_psp dw 0
+; 1 between dos_enter and dos_leave: DOS calls use the resident PSP.
+dos_entered db 0
 sda_pointer dd 0
 sda_size dw 0
 indos_pointer dd 0
@@ -47,6 +52,7 @@ candidate_stride dw 0
 candidate_payload dw 0
 candidate_origin dd 0
 candidate_count dw 0
+candidate_audio db 0
 read_skip dw 0
 ; Bytes per sector in the caller's buffer: 2048 cooked, 2352 raw.
 read_unit dw 2048
@@ -55,6 +61,15 @@ read_remaining dw 0
 read_completed dw 0
 read_bytes dw 0
 read_destination dd 0
+%ifdef RESIDENT_AUDIO
+%define DRIVER_STAGE 1
+stage_valid db 0
+stage_unit dw 0
+stage_handle dw 0
+stage_first dd 0
+stage_count dd 0
+stage_next dd 0
+%endif
 units_base dw 0
 
 strategy:
@@ -87,19 +102,8 @@ interrupt:
     lfs bp, [active_request]
     cmp bp, 0fff3h
     ja .return_only_status
-    ; Lollypop's CD check sends IOCTL input with the length byte 0 (MSCDEX
-    ; 2.1 has error 5 for a bad length but asks no driver to check it, and
-    ; OAKCDROM does not). An IOCTL request of length 0 is taken as a full
-    ; one; ioctl_buffer checks its control block.
-    cmp byte [fs:bp], 0
-    jne .length_given
-    cmp byte [fs:bp+2], 3
-    je .length_unknown
-    cmp byte [fs:bp+2], 0ch
-    je .length_unknown
-.length_given:
-    cmp byte [fs:bp], 13
-    jb .bad_length
+    ; Drives ignore the length field (Tunnel B1: 0 and 5, Jetstrike: IOCTL 0).
+    ; Handlers check the bounds of the fields they read.
     movzx eax, byte [fs:bp]
     movzx edx, bp
     add eax, edx
@@ -114,6 +118,9 @@ interrupt:
     mov [unit_pointer], ax
     mov si, ax
     mov al, [fs:bp+2]
+    ; A repeated INIT reports the status only (UBBFIX checks the busy bit).
+    test al, al
+    jz .success
     cmp al, 3
     je .ioctl_in
     cmp al, 0ch
@@ -127,7 +134,7 @@ interrupt:
     cmp al, 82h
     je .success
     cmp al, 83h
-    je .audio
+    je .seek
     cmp al, 84h
     je .audio
     cmp al, 85h
@@ -159,13 +166,23 @@ interrupt:
     ja .restore
     mov ax, 8105h
     jmp .done
+.seek:
+    ; A data image has no head to move.
+    cmp dword [si+AUDIO_ENTRY], 0
+    jne .audio
+    mov ax, 8102h
+    cmp word [si+HANDLE], 0ffffh
+    je .done
 .success:
     mov ax, 0100h
 .done:
 %ifdef RESIDENT_AUDIO
-    ; MSCDEX drivers report busy on every request while audio plays.
+    ; SHSUCDX requires an exact success status for data reads.
     cmp ax, 0100h
     jne .status
+    lfs bp, [active_request]
+    cmp byte [fs:bp+2], 80h
+    je .status
     mov si, [unit_pointer]
     cmp dword [si+AUDIO_ENTRY], 0
     je .status
@@ -181,8 +198,7 @@ interrupt:
     mov [fs:bp+3], ax
 .restore:
     cli
-    mov ax, [old_ss]
-    mov ss, ax
+    mov ss, [cs:old_ss]
     mov sp, [cs:old_sp]
     mov byte [cs:busy], 0
 .return:
@@ -203,23 +219,31 @@ interrupt:
 ioctl_buffer:
     cmp bp, 0ffech
     ja .bad
-    mov al, [fs:bp]
-    test al, al
-    jz .header_ok
-    cmp al, 13
-    je .header_ok
-    cmp al, 18
-    je .header_ok
-    cmp al, 20
-    jb .bad
-.header_ok:
+    ; Drives write the fixed control block size and ignore the count
+    ; (Aegis, Warcraft II). Absolute Pinball sends a zero count.
     mov cx, [fs:bp+18]
-    ; Absolute Pinball sends a zero count. Allow the largest control block.
+    les di, [fs:bp+14]
+    movzx bx, byte [es:di]
+    xor ax, ax
+    cmp byte [fs:bp+2], 3
+    jne .output_size
+    cmp bx, 15
+    ja .extend
+    mov al, [ioctl_sizes+bx]
+    jmp .extend
+.output_size:
+    cmp bx, 5
+    ja .extend
+    mov al, [ioctl_output_sizes+bx]
+.extend:
     test cx, cx
     jnz .count_ok
     mov cl, 11
 .count_ok:
-    les di, [fs:bp+14]
+    cmp ax, cx
+    jbe .size_ok
+    mov cx, ax
+.size_ok:
     movzx eax, di
     movzx edx, cx
     add eax, edx
@@ -243,8 +267,6 @@ ioctl_input:
     jne .changed_kept
     mov byte [si+CHANGED], 1
 .changed_kept:
-    cmp bl, 1
-    je audio_request
     cmp bl, 4
     je audio_request
     cmp bl, 12
@@ -275,10 +297,15 @@ ioctl_input:
     je .disc
     cmp bl, 11
     je .track
+    ; Only code 1 comes here. A data image reports its first sector.
+    cmp dword [si+AUDIO_ENTRY], 0
+    jne audio_request
     xor eax, eax
-    mov [es:di+1], ax
-    mov [es:di+3], eax
-    mov [es:di+7], eax
+    cmp [es:di+1], al
+    je .location
+    mov ah, 2
+.location:
+    mov [es:di+2], eax
     jmp request_ok
 .audio_status:
     cmp dword [si+AUDIO_ENTRY], 0
@@ -360,19 +387,8 @@ ioctl_input:
     mov al, [si+TRACK_COUNT]
     mov [es:di+2], al
     mov eax, [si+DISC_SECTORS]
-    sub eax, [si+ORIGIN]
-    add eax, 150
-    xor edx, edx
-    mov ecx, 4500
-    div ecx
-    mov [es:di+5], al
-    mov eax, edx
-    xor edx, edx
-    mov ecx, 75
-    div ecx
-    mov [es:di+3], dl
-    mov [es:di+4], al
-    mov byte [es:di+6], 0
+    call lba_msf
+    mov [es:di+3], eax
     jmp request_ok
 .track:
     movzx ax, byte [es:di+1]
@@ -387,21 +403,25 @@ ioctl_input:
     or al, 1
     mov [es:di+6], al
     mov eax, [bx+TRACKS+TRACK_START]
+    call lba_msf
+    mov [es:di+2], eax
+    jmp request_ok
+ioctl_sizes db 5,6,0,0,9,0,5,4,5,2,7,7,11,0,0,11
+ioctl_output_sizes db 1,2,1,9,0,1
+
+; EAX: image sector. Return frame, second and minute in bytes 0 to 2 of EAX.
+lba_msf:
     sub eax, [si+ORIGIN]
     add eax, 150
     xor edx, edx
     mov ecx, 4500
     div ecx
-    mov [es:di+4], al
-    mov eax, edx
-    xor edx, edx
-    mov ecx, 75
-    div ecx
-    mov [es:di+2], dl
-    mov [es:di+3], al
-    mov byte [es:di+5], 0
-    jmp request_ok
-ioctl_sizes db 5,0,0,0,0,0,5,4,5,2,7,7,0,0,0,11
+    shl eax, 16
+    xchg ax, dx
+    mov cl, 75
+    div cl
+    xchg al, ah
+    ret
 
 ioctl_output:
     call ioctl_buffer
@@ -431,9 +451,17 @@ ioctl_output:
     jmp request_error
 %endif
 .eject_ready:
+    ; Keep the MDM set. Eject only the current disc, as the hotkey does.
+    cmp si, [mdm_unit]
+    jne .eject_image
+    mov byte [mdm_ejected], 1
+    call clear_unit
+    jmp .ejected
+.eject_image:
     call dos_enter
     call eject_unit
     call dos_leave
+.ejected:
     jc request_error
     jmp request_ok
 .lock:
@@ -506,8 +534,9 @@ audio_request:
     ret
 
 read_sectors:
-    cmp byte [fs:bp], 26
-    jb request_error
+    ; Drives ignore the length field (Necromantics: 0).
+    cmp bp, 10000h-26
+    ja request_error
     mov cx, [fs:bp+18]
     mov [read_remaining], cx
     mov word [read_completed], 0
@@ -523,6 +552,8 @@ read_sectors:
     ; of the sector as the image holds it (MSCDEX 2.1, READ LONG). Raw needs
     ; an image of whole sectors; an ISO image has none to give.
     mov word [read_unit], 2048
+    cmp byte [fs:bp+13], 1
+    ja request_unknown
     cmp byte [fs:bp+24], 0
     je .mode_ready
     cmp byte [fs:bp+24], 1
@@ -534,27 +565,18 @@ read_sectors:
     ; Interleave size and skip are ignored: the driver reads contiguously.
     mov eax, [fs:bp+20]
     cmp byte [fs:bp+13], 0
-    je .address_ready
-    cmp byte [fs:bp+13], 1
-    jne request_unknown
-    ; Red Book: frame, second, minute, 0.
-    test eax, 0ff000000h
-    jnz .range
-    movzx ebx, al
-    cmp bl, 75
-    jae .range
-    movzx edx, ah
-    cmp dl, 60
-    jae .range
-    shr eax, 16
-    movzx eax, al
-    imul eax, 60
+    je .hsg
+    ; Red Book: minute*4500 + second*75 + frame - 150. The range check
+    ; below also rejects a result under zero.
+    movzx edx, al
+    movzx ebx, ah
+    imul ebx, ebx, 75
+    add edx, ebx
+    movzx eax, byte [fs:bp+22]
+    imul eax, eax, 4500
     add eax, edx
-    imul eax, 75
-    add eax, ebx
     sub eax, 150
-    jc .range
-.address_ready:
+.hsg:
     movzx edx, cx
     add edx, eax
     jc .range
@@ -581,6 +603,14 @@ read_sectors:
     mov edx, [si+TRACKS+TRACK_CONTROL]
     shr edx, 8
     sub eax, edx
+%ifdef RESIDENT_AUDIO
+    ; Short raw reads: one DOS read stages several sectors.
+    cmp word [si+STRIDE], 2048
+    je .direct
+    cmp word [read_remaining], CD_STAGE_SECTORS
+    jbe read_staged
+.direct:
+%endif
     movzx edx, word [si+STRIDE]
     imul eax, edx
     ; Raw sectors are read whole and back to back: no payload offset, no skip.
@@ -709,6 +739,89 @@ read_sectors:
 .range:
     mov ax, 8108h
     ret
+
+%ifdef RESIDENT_AUDIO
+; EAX=image sector of the first sector, SI=unit. Copy the payloads from the stage.
+read_staged:
+    mov [stage_next], eax
+    mov bx, [si+HANDLE]
+    cmp bx, [cd_handle]
+    jne .position_ready
+    mov byte [cd_seek], 1
+.position_ready:
+    call dos_enter
+.next:
+    mov si, [unit_pointer]
+    mov eax, [stage_next]
+    cmp byte [stage_valid], 0
+    je .fill
+    cmp si, [stage_unit]
+    jne .fill
+    mov bx, [si+HANDLE]
+    cmp bx, [stage_handle]
+    jne .fill
+    sub eax, [stage_first]
+    jb .fill
+    cmp eax, [stage_count]
+    jb .copy
+.fill:
+    mov byte [stage_valid], 0
+    mov eax, [stage_next]
+    movzx edx, word [si+STRIDE]
+    imul eax, edx
+    mov dx, ax
+    shr eax, 16
+    mov cx, ax
+    mov bx, [si+HANDLE]
+    mov ax, 4200h
+    int 21h
+    jc read_sectors.io_failure
+    mov ax, CD_STAGE_SECTORS
+    mul word [si+STRIDE]
+    mov cx, ax
+    mov bx, [si+HANDLE]
+    push ds
+    mov ds, [cd_work_segment]
+    xor dx, dx
+    mov ah, 3fh
+    int 21h
+    pop ds
+    jc read_sectors.io_failure
+    xor dx, dx
+    div word [si+STRIDE]
+    movzx eax, ax
+    test eax, eax
+    jz read_sectors.io_failure
+    mov [stage_count], eax
+    mov eax, [stage_next]
+    mov [stage_first], eax
+    mov [stage_unit], si
+    mov bx, [si+HANDLE]
+    mov [stage_handle], bx
+    mov byte [stage_valid], 1
+    xor eax, eax
+.copy:
+    movzx edx, word [si+STRIDE]
+    imul eax, edx
+    movzx edx, word [si+PAYLOAD]
+    add eax, edx
+    push ds
+    push es
+    les di, [read_destination]
+    mov ds, [cd_work_segment]
+    mov si, ax
+    mov cx, 512
+    cld
+    rep movsd
+    pop es
+    pop ds
+    add word [read_destination+2], 128
+    inc dword [stage_next]
+    inc word [read_completed]
+    dec word [read_remaining]
+    jnz .next
+    jmp read_sectors.read_done
+%endif
 
 compact_raw_read:
     push bx
@@ -1051,8 +1164,7 @@ STATUS_BYTES equ 4+IRQ_COUNTERS*4+4
     mov word [control_result], 0
 .done:
     cli
-    mov ax, [old_ss]
-    mov ss, ax
+    mov ss, [cs:old_ss]
     mov sp, [cs:old_sp]
     mov byte [cs:busy], 0
     pop gs
@@ -1083,6 +1195,7 @@ mount_image:
     jc .return
     mov [candidate], ax
     mov bx, ax
+    call handle_record
     xor cx, cx
     xor dx, dx
     mov ax, 4202h
@@ -1102,8 +1215,10 @@ mount_image:
     cmp cx, 2352
     jne .reject
     ; The helper sets payload 16 (MODE1) or 24 (MODE2 Form 1).
-    test byte [es:di+INFO_PAYLOAD], 0e7h
-    jnz .reject
+    mov dx, [es:di+INFO_PAYLOAD]
+    or dl, 8
+    cmp dx, 24
+    jne .reject
     jmp .format_ok
 .iso_format:
     cmp word [es:di+INFO_PAYLOAD], 0
@@ -1153,9 +1268,18 @@ mount_image:
     ja .reject
     mov [candidate_count], ax
     mov al, [es:di+INFO_TRACKS+TRACK_CONTROL]
+    ; An audio CD has no data track. Data reads fail as on a drive.
+    mov [candidate_audio], al
+    test al, 40h
+    jnz .data_first
+    cmp word [candidate_stride], 2352
+    jne .reject
+    jmp .first_ok
+.data_first:
     and al, 0dfh
     cmp al, 40h
     jne .reject
+.first_ok:
     mov eax, [es:di+INFO_TRACKS+TRACK_START]
     cmp eax, [candidate_origin]
     jne .reject
@@ -1214,6 +1338,11 @@ mount_image:
     mov eax, [es:di+INFO_TRACKS+TRACK_SIZE+TRACK_INDEX0]
     mov [candidate_limit], eax
 .data_limit:
+    test byte [candidate_audio], 40h
+    jnz .data_track
+    mov dword [candidate_sectors], 0
+    jmp .checked
+.data_track:
     mov eax, [candidate_limit]
     sub eax, [candidate_origin]
     cmp eax, 18
@@ -1261,17 +1390,12 @@ mount_image:
 .primary:
     cmp dword [pvd+128], 00080800h
     jne .reject
-    mov eax, [pvd+80]
+    mov si, pvd+80
+    call both_endian
+    jne .reject
     cmp eax, 18
     jb .reject
-    ; A volume space larger than the image is common on a data track ripped
-    ; from a mixed-mode disc: the limit below clamps it.
-    mov edx, [pvd+84]
-    xchg dl, dh
-    rol edx, 16
-    xchg dl, dh
-    cmp eax, edx
-    jne .reject
+    ; The City of Lost Children states a volume larger than its image.
     ; Limit directory validation, not sector reads, to the ISO volume.
     cmp eax, [candidate_sectors]
     jbe .volume_limit
@@ -1280,28 +1404,14 @@ mount_image:
     mov [candidate_limit], eax
     cmp byte [pvd+156], 34
     jb .reject
+    ; FX Fighter and Hexen have nonstandard root record name bytes.
     test byte [pvd+181], 2
     jz .reject
-    ; Some discs give the root record a name length of 0.
-    cmp byte [pvd+188], 1
-    ja .reject
-    ; Some mastering software names the root record 1 in place of 0.
-    cmp byte [pvd+189], 1
-    ja .reject
-    mov eax, [pvd+158]
-    mov edx, [pvd+162]
-    xchg dl, dh
-    rol edx, 16
-    xchg dl, dh
-    cmp eax, edx
+    mov si, pvd+158
+    call both_endian
     jne .reject
     mov ebx, eax
-    mov eax, [pvd+166]
-    mov edx, [pvd+170]
-    xchg dl, dh
-    rol edx, 16
-    xchg dl, dh
-    cmp eax, edx
+    call both_endian
     jne .reject
     test eax, eax
     jz .reject
@@ -1312,6 +1422,7 @@ mount_image:
     jc .reject
     cmp eax, [candidate_limit]
     ja .reject
+.checked:
     cmp word [control_op], 7
     jne .commit
     mov word [control_result], 0
@@ -1323,6 +1434,9 @@ mount_image:
     jc .reject
     mov ax, [candidate]
     mov [si+HANDLE], ax
+%ifdef DRIVER_STAGE
+    mov byte [cs:stage_valid], 0
+%endif
     mov eax, [candidate_sectors]
     mov [si+SECTORS], eax
     mov eax, [candidate_total]
@@ -1367,6 +1481,18 @@ mount_image:
 .return:
     ret
 
+; DS:SI: an ISO both-endian dword. Return EAX, ZF set if both halves agree.
+both_endian:
+    lodsd
+    xchg eax, edx
+    lodsd
+    xchg al, ah
+    rol eax, 16
+    xchg al, ah
+    cmp eax, edx
+    xchg eax, edx
+    ret
+
 eject_unit:
     cmp si, [mdm_unit]
     jne .single
@@ -1402,6 +1528,9 @@ clear_unit:
     mov dword [si+AUDIO_ENTRY], 0
 %endif
     mov word [si+HANDLE], 0ffffh
+%ifdef DRIVER_STAGE
+    mov byte [cs:stage_valid], 0
+%endif
     mov dword [si+SECTORS], 0
     mov byte [si+CHANGED], 0ffh
     clc
@@ -1429,6 +1558,7 @@ dos_enter:
     mov bx, [cs:resident_psp]
     mov ah, 50h
     int 21h
+    call handle_check
     xor ax, ax
     mov es, ax
     pushf
@@ -1444,9 +1574,99 @@ dos_enter:
     mov word [es:23h*4], break_ignore
     mov [es:23h*4+2], cs
     popf
+    mov byte [cs:dos_entered], 1
     pop es
     pop ds
     popad
+    ret
+
+; Ultimate Body Blows writes into the first SFT block and changes the
+; SFT numbers. Keep the resident handles on their SFT entries.
+handle_sft times 20 dd 0
+
+; BX=handle of the resident PSP.
+handle_record:
+    pushad
+    push es
+    cmp bx, 20
+    jae .done
+    mov bp, bx
+    shl bp, 2
+    mov ax, 1220h
+    int 2fh
+    jc .done
+    movzx bx, byte [es:di]
+    mov ax, 1216h
+    int 2fh
+    jc .done
+    mov [cs:handle_sft+bp], di
+    mov [cs:handle_sft+bp+2], es
+.done:
+    pop es
+    popad
+    ret
+
+handle_check:
+    pushad
+    push es
+    xor bp, bp
+.next:
+    cmp dword [cs:handle_sft+bp], 0
+    je .skip
+    mov bx, bp
+    shr bx, 2
+    mov ax, 1220h
+    int 2fh
+    jc .skip
+    movzx bx, byte [es:di]
+    cmp bl, 0ffh
+    je .skip
+    push es
+    push di
+    call .match
+    je .kept
+    xor bx, bx
+.find:
+    call .match
+    je .found
+    jc .kept
+    inc bx
+    cmp bx, 0ffh
+    jb .find
+    jmp .kept
+.found:
+    pop di
+    pop es
+    mov [es:di], bl
+    jmp .skip
+.kept:
+    pop di
+    pop es
+.skip:
+    add bp, 4
+    cmp bp, 20*4
+    jb .next
+    pop es
+    popad
+    ret
+; ZF set when SFT entry BX is the recorded entry. CF set past the last entry.
+.match:
+    ; DOS returns the index inside the block in BX.
+    push bx
+    mov ax, 1216h
+    int 2fh
+    pop bx
+    jc .end
+    cmp di, [cs:handle_sft+bp]
+    jne .other
+    mov ax, es
+    cmp ax, [cs:handle_sft+bp+2]
+.other:
+    clc
+    ret
+.end:
+    or al, 1
+    stc
     ret
 
 dos_leave:
@@ -1454,6 +1674,7 @@ dos_leave:
     pushad
     push ds
     push es
+    mov byte [cs:dos_entered], 0
     xor ax, ax
     mov es, ax
     pushf
@@ -1526,23 +1747,26 @@ install:
     mov bx, 16+((program_end-$$+15)/16)+64
     mov ah, 4ah
     int 21h
-    jc install_dos_error
+    mov dx, resize_message
+    jc install_fail
     mov ah, 30h
     int 21h
     cmp al, 5
-    jb install_dos_error
+    mov dx, dos_message
+    jb install_fail
     mov ax, 5d06h
     clc
     int 21h
-    jc install_dos_error_restore
+    mov dx, sda_message
+    jc install_sda_error
     mov [cs:sda_pointer], si
     mov [cs:sda_pointer+2], ds
     push cs
     pop ds
     test cx, cx
-    jz install_dos_error
+    jz install_fail
     cmp cx, 4096
-    ja install_dos_error
+    ja install_fail
     mov [sda_size], cx
     mov di, sda_save+15
     add di, cx
@@ -1681,11 +1905,7 @@ install:
     mov ah, 9
     int 21h
 %endif
-    movzx dx, byte [unit_count]
-    imul dx, UNIT_SIZE
-    add dx, [units_base]
-    add dx, 15
-    shr dx, 4
+    call unit_paragraphs
     add dx, 16
 %ifdef RESIDENT_AUDIO
     mov [resident_paragraphs], dx
@@ -1693,13 +1913,18 @@ install:
 %endif
     mov ax, 3100h
     int 21h
-install_dos_error:
-    mov dx, dos_message
-    jmp install_fail
-install_dos_error_restore:
+; Return DX: paragraphs from the image start to the end of the units.
+unit_paragraphs:
+    movzx dx, byte [unit_count]
+    imul dx, UNIT_SIZE
+    add dx, [units_base]
+    add dx, 15
+    shr dx, 4
+    ret
+install_sda_error:
     push cs
     pop ds
-    jmp install_dos_error
+    jmp install_fail
 install_duplicate:
     mov dx, duplicate_message
 install_fail:
@@ -1707,18 +1932,20 @@ install_fail:
     int 21h
     mov ax, 4c01h
     int 21h
-installed_message db 'The uCDD driver is installed.',13,10,'$'
-dos_message db 'This DOS version is not supported.',13,10,'$'
+installed_message db 'uCDD ',UCDD_VERSION,' is installed.',13,10,'$'
+dos_message db 'uCDD cannot use this DOS version. Use DOS 5 or later.',13,10,'$'
+resize_message db 'uCDD cannot change its memory block size.',13,10,'$'
+sda_message db 'DOS did not supply its swappable data area.',13,10,'$'
 duplicate_message db 'The uCDD driver is already installed.',13,10,'$'
 %ifdef RESIDENT_AUDIO
 trap_resident_message db 'uCDD keeps its port-trap code in memory.',13,10,'$'
-audio_unit_message db 'CD audio currently requires one uCDD drive.',13,10,'$'
+audio_unit_message db 'For CD audio, use only one uCDD drive.',13,10,'$'
 dpmi_host_message db 'A compatible DPMI host is not available.',13,10,'$'
 port_trap_missing_message db 'No compatible port-trap service is available.',13,10
     db 'Load JEMMEX 5.86 or 5.87.',13,10,'$'
 port_trap_rejected_message db 'The memory manager rejected the port-trap request.',13,10
     db 'Check for another sound virtualizer.',13,10,'$'
-memory_control_message db 'DOS does not provide the required memory controls.',13,10,'$'
+memory_control_message db 'DOS does not supply the necessary memory functions.',13,10,'$'
 xms_memory_message db 'uCDD cannot allocate XMS memory for the CD audio queue.',13,10,'$'
 %ifdef EMS_QUEUE
 ems_memory_message db 'uCDD cannot allocate EMS memory for the CD audio queue.',13,10,'$'
@@ -1759,16 +1986,11 @@ install_audio_error:
     jmp .stay
 .in_place:
 %endif
-    movzx dx, byte [unit_count]
-    imul dx, UNIT_SIZE
-    add dx, [units_base]
-    add dx, 15
-    shr dx, 4
+    call unit_paragraphs
     add dx, 16
 .stay:
     mov ax, 3101h
     int 21h
-    jmp install_fail
 %include "audio/configure.asm"
 %include "audio/guest_config.asm"
 %include "config_path.asm"
@@ -1865,13 +2087,9 @@ resident_relocate:
     mov ax, cs
     cmp ax, 0a000h
     jae .in_place
-    movzx bx, byte [unit_count]
-    imul bx, UNIT_SIZE
-    add bx, [units_base]
-    add bx, 15
-    shr bx, 4
-    mov [resident_paragraphs], bx
-    push bx
+    call unit_paragraphs
+    mov [resident_paragraphs], dx
+    push dx
     call resident_allocate_high
     pop dx
     jc .in_place

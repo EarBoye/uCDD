@@ -14,10 +14,11 @@
 %define CD_PLAY_FIRST 4
 %define CD_PLAY_CHUNKS 16
 %ifdef RESIDENT_AUDIO
+%define CD_REQUEST_READS 2
 %define EXTERNAL_CD_BUFFERS 1
 %define cd_half 0
 %define cd_stage 0
-%define cd_stack_top (CD_READ_BYTES+2048)
+%define cd_stack_top (CD_STAGE_SECTORS*2352+2048)
 %define SB_TAIL_PARAS 128
 %define CD_HALF_DATA_PARAS ((CD_HALF_BYTES+15)/16)
 %define CD_HALF_PARAS (CD_HALF_DATA_PARAS+SB_TAIL_PARAS)
@@ -240,6 +241,10 @@ cd_request:
     mov sp, cd_stack_top
     sti
     cld
+%ifdef RESIDENT_AUDIO
+    ; The timer reads most of the queue, so a request reads only a few blocks.
+    mov byte [cd_background_reads], CD_REQUEST_READS
+%endif
 %ifdef OWN_HOST
     push es
     push bx
@@ -395,11 +400,6 @@ cd_request:
 .seek:
     cmp bp, 10000h-24
     ja .done
-    cmp byte [fs:bp], 13
-    je .seek_header
-    cmp byte [fs:bp], 24
-    jb .done
-.seek_header:
     mov eax, [fs:bp+20]
     call cd_address
     jc .done
@@ -449,23 +449,25 @@ cd_request:
     mov byte [cd_started], 1
     jmp .ok
 .play:
+    ; Tunnel B1 sends a length of 0 with a complete request.
     cmp bp, 10000h-22
     ja .done
-    cmp byte [fs:bp], 13
-    je .play_header
-    cmp byte [fs:bp], 22
-    jb .done
-.play_header:
     mov eax, [fs:bp+14]
     call cd_address
     jc .done
     mov edx, [fs:bp+18]
     test edx, edx
     jz .done
+    ; Drives stop at the lead-out (Angst sends a count past the disc end).
     add edx, eax
-    jc .done
+    jc .clamp
     cmp edx, [cd_info+INFO_TOTAL]
-    ja .done
+    jbe .end_ok
+.clamp:
+    mov edx, [cd_info+INFO_TOTAL]
+    cmp eax, edx
+    jae .done
+.end_ok:
     mov si, cd_info+INFO_TRACKS
     mov cx, [cd_info+INFO_COUNT]
 .track:
@@ -529,12 +531,8 @@ cd_request:
     mov [cd_gap_total], edx
     mov byte [cd_seek], 1
 %ifdef RESIDENT_AUDIO
-    ; 0FFh: a DPMI client runs under the driver's host, which does the reads
-    ; later (cd_deferred_refill); none here.
-    cmp byte [cd_background_reads], 0ffh
-    je .first_fill
-    mov byte [cd_background_reads], CD_PLAY_FIRST
-.first_fill:
+    ; Play reads four times the request limit. 0FFh stays 0FFh.
+    rol byte [cd_background_reads], 2
 %endif
     call cd_foreground
     cmp byte [cd_error], 0
@@ -707,6 +705,9 @@ cd_head:
     ret
 
 cd_foreground:
+%ifdef DRIVER_STAGE
+    mov byte [stage_valid], 0
+%endif
 %ifdef OWN_HOST
     cmp byte [cd_background_reads], 0ffh
     je .done
@@ -715,6 +716,12 @@ cd_foreground:
     je .done
 %ifdef EXTERNAL_CD_BUFFERS
     call dos_enter
+    cmp byte [cc_warm_pending], 0
+    je .warmed
+    call cd_cache_warm
+    ; The warm reads move the file position.
+    mov byte [cd_seek], 1
+.warmed:
 %else
     les bx, [cd_indos]
     cmp byte [es:bx], 0
@@ -946,8 +953,6 @@ cd_pump:
     movzx eax, word [cd_read_size]
     add [cd_produced], eax
 %ifdef RESIDENT_AUDIO
-    cmp byte [cd_background_reads], 0
-    je cd_pump
     dec byte [cd_background_reads]
     jz .done
 %endif

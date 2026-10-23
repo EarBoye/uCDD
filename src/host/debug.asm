@@ -75,6 +75,8 @@ dpmi_debug_arm:
 
 ; CF identifies an enabled client breakpoint, independently of host TF.
 dpmi_debug_breakpoint:
+    test byte [ebp+dpmi_debug_regs+28], 0ffh
+    jz .none
     pushad
     mov eax, dr6
     mov edx, [ebp+dpmi_debug_regs+28]
@@ -89,6 +91,7 @@ dpmi_debug_breakpoint:
     shr edx, 2
     loop .slot
     popad
+.none:
     clc
     ret
 .matched:

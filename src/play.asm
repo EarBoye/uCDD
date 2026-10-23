@@ -21,6 +21,10 @@ org 0
 %define WORK_BYTES (ENTRIES+ENTRY_MAX*ENTRY_SIZE)
 %define STACK_BYTES 2048
 
+%if LAND_PIXELS+SCROLL_W*SCROLL_H > ENTRIES
+    %error Landscape workspace exceeds the effects buffer
+%endif
+
     jmp strict near start
     ; The build reads this offset. The zero data after it is not in the file.
     dw bss_start
@@ -38,7 +42,6 @@ start:
     rep stosb
     mov [psp_seg], dx
     call parse_arguments
-    mov es, [psp_seg]
     mov bx, cs
     sub bx, [psp_seg]
     add bx, (stack_top-$$+15)/16
@@ -87,11 +90,7 @@ start:
     jb no_vga
     cmp bl, 8
     ja no_vga
-    push ds
-    push 40h
-    pop ds
-    mov eax, [6ch]
-    pop ds
+    call bios_ticks
     mov [random_seed], eax
     call init_bitreverse
     call init_visuals
@@ -193,10 +192,9 @@ critical_handler:
     mov al, 3
     iret
 
-; ES = PSP. Read /? or a drive letter.
+; Read /? or a drive letter. Return ES = PSP.
 parse_arguments:
     mov byte [wanted_drive], 0ffh
-    push ds
     mov es, [psp_seg]
     mov si, 81h
     movzx cx, byte [es:80h]
@@ -233,10 +231,8 @@ parse_arguments:
     cmp byte [es:si], 13
     jne .usage
 .done:
-    pop ds
     ret
 .usage:
-    pop ds
     mov dx, usage_message
     mov ah, 9
     int 21h
@@ -268,6 +264,11 @@ error_exit:
 %include "play/eq.asm"
 %include "play/fft.asm"
 %include "play/vis.asm"
+%include "play/landscape.asm"
+%include "play/cubes.asm"
+%include "play/balls.asm"
+%include "play/dancers.asm"
+%include "play/fireworks.asm"
 %include "play/ui.asm"
 %include "play/input.asm"
 %include "play/text.asm"
@@ -321,7 +322,7 @@ unit_controls times 26 dd 0
 drive_count dw 0
 drive_list times 26 db 0
 device_list times 26*5 db 0
-request times 26 db 0
+request times 27 db 0
 control_block times 16 db 0
 disc_present db 0
 first_track db 0
@@ -445,6 +446,17 @@ scroll_offset dw 0
 scroll_shadow dw 0
 scope_channel dw 0
 scope_last dw 0
+liss_head dw 0
+land_head db 0
+land_phase db 0
+land_have_previous db 0
+land_ridge db 0
+land_depth dw 0
+land_span dw 0
+land_x dw 0
+land_xstep dw 0
+land_ybase dw 0
+land_height dw 0
 fire_heat dw 0
 tunnel_phase dw 0
 tunnel_x dw 0
@@ -454,6 +466,30 @@ tunnel_right dw 0
 tunnel_top dw 0
 tunnel_bottom dw 0
 tunnel_step dw 0
+cube_vertices times 8*6 db 0
+cube_index dw 0
+cube_radius dw 0
+ball_pass db 0
+ball_strand dw 0
+ball_index dw 0
+ball_depth dw 0
+ball_left dw 0
+ball_base dw 0
+ball_row dw 0
+dancer_pos times DANCERS*4 dw 0
+dancer_kick times DANCERS dw 0
+dancer_side dw 0
+dancer_wave dw 0
+dancer_hi db 0
+fw_rockets times FW_ROCKETS*8 db 0
+fw_sparks times FW_SPARKS*10 db 0
+fw_bass_avg dw 0
+fw_cool db 0
+fw_next db 0
+cube_yaw_s dw 0
+cube_yaw_c dw 0
+cube_pitch_s dw 0
+cube_pitch_c dw 0
 time_minus db 0
 needle_x dw 0
 button_flash times BUTTON_COUNT db 0

@@ -85,14 +85,7 @@ audio_release:
 ; ring, the ports, the card, the host.
 audio_engage:
     call virtual_irq_init
-    mov ax, [output_segment]
-    mov es, ax
-    xor di, di
-    call mix_half
-    call mix_half
-%if RING_PERIODS > 2
-    call ring_fill
-%endif
+    call mix_fill
     call trap_engage
     jc .failed
     ; sb_start hooks the vector through INT 21h while the byte is still
@@ -350,7 +343,8 @@ host_dormant_set:
     cmp word [own_host_active+2], 0
     je .done
     les di, [own_host_active]
-    mov [es:di+4], al
+    ; dpmi_dormant, offset 10 of the host's state (host/dpmi.asm).
+    mov [es:di+10], al
 .done:
 %endif
     ret

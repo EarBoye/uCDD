@@ -40,11 +40,13 @@ start:
     push bx
     popf
     cld
-    ; Ctrl+C or Ctrl+Break in a DOS call, and a drive error on UCDD.CFG:
-    ; the program keeps control. DOS puts the old handlers back at exit.
-    mov dx, break_handler
+    ; Ctrl+Break must not end the program while a vector is hooked. DOS
+    ; restores INT 23h at exit.
+    mov dx, break_ignore
     mov ax, 2523h
     int 21h
+    ; A drive error on UCDD.CFG: the program keeps control. DOS puts the old
+    ; handler back at exit.
     mov dx, critical_handler
     mov ax, 2524h
     int 21h
@@ -81,6 +83,9 @@ start:
     cmp byte [handoff], 0
     jne install_settings
     mov dx, saved_message
+    mov ah, 9
+    int 21h
+    mov dx, crlf
     call resident_audio_present
     jnc .print
     mov dx, restart_message
@@ -95,10 +100,6 @@ start:
 .old_cpu:
     mov dx, cpu_message
     jmp exit_error
-
-; Return to the DOS call that found Ctrl+C or Ctrl+Break.
-break_handler:
-    iret
 
 ; Fail the DOS call. config_load and config_save report the failure.
 critical_handler:
@@ -149,14 +150,7 @@ install_settings:
 ; SI zero-terminated text for standard output.
 print_text:
     mov dx, si
-    xor cx, cx
-.length:
-    lodsb
-    test al, al
-    jz .write
-    inc cx
-    jmp .length
-.write:
+    call text_length
     mov bx, 1
     mov ah, 40h
     int 21h
@@ -308,8 +302,6 @@ handoff_check:
     ret
 
 show_command_help:
-    push cs
-    pop ds
     mov dx, setup_usage_message
     mov ah, 9
     int 21h
@@ -566,6 +558,9 @@ test_action:
 .failed:
     mov word [status], test_error
     ret
+
+break_ignore:
+    iret
 
 ; Return CF set if the uCDD audio driver is resident.
 resident_audio_present:
@@ -865,7 +860,7 @@ handoff db 0
 handoff_pointer dd 0
 load_status db 0
 menu_result db 0
-load_messages dw empty_text,missing_message,old_message,invalid_message
+load_messages dw empty_text,missing_message,old_message,invalid_message,unreadable_message
 install_option db '-INSTALL'
 status_buffer times 240 db 0
 page_saved times CONFIG_SIZE db 0
@@ -910,19 +905,20 @@ test_label db 'Test',0
 save_label db 'Save',0
 cancel_label db 'Cancel',0
 ok_label db 'OK',0
-virtual_note db 'Match the physical card if you can.',0
+virtual_note db 'If possible, use the same settings as the physical card.',0
 wss_note db 'The WSS codec uses the DMA Low channel of the virtual SB.',0
 missing_message db 'UCDD.CFG was not found.',0
 old_message db 'UCDD.CFG is from an older version.',0
 invalid_message db 'UCDD.CFG is not valid.',0
+unreadable_message db 'UCDDSET cannot read UCDD.CFG.',0
 installed_message db 'The audio driver is installed. Restart DOS to use changed settings.',0
 invalid_values_message db 'A setting is not valid.',0
-save_message db 'The settings cannot be saved.',0
-confirm_message db 'Exit without saving? Press Y to exit. Press a different key to stay.',0
+save_message db 'UCDDSET cannot save the settings.',0
+confirm_message db 'You did not save the changes.',10,'Press Y to exit. Press a different key to stay.',0
 fixed_message db 'The selected card does not use this setting.',0
 listen_message db 'A tone plays on the left speaker, then on the right speaker.',0
 listen_mono_message db 'A tone plays twice. This card has a mono output.',0
-test_message db 'Test complete.',0
+test_message db 'The test is complete.',0
 test_error db 'The test failed. Check the sound card and its settings.',0
 resident_test_message db 'The uCDD audio driver uses the card. Start DOS without UCDD -install.',0
 blaster_set_message db 'BLASTER is set to ',0
@@ -930,10 +926,11 @@ period_line db '.',13,10,0
 blaster_failed_message db 'BLASTER cannot be set. Set BLASTER=',0
 blaster_failed_end db ' before you start a game.',13,10,0
 
-saved_message db 'The settings are saved.',13,10,'$'
-restart_message db 'The settings are saved. Restart DOS to use them.',13,10,'$'
+saved_message db 'The settings are saved.$'
+restart_message db ' Restart DOS to use them.'
+crlf db 13,10,'$'
 handoff_message db 'Use UCDD -install to install the driver.',13,10,'$'
-path_message db 'The program directory cannot be read.',13,10,'$'
+path_message db 'UCDDSET cannot read the program directory.',13,10,'$'
 cpu_message db 'UCDDSET needs a 386 or later processor.',13,10,'$'
 setup_usage_message db 'UCDDSET sets the sound cards, hotkeys, and volumes for uCDD.',13,10,13,10
     db 'UCDDSET saves the settings in UCDD.CFG.',13,10

@@ -198,6 +198,13 @@ draw_line:
     popad
     ret
 
+clip_scroll:
+    mov word [clip_left], SCROLL_X0
+    mov word [clip_right], SCROLL_X1
+    mov word [clip_top], SCROLL_Y0
+    mov word [clip_bottom], SCROLL_Y1
+    ret
+
 clip_full:
     mov word [clip_left], 0
     mov word [clip_top], 0

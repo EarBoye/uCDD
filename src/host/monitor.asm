@@ -35,7 +35,7 @@
 %define DPMI_IRQ_SS 0afh
 %define DPMI_CALLBACK_SS 0b7h
 %define DPMI_STUB16 6bh
-%define DPMI_LOCK_PAGES 7
+%define DPMI_LOCK_PAGES 11
 %define DPMI_XFER_BYTES 4096
 %define DPMI_XFER_DTA 4096
 %define DPMI_XFER_PARAS (DPMI_XFER_BYTES+128)/16
@@ -125,6 +125,7 @@ monitor_init:
     jz .bad
     mov ax, 0de00h
     int 67h
+.vcpi_query_return:
     test ah, ah
     jnz .bad
 %ifndef RESIDENT_HOST
@@ -509,8 +510,8 @@ mon_exception_%+vector:
 %rep 24
 mon_shared_%+vector:
     push eax
-%if vector == 13
-    ; A ring-3 #GP has one more stack dword than IRQ5.
+%if vector == 13 || vector == 10
+    ; A ring-3 #GP or #TS has one more stack dword than the IRQ.
     call .base
 .base:
     pop eax
@@ -531,10 +532,10 @@ mon_shared_%+vector:
     push dword 0
     push dword (vector & 7)
     jmp mon_irq
-%if vector == 13
+%if vector == 13 || vector == 10
 .exception:
     pop eax
-    jmp mon_exception_13
+    jmp mon_exception_%+vector
 %endif
 %assign vector vector+1
 %endrep
@@ -625,6 +626,7 @@ mon_irq:
 %ifdef HOST_DPMI
     lea ebx, [esp+8]
     call dpmi_locked_capture
+    call dpmi_quiet_entry
 %endif
     mov ebx, [esp+40]
     movzx eax, byte [ebp+mon_master]
@@ -771,6 +773,7 @@ mon_dpmi:
     call dpmi_record_segments
     call dpmi_sti_arrival
     call dpmi_locked_capture
+    call dpmi_quiet_entry
     call dpmi_tf_entry
     cmp word [ebp+mon_vectors+31h*6+4], 0
     je .host_service
@@ -850,6 +853,20 @@ mon_dpmi:
     MON_IRETD
 
 ; Ring 0, EBP=module base, EDI=flat register frame, AX=real interrupt.
+%ifdef HOST_DPMI
+mon_real_irq:
+    push dword 0
+    mov byte [ebp+mon_rm_kind], 0
+    mov [ebp+mon_int_opcode+1], al
+    call dpmi_bridge_mark_irq
+    push esi
+    call dpmi_bridge_chained_vector
+    ; Only a real-mode hook in front of the stub can chain back to it.
+    cmp esi, 1024
+    jb mon_real_int_vector
+    call dpmi_bridge_unmark_irq
+    jmp mon_real_int_vector
+%endif
 mon_real_int:
     push dword 0
     jmp mon_real_int_start
@@ -878,8 +895,10 @@ mon_real_int_start:
 .profile_classed:
 %endif
 %ifdef HOST_DPMI
+    mov byte [ebp+dpmi_bridge_irq_chain], 0
     push esi
     call dpmi_bridge_real_vector
+mon_real_int_vector:
     cmp esi, 1024
     jb .ordinary
     push eax
@@ -902,6 +921,9 @@ mon_real_far_start:
     cmp byte [ebp+host_profile_depth_bridge], 0
     jne mon_real_transfer
     mov byte [ebp+host_profile_bridge_class], 10
+%endif
+%ifdef HOST_DPMI
+    mov byte [ebp+dpmi_bridge_irq_chain], 0
 %endif
 mon_real_transfer:
     HOST_COUNT bridge, 0
@@ -968,8 +990,8 @@ mon_real_transfer:
     cld
     rep movsd
     movsw
-    ; A client flags image can carry an injected TF.
-    and byte [ebp+mon_rm_regs+33], 0feh
+    ; A client flags image can carry TF or the NT of dpmi_quiet_exit.
+    and byte [ebp+mon_rm_regs+33], 0beh
     mov dword [ebp+mon_return], mon_real_callback
     lea eax, [ebp+mon_resume]
     mov [ebp+mon_switch+16], eax
@@ -984,6 +1006,8 @@ mon_resume:
     mov esp, [ebp+mon_resume_sp]
 %ifdef HOST_DPMI
     call dpmi_debug_host_save
+    ; The reflected IRQ has ended. A later IRQ at the stub is a new one.
+    mov byte [ebp+dpmi_bridge_irq_chain], 0
 %endif
 %ifdef HOST_DPMI
     lea esi, [esp+66]
@@ -1048,6 +1072,9 @@ mon_resume:
 %endif
     HOST_TSC_END_NESTED bridge, 5
     add esp, 40
+%ifdef RESIDENT_HOST
+    call resident_refill_callback
+%endif
     ret
 
 mon_exception:
@@ -1069,6 +1096,7 @@ mon_exception:
 %ifdef HOST_DPMI
     lea ebx, [esp+8]
     call dpmi_locked_capture
+    call dpmi_quiet_entry
     cmp dword [esp+40], 16
     jb .cpu_exception
     mov ebx, esp
@@ -1106,7 +1134,10 @@ mon_exception:
     test eax, 4000h
     jnz .shadow_debug
     test word [esp+56], 100h
-    jz .shadow_arrival
+    jnz .shadow_debug
+    ; Without BS, a POPF or IRET in the shadow clears the saved TF.
+    call dpmi_sti_loads_flags
+    jc .shadow_arrival
 .shadow_debug:
     lea ebx, [esp+8]
     call dpmi_sti_retire
@@ -1125,8 +1156,6 @@ mon_exception:
     jz .ordinary_exception
     mov ebx, esp
     cld
-    call dpmi_quiet_limit
-    jc .step_full
     HOST_SAMPLE_STEP
     call dpmi_step_check
     ; VIF stays clear: skip IRQ/refill checks, but retain stack repair.
@@ -1150,6 +1179,12 @@ mon_exception:
     xor edi, edi
     jmp .advance
 .ordinary_exception:
+    mov ebx, esp
+    call dpmi_task_return
+    jc .not_task_return
+    xor edi, edi
+    jmp .advance
+.not_task_return:
 %endif
     cmp dword [esp+40], 13
     jne .fault
@@ -1175,6 +1210,38 @@ mon_exception:
     xor edi, edi
     jmp .advance
 .ordinary:
+%ifdef HOST_DPMI
+    ; A ring-3 INT n to an IRQ gate faults with the IDT bit. Run it as INT n.
+    mov eax, [esp+44]
+    test eax, eax
+    jz .no_gate
+    and al, 3
+    cmp al, 2
+    jne .fault
+    test byte [esp+52], 3
+    jz .fault
+    cmp byte [ebp+dpmi_active], 0
+    je .fault
+    mov ebx, esp
+    xor edi, edi
+    call mon_gp_fetch
+    jc .fault
+    cmp al, 0cdh
+    jne .fault
+    inc edi
+    call mon_gp_fetch
+    jc .fault
+    movzx eax, al
+    mov edx, [esp+44]
+    shr edx, 3
+    cmp eax, edx
+    jne .fault
+    mov [esp+40], eax
+    mov dword [esp+44], 0
+    add dword [esp+48], 2
+    jmp dpmi_software_interrupt
+.no_gate:
+%endif
     cmp dword [esp+44], 0
 %ifdef HOST_DPMI
     jne .idt_fault
@@ -1364,6 +1431,8 @@ mon_exception:
     jc .fault
     cmp al, 20h
     je .control_read
+    cmp al, 22h
+    je .control_write
     call dpmi_debug_move
     jc .fault
     cmp byte [ebp+dpmi_debug_pending], 0
@@ -1375,12 +1444,16 @@ mon_exception:
     call dpmi_cr0_read
     jc .fault
     jmp .advance
+.control_write:
+    call dpmi_cr0_write
+    jc .fault
+    jmp .advance
 %endif
 .cli:
     HOST_TSC_CLASS 0fah
 %ifdef HOST_DPMI
-    ; A POPF just before this CLI loaded an injected TF image. Deliver
-    ; pending IRQs first; the CLI faults again.
+    ; A frame with a stale TF turns the virtual IF on first; the CLI faults
+    ; again.
     mov ebx, esp
     call dpmi_tf_loaded
     jnc .cli_state
@@ -1390,31 +1463,27 @@ mon_exception:
 .cli_state:
     cmp word [ebp+dpmi_vif], 0
     jne .trace_cli
-    and word [esp+56], 0feffh
-    or word [esp+56], 200h
-    jmp .advance
+    mov ebx, esp
+    mov ecx, 0fdffh
+    call dpmi_quiet_image
+    jmp .cli_quiet
 .trace_cli:
     HOST_COUNT cli, 0
     cmp byte [ebp+dpmi_vif], 0
     je .cli_stepping
-    call dpmi_tf_disarm
     call dpmi_clear_vif
-    cmp byte [ebp+dpmi_step_active], 0
+    cmp byte [ebp+dpmi_quiet_leak], 0
     je .cli_quiet
     mov ebx, esp
-    call dpmi_tf_inject
-    jnc .cli_unstepped
-    call dpmi_cli_site_check
-    jnc .step_cli
-.cli_unstepped:
-    mov byte [ebp+dpmi_step_active], 0
+    mov ecx, 0bfffh
+    call dpmi_quiet_image
+    mov byte [ebp+dpmi_quiet_leak], 0
 .cli_quiet:
     and word [esp+56], 0feffh
     or word [esp+56], 200h
     jmp .advance
 .cli_stepping:
     call dpmi_clear_vif
-.step_cli:
     or word [esp+56], 300h
     add [esp+48], edi
     mov ebx, esp
@@ -1556,7 +1625,31 @@ mon_exception:
     jmp mon_leave
 
 %ifdef HOST_DPMI
-; CPU detection can read CR0. Control-register writes remain privileged.
+; Permit CR0 reads and unchanged writes from client runtimes.
+dpmi_cr0_write:
+    pushad
+    inc edi
+    call mon_gp_fetch
+    jc .bad
+    cmp al, 0c0h
+    jb .bad
+    cmp al, 0c7h
+    ja .bad
+    inc edi
+    and eax, 7
+    movzx esi, byte [ebp+dpmi_full_registers+eax]
+    mov eax, cr0
+    cmp [ebx+esi], eax
+    jne .bad
+    mov [esp], edi
+    popad
+    clc
+    ret
+.bad:
+    popad
+    stc
+    ret
+
 dpmi_cr0_read:
     pushad
     inc edi
@@ -1874,12 +1967,16 @@ HOST_SCRATCH
 mon_pages times 12287 db 0
 %endif
 HOST_PROTECTED
+%ifdef RESIDENT_HOST
+mon_client_stack_top equ mon_kernel_stack_top
+%else
     times 2048 db 0
 mon_kernel_stack_top:
 %ifndef HOST_DPMI
     times 2048 db 0
 %endif
 mon_client_stack_top:
+%endif
 %ifdef HOST_DPMI
 %include "host/dpmi.asm"
 %endif

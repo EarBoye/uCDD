@@ -277,7 +277,7 @@ host_io_irq:
     cmp byte [esi], 0
     je .priority
     cmp byte [esi+1], 0
-    je .priority
+    je .client
     ; A client's real-mode call, the client with a protected-mode handler
     ; for the IRQ. Before, nothing was delivered here and the interrupt
     ; waited for the next output period: the Miles ESS driver's F2h test
@@ -300,6 +300,13 @@ host_io_irq:
     shl eax, 16
     mov ax, [esi+2]
     mov edi, eax
+    jmp .priority
+.client:
+    ; Interrupts of the same or higher priority in service at the
+    ; host hold the delivery (the 8259's priority, the author's 0.9.4-a3).
+    mov al, [esi+4]
+    test al, [ebx+guest_irq_priority]
+    jnz .done
 .priority:
     mov al, 0bh
     out 20h, al

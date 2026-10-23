@@ -422,8 +422,129 @@ changed volumes.
   moves out of the resident segment as he moved the driver's command
   parser in a1 (Michael, 24 Oct).
 - Testing: held (Michael, 24 Oct). The merge is built, not run.
-- The merge table (each place where both sides did the same thing, what
-  was kept): filled in with the merge.
+- Room (built): the host could not stay in one 64 KB image (66,480 bytes
+  merged: gateway 7,968, install code 3,323, protected 55,184). The install
+  code (.scratch) now comes before the protected part, so it still runs in
+  real mode below 64 KB while the protected part, which runs from XMS with
+  32-bit offsets, ends above it; the driver reads the image in two parts
+  (audio/resident_host_init.asm) and XMS is sized for the install code's
+  tail copied with it. This is the start-up code moved out of the way, as
+  the author moved the driver's command parser in a1 (Michael, 24 Oct).
+- Built (24 Oct) [build]: --resident-audio at 32 frames (--no-refill-hint)
+  and at 128, the plain build, and --virtual-ess all assemble with no
+  warnings but the section-crossing notes the tree always had. UCDDHOST.BIN
+  66,480 bytes, UCDD.EXE 65,080 (131,568 with the host). Not run anywhere
+  (testing held).
+- Lost for now, each to be put back on the author's code:
+  - mix_run's fast loops and mix_verify (the 386 work; --verify-mix gone);
+  - the ESS half-rate output (model 5 plays at full rate meanwhile);
+  - our ADPCM engine (sb_adpcm.asm): auto-init ADPCM (1Fh, 7Dh, 7Fh) is
+    unsupported, as in his;
+  - the virtual ESS build's mixer hooks (it assembles; its sound is not
+    checked);
+  - the stray-EOI marks where his host now hands the EOI to the real-mode
+    handler (F14's design): F14's known-bad games (Mortal Kombat Trilogy,
+    Theme Hospital) must pass the sound check before any kit.
+- Before any kit: regression list a at 32 frames, the sound check (with
+  F14's games, Hexen, Descent), the CD mounts (an audio-only sheet, INDEX 02,
+  a byte-order mark), UCDD.CFG from each older version (our 4 at 38 bytes,
+  his 4 at 42, version 2 at 36), and the step-aside (dpmi_dormant moved to
+  byte 10).
+- The merge table, each place both sides changed (his = the author's a6,
+  ours = count-position):
+
+| Place | His (a6) | Ours (count-position) | Kept |
+|---|---|---|---|
+| host_emm.asm | trap list for EMM386 adds 08h, D0h | file removed with EMM386 support (340de2c, 12 Oct) | ours: EMM386 support stays out (a design decision, not a fix; EMM386 cannot trap the 8237) |
+| layout.inc, the ring | three periods, missed periods mixed (a6) | 512 frames, one period mixed ahead (7994cd1, F2) | his (same fault) |
+| ports.inc | 08h, 0Ah-0Fh | 08h, 0Ah-0Ch, 0Dh-0Fh | his (the same ports) |
+| sb_state.inc | record and remix state | single-cycle hold state | both |
+| host_jemm.asm host_io_irq | the priority check while a client runs | delivery during a client's real-mode call | both (different paths) |
+| mixer.asm, the game's FM level | fm_update with the FM fader (a6) | fm_update by card model (archive findings 19) | his (same behaviour) |
+| mounted.asm, the play request's first fill | four times the request limit (a1) | CD_PLAY_FIRST (e24fcfd) | his (same behaviour) |
+| mdm.asm | the mouse vector kept | the list's audio flag (step-aside) | both |
+| config_file.asm | the FM fader's bound | the two option boxes' bounds | both |
+| setup/screen.asm | box 22 rows | box 24 rows (Options, Detected) | ours (our rows; his layout has no conflict with it) |
+| config.asm, UCDD.CFG | version 4: eleven keys, the FM level in the pad byte (42 bytes) | version 4: the disk IRQ in the pad byte, step-aside, fast DMA (38 bytes) | both, as version 5 (45 bytes): his record, then our three bytes; UCDDSET converts each older file by its size (setup/config_file.asm) |
+| config.asm, the DSP version default | 4.05 | 4.13 (the CT2290), ESS 3.01 | ours (UCDDSET sets it by model in both) |
+| guest_config.asm, the game volume | the PCM fader through sb_pcm_update | guest_scale at install | his, called after the virtual mixer reset |
+| guest_config.asm, the EMM386 port list | translated | removed | ours (EMM386 stays out) |
+| resident_init.asm, the ring's memory | two rings in one block, ring_place | one ring, a power of two, a block twice the size when it crosses a page | his, with our ESS half-size ring and the SB Pro's byte past the ring |
+| resident_init.asm, the first fill | mix_fill | two silent halves and ring_fill | his; our counters' start tick kept |
+| build.py | --audio-ring-periods, the default period 128 | our build options (32 frames by default) | both; his default period (128); testing still passes --audio-period-frames 32 |
+| setup/blaster.asm, the BLASTER field bound | the field dropped with BP | the field dropped with field_start (audit 7) | his (same fix) |
+| host/monitor.asm, the real-mode register copy | byte copy; TF and NT cleared | dword copy; TF cleared | ours' copy (the count is in dwords on our side), his flag mask |
+| cue.asm, the start | QUOTE_ERROR | the CUE text in its own block (CUE_FAR) | both |
+| cue.asm, a UTF-8 byte order mark | skipped (a1) | refused | his, on both text paths |
+| pro_output.asm, the SB Pro priming wait | two BIOS ticks | 65535 port reads (audit 1) | his (same fix) |
+| pro_output.asm, mono output | ES set to the ring | 1Ch auto-init on DSP 2.00 and later (archive findings 21) | both |
+| setup.asm, Ctrl+Break | ignored (break_ignore) | a handler that keeps control | his; our INT 24h handler kept |
+| setup.asm, messages | reworded | the mono tone and the 386 messages | both (his wording) |
+| README.md, RELEASE-NOTES.md | his text | the fork's notes | both; the fork's notes say the merge is in |
+| helper.asm, unmount by CUE name | his (a1) | ours | his (same fix) |
+| helper.asm, the help text | short | long, with -status | his short text with our -status line; our status labels kept |
+| helper.asm, arguments | a buffer in the second segment | the DOS save area | his |
+| background.asm, the timer refill | a shared cd_refill_run, a read budget per tick, the wait for a whole DSP command, entry from the audio IRQ | 4 reads a pass; the MPU-401 line check | his; our line check kept on the tick |
+| background.asm, the deferred refill | held while the virtual interrupt is in service | held only until the host delivers it (b3dca2f, F14) | ours (his has the old check; ours is a fix his lacks), with his DSP wait |
+| sb16.asm, the period handler | mix_catch_up from the DMA position | one slot after the playing one; late counters | his; our late counters kept (now against the period before the clock's), the virtual ESS FIFO service and profile marks kept |
+| sb16.asm, ring_offset and ring_place | his ring arithmetic | the ESS half-rate ring | his, with the half rate added |
+| sb16.asm, the output EOI | specific EOI | non-specific; the polled path (sb16_line_check) | his EOI, our polled path |
+| sb16.asm, an interrupt not the card's | chained as an interrupt, ended if still in service | to the game's handler when the host reflected it | both: ours first, then his |
+| mix.asm, the whole mixer | the sample fetch (sb_dma_sample: formats, memory above 1 MB, page wrap), interpolation at low rates, his fast paths, the record segment | our fast paths (mix_run, mix_verify), the ESS half rate, ADPCM by the firmware in the mixer, the virtual ESS's 16-bit data | his whole. Lost for now, to restore on his mixer: mix_run's 386 fast paths (--verify-mix removed with them), the ESS half-rate output, the virtual ESS build's mixer hooks |
+| standby.asm, re-engaging | (none) | two silent halves and ring_fill | his mix_fill |
+| sb_patch.asm, a block restarted or moved at its end | sb_remix over the record segment (a4) | the next half patched (sb_patch_base) | his; our hold of a stream's first interrupt (sb_single_hold) kept before virtual_irq_tick |
+| irq.asm, virtual_irq_tick | the silence command's interrupt (80h) | the virtual MPU-401 refresh, the virtual ESS's own time | both |
+| irq.asm, the end of a single-cycle block | ADPCM byte units | .controller_stop (the 8237's position and count), 91h and the warm flag, ADPCM by the firmware | ours with his ADPCM units; our ADPCM close dropped (his ADPCM) |
+| irq.asm, virtual_pic_write | ICW words to the controller, special mask, set priority, the host's specific EOI, the host's EOI ownership (0.9.3c) | ICWs counted off, poll and read select, EOI forms with level and rotation bits, the stray EOI (F14), the delivered mark, the counters | his decode and host calls; ours for the forms his lacks (poll, level and rotation bits), the stray EOI, the delivered mark and the counters |
+| host/interrupts.asm, the interrupt flag | interrupts-off regions run at full speed, marked with NT (a1) | more PUSHF/CLI patterns, a hashed site table, an armed region run once | his whole (the same area; ours tuned the stepping his replaces) |
+| host/pic.asm, the client's controller commands | special mask, rotation and set priority, priority-ordered EOIs | ICW1 counted off, poll and read select, EOI forms with level and rotation bits, the plain-EOI forward | his decode with ours' forms his lacks and our plain forward |
+| host/pic.asm and the chain to a real vector | the real handler owns the EOI (dpmi_real_eoi) | the host's EOI already sent, the handler's marked stray (F14) | his; our 0300h path (dpmi_pic_real_int) brought to his ownership model |
+| host/dos.asm, a reflected hardware vector | the real handler owns the EOI | the handler's EOI marked stray when the host held the IRQ (2e85975, F14) | his |
+| host/dos.asm, INT 2Fh in protected mode | 168Ah through dpmi_vendor_query (both client sizes); INT 33h 0Ch | 1686h answered 0; 168Ah for 16-bit clients | his 168Ah, our 1686h and INT 20h; INT 31h 0A00h stays on ours (dpmi_vendor_entry) |
+| host/dos.asm, 32-bit DOS calls | the path and short-buffer calls translated; 51h/62h, 09h | (none) | his |
+| host/dpmi.asm, INT 67h DE00h | VCPI kept for the host's own query (nested clients) | VCPI shown while stepped aside (dpmi_dormant) | both |
+| host/dpmi.asm, the state block the driver shares | bytes 4-9: the real EOI owed, its priority, the pending entry, the refill flag | byte 4: dpmi_dormant | his layout; dpmi_dormant moved to byte 10 (audio/standby.asm writes it there) |
+| host/dpmi.asm, a nested client's exit and start | the stack blocks freed; the parent's descriptors, callbacks and vectors inherited | the nested PIC restored; exception-chained cleared; the parents' callback slots kept off limits | his inheritance and frees, our PIC restore and exception flag; our callback slot rule dropped (his children share the parent's callbacks) |
+| host/dpmi.asm, the client's SS | 1Fh | DPMI_CLIENT_SS (97h: LDT 0-15 kept for 000Dh, D-11/D-12) | ours, after his bridge update |
+| host/dpmi.asm, 0400h's processor type | dpmi_cpu, detected at start | dpmi_cpu_type | his |
+| host/dpmi.asm, the armed region | his inline check | dpmi_irq_waiting, a region run once before stepping | his; dpmi_irq_waiting kept for our STI-shadow skip (d709be0) |
+| host/locked.asm, the locked stacks | LDT 6 and 7, 32 KB (eight levels, a4), 16-bit for 16-bit clients | LDT 21 and 22 (0-15 kept for 000Dh), 16 KB, 16-bit for 16-bit clients (D-15) | our slots, his size |
+| host/locked.asm, deliveries | hardware and software forms (the interrupted registers kept for hardware) | the delivered mark; INT 1Ch, 23h, 24h keeping the virtual IF; the bridge's carry | his forms; our reflected deliveries as his software form; our delivered mark and carry kept |
+| host/resident.asm, the driver's CDF block | CDF4 read as CDF3 | CDF4 to CDF8 (disk IRQ mask, stray EOI, delivered mark, fast ports, virtual model) | ours (the driver sends CDF8) |
+| host/resident.asm, the retrace refill window | ends at 384 frames; the client-level check gone | ends one period past 128; an almost empty queue does not wait | his |
+| host/resident.asm, wide port access | split into bytes, as the ISA bus does (a3) | word accesses other than the mixer's refused | his |
+| host/resident.asm, the cheapest virtual card ports | to the driver | answered in the host (CDF7, 27eae6d) | ours |
+| driver.asm, request and IOCTL lengths | ignored, as drives do (a2, a3) | length 0 accepted for IOCTL and headers | his (same fix) |
+| driver.asm, IOCTL input | the location code no longer sent to the audio driver (a1) | the CHANGED state kept until the redirector rereads the disc | both |
+| driver.asm, eject | an MDM set keeps the set and ejects the current disc (a1) | eject allowed while the driver's own audio is bound | both |
+| driver.asm, READ LONG | Red Book addresses (a1) | Red Book addresses with field checks; raw mode on whole-sector images (M-3); CHANGED seen | his addresses; our raw mode and CHANGED |
+| driver.asm, the ISO header | a larger volume clamped; nonstandard root record names (a2) | the same two (1c9d123, the clamp) | his (same fixes) |
+| host/bridge.asm, real-mode software interrupts to protected mode | INT 1Ch (0.9.4: the BIOS timer callback) | INT 1Ch, 23h and 24h (DPMI 0.9 2.4.2; INT 23h's carry back to DOS) | his for INT 1Ch; ours for INT 23h and 24h; the entry dispatch sends each to its path |
+| host/bridge.asm, the IRQ stubs | a chained IRQ passed once; IRQ 0 and 1 handed to the real chain when owned | disk controller IRQs straight to real mode; a spurious IRQ 7 or 15 dropped | both |
+| trap.asm, output_clock | the clock on a ring of any period count | count pairs in one JemmEx call (IRQCOST), the power-of-two ring | his arithmetic, our count pairs |
+| trap.asm, the trap entry | its own stack when a game's is short (a6); the port and value kept for the refill's DSP wait | profile marks, the F2h service, the MPU-401 line check | both |
+| trap.asm, a word read of the mixer ports | .wide_read (a2) | the virtual ESS's word port | both |
+| trap.asm, DSP reset | the silence and pending-DMA states cleared | the firmware's cold and warm start (SBG) | both |
+| trap.asm and sb_mixer.asm, mixer writes | inline, 81h selecting the 16-bit DMA channel, the FM pair to fm_update | the CT1745 by model (sb_mixer.asm), 80h-82h read only | ours by model, with his 81h write added (the CT2290's 81h is writable, F12) |
+| trap.asm, the 8237 mode register | demand mode as single (0.9.4) | demand and block as single, cascade refused (8237A data sheet) | ours (the same result for demand mode) |
+| trap.asm, master clear and all-mask | his, through dma_output_channel (a3) | ours, through dma_ring_controller | his; our command register (port 08h) and our unmask follow-ups (the identify release, the WSS input) kept |
+| trap.asm, the DSP command decode | a chain of compares with his additions | the table by model from the firmware (4.13, 3.02, 2.01) | ours, with his additions in it: 00h ignored, 45h and 47h (his handlers), single-cycle ADPCM taken before the table to his start |
+| trap.asm, ADPCM | single-cycle: converted to PCM in his mixer (a3); auto-init not played | single-cycle and auto-init by the firmware's engine (sb_adpcm.asm) | his; sb_adpcm.asm removed; 1Fh, 7Dh, 7Fh now unsupported, as in his |
+| trap.asm, the legacy start | ADPCM played mono | input and output, stereo by the mixer switch and A8h (SBG) | ours with his ADPCM mono |
+| trap.asm, the SB16 mode byte | reserved bits ignored (Team F1) | reserved bits refused | his |
+| trap.asm and irq.asm, 80h silence | a deadline in output periods (a2) | an end frame from the output clock | his deadline, raised through our virtual_dsp_raise; our silence state removed (the SB Pro status bit reads his) |
+| trap.asm, a start on a masked channel | waits for the unmask and replays (0.9.4, F5's case) | refused (F5 open) | his, in our handler form |
+| trap.asm, block and buffer sizes | short blocks of one period, buffers to 64 KB (a3) | 512 bytes to 32 KB; a block longer than its buffer need not be whole frames (HMI's ESS driver) | his sizes, our rule for a block longer than its buffer |
+| trap.asm, an 8-bit block past its 64 KB page | wraps to the page start, as the address counter does (a6) | refused | his |
+| trap.asm, a DMA buffer above 1 MB | every format, single-cycle and auto-init (a2) | 8-bit mono single-cycle only | his |
+| trap.asm, the transfer's source address | pending_source_segment and offset (page wrap, memory above 1 MB) | from the block's address; our ADPCM engine's first fetch | his |
+| trap.asm, the 3.2 kHz filter between blocks | cleared at each start | kept when a block follows a filtered one (archive findings 4, the click) | ours |
+| trap.asm, DMA status and other controller reads | TC cleared on read, the request bit for a waiting start; 0Bh, 0Dh, 0Fh read from the controller | the ring's channel hidden, the TC from the emulation | his, with our ring hiding |
+| trap.asm, the mixer index port read | the index on every model (Hexen, a2) | FFh on the SB16, the index on the SB Pro | his (the SB 2.0 still FFh) |
+| trap.asm, the DSP write status | one read in eight busy (a3) | busy in reset, high speed and while a string reply waits; the other bits by model | both: ours' conditions, then his one read in eight (F13 still open: the card's pattern differs) |
+| trap.asm, the mixer data read | mixer_read | virtual_mixer_read by model | ours |
+| trap.asm, the trap's exit | the waiting start replayed | the queued single-cycle command started (the guide's queue) | both |
+| trap.asm, data | his ADPCM tables, the trap's own 512-byte stack | our DSP state | both |
 
 ## The count and the block interrupt
 

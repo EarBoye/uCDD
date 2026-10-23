@@ -9,7 +9,7 @@ trap_install:
     jc .fail
     mov [old_callback], di
     mov [old_callback+2], es
-    ; This experiment must not replace an existing sound virtualizer.
+    ; Do not replace an existing sound virtualizer.
     mov ax, es
     or ax, di
     jnz .fail
@@ -140,10 +140,24 @@ output_clock:
     mov ebx, RING_WORDS-1
     sub ebx, eax
     shr ebx, 1
+    mov eax, ebx
+    shr eax, OUTPUT_SHIFT
+    and ebx, PERIOD_FRAMES-1
+    ; The first period at or after [periods] in the ring slot that plays.
+    push ecx
+    push eax
     mov eax, [periods]
+    xor edx, edx
+    mov ecx, RING_PERIODS
+    div ecx
+    pop eax
+    pop ecx
+    sub eax, edx
+    jge .slot_ahead
+    add eax, RING_PERIODS
+.slot_ahead:
+    add eax, [periods]
     shl eax, OUTPUT_SHIFT
-    sub ebx, eax
-    and ebx, RING_PERIODS*PERIOD_FRAMES-1
     add eax, ebx
     mov [last_clock], eax
     ret
@@ -287,6 +301,37 @@ game_elapsed_at:
 .done:
     ret
 
+; AL: value of the selected virtual mixer register.
+mixer_read:
+    movzx bx, byte [virtual_mixer_index]
+    ; Reserved on the SB16. Writable storage here causes false mixer detection.
+    mov al, 0ffh
+    cmp bx, 0fh
+    je .done
+%ifdef VIRTUAL_IRQ
+    mov al, [virtual_dsp_irq]
+    cmp bx, 82h
+    je .done
+%endif
+    mov al, [virtual_mixer+bx]
+.done:
+    ret
+
+%ifdef RESIDENT_AUDIO
+; The mixer can use more stack than a game leaves below its own stack pointer.
+%macro callback_stack_enter 0
+    cmp byte [cs:callback_depth], 0
+    jne %%nested
+    mov [cs:callback_ss], ss
+    mov [cs:callback_sp], sp
+    push cs
+    pop ss
+    mov sp, callback_stack_top
+%%nested:
+    inc byte [cs:callback_depth]
+%endmacro
+%endif
+
 ; The JemmEx port trap entry (far call): DX=port, CL=the access kind and
 ; width, AL or AX=the value written. DS, ES and FS are unknown; the flags are
 ; the game's with IF and TF clear and DF as the game left it (sb_patch and the
@@ -300,6 +345,7 @@ port_callback:
     stc
     retf
 .active:
+    callback_stack_enter
 %endif
     pushad
     movzx ebp, sp
@@ -308,6 +354,10 @@ port_callback:
     push fs
     push cs
     pop ds
+%ifdef RESIDENT_AUDIO
+    mov [callback_port], dx
+    mov [callback_value], al
+%endif
     DRV_TSC_BEGIN trap
     inc dword [port_calls]
 %ifdef VIRTUAL_IRQ
@@ -424,12 +474,29 @@ port_callback:
     je .address
     cmp dx, 3
     je .count
+    cmp dx, 8
+    je .dma_command
     jmp .unsupported
 .wide:
     mov bl, cl
     and bl, 1ch
+    cmp bl, 8
+    je .wide_read
     cmp bl, 0ch
     jne .unsupported
+%ifdef VIRTUAL_IRQ
+    ; Oscar writes the PIC command and mask with one word output.
+    cmp dx, 20h
+    jne .wide_sb
+    push ax
+    call virtual_pic_write
+    pop ax
+    mov al, ah
+    inc dx
+    call virtual_pic_write
+    jmp .done
+.wide_sb:
+%endif
     mov bx, dx
     sub bx, [guest_base]
     cmp bx, 4
@@ -441,6 +508,24 @@ port_callback:
     mov al, ah
     jmp .mixer_data
 %endif
+.wide_read:
+    ; Hexen reads the mixer index and data ports with one word input.
+    mov bx, dx
+    sub bx, [guest_base]
+    cmp bx, 4
+    jne .unsupported
+    call mixer_read
+    mov ah, al
+    mov al, [virtual_mixer_index]
+%ifdef RESIDENT_AUDIO
+    cmp dword [ss:ebp+12], 1
+    jne .real_wide_result
+    mov [ss:ebp+28], ax
+    jmp .done
+.real_wide_result:
+%endif
+    mov [ss:bp+28], ax
+    jmp .done
 .unsupported:
 %ifdef MOUNTED_AUDIO
     mov byte [fault], 3
@@ -478,6 +563,8 @@ port_callback:
     mov byte [sb_hung], 0
     mov byte [sb_highspeed], 0
     mov byte [sb_midi_uart], 0
+    mov byte [silence_active], 0
+    mov byte [dma_pending_command], 0
     mov byte [sb_dac_enabled], 0
     mov byte [sb_tail_mode], 0
     mov byte [sb_tail_valid], 0
@@ -495,7 +582,7 @@ port_callback:
     mov byte [game_start_pending], 0
     mov dword [game_exit_frame], 0
 %ifdef VIRTUAL_IRQ
-    mov byte [sb_silence], 0
+    mov byte [silence_active], 0
     call virtual_irq_reset
 %endif
     inc word [virtual_resets]
@@ -610,65 +697,44 @@ port_callback:
     call dma_shared_write
     jmp .done
 .master_clear:
-    ; Master clear resets the flip-flop and masks every channel. The owned
-    ; channel follows in the emulation; the output ring's channel is unmasked
-    ; again right after.
-    mov byte [si+DMA_FLIP], 0
+    ; A master clear masks all channels. Keep the output channel running.
     mov byte [si+DMA_MASK], 4
+    mov byte [si+DMA_FLIP], 0
     call dma_shared_write
-    call dma_ring_controller
-    jnc .done
-    mov al, [sb_dma8]
-    cmp byte [sound_card], 0
-    jne .ring_channel
-    mov al, [sb_dma16]
-    and al, 3
-.ring_channel:
-    push dx
+    call dma_output_channel
+    cmp ah, 0ffh
+    je .done
+    mov al, ah
     mov dx, 0ah
     call dma_shared_write
-    pop dx
     jmp .done
 .all_mask:
-    ; The all-mask register sets the four mask bits at once. Each bit goes
-    ; the way of a single-mask write, so that the owned channel stays
-    ; virtual and the output ring's channel stays protected.
     mov bx, [guest_dma8]
     cmp si, dma8
-    je .all_mask_channel
+    je .all_guest
     mov bx, [guest_dma16]
     sub bl, 4
-.all_mask_channel:
-    mov ah, al
-    xor cl, cl
-.all_mask_bit:
-    mov al, cl
-    test ah, 1
-    jz .all_mask_value
-    or al, 4
-.all_mask_value:
-    cmp cl, bl
-    jne .all_mask_other
-    and al, 4
-    mov [si+DMA_MASK], al
-    jmp .all_mask_next
-.all_mask_other:
-    ; dma_unowned_write takes a single-mask write: port 0Ah, not 0Fh.
-    push ax
-    push bx
-    push cx
-    push dx
-    mov dx, 0ah
-    call dma_unowned_write
-    pop dx
-    pop cx
-    pop bx
-    pop ax
-.all_mask_next:
-    shr ah, 1
-    inc cl
-    cmp cl, 4
-    jb .all_mask_bit
+.all_guest:
+    mov cl, bl
+    mov ah, 1
+    shl ah, cl
+    mov byte [si+DMA_MASK], 0
+    test al, ah
+    jz .all_output
+    mov byte [si+DMA_MASK], 4
+.all_output:
+    or al, ah
+    call dma_output_channel
+    cmp ah, 0ffh
+    je .all_write
+    mov cl, ah
+    mov ah, 1
+    shl ah, cl
+    not ah
+    and al, ah
+.all_write:
+    and al, 0fh
+    call dma_shared_write
     cmp byte [si+DMA_MASK], 0
     jne .all_mask_done
     call sb_identify_release
@@ -689,16 +755,32 @@ port_callback:
     mov bx, DMA_ADDRESS
     jmp .dma_word
 .count:
-    mov byte [si+3], 0
     mov bx, DMA_COUNT
 .dma_word:
     mov dword [si+DMA_POSITION], 0
     mov byte [si+3], 0
+    cmp si, dma16
+    je .tc_rearm16
+    and byte [dma_tc_reported], 0feh
+    jmp .tc_rearmed
+.tc_rearm16:
+    and byte [dma_tc_reported], 0fdh
+.tc_rearmed:
     mov byte [sb_finished], 0
     movzx cx, byte [si+DMA_FLIP]
     add bx, cx
     mov [si+bx], al
     xor byte [si+DMA_FLIP], 1
+%ifdef RESIDENT_AUDIO
+    cmp bx, DMA_ADDRESS+1
+    jne .done
+    mov al, 1
+    cmp dword [ss:ebp+12], 1
+    jne .switch
+    dec ax
+.switch:
+    call sb_dma_switch
+%endif
     jmp .done
 %ifdef SB_CARDS
 .command:
@@ -742,6 +824,10 @@ port_callback:
 .model_command:
     mov [dsp_command], al
     mov byte [arguments_got], 0
+    ; A new command ends a start that waited for its DMA channel, and only
+    ; the ADPCM commands below leave an ADPCM kind for the next transfer.
+    mov byte [dma_pending_command], 0
+    mov byte [pending_adpcm], 0
     ; Bxh and Cxh: the SB16's 16-bit and 8-bit transfers, a mode byte and a
     ; length (SBG:3837-3894). Bit 3 input, bit 2 auto-init, bit 1 the
     ; FIFO (no difference here), bit 0 not used.
@@ -758,6 +844,20 @@ port_callback:
     mov byte [arguments], 3
     jmp .done
 .table:
+    ; Single-cycle ADPCM is the author's (0.9.4-a3): the block is converted
+    ; to PCM and mixed (adpcm_start). BL: 1 for 74h-75h, 2 for 76h-77h, 3 for
+    ; 16h-17h.
+    mov bl, 1
+    mov ah, al
+    and ah, 0feh
+    cmp ah, 74h
+    je .adpcm
+    inc bl
+    cmp ah, 76h
+    je .adpcm
+    inc bl
+    cmp ah, 16h
+    je .adpcm
     ; The command table: command, argument bytes, models, handler.
     mov si, sb_commands
 .find:
@@ -927,7 +1027,7 @@ port_callback:
     or al, 2
 .pro_kind:
 %ifdef VIRTUAL_IRQ
-    cmp byte [sb_silence], 0
+    cmp byte [silence_active], 0
     je .pro_transfer
     or al, 8
 .pro_transfer:
@@ -943,10 +1043,11 @@ port_callback:
     cmp byte [sb_highspeed], 0
     jne .one_reply
     mov ah, 80h
-    test byte [game_format], 8
+    ; The ADPCM kinds 1, 2, 3 (4-bit, 2.6-bit, 2-bit) are bits 6, 5, 4
+    ; (game_adpcm, the author's ADPCM).
+    mov cl, [game_adpcm]
+    and cl, 3
     jz .pro_bit
-    ; The ADPCM kinds 1, 2, 3 (4-bit, 2.6-bit, 2-bit) are bits 6, 5, 4.
-    mov cl, [sb_adpcm_kind]
     shr ah, cl
 .pro_bit:
     or al, ah
@@ -1002,6 +1103,29 @@ port_callback:
     jb .command_unsupported
     mov word [reply_pointer], copyright_text
     mov byte [reply_count], copyright_length
+    jmp .done
+.asp_two:
+    mov bl, 2
+    jmp .asp
+.asp_one:
+    mov bl, 1
+.asp:
+    ; ASP commands (Tornado): an SB16 without ASP takes the arguments and does not reply.
+    mov byte [dsp_command], 0
+    mov [arguments], bl
+    jmp .done
+.continue8:
+    cmp byte [game_irq_bit], 2
+    je .done
+    jmp .continue
+.continue16:
+    cmp byte [game_irq_bit], 2
+    jne .done
+.continue:
+    ; 45h and 47h cancel an auto-init exit (DAh or D9h) before the block ends.
+    cmp byte [sb_single], 0
+    jne .done
+    mov dword [game_exit_frame], 0
     jmp .done
 .speaker_off:
     mov byte [sb_speaker_flag], 0
@@ -1065,12 +1189,14 @@ port_callback:
     mov byte [sb_exit_pending], 0
     jmp .exit_block
 .exit8:
+    mov si, dma8
+    call pending_stop
     cmp byte [game_irq_bit], 2
     je .done
-    ; The ADPCM engine stops at the block's end too (sb_adpcm.asm).
-    mov byte [sb_adpcm_auto], 0
     jmp .exit_block
 .exit16:
+    mov si, dma16
+    call pending_stop
     cmp byte [game_irq_bit], 2
     jne .done
 .exit_block:
@@ -1207,6 +1333,17 @@ port_callback:
 .legacy_rate_store:
     mov [legacy_rate], ax
     call sb_game_step
+.adpcm:
+    ; Single-cycle ADPCM (the author's 0.9.4-a3) starts like 14h: two length
+    ; bytes, then .single8. Odd commands send a reference byte first.
+    and al, 1
+    ror al, 1
+    or al, bl
+    mov [pending_adpcm], al
+    mov byte [dsp_command], 14h
+    mov word [dsp_handler], .single8
+    mov byte [arguments], 2
+    jmp .done
     jmp .done
 ; 40h: the time constant (SBG:3553-3568). The SB Pro and the SB 2.0 count
 ; it as the guide's formula has it, 1000000/(256-TC) bytes a second. The
@@ -1247,54 +1384,14 @@ port_callback:
     mov ax, [dsp_args]
     mov [legacy_block], ax
     jmp .done
-; ADPCM (SBG:1360-1377, 3289-3714): 74h-77h 4-bit and 3-bit, 16h, 17h 2-bit
-; single-cycle with the length; 7Dh, 7Fh, 1Fh auto-init from 48h's. The odd
-; commands start with the reference byte. Kinds: 1 4-bit, 2 3-bit, 3 2-bit
-; (audio/sb_adpcm.asm). The time constant gives the sample rate; the stream is
-; counted in bytes, a byte holding 2, 3 or 4 codes.
-.adpcm:
-    call sb_adpcm_close
-    mov al, [dsp_command]
-    mov ah, 3
-    cmp al, 20h
-    jb .adpcm_kind
-    mov ah, 2
-    cmp al, 7eh
-    jae .adpcm_kind
-    mov ah, 1
-    cmp al, 7ch
-    jae .adpcm_kind
-    test al, 2
-    jz .adpcm_kind
-    inc ah
-.adpcm_kind:
-    and al, 1
-    mov [pending_adpcm_ref], al
-    mov [pending_adpcm], ah
-    mov byte [pending_input], 0
-    mov byte [pending_frame_shift], 0
-    mov byte [pending_format], 8
-    movzx cx, ah
-    inc cx
-    mov ax, [legacy_rate]
-    xor dx, dx
-    div cx
-    mov [game_rate], ax
-    call sb_game_step
-    mov ax, [dsp_args]
-    cmp byte [dsp_command], 1fh
-    je .adpcm_auto
-    cmp byte [dsp_command], 7ch
-    jb .validate_start
-.adpcm_auto:
-    mov ax, [legacy_block]
-    jmp .validate_start
 ; 14h, 24h: an 8-bit single-cycle block, the length from the command.
 .single8:
     mov ax, [dsp_args]
     jmp .legacy_format
 ; 1Ch, 90h, 91h, and for input 2Ch, 98h, 99h: the length from 48h.
 .legacy_start:
+    mov byte [pending_adpcm], 0
+    mov byte [dma_pending_command], 0
     mov ax, [legacy_block]
 .legacy_format:
     push ax
@@ -1313,6 +1410,9 @@ port_callback:
     mov bl, 8
 .legacy_direction:
     mov [pending_input], bl
+    ; ADPCM is mono (the author's 0.9.4-a3).
+    cmp byte [pending_adpcm], 0
+    jne .legacy_mono
     ; Stereo: the mixer's switch for output (SBG:2476-2481), A8h for input
     ; (SBG:3820-3825), and the high-speed input only (SBG:1446-1456).
     mov cl, [sb_pro_stereo]
@@ -1349,8 +1449,9 @@ port_callback:
     mov byte [pending_frame_shift], 0
     mov byte [pending_format], 0
     mov al, [dsp_args]
-    test al, 0cfh
-    jnz .command_unsupported
+    ; Team F1 sets reserved mode bits; the DSP ignores them (the author's
+    ; 0.9.4-a3).
+    and al, 30h
     test byte [dsp_command], 10h
     jz .mono_mode
     cmp al, 30h
@@ -1380,33 +1481,39 @@ port_callback:
     mov ax, [dsp_args+1]
     jmp .validate_start
 %ifdef VIRTUAL_IRQ
-; 80h: no output for the given number of samples less one at the current
-; rate, then the 8-bit interrupt. Signalled from the output interrupt.
+; 80h: no output for the length plus one samples at the rate, then the
+; 8-bit interrupt, from the output period that ends the silence
+; (virtual_irq_tick; the author's 0.9.4-a2).
 .silence:
     movzx eax, word [dsp_args]
     inc eax
-    imul eax, OUTPUT_RATE
+    mov ecx, OUTPUT_RATE
+    mul ecx
+    movzx ecx, word [legacy_rate]
+    test ecx, ecx
+    jnz .silence_rate
     movzx ecx, word [game_rate]
-    add eax, ecx
-    dec eax
-    xor edx, edx
+    test ecx, ecx
+    jz .done
+.silence_rate:
     div ecx
-    push eax
-    call output_clock
-    pop ecx
-    add eax, ecx
-    mov [sb_silence_end], eax
-    mov byte [sb_silence], 1
+    shr eax, OUTPUT_SHIFT
+    inc eax
+    add eax, [periods]
+    mov [silence_deadline], eax
+    mov byte [silence_active], 1
     jmp .done
 %endif
+    xor edx, edx
+    div ecx
 .validate_start:
+    mov byte [pending_short], 0
     call sb_queue_check
     jnc .start
     ; Queued (sb_queue_check): an auto-init transfer ends with the current
     ; block, as DAh ends it.
     cmp byte [sb_single], 0
     jne .done
-    mov byte [sb_adpcm_auto], 0
     jmp .exit_block
 .start:
     mov byte [sb_finished], 0
@@ -1429,13 +1536,7 @@ port_callback:
     je .single
     cmp bl, 99h
     je .single
-    ; ADPCM: all but 1Fh, 7Dh and 7Fh are single-cycle.
-    test byte [pending_format], 8
-    jz .start_kind
-    cmp bl, 1fh
-    je .start_kind
-    cmp bl, 7ch
-    jae .start_kind
+    jmp .start_kind
 .single:
     mov byte [sb_single], 1
 .start_kind:
@@ -1451,9 +1552,23 @@ port_callback:
     test byte [pending_format], 1
     jz .dma_selected
 .wide_dma:
-    mov si, dma16
     mov cl, 1
+    cmp byte [sb_dma16_low], 0
+    jne .dma_selected
+    mov si, dma16
 .dma_selected:
+    cmp byte [si+DMA_MASK], 0
+    je .dma_ready
+    ; A start before the game unmasks its channel waits for the unmask
+    ; (Panic Soldier sends 90h first; the author's 0.9.4): the 8237 mask
+    ; write replays it (.pending_start).
+    mov [dma_pending_count], ax
+    mov [dma_pending_state], si
+    mov al, [dsp_command]
+    mov [dma_pending_command], al
+    mov byte [game_active], 0
+    jmp .done
+.dma_ready:
     cmp byte [sb_input], 0
     je .direction_ready
     mov bl, [si+DMA_MODE]
@@ -1463,8 +1578,11 @@ port_callback:
 .direction_ready:
     cmp byte [sb_single], 0
     je .block_length
+    ; MadSpace plays a single-cycle block longer than its auto-init DMA buffer.
+    test byte [si+DMA_MODE], 10h
+    jnz .block_length
     cmp ax, [si+DMA_COUNT]
-    ja .command_unsupported
+    ja .argument_rejected
 .block_length:
     movzx edx, ax
     inc edx
@@ -1475,35 +1593,49 @@ port_callback:
     je .single_buffer
     movzx ebx, word [si+DMA_COUNT]
     inc ebx
-    shl ebx, cl
+    cmp si, dma16
+    jne .buffer_units
+    shl ebx, 1
+.buffer_units:
     cmp edx, 512
     jae .large_block
-    ; Detection code loops one short block over the whole buffer.
+    ; Detection code loops one short block over the buffer, or a longer block (MadSpace).
     cmp edx, ebx
-    jne .short_block
+    jb .short_block
     mov cl, [pending_frame_shift]
     mov eax, 1
     shl eax, cl
     dec eax
     test edx, eax
-    jnz .command_unsupported
+    jnz .argument_rejected
     jmp .buffer_address
 .short_block:
-    ; A short block must last two output periods.
+    ; A short block must last one output period.
     mov cl, [pending_frame_shift]
     mov eax, edx
     shr eax, cl
     imul eax, OUTPUT_RATE
     movzx ecx, word [game_rate]
-    imul ecx, PERIOD_FRAMES*2
+    imul ecx, PERIOD_FRAMES
     cmp eax, ecx
-    jb .command_unsupported
+    jae .buffer_size
+    ; Alien Terminator loops 16-byte blocks in a 32-byte buffer. It gets one
+    ; IRQ per output period and does not need the free-space rule.
+    mov byte [pending_short], 1
+    ; The Incredible Machine 2 loops two short blocks in a 288-byte buffer.
+    jmp .buffer_size
 .large_block:
     cmp ebx, 512
-    jb .command_unsupported
-    cmp ebx, 32768
-    ja .command_unsupported
+    jb .argument_rejected
+.buffer_size:
+    ; The mixer uses 16-bit buffer offsets (Team F1: 61440 bytes).
+    cmp ebx, 65536
+    ja .argument_rejected
     mov cl, [pending_frame_shift]
+    mov eax, ebx
+    shr eax, cl
+    cmp eax, 65535
+    ja .argument_rejected
     mov eax, 1
     shl eax, cl
     dec eax
@@ -1525,6 +1657,8 @@ port_callback:
     cmp byte [game_source], 1
     je .buffer_address
 %endif
+    cmp byte [pending_short], 0
+    jne .buffer_address
     mov eax, ebx
     sub eax, edx
     jae .free_bytes
@@ -1535,7 +1669,7 @@ port_callback:
     shr eax, cl
     imul eax, OUTPUT_RATE
     movzx ecx, word [game_rate]
-    imul ecx, PERIOD_FRAMES*2
+    imul ecx, PERIOD_FRAMES
     cmp eax, ecx
     jb .command_unsupported
     jmp .buffer_address
@@ -1562,6 +1696,7 @@ port_callback:
     cmp edx, eax
     ja .command_unsupported
 .buffer_address:
+    mov byte [game_page_wrap], 0
     movzx eax, word [si+DMA_ADDRESS]
     cmp si, dma16
     jne .byte_address
@@ -1577,19 +1712,27 @@ port_callback:
 .address_window:
     add ecx, eax
     add eax, ebx
+    push eax
+    push ecx
+    push ebx
+    call dma_source_split
+    mov [pending_source_segment], cx
+    mov [pending_source_offset], bx
+    pop ebx
+    pop ecx
+    pop eax
     cmp si, dma16
     je .word_window
+    ; An 8-bit block past the end of the 64 KiB page wraps to the page start
+    ; (Big Red Adventure), as the DMA address counter does.
     cmp eax, 65536
-    ja .command_unsupported
-    jmp .address_limit
+    jbe .address_limit
+    mov byte [game_page_wrap], 1
+    jmp .linear_limit
 .word_window:
     cmp eax, 131072
     ja .command_unsupported
 .address_limit:
-    cmp byte [sb_single], 0
-    je .linear_limit
-    cmp si, dma16
-    jne .linear_limit
     mov eax, ecx
     and eax, 15
     add eax, ebx
@@ -1598,22 +1741,31 @@ port_callback:
 .linear_limit:
     mov eax, ecx
     add eax, ebx
-    cmp eax, 0a0000h
+    cmp byte [game_page_wrap], 0
+    je .end_ready
+    mov eax, ecx
+    or ax, 0ffffh
+    inc eax
+.end_ready:
+    ; The mixer reads the game's view of memory, so a buffer in a UMB
+    ; (Jurassic Park) needs no physical copy.
+    cmp eax, 100000h
 %ifdef OWN_HOST
     jbe .low_source
     cmp ecx, 100000h
     jb .command_unsupported
     cmp eax, 1000000h
-    ja .command_unsupported
-    cmp byte [sb_single], 1
-    jne .command_unsupported
-    cmp byte [pending_frame_shift], 0
-    jne .command_unsupported
+    ja .argument_rejected
     cmp byte [sb_input], 0
-    jne .command_unsupported
-    test byte [pending_format], 8
-    jnz .command_unsupported
-    mov [game_physical], ecx
+    jne .argument_rejected
+    ; Source offsets include game_offset.
+    mov eax, ecx
+    and al, 0f0h
+    cmp byte [game_page_wrap], 0
+    je .physical_ready
+    and eax, 0ffff0000h
+.physical_ready:
+    mov [game_physical], eax
     jmp .source_ready
 .low_source:
     mov dword [game_physical], 0
@@ -1624,6 +1776,7 @@ port_callback:
     mov [game_dma], si
     mov esi, ecx
     mov [game_block_bytes], edx
+    call adpcm_start
     mov cl, [pending_frame_shift]
     mov [game_frame_shift], cl
     mov al, [pending_format]
@@ -1639,7 +1792,9 @@ port_callback:
     mov byte [sb_sign16+1], 80h
 .sign16_ready:
     mov al, 1
-    cmp cl, 2
+    mov ah, [dsp_command]
+    and ah, 0f0h
+    cmp ah, 0b0h
     je .wide_irq
     cmp word [game_dma], dma16
     jne .irq_bit
@@ -1663,6 +1818,11 @@ port_callback:
     mov [game_origin], eax
 .origin_ready:
     shr ebx, cl
+    ; A buffer shorter than one frame still wraps at one frame.
+    test ebx, ebx
+    jnz .limit_frames
+    inc ebx
+.limit_frames:
     shl ebx, 16
     mov [game_limit], ebx
     cmp byte [sb_single], 0
@@ -1671,38 +1831,17 @@ port_callback:
     jz .ring_ready
     mov dword [game_limit], 0
 .ring_ready:
+    cmp byte [game_adpcm], 0
+    je .pcm_ring
+    ; ADPCM sample positions count from the block start.
+    mov dword [game_origin], 0
+    mov dword [game_limit], 0
+.pcm_ring:
     mov byte [sb_dac_enabled], 0
-    mov bx, si
-    and bx, 15
-    mov [game_offset], bx
-    shr esi, 4
-    mov [game_segment], si
-%ifdef SB_CARDS
-    ; ADPCM: the firmware's first fetch (sb_adpcm.asm), from the block's
-    ; start in the buffer.
-    test byte [game_format], 8
-    jz .pcm_started
-    pushad
-    push fs
-    mov fs, si
-    mov ebx, [game_limit]
-    shr ebx, 16
-    mov esi, [game_origin]
-    shr esi, 16
-    mov dx, [dsp_args]
-    xor cx, cx
-    cmp byte [sb_single], 0
-    jne .adpcm_single
-    mov dx, [legacy_block]
-    inc cx
-.adpcm_single:
-    mov al, [pending_adpcm_ref]
-    mov ah, [pending_adpcm]
-    call sb_adpcm_start
-    pop fs
-    popad
-.pcm_started:
-%endif
+    mov ax, [pending_source_offset]
+    mov [game_offset], ax
+    mov ax, [pending_source_segment]
+    mov [game_segment], ax
     mov byte [game_start_pending], 1
     mov dword [game_exit_frame], 0
     mov dword [game_position], 0
@@ -1797,6 +1936,14 @@ port_callback:
     je .done
     cmp byte [dsp_command], 91h
     je .done
+    jmp .argument_done
+.argument_rejected:
+    ; The DSP takes the byte; drop the remaining arguments.
+    cmp byte [arguments], 0
+    je .unsupported
+    mov byte [dsp_command], 0
+    dec byte [arguments]
+    jmp .unsupported
 .argument_done:
     jmp .done
 %ifdef WSS_INPUT
@@ -1836,6 +1983,12 @@ port_callback:
     je .dma_read
     cmp dx, 2
     je .dma_read
+    cmp dx, 0bh
+    je .dma_physical_read
+    cmp dx, 0dh
+    je .dma_physical_read
+    cmp dx, 0fh
+    je .dma_physical_read
     cmp dx, 8
     je .dma_status
     cmp dx, 83h
@@ -1847,16 +2000,29 @@ port_callback:
 .page_read:
     mov al, [si+DMA_PAGE]
     jmp .result
-.dma_status:
-    ; The controller's status, with the output ring's channel hidden and the
-    ; owned channel's terminal count from the emulation.
-    push dx
+.dma_physical_read:
     cmp si, dma16
-    jne .status_port
-    mov dx, 0d0h
-.status_port:
+    jne .dma_mode_physical
+    sub dx, 0ah
+    shl dx, 1
+    add dx, 0d4h
+.dma_mode_physical:
     call physical_read
-    pop dx
+    jmp .result
+.dma_status:
+    ; The controller's status, with the output ring's channel hidden and
+    ; the owned channel's terminal count and request from the emulation
+    ; (Earth 2140 waits for the request of a DSP transfer on a masked
+    ; channel; the author's 0.9.4-a2).
+    mov bx, [guest_dma8]
+    cmp si, dma16
+    jne .dma_status_read
+    mov dl, 0d0h
+    mov bx, [guest_dma16]
+    sub bl, 4
+.dma_status_read:
+    call physical_read
+    push bx
     call dma_ring_controller
     jnc .status_owned
     mov cl, [sb_dma8]
@@ -1870,22 +2036,33 @@ port_callback:
     not ah
     and al, ah
 .status_owned:
-    mov bx, [guest_dma8]
-    cmp si, dma8
-    je .status_channel
-    mov bx, [guest_dma16]
-    sub bl, 4
-.status_channel:
+    pop bx
     mov cl, bl
-    mov ah, 11h
-    shl ah, cl
-    not ah
-    and al, ah
+    mov bl, 11h
+    shl bl, cl
+    not bl
+    and al, bl
+    mov bl, 1
+    shl bl, cl
+    ; A status read clears the terminal count.
     cmp byte [si+3], 0
-    je .result
+    je .dma_request
     mov ah, 1
-    shl ah, cl
-    or al, ah
+    cmp si, dma16
+    jne .tc_bit
+    mov ah, 2
+.tc_bit:
+    test [dma_tc_reported], ah
+    jnz .dma_request
+    or [dma_tc_reported], ah
+    or al, bl
+.dma_request:
+    cmp byte [dma_pending_command], 0
+    je .result
+    cmp si, [dma_pending_state]
+    jne .result
+    shl bl, 4
+    or al, bl
     jmp .result
 .reset_read:
     mov al, 0ffh
@@ -1893,11 +2070,12 @@ port_callback:
 %ifdef SB_CARDS
 .index_read:
     ; 2x4h is write only (SBG:2221). The SB Pro reads back the index
-    ; (DOSBox-X, 86Box); the SB16 reads FFh (86Box; DOSBox-X reads the
-    ; index: the CT2290 decides) and the SB 2.0 has nothing there.
+    ; (DOSBox-X, 86Box); so does the SB16 here, as DOSBox-X has it (86Box
+    ; reads FFh; the CT2290 is not measured): Hexen reads the index (the
+    ; author's 0.9.4-a2). The SB 2.0 has nothing there.
     mov al, 0ffh
-    cmp byte [virtual_model], 1
-    jne .result
+    cmp byte [virtual_model], 3
+    je .result
     mov al, [virtual_mixer_index]
     jmp .result
 .ready:
@@ -1911,7 +2089,13 @@ port_callback:
     cmp byte [sb_highspeed], 0
     jne .busy
     cmp word [reply_pointer], 0
-    je .result
+    jne .busy
+    ; Some games wait in a loop until they see one busy status: one read in
+    ; eight shows busy (the author's 0.9.4-a3; the CT2290 shows busy in 46%
+    ; of idle reads, in runs, and 26 us after each byte: F13).
+    inc byte [dsp_status_reads]
+    test byte [dsp_status_reads], 7
+    jnz .result
 .busy:
     or al, 80h
     jmp .result
@@ -2005,6 +2189,15 @@ port_callback:
     mov cl, [game_frame_shift]
     shl eax, cl
 .count_bytes:
+    cmp byte [game_adpcm], 0
+    je .count_pcm
+    movzx ecx, byte [adpcm_per]
+    xor edx, edx
+    div ecx
+    test byte [game_adpcm], 80h
+    jz .count_pcm
+    inc eax
+.count_pcm:
     cmp si, dma16
     jne .count_units
     shr eax, 1
@@ -2105,6 +2298,23 @@ port_callback:
     mov [ss:bp+28], al
 .done:
 %ifdef SB_CARDS
+    ; A start that waited for its DMA channel's unmask (the author's 0.9.4)
+    ; goes ahead once the channel is unmasked.
+    cmp byte [dma_pending_command], 0
+    je .pending_done
+    cmp byte [arguments], 0
+    jne .pending_done
+    mov si, [dma_pending_state]
+    cmp byte [si+DMA_MASK], 0
+    jne .pending_done
+    mov ax, [dma_pending_count]
+    mov bl, [dma_pending_command]
+    mov [dsp_command], bl
+    mov byte [dma_pending_command], 0
+    jmp .validate_start
+.pending_done:
+%endif
+%ifdef SB_CARDS
     ; A queued single-cycle command starts once the transfer before it has
     ; ended, at the first trapped access after (the game's acknowledge,
     ; as a rule); the byte that access read is in the frame already.
@@ -2139,6 +2349,13 @@ port_callback:
     pop es
     pop ds
     popad
+%ifdef RESIDENT_AUDIO
+    dec byte [cs:callback_depth]
+    jnz .stack_ready
+    mov ss, [cs:callback_ss]
+    mov sp, [cs:callback_sp]
+.stack_ready:
+%endif
     clc
     retf
 
@@ -2594,6 +2811,7 @@ SB_ALL equ SB_16 | SB_PRO | SB_20
     dw port_callback.%4
 %endmacro
 sb_commands:
+    dsp 00h, 0, SB_ALL, ignore
     dsp 01h, 0, SB_16, csp_upload
     dsp 02h, 1, SB_16, ignore
     dsp 03h, 0, SB_16, csp_read
@@ -2611,11 +2829,9 @@ sb_commands:
     dsp 0fh, 1, SB_16, csp_read
     dsp 10h, 1, SB_ALL, direct_dac
     dsp 14h, 2, SB_ALL, single8
-    dsp 16h, 2, SB_ALL, adpcm
-    dsp 17h, 2, SB_ALL, adpcm
     dsp 1ch, 0, SB_ALL, legacy_start
     dsp 1eh, 0, SB_16 | SB_PRO, adpcm
-    dsp 1fh, 0, SB_ALL, adpcm
+    dsp 1fh, 0, SB_ALL, command_unsupported
     dsp 20h, 0, SB_ALL, direct_input
     dsp 24h, 2, SB_ALL, single8
     dsp 2ch, 0, SB_ALL, legacy_start
@@ -2630,19 +2846,17 @@ sb_commands:
     dsp 41h, 2, SB_16, rate
     dsp 42h, 2, SB_16, rate
     dsp 43h, 2, SB_16, rate
+    dsp 45h, 0, SB_16, continue8
+    dsp 47h, 0, SB_16, continue16
     dsp 48h, 2, SB_ALL, block_size
     dsp 4ch, 2, SB_16, ignore
     dsp 4dh, 1, SB_16, zero_reply
     dsp 4eh, 2, SB_16, timer_once
     dsp 4fh, 0, SB_16, timer_switch
-    dsp 74h, 2, SB_ALL, adpcm
-    dsp 75h, 2, SB_ALL, adpcm
-    dsp 76h, 2, SB_ALL, adpcm
-    dsp 77h, 2, SB_ALL, adpcm
     dsp 7ch, 0, SB_16 | SB_PRO, adpcm
-    dsp 7dh, 0, SB_ALL, adpcm
+    dsp 7dh, 0, SB_ALL, command_unsupported
     dsp 7eh, 0, SB_16 | SB_PRO, adpcm
-    dsp 7fh, 0, SB_ALL, adpcm
+    dsp 7fh, 0, SB_ALL, command_unsupported
 %ifdef VIRTUAL_IRQ
     dsp 80h, 2, SB_ALL, silence
 %endif
@@ -2766,30 +2980,80 @@ sb16_time_table:
 
 %endif
 
+; EDX: compressed block bytes. Converts the block length to samples.
+adpcm_start:
+    mov al, [pending_adpcm]
+    mov [game_adpcm], al
+    test al, al
+    jz .done
+    mov [adpcm_bytes], edx
+    push bx
+    mov bl, al
+    and bx, 3
+    imul bx, 7
+    mov eax, [adpcm_params+bx-7]
+    mov [adpcm_bits], eax
+    mov eax, [adpcm_params+bx-4]
+    mov [adpcm_up], eax
+    pop bx
+    mov di, [game_dma]
+    mov ax, [di+DMA_POSITION]
+    mov [adpcm_src], ax
+    mov word [adpcm_next], 0
+    mov byte [adpcm_left], 0
+    mov al, [game_adpcm]
+    shr al, 7
+    mov [adpcm_ref], al
+    movzx eax, al
+    sub edx, eax
+    movzx eax, byte [adpcm_per]
+    imul edx, eax
+    test edx, edx
+    jnz .samples
+    inc edx
+.samples:
+    mov [game_block_bytes], edx
+.done:
+    ret
+
+; An exit command stops a transfer that waits for unmask.
+pending_stop:
+    cmp si, [dma_pending_state]
+    jne .done
+    mov byte [dma_pending_command], 0
+.done:
+    ret
+
+; AL bits 0-1: channel. The output channel stays as it is.
 dma_unowned_write:
+    call dma_output_channel
+    cmp ah, 0ffh
+    je dma_shared_write
+    xor ah, al
+    test ah, 3
+    jnz dma_shared_write
+    ret
+
+; SI: controller. AH: the output channel on it, or 0FFh.
+dma_output_channel:
+    mov ah, 0ffh
 %ifdef RESIDENT_AUDIO
     cmp byte [sb_running], 0
-    je dma_shared_write
-    mov ah, al
-    and ah, 3
+    je .done
     cmp byte [sound_card], 0
     je .high_output
     cmp si, dma8
-    jne dma_shared_write
-    cmp ah, [sb_dma8]
-    je .done
-    jmp dma_shared_write
+    jne .done
+    mov ah, [sb_dma8]
+    ret
 .high_output:
     cmp si, dma16
-    jne dma_shared_write
-    add ah, 4
-    cmp ah, [sb_dma16]
-    jne dma_shared_write
+    jne .done
+    mov ah, [sb_dma16]
+    sub ah, 4
+%endif
 .done:
     ret
-%else
-    jmp dma_shared_write
-%endif
 
 %include "audio/direct_write.asm"
 
@@ -2852,6 +3116,9 @@ dma_port:
 .low_page:
     mov dx, 83h
     ret
+.status:
+    mov dx, 8
+    jmp .high
 .low_address:
     mov dx, 2
     ret
@@ -2874,13 +3141,42 @@ dma_port:
 trap_ports:
 %include "audio/ports.inc"
     dw 0
+; ECX=linear DMA start, EBX=buffer bytes, SI=channel. Returns CX=segment,
+; BX=offset of the mixer source. An 8-bit buffer past the end of its 64 KiB
+; page gets the page as segment: the 16-bit offset then wraps like the DMA
+; address counter.
+dma_source_split:
+    mov bx, cx
+    cmp si, dma16
+    je .linear
+    movzx eax, cx
+    add eax, ebx
+    cmp eax, 65536
+    jbe .linear
+    shr ecx, 16
+    shl cx, 12
+    ret
+.linear:
+    and bx, 15
+    shr ecx, 4
+    ret
+
 trapped_count dw 0
 callback_set db 0
 trap_remove_failed db 0
 old_callback dd 0
 port_calls dd 0
 last_clock dd 0
+game_page_wrap db 0
+pending_source_segment dw 0
+pending_source_offset dw 0
 game_start_pending db 0 ; 1: wait for mixing, 2: wait for output.
+dma_pending_command db 0
+dma_pending_count dw 0
+dma_pending_state dw 0
+silence_active db 0
+dma_tc_reported db 0
+silence_deadline dd 0
 game_dma dw dma8
 game_frame_shift db 0
 game_source db 0
@@ -2896,6 +3192,37 @@ reply_pointer dw 0
 copyright_text db 'COPYRIGHT (C) CREATIVE TECHNOLOGY LTD, 1992.',0
 copyright_length equ $-copyright_text
 %endif
+; ADPCM type (1: 4-bit, 2: 2.6-bit, 3: 2-bit). Bit 7: reference byte.
+pending_adpcm db 0
+game_adpcm db 0
+adpcm_bytes dd 0
+; Bits, samples per byte, magnitude mask, step-up magnitude, top level, map.
+adpcm_params:
+    db 4, 2, 7, 5, 3
+    dw adpcm_map4
+    db 3, 3, 3, 3, 4
+    dw adpcm_map3
+    db 2, 4, 1, 1, 5
+    dw adpcm_map2
+adpcm_bits db 0
+adpcm_per db 0
+adpcm_mask db 0
+adpcm_up db 0
+adpcm_top db 0
+adpcm_map dw 0
+adpcm_src dw 0
+adpcm_next dw 0
+adpcm_left db 0
+adpcm_ref db 0
+adpcm_byte db 0
+adpcm_level db 0
+adpcm_value db 128
+adpcm_prev db 128
+; Step sizes per level and magnitude.
+adpcm_map4 db 0,1,2,3,4,5,6,7, 1,3,5,7,9,11,13,15, 2,6,10,14,18,22,26,30, 4,12,20,28,36,44,52,60
+adpcm_map3 db 0,1,2,3, 1,3,5,7, 2,6,10,14, 4,12,20,28, 5,15,25,35
+adpcm_map2 db 0,1, 1,3, 2,6, 4,12, 8,24, 16,48
+pending_short db 0
 game_block_bytes dd 4096
 game_exit_frame dd 0
 game_mix_frame dd 0
@@ -2952,10 +3279,7 @@ sb_midi_uart db 0
 pending_input db 0
 ; The SB Pro's input mode: A8h stereo, A0h mono.
 sb_input_stereo db 0
-; The ADPCM command being started: its kind (audio/sb_adpcm.asm) and 1
-; when it starts with the reference byte.
-pending_adpcm db 0
-pending_adpcm_ref db 0
+dsp_status_reads db 0
 sb_id_value db 0aah
 sb_id_phase db 0
 ; Set in high-speed and UART modes, where a reset is the firmware's warm
@@ -2977,6 +3301,16 @@ sb_queue_args times 3 db 0
 sb_queue_handler dw 0
 ; An auto-init transfer's frames at the end of the block it is to end with.
 sb_exit_frames dd 0
+%ifdef RESIDENT_AUDIO
+callback_port dw 0
+callback_value db 0
+callback_ss dw 0
+callback_sp dw 0
+callback_depth db 0
+    align 2
+times 512 db 0
+callback_stack_top:
+%endif
 %ifdef WSS_INPUT
 %include "audio/wss_state.inc"
 %else

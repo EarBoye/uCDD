@@ -4,8 +4,12 @@
 HOST_PROTECTED
 dpmi_pic_reset:
     mov word [ebp+dpmi_pic_service], 0
+    mov byte [ebp+dpmi_real_eoi], 0
+    mov byte [ebp+dpmi_real_priority], 0ffh
+    mov word [ebp+dpmi_pic_special], 0
     mov word [ebp+dpmi_pic_read_mode], 0a0ah
     mov word [ebp+dpmi_pic_icw], 0
+    mov word [ebp+dpmi_pic_highest], 0
     in al, 21h
     mov [ebp+dpmi_pic_mask], al
     in al, 0a1h
@@ -16,6 +20,9 @@ dpmi_pic_queue:
     push eax
     push edx
     bts [ebp+dpmi_pending_irqs], ebx
+%ifdef RESIDENT_HOST
+    bts [ebp+dpmi_physical_pending], ebx
+%endif
     mov eax, ebx
     mov dx, 20h
     cmp al, 8
@@ -43,6 +50,8 @@ dpmi_pic_next:
     call dpmi_pic_read_isr
     movzx ebx, al
     or bl, [ebp+dpmi_pic_service]
+    or bl, [ebp+dpmi_real_eoi]
+    and bl, [ebp+dpmi_real_priority]
     movzx ecx, word [ebp+dpmi_pic_mask]
     not ecx
     and ecx, [ebp+dpmi_pending_irqs]
@@ -55,22 +64,49 @@ dpmi_pic_next:
     mov dx, 0a0h
     call dpmi_pic_read_isr
     or al, [ebp+dpmi_pic_service+1]
+    cmp byte [ebp+dpmi_pic_special+1], 0
+    je .slave_priority
+    mov ah, [ebp+dpmi_pic_mask+1]
+    not ah
+    and al, ah
+.slave_priority:
+    ; The highest priority follows the lowest level (C0h-C7h).
+    push ecx
+    movzx ecx, byte [ebp+dpmi_pic_highest+1]
+    ror al, cl
     movzx eax, al
-    bsf edi, esi
+    mov edx, esi
+    ror dl, cl
+    movzx edx, dl
+    bsf edi, edx
     bsf eax, eax
     jz .slave
     cmp edi, eax
-    jae .master
+    jae .slave_blocked
 .slave:
+    add edi, ecx
+    and edi, 7
+    pop ecx
     or cl, 4
+    jmp .master
+.slave_blocked:
+    pop ecx
 .master:
-    movzx eax, cl
+    mov edx, ecx
+    mov cl, [ebp+dpmi_pic_highest]
+    ror dl, cl
+    ror bl, cl
+    movzx eax, dl
     bsf eax, eax
     jz .none
-    bsf edx, ebx
-    jz .selected
+    movzx edx, bl
+    bsf edx, edx
+    jz .rotated
     cmp eax, edx
     jae .none
+.rotated:
+    add al, cl
+    and eax, 7
 .selected:
     bts [ebp+dpmi_pic_service], eax
     cmp eax, 2
@@ -79,6 +115,9 @@ dpmi_pic_next:
     bts [ebp+dpmi_pic_service], eax
 .request:
     btr [ebp+dpmi_pending_irqs], eax
+%ifdef RESIDENT_HOST
+    btr [ebp+dpmi_physical_pending], eax
+%endif
     mov [esp+28], eax
     popad
     clc
@@ -95,24 +134,30 @@ dpmi_pic_next:
 dpmi_pic_reflect:
     pushad
     movzx eax, byte [ebp+dpmi_reflect_vector]
-    sub al, [ebp+mon_master]
-    cmp al, 8
-    jb .clear
-    mov al, [ebp+dpmi_reflect_vector]
-    sub al, [ebp+mon_slave]
-    cmp al, 8
-    jae .done
-    add eax, 8
-    and byte [ebp+dpmi_pic_service], 0fbh
-.clear:
+    call dpmi_vector_irq
+    jnc .done
+    bt [ebp+dpmi_pic_service], eax
+    jnc .done
     btr [ebp+dpmi_pic_service], eax
+    mov ecx, eax
+    cmp eax, 8
+    jb .owner
+    and byte [ebp+dpmi_pic_service], 0fbh
+    mov ecx, 2
+.owner:
+%ifdef RESIDENT_HOST
+    mov al, 1
+    shl al, cl
+    or [ebp+dpmi_real_eoi], al
+%endif
 .done:
     popad
     ret
 
 ; EAX=real interrupt number of a 0300h call. A hardware vector whose IRQ the
-; host holds in service: end the host's service and mark the handler's EOI
-; stray, as the chain from a protected-mode handler does (dpmi_pic_reflect).
+; host holds in service: end the host's service and give the real-mode
+; handler the EOI, as the chain from a protected-mode handler does
+; (dpmi_pic_reflect).
 dpmi_pic_real_int:
     pushad
     mov edx, eax
@@ -128,12 +173,17 @@ dpmi_pic_real_int:
     movzx eax, al
     btr [ebp+dpmi_pic_service], eax
     jnc .done
+    mov ecx, eax
     cmp eax, 8
-    jb .mark
+    jb .owner
     and byte [ebp+dpmi_pic_service], 0fbh
-.mark:
+    mov ecx, 2
+.owner:
+%ifdef RESIDENT_HOST
     mov al, 1
-    call resident_stray_eoi_mark
+    shl al, cl
+    or [ebp+dpmi_real_eoi], al
+%endif
 .done:
     popad
     ret
@@ -157,12 +207,17 @@ dpmi_pic_real_chain:
     jne .next
 .chain:
     btr [ebp+dpmi_pic_service], ebx
-    ; The host sent the EOI when it queued the IRQ. The handler's is stray.
-    mov al, 1
-    call resident_stray_eoi_mark
+    mov ecx, ebx
     cmp ebx, 8
-    jb .restored
+    jb .owner
     and byte [ebp+dpmi_pic_service], 0fbh
+    mov ecx, 2
+.owner:
+%ifdef RESIDENT_HOST
+    mov al, 1
+    shl al, cl
+    or [ebp+dpmi_real_eoi], al
+%endif
     jmp .restored
 .next:
     inc ebx
@@ -175,13 +230,28 @@ dpmi_pic_real_chain:
 
 dpmi_pic_audio_allowed:
     push ecx
+    ; CL=the guest level and levels above it, CH=levels above it.
+    push edx
+    mov dl, [ebp+dpmi_pic_highest]
     mov cl, [ebp+dpmi_guest_irq]
-    mov ch, 1
+    mov dh, 1
+    shl dh, cl
+    sub cl, dl
+    and cl, 7
+    mov ch, 2
     shl ch, cl
-    mov cl, ch
     dec ch
-    or cl, ch
-    test [ebp+dpmi_pic_service], cl
+    mov cl, dl
+    rol ch, cl
+    mov cl, ch
+    xor ch, dh
+    pop edx
+    push eax
+    mov al, [ebp+dpmi_pic_service]
+    or al, [ebp+dpmi_real_eoi]
+    and al, [ebp+dpmi_real_priority]
+    test al, cl
+    pop eax
     jnz .blocked
     push eax
     movzx eax, word [ebp+dpmi_pic_mask]
@@ -192,9 +262,10 @@ dpmi_pic_audio_allowed:
     and eax, 0ffh
 .cascade:
     test eax, 0ff00h
-    jnz .pending
+    jz .master
+    or al, 4
+.master:
     test al, ch
-.pending:
     pop eax
     jnz .blocked
     pop ecx
@@ -217,7 +288,7 @@ dpmi_pic_io:
     jne .other
 .pic:
     cmp cl, 1
-    jne .bad
+    jne dpmi_pic_wide
     pushad
     xor ebx, ebx
     test dl, 80h
@@ -245,11 +316,18 @@ dpmi_pic_io:
     mov [ebp+dpmi_pic_icw+ebx], ah
     jmp .success
 .not_icw1:
-    ; OCW3 (bits 7 and 4 clear, bit 3 set): bit 1 with bit 0 selects what
-    ; the command port reads, 0Ah the request register, 0Bh the in-service
-    ; register; bit 2 polls (answered as a request read); bits 6:5 set or
-    ; clear special mask mode, which the physical controller keeps for
-    ; itself; with none of them it does nothing (8259A data sheet, OCW3).
+    cmp al, 48h
+    je .special_mode
+    cmp al, 68h
+    je .special_mode
+    cmp al, 0ah
+    je .mode
+    cmp al, 0bh
+    je .mode
+    ; The other OCW3 forms (bits 7 and 4 clear, bit 3 set): bit 2 polls
+    ; (answered as a request read); bit 1 with bit 0 selects what the
+    ; command port reads; with none of them it does nothing (8259A data
+    ; sheet, OCW3).
     mov ah, al
     and ah, 98h
     cmp ah, 08h
@@ -264,32 +342,44 @@ dpmi_pic_io:
     and al, 0bh
     jmp .mode
 .ocw2:
-    ; OCW2, by bits 6:5 (bit 7 adds a rotation, which the controller keeps
-    ; for itself, as it does the automatic rotation, 00, and set priority,
-    ; 10 with bit 7; 10 alone does nothing): 01 the non-specific EOI,
-    ; whatever the level bits, which count only in the specific form, 11.
-    ; The controller gets the plain form.
-    and al, 7fh
     mov ah, al
-    and ah, 60h
-    cmp ah, 20h
-    je .plain_eoi
-    cmp ah, 60h
-    jne .success
-    jmp .eoi_form
-.plain_eoi:
-    mov al, 20h
-.eoi_form:
+    and ah, 0f8h
+    cmp ah, 0c0h
+    je .rotate
+    ; Rotate on a specific EOI: the controller keeps the rotation for
+    ; itself and gets the specific EOI.
+    cmp ah, 0e0h
+    jne .not_rotating
+    and al, 7fh
     mov [esp+28], al
+    jmp .specific
+.not_rotating:
     cmp ah, 60h
     je .specific
-    cmp al, 20h
-    jne .failure
+    ; Bits 6:5 01: the non-specific EOI, whatever the level bits and with or
+    ; without the rotation of bit 7; the controller gets the plain form. 00
+    ; and 10 alone do nothing.
+    and ah, 60h
+    cmp ah, 20h
+    jne .success
+    mov al, 20h
+    mov [esp+28], al
     call dpmi_pic_read_isr
     or al, [ebp+dpmi_pic_service+ebx]
+    cmp byte [ebp+dpmi_pic_special+ebx], 0
+    je .eoi_priority
+    mov ah, [ebp+dpmi_pic_mask+ebx]
+    not ah
+    and al, ah
+.eoi_priority:
+    ; The highest priority follows the lowest level.
     movzx eax, al
+    mov cl, [ebp+dpmi_pic_highest+ebx]
+    ror al, cl
     bsf eax, eax
     jz .plain_forward
+    add al, cl
+    and eax, 7
     jmp .eoi
 .specific:
     and eax, 7
@@ -343,6 +433,11 @@ dpmi_pic_io:
     mov [ebp+dpmi_pic_read_mode+ebx], al
     mov [esp+28], al
     jmp .forward
+.rotate:
+    inc eax
+    and al, 7
+    mov [ebp+dpmi_pic_highest+ebx], al
+    jmp .forward
 .mask:
     cmp byte [ebp+dpmi_pic_icw+ebx], 0
     je .mask_write
@@ -350,6 +445,13 @@ dpmi_pic_io:
     jmp .success
 .mask_write:
     mov [ebp+dpmi_pic_mask+ebx], al
+    call dpmi_pic_priority
+    jmp .forward
+.special_mode:
+    mov ah, al
+    and ah, 20h
+    mov [ebp+dpmi_pic_special+ebx], ah
+    call dpmi_pic_priority
 .forward:
     popad
     jmp dpmi_pic_backend
@@ -387,6 +489,77 @@ dpmi_pic_io:
     ret
 .other:
     jmp [ebp+mon_callback]
+
+dpmi_pic_wide:
+    test ch, ch
+    jz dpmi_pic_io.bad
+    test dl, 1
+    jnz dpmi_pic_io.bad
+    cmp cl, 2
+    je .start
+    cmp cl, 4
+    jne dpmi_pic_io.bad
+.start:
+    cmp al, 20h
+    je .eoi
+    push ax
+    and al, 0f8h
+    cmp al, 60h
+    pop ax
+    jne dpmi_pic_io.bad
+.eoi:
+    push ecx
+    mov cl, 1
+    call dpmi_pic_io
+    pop ecx
+    ret
+
+dpmi_pic_priority:
+    push eax
+    mov al, 0ffh
+    cmp byte [ebp+dpmi_pic_special], 0
+    je .ready
+    mov al, [ebp+dpmi_pic_mask]
+    not al
+.ready:
+    mov [ebp+dpmi_real_priority], al
+    pop eax
+    ret
+
+dpmi_pic_restore:
+    pushad
+    xor ebx, ebx
+.controller:
+    cmp byte [ebp+dpmi_pic_highest+ebx], 0
+    je .special
+    mov dx, 20h
+    test ebx, ebx
+    jz .default_priority
+    mov dx, 0a0h
+.default_priority:
+    mov al, 0c7h
+    mov ecx, 0101h
+    call dpmi_pic_backend
+    mov byte [ebp+dpmi_pic_highest+ebx], 0
+.special:
+    cmp byte [ebp+dpmi_pic_special+ebx], 0
+    je .next
+    mov dx, 20h
+    test ebx, ebx
+    jz .port_ready
+    mov dx, 0a0h
+.port_ready:
+    mov al, 48h
+    mov ecx, 0101h
+    call dpmi_pic_backend
+    mov byte [ebp+dpmi_pic_special+ebx], 0
+.next:
+    inc ebx
+    cmp ebx, 2
+    jb .controller
+    call dpmi_pic_priority
+    popad
+    ret
 
 ; DX=command port, AL=backend ISR. Preserve controller read selection.
 dpmi_pic_read_isr:
@@ -427,6 +600,7 @@ dpmi_pic_backend:
     ret
 .resident_service:
     or al, [esi+1]
+    or al, [ebp+dpmi_real_eoi]
     clc
     ret
 .resident_select:
@@ -469,7 +643,6 @@ dpmi_pic_backend:
     pop ebx
     ret
 
-dpmi_pic_service dd 0
 dpmi_pic_mask dw 0ffffh
 HOST_REAL
 ; The real-mode IRQ stubs put the selected register back after a read.
@@ -477,3 +650,6 @@ dpmi_pic_read_mode dw 0a0ah
 ; ICW bytes still to come on each controller's mask port after an ICW1.
 dpmi_pic_icw dw 0
 HOST_PROTECTED
+dpmi_pic_special dw 0
+; Level with the highest priority: one above the lowest (C0h-C7h).
+dpmi_pic_highest dw 0

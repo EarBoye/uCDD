@@ -38,6 +38,9 @@ mdm_old_timer dd 0
 ; counts as an audio disc from then on, so a hotkey never changes whether the
 ; driver has stepped aside (audio/standby.asm).
 mdm_audio db 0
+%ifdef RESIDENT_AUDIO
+mdm_old_mouse dd 0
+%endif
 
 ; DS:DX contains the list name, count, image records and transient scratch.
 mdm_mount:
@@ -159,6 +162,9 @@ mdm_record:
     pop di
     mov ax, [candidate]
     mov [es:di+HANDLE], ax
+%ifdef DRIVER_STAGE
+    mov byte [cs:stage_valid], 0
+%endif
     mov eax, [candidate_sectors]
     mov [es:di+SECTORS], eax
     mov byte [es:di+CHANGED], 0ffh
@@ -290,6 +296,15 @@ mdm_hooks:
     mov dx, mdm_timer
     mov ax, 2508h
     int 21h
+%ifdef RESIDENT_AUDIO
+    mov ax, 3515h
+    int 21h
+    mov [mdm_old_mouse], bx
+    mov [mdm_old_mouse+2], es
+    mov dx, mdm_mouse
+    mov ax, 2515h
+    int 21h
+%endif
 .done:
     ret
 
@@ -319,6 +334,76 @@ mdm_key:
     call far [cs:mdm_old_key]
     mov byte [cs:mdm_key_active], 0
     iret
+
+%ifdef RESIDENT_AUDIO
+; The BIOS mouse service (INT 15h AH=C2h) sends a mouse command and takes the
+; next byte as the reply. A moving mouse can leave a data byte from the last
+; call in the controller when the caller has IF clear, and the setup fails.
+; Remove such bytes, and do not trap port 60h during the call.
+mdm_mouse:
+    cmp ah, 0c2h
+    jne .chain
+    cmp al, 6
+    ja .chain
+    push bp
+    mov bp, sp
+    test byte [bp+7], 2
+    pop bp
+    jnz .trap
+    push ax
+    push cx
+    mov cx, 400
+.drain:
+    in al, 64h
+    and al, 21h
+    cmp al, 21h
+    jne .idle
+    in al, 60h
+    mov cx, 400
+.idle:
+    loop .drain
+    pop cx
+    pop ax
+.trap:
+    cmp byte [cs:callback_set], 0
+    je .chain
+    push ax
+    smsw ax
+    test al, 1
+    pop ax
+    jz .chain
+    push ax
+    mov ax, 1a0ah
+    call .port
+    pop ax
+    pushf
+    call far [cs:mdm_old_mouse]
+    push ax
+    pushf
+    mov ax, 1a09h
+    call .port
+    popf
+    pop ax
+    ; Return CF in the caller's flags, so that its IF stays as it was.
+    push bp
+    mov bp, sp
+    jc .carry
+    and byte [bp+6], 0feh
+    pop bp
+    iret
+.carry:
+    or byte [bp+6], 1
+    pop bp
+    iret
+.chain:
+    jmp far [cs:mdm_old_mouse]
+.port:
+    pushad
+    mov dx, 60h
+    call far [cs:qpi]
+    popad
+    ret
+%endif
 
 ; Observe set-1 bytes without acknowledging the keyboard or PIC.
 mdm_scan:
@@ -466,15 +551,22 @@ mdm_scan:
     ret
 
 %ifdef RESIDENT_AUDIO
-; BL 3 raises and BL 4 lowers the CD audio volume.
+; BX 3 to 10 selects a volume key. An even key raises a level and an odd key
+; lowers it: CD, master, FM, then PCM.
 hotkey_volume:
     push ds
+    push si
+    push di
     push cs
     pop ds
-    mov al, [config_cd_volume]
+    sub bx, 3
+    mov si, bx
+    and si, 0eh
+    mov di, [volume_levels+si]
+    mov al, [di]
     mov ah, [config_volume_step]
-    cmp bl, 3
-    jne .down
+    test bl, 1
+    jnz .down
     add al, ah
     cmp al, 100
     jbe .store
@@ -485,10 +577,15 @@ hotkey_volume:
     jnc .store
     xor al, al
 .store:
-    mov [config_cd_volume], al
-    call cd_gain_update
+    mov [di], al
+    call [volume_updates+si]
+    pop di
+    pop si
     pop ds
     ret
+
+volume_levels dw config_cd_volume,config_master_volume,config_fm_volume,config_game_volume
+volume_updates dw cd_gain_update,master_update,fm_update,pcm_update
 %endif
 
 mdm_timer:
@@ -659,6 +756,9 @@ mdm_switch:
     cmp ax, 0ffffh
     je .done
     mov [si+HANDLE], ax
+%ifdef DRIVER_STAGE
+    mov byte [cs:stage_valid], 0
+%endif
     mov eax, [eject_sectors]
     mov [si+SECTORS], eax
     mov byte [si+CHANGED], 0ffh

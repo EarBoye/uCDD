@@ -69,17 +69,37 @@ own_host_install:
     popf
     jc .close_bad
     mov [own_host_entry+2], ax
+    ; The image can be larger than one DOS read (64 KB less a byte): 32 KB,
+    ; then the rest 32 KB further on.
     push ds
     mov bx, [own_host_file]
     mov ds, ax
     xor dx, dx
-    mov cx, OWN_HOST_SIZE
+%if OWN_HOST_SIZE > 8000h
+    mov cx, 8000h
     mov ah, 3fh
     int 21h
+    jc .read_done
+    cmp ax, 8000h
+    stc
+    jne .read_done
+    mov ax, ds
+    add ax, 800h
+    mov ds, ax
+    mov cx, OWN_HOST_SIZE-8000h
+%else
+    mov cx, OWN_HOST_SIZE
+%endif
+    mov ah, 3fh
+    int 21h
+    jc .read_done
+    cmp ax, cx
+    stc
+    jne .read_done
+    clc
+.read_done:
     pop ds
     jc .free_bad
-    cmp ax, OWN_HOST_SIZE
-    jne .free_bad
     mov bx, [own_host_file]
     mov ah, 3eh
     int 21h

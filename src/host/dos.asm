@@ -3,6 +3,7 @@
 
 HOST_PROTECTED
 dpmi_dos_frame:
+    cld
     lea edi, [ebp+dpmi_dos_regs]
     push edi
     xor eax, eax
@@ -262,8 +263,33 @@ dpmi_dos_tile_room:
 dpmi_dos_translate:
     cmp byte [ebp+dpmi_reflect_vector], 20h
     je dpmi_dos.terminate_zero
+    cmp byte [ebp+dpmi_reflect_vector], 33h
+    jne .mux
+    cmp word [ebx+36], 0ch
+    je dpmi_mouse_handler
+.mux:
+    cmp byte [ebp+dpmi_reflect_vector], 2fh
+    jne .dos
+    cmp word [ebx+36], 168ah
+    je dpmi_vendor_query
+    ; INT 2Fh AX=1686h asks whether the caller runs in protected mode under
+    ; DPMI: AX=0 (DPMI 0.9, section 7). Reflected, real mode would say no.
+    cmp word [ebx+36], 1686h
+    jne .dos
+    mov word [ebx+36], 0
+    jmp mon_dpmi.success
+.dos:
     cmp byte [ebp+dpmi_reflect_vector], 21h
-    jne .multiplex
+    jne .ordinary
+    cmp byte [ebx+37], 51h
+    je .psp
+    cmp byte [ebx+37], 62h
+    je .psp
+    cmp byte [ebp+dpmi_client16], 0
+    jne .dos_memory
+    cmp byte [ebx+37], 09h
+    je .print
+.dos_memory:
     mov byte [ebp+dpmi_dos_via21], 1
     movzx eax, word [ebx+28]
     or eax, 10000h
@@ -284,43 +310,74 @@ dpmi_dos_translate:
 .dos16:
     cmp byte [ebp+dpmi_client16], 0
     jne dpmi_dos16
+    ; 32-bit clients get the calls that pass a path or a short buffer.
+    movzx eax, byte [ebx+37]
+    cmp al, 5bh
+    je dpmi_dos16
+    cmp al, 6ch
+    je dpmi_dos16
+    sub al, 39h
+    cmp al, 15
+    jae .ordinary
+    ; 39h-3Dh, 3Fh-41h, 43h, 47h
+    push edx
+    mov edx, 45dfh
+    bt edx, eax
+    pop edx
+    jc dpmi_dos16
     jmp .ordinary
-.multiplex:
-    ; INT 2Fh AX=1686h asks whether the caller runs in protected mode under
-    ; DPMI: AX=0 (DPMI 0.9, section 7). Reflected, real mode would say no.
-    cmp byte [ebp+dpmi_reflect_vector], 2fh
-    jne .ordinary
-    cmp word [ebx+36], 1686h
-    jne .vendor
-    mov word [ebx+36], 0
-    jmp mon_dpmi.success
-.vendor:
-    ; INT 2Fh AX=168Ah (the vendor-specific API entry point) is a protected-
-    ; mode service the host answers (DPMI 1.0, Int 2FH Function 168AH).
-    ; Reflected, a real-mode handler could change AL and hand the client a
-    ; bogus entry point. AL stays 8Ah for every name but "MS-DOS" (RBIL
-    ; table 02719) asked by a 16-bit client. Borland's RTM takes that name
-    ; to mean that the host translates DOS calls that carry protected-mode
-    ; addresses, as Windows does; this host does so for 16-bit clients
-    ; (dos16.asm) and for no others. Without the name RTM stops with "no
-    ; DOS extensions in the DPMI server" (Chasm: The Rift). The lookup,
-    ; shared with INT 31h AX=0A00h, is dpmi_vendor_entry in switch.asm.
-    cmp word [ebx+36], 168ah
-    jne .ordinary
-    call dpmi_vendor_entry
-    jc mon_dpmi.success
-    mov byte [ebx+36], 0
-    jmp mon_dpmi.success
+.psp:
+    call dpmi_dos_frame
+    mov eax, [ebx+36]
+    mov [edi+28], eax
+    mov word [edi+32], 202h
+    mov eax, 21h
+    call mon_real_int
+    mov ax, [edi+16]
+    cmp ax, [ebp+dpmi_psp]
+    jne .other_psp
+    mov ax, 27h
+    jmp .psp_result
+.other_psp:
+    call dpmi_segment_descriptor
+    jc .descriptor_full
+.psp_result:
+    mov [ebx+24], ax
+    jmp mon_dpmi.done
+.print:
+    mov edx, [ebx+28]
+    mov ecx, 65535
+.print_next:
+    push ecx
+    mov ax, [ebx+4]
+    mov ecx, 1
+    xor edi, edi
+    call dpmi_read_buffer
+    pop ecx
+    jc dpmi_error
+    cmp byte [eax], '$'
+    je .printed
+    pushad
+    movzx edx, byte [eax]
+    call dpmi_dos_frame
+    mov [edi+20], edx
+    mov word [edi+28], 0200h
+    mov word [edi+32], 202h
+    mov eax, 21h
+    call mon_real_int
+    popad
+    inc edx
+    loop .print_next
+    mov ax, 8021h
+    jmp dpmi_error
+.printed:
+    mov byte [ebx+36], '$'
+    jmp mon_dpmi.done
 .ordinary:
     call dpmi_dos_frame
     mov al, [ebp+dpmi_reflect_vector]
-    sub al, [ebp+mon_master]
-    cmp al, 8
-    jb .hardware
-    mov al, [ebp+dpmi_reflect_vector]
-    sub al, [ebp+mon_slave]
-    cmp al, 8
-    jb .hardware
+    call dpmi_vector_irq
+    jc .hardware
     call dpmi_register_interrupt
     jnc .registers_only
     mov ax, [ebx+4]
@@ -384,6 +441,10 @@ dpmi_dos_translate:
 .es_ready:
     mov [edi+34], ax
 .reflect:
+    lea esi, [ebp+mon_real_int]
+    push dword [ebp+dpmi_irq_reflecting]
+.reflect_call:
+    push esi
     push edi
     lea esi, [ebx+8]
     mov ecx, 8
@@ -391,9 +452,9 @@ dpmi_dos_translate:
     pop edi
     mov word [edi+32], 202h
     movzx eax, byte [ebp+dpmi_reflect_vector]
-    call mon_real_int
-    xor al, al
-    call resident_stray_eoi_mark
+    call [esp]
+    add esp, 4
+    pop dword [ebp+dpmi_irq_reflecting]
     cmp byte [ebp+dpmi_reflect_vector], 10h
     jne .registers
     cmp word [ebx+36], 1130h
@@ -421,7 +482,6 @@ dpmi_dos_translate:
     jne .flag_kept
     cmp byte [ebp+dpmi_vif], 0
     jne .flag_kept
-    call dpmi_cli_learn_sti
     mov byte [ebp+dpmi_vif], 1
     mov byte [ebp+dpmi_step_active], 0
     and word [ebx+48], 0feffh
@@ -431,28 +491,48 @@ dpmi_dos_translate:
     mov ax, 8011h
     jmp dpmi_error
 .hardware:
+    ; The real-mode handler owns the IRQ's EOI from here (dpmi_pic_reflect,
+    ; the author's 0.9.4).
     call dpmi_pic_reflect
-    ; The EOI went out when the IRQ was queued. The handler's own is stray.
-    ; Only for a hardware vector: a BIOS or DOS service reflected with its
-    ; registers alone joins below, and a real-mode handler that runs during
-    ; it owes the controller its EOI. And only when the host held that IRQ
-    ; in service for the client (carry from dpmi_pic_reflect): the virtual
-    ; Sound Blaster interrupt reaches the client without that, and the EOI
-    ; of the real-mode handler it is passed down to is the one the virtual
-    ; PIC waits for. Marked stray, it was swallowed and the virtual
-    ; interrupt stayed in service for blocks on end (Mortal Kombat
-    ; Trilogy's DOS/4GW passes IRQ 5 down to the Miles driver's real-mode
-    ; handler: every sound played about 2.3 times as long, F14).
-    jnc .registers_only
-    mov al, 1
-    call resident_stray_eoi_mark
-; Joined from .hardware (an IRQ vector, its EOI marked) and from the services
-; reflected with their registers alone (dpmi_register_interrupt), which must
-; not be marked. On both: EDI=the real-mode register block, EBX=the client's
-; frame.
+; Joined from .hardware and from the services reflected with their registers
+; alone (dpmi_register_interrupt). On both: EDI=the real-mode register block,
+; EBX=the client's frame.
 .registers_only:
     mov dword [edi+34], 0
-    jmp .reflect
+    push dword [ebp+dpmi_irq_reflecting]
+    ; A real-mode hook can chain to the bridge stub. The stub must not pass this IRQ up again.
+    movzx eax, byte [ebp+dpmi_reflect_vector]
+    call dpmi_vector_irq
+    jnc .irq_ready
+    bts [ebp+dpmi_irq_reflecting], eax
+.irq_ready:
+    lea esi, [ebp+mon_real_irq]
+    jmp .reflect_call
+
+; INT 33h 0Ch from protected mode: the driver calls dpmi_mouse_stub (Igor).
+dpmi_mouse_handler:
+    mov byte [ebp+dpmi_mouse_pending], 0
+    mov ax, [ebx]
+    mov [ebp+dpmi_mouse_vector+4], ax
+    mov eax, [ebx+28]
+    DPMI_OFFSET16 eax, ax
+    mov [ebp+dpmi_mouse_vector], eax
+%ifdef RESIDENT_HOST
+    mov al, [ebp+dpmi_nested_depth]
+    mov [ebp+dpmi_mouse_depth], al
+%endif
+    call dpmi_dos_frame
+    mov word [edi+28], 0ch
+    mov ax, [ebx+32]
+    mov [edi+24], ax
+    mov word [edi+20], dpmi_mouse_stub
+    mov eax, [ebp+mon_real_base]
+    shr eax, 4
+    mov [edi+34], ax
+    mov word [edi+32], 202h
+    mov eax, 33h
+    call mon_real_int
+    jmp mon_dpmi.done
 
 ; Carry clear if the supported service has no segment-pointer inputs.
 dpmi_register_interrupt:
@@ -463,6 +543,9 @@ dpmi_register_interrupt:
     je .yes
     cmp al, 16h
     je .yes
+    ; Judge Dredd: JD.EXE asks LAW.EXE for sounds with INT 2Bh.
+    cmp al, 2bh
+    je .yes
     cmp al, 1ah
     jne .video
     cmp byte [ebx+37], 7
@@ -471,17 +554,38 @@ dpmi_register_interrupt:
 .video:
     cmp al, 10h
     jne .dos
-    cmp word [ebx+36], 1130h
+    mov ax, [ebx+36]
+    cmp ax, 1130h
     je .yes
-    mov al, [ebx+37]
-    cmp al, 0fh
+    cmp ah, 0fh
     jbe .yes
+    ; Palette, display configuration, and VBE mode and window calls pass no pointers.
+    cmp ax, 1001h
+    jbe .yes
+    cmp ax, 1003h
+    je .yes
+    cmp ah, 12h
+    je .yes
+    cmp ah, 1ah
+    je .yes
+    cmp ax, 4f02h
+    je .yes
+    cmp ax, 4f03h
+    je .yes
+    cmp ax, 4f05h
+    je .yes
     jmp .no
 .dos:
+    cmp al, 33h
+    je .mouse
+    cmp al, 2fh
+    je .mux
     cmp al, 21h
     jne .no
     mov al, [ebx+37]
     cmp al, 30h
+    je .yes
+    cmp al, 02h
     je .yes
     cmp al, 19h
     je .yes
@@ -499,6 +603,35 @@ dpmi_register_interrupt:
     je .yes
     cmp al, 4dh
     je .yes
+    jmp .no
+; MSCDEX checks that take no pointers (Napion 3D).
+.mux:
+    mov ax, [ebx+36]
+    cmp ax, 1500h
+    je .yes
+    cmp ax, 150bh
+    je .yes
+    cmp ax, 150ch
+    je .yes
+    jmp .no
+.mouse:
+    ; Mouse functions with no pointer input or output.
+    push edx
+    movzx eax, word [ebx+36]
+    mov edx, 7c29edffh
+    cmp eax, 20h
+    jb .mouse_bit
+    sub eax, 20h
+    mov edx, 453h
+.mouse_bit:
+    cmp eax, 20h
+    jae .mouse_no
+    bt edx, eax
+    pop edx
+    jc .yes
+    jmp .no
+.mouse_no:
+    pop edx
 .no:
     stc
     ret

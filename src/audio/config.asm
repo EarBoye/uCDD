@@ -3,9 +3,9 @@
 
 ; UCDD.CFG contents. At installation, UCDDSET checks the file and copies the
 ; complete record into the driver.
-CONFIG_VERSION equ 4
-CONFIG_SIZE equ 38
-HOTKEY_COUNT equ 5
+CONFIG_VERSION equ 5
+CONFIG_SIZE equ 45
+HOTKEY_COUNT equ 11
 config_data db 'uCDD',CONFIG_VERSION
 sound_card db 0
 sb_base dw 220h
@@ -21,8 +21,9 @@ virtual_dma16 db 5
 config_modifiers db 3
 ; 0 off, 1 keys 1 to 0, 2 keys F1 to F10.
 config_disc_keys db 1
-; Next, previous, eject, volume up, volume down. Bit 7 marks an E0 key.
-config_keys db 51h,49h,12h,4eh,4ah
+; Next, previous, eject, then up and down keys for the CD, master, FM, and
+; PCM levels. Bit 7 marks an E0 key.
+config_keys db 51h,49h,12h,13h,21h,4eh,4ah,14h,22h,15h,23h
 config_cd_volume db 100
 config_game_volume db 100
 config_master_volume db 100
@@ -44,19 +45,21 @@ virtual_dsp_version dw 0103h
 %else
 virtual_dsp_version dw 0d04h
 %endif
-; IRQ of a disk controller that the PCI scan does not find, or 0. The byte was
-; padding, so every older UCDD.CFG reads as 0.
+config_fm_volume db 100
+; Version 5 (24 Oct 2026, the merge of the author's 0.9.4-a6): the author's
+; version 4 record above, then the fork's three bytes. UCDDSET brings every
+; older file to this layout (setup/config_file.asm), the fork's bytes reading
+; 0 where a file has none.
+; IRQ of a disk controller that the PCI scan does not find, or 0.
 config_disk_irq db 0
 ; 1 keeps the physical output and the traps on at all times. 0 lets the
 ; driver step aside while no disc is bound for CD audio and the physical card
-; can stand in for the virtual one (audio/standby.asm). Version 3 added the
-; byte; a version 2 file reads as 0.
+; can stand in for the virtual one (audio/standby.asm).
 config_audio_always db 0
 ; 1 asks for the platform's fast DMA timing on the output channel while the
 ; driver is engaged (docs/platform-dma.md, audio/standby.asm), on a chipset
 ; the install's scan finds in its table (platform.asm); nothing happens on
-; another. Version 4 added the byte (then for the Intel PIIX family alone);
-; older files read as 0.
+; another.
 config_fast_dma db 0
 config_size_check equ 1 / (($-config_data) = CONFIG_SIZE)
 ; Not in UCDD.CFG. UCDD -install scans the PCI BIOS (disk_scan.asm) and sets

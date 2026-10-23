@@ -46,33 +46,12 @@ guest_configure:
     mov al, [virtual_wss_irq]
     mov [wss_guest_irq], ax
 %endif
-    movzx edi, byte [config_game_volume]
-    cmp di, 100
-    je .levels
-    mov ebx, 100
-    mov si, sb_pcm_gain
-    mov cx, 2
-    call guest_scale
-%ifdef WSS_INPUT
-    mov si, wss_attenuation
-    mov cx, 64
-    call guest_scale
-%endif
-.levels:
     call guest_ports_init
     call virtual_mixer_install
+    ; The game's PCM level through the PCM fader (the author's 0.9.4-a6), once
+    ; the virtual mixer holds its reset levels.
+    call sb_pcm_update
     call cd_gain_update
-    ret
-
-; SI dword table, CX count, EDI percent, EBX 100.
-guest_scale:
-    mov eax, [si]
-    imul eax, edi
-    xor edx, edx
-    div ebx
-    mov [si], eax
-    add si, 4
-    loop guest_scale
     ret
 
 guest_ports_init:

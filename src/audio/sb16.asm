@@ -113,8 +113,9 @@ sb_model:
     sub al, 4
     jb .done
 %ifdef RESIDENT_AUDIO
-    ; Model 5 plays at half rate.
-    mov [ess_half], al
+    ; Model 5 played at half rate. The author's mixer, merged on 24 Oct 2026,
+    ; does not make half-rate frames yet (ISSUES.md UPA6), so model 5 plays
+    ; at full rate as model 4 until it does: ess_half stays 0.
 %endif
     mov byte [sound_card], 2
     mov byte [ess_native], 1
@@ -147,7 +148,7 @@ sb_start:
     jc .fail
     mov si, mixer_registers
     mov di, mixer_saved
-    mov cx, 4
+    mov cx, 6
 .mixer:
     mov dx, [sb_base]
     add dx, 4
@@ -157,14 +158,23 @@ sb_start:
     call physical_read
     mov [di], al
     inc di
+    ; Registers 34h and 35h hold the FM level, which fm_init sets below.
     ; Registers 30h and 31h hold the master volume.
+    cmp cx, 4
+    ja .next
     mov al, 0f8h
     cmp cx, 2
     jbe .level
     mov al, [master_register]
 .level:
     call physical_write
+.next:
     loop .mixer
+%ifdef RESIDENT_AUDIO
+    mov al, [mixer_saved]
+    mov ah, [mixer_saved+1]
+    call fm_init
+%endif
     mov al, [sb_irq]
     add al, 8
     mov ah, 35h
@@ -271,7 +281,7 @@ sb_stop:
     pop ds
     mov si, mixer_registers
     mov di, mixer_saved
-    mov cx, 4
+    mov cx, 6
 .mixer:
     mov dx, [sb_base]
     add dx, 4
@@ -387,18 +397,19 @@ audio_irq:
 %ifdef RESIDENT_AUDIO
     call sb_patch
 %endif
-    inc dword [periods]
 %ifdef MOUNTED_AUDIO
+    ; The DMA position gives the period that plays, also after a late IRQ.
     call output_clock
     ; How late this interrupt is: on time, the clock has just entered the
-    ; period [periods] now names. Past half of it: late by over half a
-    ; period. In the next one: a whole period late, and the card has played
-    ; the slot this refill is for. RING_PERIODS periods or more alias
-    ; (output_clock reads the period within the ring) and show only as
-    ; periods lost against the timer ticks (UCDD -STATUS). EBX is free on
-    ; every path into here.
+    ; period after the last interrupt's. Past half of it: late by over half
+    ; a period. In the next one: a whole period late (mix_catch_up mixes the
+    ; periods the ring still holds ahead; the ones the card has passed are
+    ; lost). EBX is free on every path into here.
     mov ebx, eax
     shr ebx, OUTPUT_SHIFT
+    ; [periods] still names the period of the last interrupt: on time, the
+    ; clock is one period past it.
+    dec ebx
     cmp ebx, [periods]
     jb .late_done
     ja .late_whole
@@ -411,51 +422,16 @@ audio_irq:
 .late_done:
     shr eax, OUTPUT_SHIFT
     mov [periods], eax
-    ; The ring's slot after the one the card plays.
-    inc ax
-    and ax, RING_PERIODS-1
-    shl ax, OUTPUT_SHIFT+2
-    test byte [sound_card], 1
-    jz .half_ready
-    shr ax, 2
-    cmp byte [sound_card], 3
-    jne .half_ready
-    shr ax, 1
-.half_ready:
-    mov cl, [ess_half]
-    shr ax, cl
-    mov [next_half], ax
-%endif
-    mov es, [output_segment]
-    mov di, [next_half]
-%ifdef RESIDENT_AUDIO
-    mov [sb_patch_base], di
-%endif
-    mov ax, PERIOD_BYTES
-    test byte [sound_card], 1
-    jz .half_size
-    shr ax, 2
-    cmp byte [sound_card], 3
-    jne .half_size
-    shr ax, 1
-.half_size:
-    mov cl, [ess_half]
-    shr ax, cl
-    ; The other half of a two-period ring, for a build that does not read
-    ; the clock above; a mounted build sets next_half at every interrupt.
-    xor [next_half], ax
-%if RING_PERIODS > 2
-%ifndef MOUNTED_AUDIO
-%error A ring of more than two periods needs the slot from the clock (MOUNTED_AUDIO).
-%endif
+%else
+    inc dword [periods]
 %endif
 %ifdef ESS_FIFO_MODEL
     ; The virtual ESS's DAC ring must reach the output clock before the next
-    ; half reads it (ess_fifo.asm: the mixer reads ESS_DELAY_FRAMES behind).
+    ; period reads it (ess_fifo.asm: the mixer reads ESS_DELAY_FRAMES behind).
     call ess_fifo_service
 %endif
     DRV_TSC_BEGIN mix
-    call mix_half
+    call mix_catch_up
     DRV_TSC_END mix
 %ifdef VIRTUAL_IRQ
     call f2h_service
@@ -482,7 +458,6 @@ audio_irq:
 %ifdef RESIDENT_AUDIO
 .ticked:
 %endif
-    call sb_silence_tick
 %ifdef OWN_HOST
     mov byte [cd_refill_pending], 0
     cmp byte [cd_started], 1
@@ -505,6 +480,29 @@ audio_irq:
     jae .refill_ready
     mov byte [cd_refill_pending], 2
 .refill_ready:
+    ; The host refills in protected mode. A client that stays in real mode
+    ; starves it, and this IRQ then refills.
+    cmp byte [cd_refill_pending], 0
+    jne .host_wait
+    mov word [cd_host_missed], 0
+    jmp .host_checked
+.host_wait:
+    cmp word [cd_host_missed], CD_HOST_STARVED
+    jae .host_starved
+    inc word [cd_host_missed]
+    jmp .host_checked
+.host_starved:
+    mov byte [cd_irq_refill], 1
+.host_checked:
+    cmp word [cd_timer_missed], CD_TIMER_STARVED
+    jae .timer_starved
+    inc word [cd_timer_missed]
+    jmp .timer_checked
+.timer_starved:
+    cmp byte [cd_refill_pending], 2
+    jne .timer_checked
+    mov byte [cd_irq_refill], 1
+.timer_checked:
 %endif
 %endif
 ; Joined from the mixing paths through .refill_ready, from .pro (the SB Pro
@@ -517,11 +515,15 @@ audio_irq:
     ; the game's interrupt waits for a trap exit or the next output one.
     cmp byte [audio_irq_polled], 0
     jne .polled
-    mov al, 20h
+    ; A specific EOI (the author's 0.9.4): the output interrupt ends even
+    ; while the game has another masked.
+    mov al, [sb_irq]
+    or al, 60h
     mov dx, 20h
     call physical_write
 %ifdef OWN_HOST
     call sb_real_irq
+    call host_real_pending
 %endif
 .polled:
     mov byte [audio_irq_polled], 0
@@ -536,14 +538,24 @@ audio_irq:
     pop ax
     pop ds
 %ifdef OWN_HOST
+    cmp word [cs:host_pending_irqs], 0
+    jne host_pending_tail
+.tail:
     cmp byte [cs:sb_real_pending], 0
     jne .real_tail
+    cmp byte [cs:cd_irq_refill], 0
+    jne .refill_tail
 %endif
     iret
 %ifdef OWN_HOST
 .real_tail:
     mov byte [cs:sb_real_pending], 0
     jmp far [cs:sb_real_vector]
+.refill_tail:
+    ; This IRQ's return frame becomes the refill's frame.
+    mov byte [cs:cd_irq_refill], 0
+    mov byte [cs:cd_irq_entry], 1
+    jmp cd_timer_refill
 %endif
 .pro:
     cmp byte [pro_priming], 0
@@ -610,7 +622,30 @@ audio_irq:
     call audio_irq_reflected
     jz audio_irq_to_game
 %endif
+%ifdef VIRTUAL_IRQ
+    pushf
+    call far [cs:old_irq]
+    ; The guest does not see this IRQ in service. End it if its handler did not.
+    push ds
+    push ax
+    push dx
+    mov ax, cs
+    mov ds, ax
+    call physical_pic_isr
+    test al, [physical_irq_bit]
+    jz .ended
+    mov al, [sb_irq]
+    or al, 60h
+    ; DX=20h after physical_pic_isr.
+    call physical_write
+.ended:
+    pop dx
+    pop ax
+    pop ds
+    iret
+%else
     jmp far [cs:old_irq]
+%endif
 %ifdef OWN_HOST
 audio_irq_to_game:
     jmp far [cs:sb_game_vector]
@@ -812,6 +847,96 @@ audio_irq_unmask:
     call physical_write
     ret
 
+; Mix every period from mix_period to the last one the ring holds ahead of
+; the period that plays. Periods the DMA passed before their mix are lost.
+mix_catch_up:
+    mov eax, [periods]
+    cmp [mix_period], eax
+    ja .ahead
+    inc eax
+    mov [mix_period], eax
+.ahead:
+    mov eax, [periods]
+    add eax, RING_PERIODS
+    cmp [mix_period], eax
+    jae .done
+    call mix_next
+    jmp .ahead
+.done:
+    ret
+
+; Mix period mix_period into its ring slot.
+mix_next:
+    mov eax, [mix_period]
+    shl eax, OUTPUT_SHIFT
+    call ring_offset
+    mov di, ax
+    mov es, [output_segment]
+    call mix_half
+    inc dword [mix_period]
+    ret
+
+; Mix the whole ring before the output starts.
+mix_fill:
+    mov dword [periods], 0
+    mov dword [mix_period], 0
+.next:
+    call mix_next
+    cmp dword [mix_period], RING_PERIODS
+    jb .next
+    ret
+
+; EAX: an output frame. Returns AX: its byte offset in the output ring.
+ring_offset:
+    push edx
+    push ecx
+    xor edx, edx
+    mov ecx, RING_FRAMES
+    div ecx
+    mov eax, edx
+    shl ax, 2
+    test byte [sound_card], 1
+    jz .done
+    shr ax, 2
+    and ax, 0fffeh
+    cmp byte [sound_card], 3
+    jne .done
+    shr ax, 1
+.done:
+    ; The ESS at half rate plays two bytes an output frame.
+    mov cl, [ess_half]
+    shr ax, cl
+    pop ecx
+    pop edx
+    ret
+
+; AX: a block of two ring sizes. Returns AX: the ring segment, which does not
+; cross a 64 KiB page, and DX: the other ring size.
+ring_place:
+    mov cx, RING_PARAS
+    cmp byte [sound_card], 3
+    jne .pro
+    shr cx, 1
+.pro:
+    test byte [sound_card], 1
+    jz .size_ready
+    shr cx, 2
+.size_ready:
+    cmp byte [ess_half], 0
+    je .sized
+    shr cx, 1
+.sized:
+    mov dx, ax
+    add dx, cx
+    mov bx, ax
+    and bx, 0fffh
+    add bx, cx
+    cmp bx, 1000h
+    jbe .done
+    xchg ax, dx
+.done:
+    ret
+
 audio_irq_old_mask db 0
 ; Set while the MPU-401 may hold the SB16's line high (sb16_mpu_irq).
 sb16_line_held db 0
@@ -825,13 +950,13 @@ dma_address_port dw 0c4h
 dma_count_port dw 0c6h
 irq_ss dw 0
 irq_sp dw 0
-next_half dw 0
+mix_period dd 0
 periods dd 0
 saved_pic db 0
 sb_running db 0
 dsp_failed db 0
-mixer_registers db 30h,31h,32h,33h
-mixer_saved times 4 db 0
+mixer_registers db 34h,35h,30h,31h,32h,33h
+mixer_saved times 6 db 0
 
 %include "audio/wss_output.asm"
 %include "audio/pro_output.asm"

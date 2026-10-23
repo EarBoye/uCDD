@@ -5,9 +5,12 @@ LOAD_OK equ 0
 LOAD_MISSING equ 1
 LOAD_OLD equ 2
 LOAD_INVALID equ 3
+LOAD_UNREADABLE equ 4
+; The author's version 4 record (0.9.4-a1 to a6).
+AUTHOR_V4_SIZE equ 42
 
-; Return AL: LOAD_OK, LOAD_MISSING, LOAD_OLD, or LOAD_INVALID. Every result
-; except LOAD_OK leaves settings that the user must examine.
+; Return AL: LOAD_OK, LOAD_MISSING, LOAD_OLD, LOAD_INVALID, or LOAD_UNREADABLE.
+; Every result except LOAD_OK leaves settings that the user must examine.
 config_load:
     mov dx, config_path
     mov ax, 3d00h
@@ -17,7 +20,7 @@ config_load:
     je .missing
     cmp ax, 3
     je .missing
-    jmp .invalid
+    jmp .unreadable
 .read:
     mov bx, ax
     mov dx, file_buffer
@@ -30,36 +33,56 @@ config_load:
     int 21h
     pop ax
     popf
-    jc .invalid
+    jc .unreadable
     cmp dword [file_buffer], 'uCDD'
     jne .invalid
     cmp ax, 12
     je .old
     cmp ax, CONFIG_SIZE
     je .size_ok
-    ; Older files are shorter by the bytes added since: version 2 at 36
-    ; bytes, version 3 at 37. Their missing bytes read as 0.
+    ; Older files, told apart by their size: version 2 at 36 bytes (the
+    ; author's 0.9.3b), the fork's versions 3 and 4 at 37 and 38 (its bytes
+    ; in the old pad byte and after it), the author's version 4 at 42 (eleven
+    ; keys and the FM level). Each is brought to version 5: the author's
+    ; version 4 record, then the fork's three bytes.
+    cmp ax, AUTHOR_V4_SIZE
+    je .author_v4
     cmp ax, 36
     jb .invalid
-    ja .later_size
-    mov bl, 2
-    jmp .version_known
-.later_size:
-    cmp ax, 37
-    jne .invalid
-    mov bl, 3
-.version_known:
+    cmp ax, 38
+    ja .invalid
+    mov bl, al
+    sub bl, 34
     cmp [file_buffer+4], bl
     jne .invalid
+    ; The fork's bytes from offset 35 (a version 2 file's pad byte, 0), the
+    ; missing ones as 0, kept aside while the author's conversion moves the
+    ; record.
     push ds
     pop es
     mov di, file_buffer
     add di, ax
-    mov cx, CONFIG_SIZE
+    mov cx, 38
     sub cx, ax
     xor al, al
     cld
     rep stosb
+    mov ax, [file_buffer+35]
+    mov dl, [file_buffer+37]
+    push ax
+    push dx
+    call .five_keys
+    pop dx
+    pop ax
+    mov [file_buffer+AUTHOR_V4_SIZE], ax
+    mov [file_buffer+AUTHOR_V4_SIZE+2], dl
+    jmp .version_set
+.author_v4:
+    cmp byte [file_buffer+4], 4
+    jne .invalid
+    mov word [file_buffer+AUTHOR_V4_SIZE], 0
+    mov byte [file_buffer+AUTHOR_V4_SIZE+2], 0
+.version_set:
     mov byte [file_buffer+4], CONFIG_VERSION
     jmp .copy
 .size_ok:
@@ -96,6 +119,42 @@ config_load:
 .invalid:
     call config_defaults
     mov al, LOAD_INVALID
+    ret
+.unreadable:
+    call config_defaults
+    mov al, LOAD_UNREADABLE
+    ret
+.five_keys:
+    ; A record of five keys and no FM level (version 2, and the fork's 3 and
+    ; 4 before the merge) in the author's version 4 layout. The volume keys
+    ; take the current defaults. The other settings stay.
+    mov byte [file_buffer+35], 100
+    std
+    mov si, file_buffer+35
+    mov di, file_buffer+AUTHOR_V4_SIZE-1
+    mov cx, 12
+    rep movsb
+    cld
+    mov si, config_default+22
+    mov di, file_buffer+22
+    mov cx, 8
+    rep movsb
+    ; A kept key that equals a default volume key turns that volume key off.
+    mov di, file_buffer+22
+.conflict:
+    mov al, [di]
+    cmp al, [file_buffer+19]
+    je .off
+    cmp al, [file_buffer+20]
+    je .off
+    cmp al, [file_buffer+21]
+    jne .kept
+.off:
+    mov byte [di], 0
+.kept:
+    inc di
+    cmp di, file_buffer+30
+    jb .conflict
     ret
 
 config_defaults:
@@ -152,6 +211,8 @@ config_valid:
     cmp byte [config_audio_always], 1
     ja .bad
     cmp byte [config_fast_dma], 1
+    ja .bad
+    cmp byte [config_fm_volume], 100
     ja .bad
     movzx ax, byte [config_volume_step]
     mov si, step_values
@@ -277,10 +338,16 @@ config_derive:
 ; DSP version replies by model: 4.13, 3.02, unused, 2.01, ESS 3.01.
 dsp_versions dw 0d04h,0203h,0,0102h,0103h
 
+; Write UCDD.CF$, then replace UCDD.CFG with it. A failed write keeps the
+; old file. status_buffer holds the temporary path.
 config_save:
     call config_derive
     mov byte [config_ready], 0
-    mov dx, config_path
+    mov si, config_path
+    mov di, status_buffer
+    call copy_text
+    mov byte [di-1], '$'
+    mov dx, status_buffer
     xor cx, cx
     mov ah, 3ch
     int 21h
@@ -296,16 +363,25 @@ config_save:
     int 21h
     pop dx
     pop cx
-    jc .done
-    test cx, 1
-    jnz .fail
+    jc .remove
+    test cl, 1
+    jnz .remove
     cmp dx, CONFIG_SIZE
-    jne .fail
-    clc
-.done:
+    jne .remove
+    mov dx, config_path
+    mov ah, 41h
+    int 21h
+    mov dx, status_buffer
+    mov di, config_path
+    mov ah, 56h
+    int 21h
     ret
-.fail:
+.remove:
+    mov dx, status_buffer
+    mov ah, 41h
+    int 21h
     stc
+.done:
     ret
 
 ; Return SI port list for the physical card.

@@ -10,7 +10,6 @@ blaster_parse:
     xor ax, ax
     mov [hint_port], ax
     mov [hint_irq], ax
-    mov [hint_dma16], al
     mov es, [psp]
     mov ax, [es:2ch]
     test ax, ax
@@ -74,9 +73,6 @@ blaster_parse:
     je .byte
     mov di, hint_dma8
     cmp dl, 'D'
-    je .byte
-    mov di, hint_dma16
-    cmp dl, 'H'
     jne .token
 .byte:
     mov [di], al
@@ -136,9 +132,13 @@ blaster_build:
     je .copy
     cmp al, 'T'
     je .copy
+    ; BP field start. A field that does not fit with the T suffix is dropped.
     xor ah, ah
-    mov [field_start], di
+    mov bp, di
     mov al, ' '
+.store:
+    cmp di, blaster_value+BLASTER_MAX-4
+    jae .skip_field
     stosb
 .copy:
     mov al, [fs:si]
@@ -148,16 +148,11 @@ blaster_build:
     je .field
     inc si
     test ah, ah
-    jnz .copy
-    ; Keep room for " T", the type, and the terminator. A field that does
-    ; not fit is dropped whole, with its space.
-    cmp di, blaster_value+BLASTER_MAX-4
-    jb .store
-    mov di, [field_start]
-    mov ah, 1
+    jz .store
     jmp .copy
-.store:
-    stosb
+.skip_field:
+    mov di, bp
+    mov ah, 1
     jmp .copy
 .type:
     mov ax, ' T'
@@ -301,13 +296,11 @@ blaster_update:
 hint_port dw 0
 hint_irq db 0
 hint_dma8 db 0
-hint_dma16 db 0
 env_segment dw 0
 env_size dw 0
 env_entry dw 0
 env_end dw 0
 env_old dw 0
 blaster_length dw 0
-field_start dw 0
 blaster_name db 'BLASTER='
 blaster_value times BLASTER_MAX db 0

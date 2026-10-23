@@ -2,6 +2,84 @@
 ; SPDX-License-Identifier: GPL-3.0-only
 
 HOST_PROTECTED
+dpmi_vendor_query:
+    mov ax, [ebx+4]
+    mov edx, [ebx+12]
+    cmp byte [ebp+dpmi_client16], 0
+    je .offset
+    movzx edx, dx
+.offset:
+    mov ecx, 7
+    xor edi, edi
+    call dpmi_read_buffer
+    jc .unknown
+    cmp dword [eax], 'MS-D'
+    jne .unknown
+    cmp word [eax+4], 'OS'
+    jne .unknown
+    cmp byte [eax+6], 0
+    jne .unknown
+    call dpmi_stub_selector
+    mov [ebx], ax
+    mov dword [ebx+8], dpmi_vendor_pm
+    cmp byte [ebp+dpmi_client16], 0
+    je .entry_ready
+    mov dword [ebx+8], dpmi_vendor_pm16
+.entry_ready:
+    mov byte [ebx+36], 0
+.unknown:
+    jmp mon_dpmi.done
+
+dpmi_vendor_pm:
+    cmp ax, 0100h
+    jne .bad
+    mov ax, 0ff00h
+    int 31h
+.returned:
+    retf
+.bad:
+    stc
+    retf
+
+bits 16
+dpmi_vendor_pm16:
+    cmp ax, 0100h
+    jne .bad
+    mov ax, 0ff00h
+    int 31h
+.returned:
+    retf
+.bad:
+    stc
+    retf
+bits 32
+
+dpmi_vendor_ldt:
+    cmp word [ebx+44], 3bh
+    jne .client16
+    cmp dword [ebx+40], dpmi_vendor_pm.returned
+    je .allocate
+    jmp mon_dpmi.unsupported
+.client16:
+    cmp word [ebx+44], DPMI_STUB16
+    jne mon_dpmi.unsupported
+    cmp dword [ebx+40], dpmi_vendor_pm16.returned
+    jne mon_dpmi.unsupported
+.allocate:
+    mov ecx, 1
+    call dpmi_descriptor_allocate
+    jc mon_dpmi.unsupported
+    mov [ebx+36], ax
+    lea eax, [ebp+dpmi_ldt]
+    mov word [esi], DPMI_LDT_COUNT*8-1
+    mov [esi+2], ax
+    shr eax, 16
+    mov [esi+4], al
+    mov byte [esi+5], 0f0h
+    mov byte [esi+6], 0
+    mov [esi+7], ah
+    jmp mon_dpmi.success
+
 dpmi_state_addresses:
     mov word [ebx+36], 0
     mov eax, [ebp+mon_real_base]
@@ -132,6 +210,7 @@ dpmi_raw:
     mov [ebp+dpmi_raw_segs], fs
     mov [ebp+dpmi_raw_segs+2], gs
     call dpmi_locked_capture
+    call dpmi_quiet_entry
     mov eax, [esp+16]
     mov [ebp+dpmi_raw_bp], eax
     mov ax, [esp+8]
@@ -161,6 +240,12 @@ dpmi_raw:
     mov [edi+24], eax
     mov dword [edi+28], 0
     mov dword [edi+32], 0
+%ifdef RESIDENT_HOST
+    shr byte [ebp+dpmi_raw_flip], 1
+    jnc .size_ready
+    call dpmi_nested_toggle
+.size_ready:
+%endif
     jmp mon_leave
 .bad_gate:
     sub dword [esp+40], 2
@@ -178,7 +263,6 @@ dpmi_raw_pm:
     mov ss, ax
     mov ebp, edi
     mov esp, [ebp+mon_tss+4]
-    call dpmi_debug_host_save
     mov eax, [ebp+dpmi_raw_switch]
     mov [ebp+mon_switch+16], eax
     lea edx, [ebp+mon_resume]
@@ -188,6 +272,15 @@ dpmi_raw_pm:
     mov esp, [ebp+mon_resume_sp]
     mov [ebp+mon_tss+4], esp
 .stack_ready:
+    ; Save after the stack is final: a call at the TSS stack top overwrites the frame.
+    call dpmi_debug_host_save
+%ifdef RESIDENT_HOST
+    ; The parent's real-mode code can switch to its own code while its child
+    ; is current (DOS/4GW INT 2Ah hook).
+    mov ax, [ebp+dpmi_raw_regs+4]
+    call dpmi_nested_enter
+    setc [ebp+dpmi_raw_flip]
+%endif
     cmp byte [ebp+dpmi_client16], 0
     je .offsets_ready
     movzx eax, word [ebp+dpmi_raw_regs]
@@ -235,7 +328,6 @@ dpmi_raw_pm:
     push dword [ebp+dpmi_raw_regs+16]
     movzx eax, word [ebp+dpmi_raw_flags]
     mov word [ebp+dpmi_vif], 1
-    call dpmi_tf_disarm
     test eax, 200h
     jnz .flags_ready
     call dpmi_clear_vif

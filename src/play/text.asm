@@ -9,7 +9,7 @@ usage_message db 'Use UCDDPLAY [<drive>] to play CD-Audio from a CD drive.',13,1
     db 'Use UCDDPLAY /? to show this information.',13,10,'$'
 no_drives_message db 'No CD drive is available.',13,10,'$'
 drive_error_message db 'The selected drive is not a CD drive.',13,10,'$'
-vga_message db 'UCDDPLAY needs a VGA display.',13,10,'$'
+vga_message db 'A VGA display is necessary for UCDDPLAY.',13,10,'$'
 memory_message db 'There is not sufficient memory.',13,10,'$'
 
 message_mounted db 'THE IMAGE IS MOUNTED.',0
@@ -26,14 +26,13 @@ message_no_disc db 'NO DISC. PUSH O TO SELECT A DISC.',0
 message_physical_output db 'SET THE UCDD VIRTUAL CARD TO SB16.|CHECK BLASTER AND THE AUDIO SETUP.',0
 message_physical_memory db 'THERE IS NOT SUFFICIENT MEMORY|FOR THE AUDIO BUFFER.',0
 message_physical_read db 'THE DRIVE CANNOT READ CD AUDIO.|CHECK THE DISC AND CD DRIVER.',0
-message_physical_slow db 'THE DRIVE OR CPU IS TOO SLOW.|PLAYBACK HAS STOPPED.',0
-message_physical_stalled db 'THE AUDIO OUTPUT HAS STOPPED.|CHECK BLASTER AND THE AUDIO SETUP.',0
+message_physical_slow db 'THE DRIVE OR CPU IS TOO SLOW.|PLAYBACK STOPPED.',0
+message_physical_stalled db 'THE AUDIO OUTPUT STOPPED.|CHECK BLASTER AND THE AUDIO SETUP.',0
 message_mount_drive db 'INSTALL UCDD TO MOUNT AN IMAGE.',0
 message_eject_error db 'THE DRIVE CANNOT EJECT THE DISC.',0
-message_no_hard_disk db 'NO LOCAL HARD DISK IS AVAILABLE.',0
 message_slow db 'THE CPU IS TOO SLOW FOR|THE EQUALIZER. IT STAYS OFF.',0
 message_no_audio db 'INSTALL UCDD WITH AUDIO SUPPORT.|CHECK THE DRIVER INSTALLATION.',0
-message_no_filter db 'THE EQUALIZER AND THE ANALYZER|NEED A NEWER UCDD.EXE.',0
+message_no_filter db 'A NEWER UCDD.EXE IS NECESSARY|FOR THE EQUALIZER AND ANALYZER.',0
 
 scroll_text db 'uCDD PLAY ... A CD PLAYER FOR IMAGES AND CD DRIVES ... '
     db 'PUSH O TO SELECT A DISC ... PUSH SPACE TO PLAY OR PAUSE ... '
@@ -181,7 +180,7 @@ click_regions:
     dw KNOB_X-12, KNOB_Y-11, KNOB_X+12, KNOB_Y+11, click_volume
     dw 10, 136, 29, 146, key_equalizer
     dw 30, 136, 58, 146, key_preset
-    dw CALENDAR_X-2, CALENDAR_Y-1, CALENDAR_X+139, CALENDAR_Y+10, click_calendar
+    dw CALENDAR_X-2, CALENDAR_Y-1, CALENDAR_X+137, CALENDAR_Y+10, click_calendar
     dw PROGRESS_X, PROGRESS_Y-2, PROGRESS_X+PROGRESS_CELLS*4-1, PROGRESS_Y+3, click_progress
     dw 118, 55, 157, 76, key_drive
     dw SCROLL_X0, SCROLL_Y0, SCROLL_X1, SCROLL_Y1, key_visual
@@ -195,8 +194,8 @@ request_buttons:
     dw REQ_X0+174, 60, browser_close, text_cancel
     dw 0
 
-visual_table dw draw_warp, draw_scope, draw_waterfall, draw_fire, draw_bubbles, draw_plasma, draw_tunnel
-visual_names dw name_warp, name_spectra, name_firebars, name_lavaflow, name_bubbles, name_plasma, name_tunnel, name_random
+visual_table dw draw_warp, draw_scope, draw_waterfall, draw_fire, draw_bubbles, draw_plasma, draw_tunnel, draw_lissajous, draw_landscape, draw_cubes, draw_balls, draw_dancers, draw_fireworks
+visual_names dw name_warp, name_spectra, name_firebars, name_lavaflow, name_bubbles, name_plasma, name_tunnel, name_lissajous, name_landscape, name_cubes, name_balls, name_dancers, name_fireworks, name_random
 name_warp db 'WARP SPEED',0
 name_spectra db 'SPECTRA',0
 name_firebars db 'FIREBARS',0
@@ -204,7 +203,48 @@ name_lavaflow db 'LAVAFLOW',0
 name_bubbles db 'BUBBLES',0
 name_plasma db 'PLASMA',0
 name_tunnel db 'TUNNEL',0
+name_lissajous db 'LISSAJOUS',0
+name_landscape db 'LANDSCAPE',0
+name_cubes db 'CUBES',0
+name_balls db 'VECTOR BALLS',0
+name_dancers db 'CHORUS LINE',0
+name_fireworks db 'FIREWORKS',0
+fw_colors db C_GOLD_HI, C_GOLD, C_GOLD_LO, C_WHITE, C_KNOB+1, C_KNOB+2, C_RED, C_BURG0, C_BURG1
 name_random db 'RANDOM',0
+ball_colors db C_GOLD_LO, C_GOLD, C_GOLD_HI, C_WHITE, 0, 0, 0, 0
+    db C_KNOB+3, C_KNOB+2, C_KNOB+1, C_KNOB, 0, 0, 0, 0
+ball_shape_table dw 0, 49, 130
+; Shade levels from 1 (dark) to 4 (highlight) for radius 3, 4, and 5.
+ball_shapes:
+    db 0, 0, 3, 3, 2, 0, 0
+    db 0, 3, 4, 3, 2, 2, 0
+    db 3, 4, 4, 3, 2, 2, 1
+    db 3, 3, 3, 3, 2, 1, 1
+    db 2, 2, 2, 2, 2, 1, 1
+    db 0, 2, 2, 1, 1, 1, 0
+    db 0, 0, 1, 1, 1, 0, 0
+    db 0, 0, 0, 3, 3, 2, 0, 0, 0
+    db 0, 3, 3, 3, 3, 2, 2, 1, 0
+    db 0, 3, 4, 4, 3, 3, 2, 1, 0
+    db 3, 3, 4, 4, 3, 2, 2, 1, 1
+    db 3, 3, 3, 3, 3, 2, 2, 1, 1
+    db 2, 2, 3, 2, 2, 2, 1, 1, 1
+    db 0, 2, 2, 2, 2, 1, 1, 1, 0
+    db 0, 1, 1, 1, 1, 1, 1, 1, 0
+    db 0, 0, 0, 1, 1, 1, 0, 0, 0
+    db 0, 0, 0, 0, 3, 3, 2, 0, 0, 0, 0
+    db 0, 0, 3, 3, 3, 3, 2, 2, 2, 0, 0
+    db 0, 3, 4, 4, 4, 3, 3, 2, 2, 1, 0
+    db 0, 3, 4, 4, 4, 3, 3, 2, 2, 1, 0
+    db 3, 3, 4, 4, 3, 3, 3, 2, 2, 1, 1
+    db 3, 3, 3, 3, 3, 3, 2, 2, 2, 1, 1
+    db 2, 2, 3, 3, 3, 2, 2, 2, 1, 1, 1
+    db 0, 2, 2, 2, 2, 2, 2, 1, 1, 1, 0
+    db 0, 2, 2, 2, 2, 2, 1, 1, 1, 1, 0
+    db 0, 0, 1, 1, 1, 1, 1, 1, 1, 0, 0
+    db 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0
+cube_edges db 0,1, 1,3, 3,2, 2,0, 4,5, 5,7, 7,6, 6,4, 0,4, 1,5, 2,6, 3,7
+liss_colors db C_REFLECT+3, C_LCD_PRINT, C_LCD_MID, C_SPECTRUM+7
 bayer db 0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5
 bubble_table:
     BUBBLE_TABLE

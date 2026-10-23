@@ -14,8 +14,7 @@
 %endmacro
     trap_range 2,2
     trap_range 8,1
-    trap_range 0ah,3
-    trap_range 0dh,3
+    trap_range 0ah,6
 %ifdef MDM_SUPPORT
     trap_range 60h,1
 %endif

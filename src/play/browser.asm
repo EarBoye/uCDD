@@ -376,14 +376,9 @@ browser_enter:
 .done:
     ret
 .cd:
-    call stop
-    call hook_remove
-    mov al, [entry_buffer+ENTRY_MB]
-    call select_unit
-    call hook_install
-    call read_disc
-    call read_volume
     mov byte [browser_active], 0
+    mov al, [entry_buffer+ENTRY_MB]
+    jmp switch_unit
     ret
 
 browser_up:
@@ -560,6 +555,10 @@ browser_click:
     jmp browser_select
 .bar:
     cmp cx, SCROLL_BAR_X+5
+    ja .done
+    cmp dx, LIST_Y0
+    jb .done
+    cmp dx, LIST_Y0+LIST_ROWS*9+1
     ja .done
     mov ax, [entry_selected]
     cmp dx, LIST_Y0+LIST_ROWS*9/2

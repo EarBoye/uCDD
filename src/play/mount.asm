@@ -10,12 +10,8 @@ mount_path:
     cmp dword [audio_control_entry], 0
     je .no_drive
     push si
-    call stop
-    call hook_remove
     mov al, [default_unit]
-    call select_unit
-    call hook_install
-    call read_volume
+    call switch_unit
     pop si
 .image:
     push si

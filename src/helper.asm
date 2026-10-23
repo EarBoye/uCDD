@@ -34,10 +34,10 @@ command_entry:
     jne usage
 %ifdef RESIDENT_AUDIO
 %ifdef EMS_QUEUE
-    cmp byte [memory_mode], 0
+    cmp byte [fs:memory_mode], 0
     jne usage
 %endif
-    cmp byte [keep_vcpi], 0
+    cmp byte [fs:keep_vcpi], 0
     jne usage
 %endif
     call token
@@ -99,9 +99,9 @@ command_entry:
     jmp .parse
 %ifdef RESIDENT_AUDIO
 .vcpi:
-    cmp byte [keep_vcpi], 0
+    cmp byte [fs:keep_vcpi], 0
     jne usage
-    mov byte [keep_vcpi], 1
+    mov byte [fs:keep_vcpi], 1
     jmp .parse
 .status:
     cmp byte [operation], 0
@@ -115,9 +115,9 @@ command_entry:
     jmp .parse
 %ifdef EMS_QUEUE
 .ems:
-    cmp byte [memory_mode], 0
+    cmp byte [fs:memory_mode], 0
     jne usage
-    mov byte [memory_mode], 1
+    mov byte [fs:memory_mode], 1
     jmp .parse
 %endif
 %endif
@@ -177,16 +177,21 @@ command_entry:
 %endif
     mov al, [requested_units]
     test al, al
-    jz install
-    mov [unit_count], al
-    jmp install
+    jz .install_main
+    mov [fs:unit_count], al
+.install_main:
+    push fs
+    pop ds
+    push fs
+    push word install
+    retf
 .image_command:
 %ifdef RESIDENT_AUDIO
 %ifdef EMS_QUEUE
-    cmp byte [memory_mode], 0
+    cmp byte [fs:memory_mode], 0
     jne usage
 %endif
-    cmp byte [keep_vcpi], 0
+    cmp byte [fs:keep_vcpi], 0
     jne usage
     cmp byte [operation], 4
     je .status_command
@@ -212,22 +217,17 @@ command_entry:
 .image_name:
 %endif
     mov si, [image_path]
-    mov di, named_path
+    mov di, full_path
     mov ax, 6000h
     int 21h
     jc bad_image
-    ; A CUE sheet is mounted under the name of its BIN file. Resolve the name
-    ; the way the mount does, so that the two compare.
-    mov si, named_path
-    mov di, full_path
-    mov cx, 128
-    rep movsb
+    ; The driver keeps the BIN name of a CUE image.
     call prepare_image
     jc bad_image
     mov si, full_path
     mov di, named_path
-    mov cx, 128
-    rep movsb
+    mov cx, 128/2
+    rep movsw
 .enumerate:
     xor bx, bx
     mov ax, 1500h
@@ -335,63 +335,14 @@ command_entry:
     mov ax, 6000h
     int 21h
     jc bad_image
-    mov al, [full_path]
-    and al, 0dfh
-    sub al, 'A'
-    cmp al, 2
-    jb bad_source
-    cmp al, 25
-    ja bad_source
-    cmp word [full_path+1], 5c3ah
-    jne bad_source
-    mov [source_drive], al
-    xor si, si
-.source_check:
-    cmp si, [drive_count]
-    jae .local_check
-    mov al, [drive_list+si]
-    cmp al, [source_drive]
-    je bad_source
-    inc si
-    jmp .source_check
-.local_check:
-    mov bl, [source_drive]
-    inc bl
-    mov ax, 4409h
-    int 21h
+    call mdm_local_path
     jc bad_source
-    test dx, 1000h
-    jnz bad_source
     call is_mdm
     je .mdm
     call prepare_image
     jc bad_image
-    mov al, [full_path]
-    and al, 0dfh
-    sub al, 'A'
-    cmp al, 2
-    jb bad_source
-    cmp al, 25
-    ja bad_source
-    cmp word [full_path+1], 5c3ah
-    jne bad_source
-    mov [source_drive], al
-    xor si, si
-.bin_source:
-    cmp si, [drive_count]
-    jae .bin_local
-    cmp al, [drive_list+si]
-    je bad_source
-    inc si
-    jmp .bin_source
-.bin_local:
-    mov bl, al
-    inc bl
-    mov ax, 4409h
-    int 21h
+    call mdm_local_path
     jc bad_source
-    test dx, 1000h
-    jnz bad_source
     mov si, [selected_index]
     call device_at_index
     jc invalid_drive
@@ -584,7 +535,7 @@ token:
 .quoted:
     mov al, [si]
     test al, al
-    jz usage
+    jz .bad_quote
     inc si
     cmp al, '"'
     jne .quoted
@@ -594,8 +545,9 @@ token:
     cmp byte [si], ' '
     je .ready
     cmp byte [si], 9
-    jne usage
-    jmp .ready
+    je .ready
+.bad_quote:
+    jmp [quote_error]
 .plain:
     mov bx, si
 .scan:
@@ -696,9 +648,11 @@ requested_units db 0
 found_ucdd db 0
 wanted_drive db 0ffh
 selected_drive db 0ffh
-source_drive db 0
 selected_index dw 0ffffh
 image_path dw 0
+; A bad quote is a usage error on the command line and an image error in a CUE.
+%define QUOTE_ERROR 1
+quote_error dw usage
 drive_count dw 0
 control_entry dd 0
 mount_option db '-MOUNT',0
@@ -723,8 +677,7 @@ packet:
     dd 0
     dw 2
 change_buffer db 9,0
-usage_message db 'UCDD mounts CD images as CD-ROM drives.',13,10,13,10
-    db 'UCDD -install [-units n]'
+usage_message db 'UCDD -install [-units n]'
 %ifdef RESIDENT_AUDIO
 %ifdef EMS_QUEUE
     db ' [-ems]'
@@ -737,17 +690,7 @@ usage_message db 'UCDD mounts CD images as CD-ROM drives.',13,10,13,10
 %ifdef RESIDENT_AUDIO
     db 'UCDD -status [-reset]',13,10
 %endif
-    db 13,10
-    db '  -units n   Number of drives, 1 to 4.',13,10
-%ifdef RESIDENT_AUDIO
-%ifdef EMS_QUEUE
-    db '  -ems       Keep the CD audio queue in EMS, not in XMS.',13,10
-%endif
-    db '  -vcpi      Keep VCPI. The sound of VCPI programs bypasses uCDD.',13,10
-    db '  -status    Show the sound interrupt counts; -reset starts them from 0.',13,10
-%endif
-    db '  image      ISO, CUE, BIN, or MDM file. An MDM file lists up to 10 discs.',13,10
-    db '  -drive d   uCDD drive letter.',13,10,'$'
+    db 'n: 1 to 4; d: drive letter.',13,10,'$'
 %ifdef RESIDENT_AUDIO
 ; In the order of the counters (audio/irq.asm, irq_counters).
 status_labels dw status_periods, status_spurious, status_late_half, status_late_whole
@@ -775,25 +718,20 @@ line_end db 13,10,'$'
 status_buffer times 4+4*IRQ_COUNTERS+4 db 0
 %endif
 no_drives_message db 'No uCDD drive is available.',13,10,'$'
-full_message db 'All uCDD drives are in use.',13,10,'$'
-empty_message db 'No image is mounted on the selected drive.',13,10,'$'
-drive_error_message db 'The selected drive is not a uCDD drive.',13,10,'$'
+full_message db 'No uCDD drive is free.',13,10,'$'
+empty_message db 'No image is mounted on this drive.',13,10,'$'
+drive_error_message db 'This is not a uCDD drive.',13,10,'$'
 source_error_message db 'Use an image on a local hard disk.',13,10,'$'
-image_error_message db 'The image cannot be opened or is not valid.',13,10,'$'
-mdm_error_message db 'The disc list cannot be mounted. Check its images and XMS memory.',13,10
-    db 'Only one MDM file can be mounted at a time.',13,10,'$'
-operation_error_message db 'The drive is locked or in use. Try again.',13,10,'$'
-refresh_error_message db 'The image changed. The drive cache update failed.',13,10,'$'
+image_error_message db 'uCDD cannot open the image, or the image is not valid.',13,10,'$'
+mdm_error_message db 'Check the disc images and XMS memory.',13,10
+    db 'Mount only one MDM file at a time.',13,10,'$'
+operation_error_message db 'The drive is locked or in use.',13,10,'$'
+refresh_error_message db 'The image changed, but the drive cache did not update.',13,10,'$'
 mounted_message db 'The image is mounted.',13,10,'$'
 unmounted_message db 'The image is unmounted.',13,10,'$'
 drive_message db 'Drive '
 done_drive db '?',':',13,10,'$'
 %include "notice.inc"
-; Command buffers use the zero-filled DOS save area. A command instance never
-; installs, and installation reads its arguments before it prepares the units.
-; Installation writes only up to mount_tracks+TRACK_CONTROL; the audio
-; activation code sits after that (INSTALL_SCRATCH in driver.asm).
-arguments equ sda_save
 full_path equ arguments+128
 mount_tracks equ full_path+INFO_TRACKS
 device_list equ full_path+INFO_SIZE
@@ -802,4 +740,6 @@ drive_list equ device_list+26*5
 %define CUE_FAR 1
 %include "cue.asm"
 %include "mdm_helper.asm"
-program_end:
+; Zero-filled command buffers
+arguments:
+    times 128+INFO_SIZE+26*5+26 db 0

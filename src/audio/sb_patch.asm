@@ -10,11 +10,6 @@ sb_patch_initial:
 .done:
     ret
 
-; Called from audio_irq at .acknowledged (the handler's stack, interrupts
-; off, DS=CS) and from port_callback at a block start (the trap's stack, the
-; game's interrupt and direction flags, DS=CS). Every register it uses is
-; saved; the flags go under its own PUSHF, so the CLI and CLD below do not
-; leak to either caller.
 sb_patch:
     cmp byte [sb_patch_available], 0
     je .done
@@ -24,35 +19,20 @@ sb_patch:
     push es
     pushf
     cli
-    ; From the port trap this runs with the game's direction flag; the mixer
-    ; stores forward.
-    cld
     call output_clock
+    add eax, 32
     cmp byte [sb_patch_available], 2
     je .initial
-    add eax, 32
     mov byte [sb_patch_available], 0
     cmp eax, [sb_patch_clock]
     jae .restore
     mov eax, [sb_patch_clock]
-    ; The last block must end in the half that sb_patch_base names. After a
-    ; late interrupt it ends in the other half.
-    mov edx, [periods]
-    inc edx
-    shl edx, OUTPUT_SHIFT
-    cmp eax, edx
-    jb .restore
     jmp .scheduled
 .initial:
-    ; Start in the half mixed last: one period after the output position. A
-    ; shorter lead is in the half that plays now, and the write passes the end
-    ; of the ring.
-    add eax, PERIOD_FRAMES
     mov byte [sb_patch_available], 0
     inc eax
     and al, 0feh
-    mov edx, [periods]
-    add edx, 2
+    mov edx, [mix_period]
     shl edx, OUTPUT_SHIFT
     cmp eax, edx
     jae .restore
@@ -63,50 +43,13 @@ sb_patch:
     mov byte [game_start_pending], 2
     cmp eax, [sb_patch_limit]
     jae .restore
-    and ax, PERIOD_FRAMES-1
-    shl ax, 2
-    mov cl, [ess_half]
-    shr ax, cl
-    ; Keep whole frames at half rate.
-    and ax, 0fffch
-    test byte [sound_card], 1
-    jz .offset
-    shr ax, 2
-    and ax, 0fffeh
-    cmp byte [sound_card], 3
-    jne .offset
-    shr ax, 1
-.offset:
-    add ax, [sb_patch_base]
-    mov di, ax
-    mov es, [output_segment]
-    mov byte [sb_patch_active], 1
-    ; The patch is added to output that already holds the filter's response to
-    ; the earlier input. Mix it from a clear filter, then join the two states.
-    push dword [sb_filter_state]
-    push dword [sb_filter_state+4]
-    push dword [sb_filter_state+8]
-    push dword [sb_filter_state+12]
-    xor eax, eax
-    mov [sb_filter_state], eax
-    mov [sb_filter_state+4], eax
-    mov [sb_filter_state+8], eax
-    mov [sb_filter_state+12], eax
-    call mix_half
-    pop eax
-    add [sb_filter_state+12], eax
-    pop eax
-    add [sb_filter_state+8], eax
-    pop eax
-    add [sb_filter_state+4], eax
-    pop eax
-    add [sb_filter_state], eax
-    mov byte [sb_patch_active], 0
+    call sb_remix
     ; A card cannot interrupt inside the write that starts a block. Programs
     ; that detect the IRQ clear their flag after that write. The first block
     ; of a stream signals from an output interrupt.
     cmp byte [sb_single_hold], 0
     jne .restore
+    ; EAX for virtual_irq_tick is [last_clock]: output_clock ran above.
     call virtual_irq_tick
 ; Joined from every exit after the PUSHAD, PUSH ES and PUSHF above; .done
 ; and .clear leave before them and return directly.
@@ -120,11 +63,274 @@ sb_patch:
 .done:
     ret
 
+; Mix [sb_patch_clock, sb_patch_limit) again. A frame f is at ring frame
+; f mod RING_FRAMES. The new game part replaces the stored one.
+sb_remix:
+    mov eax, [sb_patch_limit]
+    mov [sb_remix_end], eax
+    call sb_filter_seed
+.part:
+    ; Each part ends at the ring wrap.
+    mov eax, [sb_patch_clock]
+    xor edx, edx
+    mov ecx, RING_FRAMES
+    div ecx
+    sub ecx, edx
+    add ecx, [sb_patch_clock]
+    mov eax, ecx
+    cmp eax, [sb_remix_end]
+    jb .split
+    mov eax, [sb_remix_end]
+.split:
+    mov [sb_patch_limit], eax
+    mov eax, [sb_patch_clock]
+    call ring_offset
+    mov di, ax
+    mov es, [output_segment]
+    mov byte [sb_patch_active], 1
+    call mix_half
+    mov byte [sb_patch_active], 0
+    mov eax, [sb_patch_limit]
+    mov [sb_patch_clock], eax
+    cmp eax, [sb_remix_end]
+    jb .part
+    ret
+
+; The legacy filter of a remix starts at the stored output before it.
+sb_filter_seed:
+    cmp byte [sb_filter_legacy], 0
+    je .done
+    cmp word [sb_record_segment], 0
+    je .done
+    push es
+    mov eax, [sb_patch_clock]
+    dec eax
+    call ring_offset
+    mov si, ax
+    mov es, [sb_record_segment]
+%macro seed_channel 1
+    movsx eax, word [es:si+%1/4]
+    shl eax, 15
+    cdq
+    mov ecx, [sb_pcm_gain+%1/2]
+    test ecx, ecx
+    jz %%zero
+    idiv ecx
+    cmp eax, 32767
+    jle %%low
+    mov eax, 32767
+%%low:
+    cmp eax, -32767
+    jge %%ready
+    mov eax, -32767
+    jmp %%ready
+%%zero:
+    xor eax, eax
+%%ready:
+    imul edx, eax, -7966
+    mov [sb_filter_state+%1+4], edx
+    imul eax, 15746
+    mov [sb_filter_state+%1], eax
+%endmacro
+    seed_channel 0
+    seed_channel 8
+%unmacro seed_channel 1
+    pop es
+.done:
+    ret
+
+; ES:DI: start of an output period. Its stored game part becomes zero.
+sb_record_clear:
+    cmp word [sb_record_segment], 0
+    je .done
+    pushad
+    push es
+    call sb_record_bit
+    or [sb_record_halves], al
+    mov es, [sb_record_segment]
+    mov cx, PERIOD_BYTES/2
+    xor ax, ax
+    rep stosw
+    pop es
+    popad
+.done:
+    ret
+
+; ES:DI: an output period mixed without stored game parts.
+sb_record_lost:
+    push ax
+    call sb_record_bit
+    not al
+    and [sb_record_halves], al
+    pop ax
+    ret
+
+; DI: the ring offset of an output period. Returns AL: its bit.
+sb_record_bit:
+    push cx
+    mov cx, di
+    shr cx, OUTPUT_SHIFT+2
+    mov al, 1
+    shl al, cl
+    pop cx
+    ret
+
+; EAX: game part of the word at ES:DI. Returns EAX minus the stored part
+; and stores EAX.
+sb_record_word:
+    cmp word [sb_record_segment], 0
+    je .done
+    push es
+    push si
+    push edx
+    mov si, di
+    mov es, [sb_record_segment]
+    movsx edx, word [es:si]
+    mov [es:si], ax
+    sub eax, edx
+    pop edx
+    pop si
+    pop es
+.done:
+    ret
+
+; SI: DMA channel whose address changed. AL: 1 if the frames already mixed can
+; be mixed again. A game that moves the address of a running auto-init
+; transfer at each block end (Savage Warriors) plays its next block from the
+; new buffer.
+sb_dma_switch:
+    cmp si, [game_dma]
+    jne .done
+    cmp byte [game_active], 0
+    je .done
+    cmp byte [game_start_pending], 0
+    jne .done
+    cmp byte [sb_single], 0
+    jne .done
+    cmp byte [game_source], 0
+    jne .done
+    cmp byte [sb_input], 0
+    jne .done
+    cmp byte [game_adpcm], 0
+    jne .done
+    cmp dword [game_limit], 0
+    je .done
+%ifdef OWN_HOST
+    cmp dword [game_physical], 0
+    jne .done
+%endif
+    pushad
+    push es
+    pushf
+    cli
+    mov [sb_switch_remix], al
+    ; The new buffer has the same size and is below 1 MiB.
+    movzx ebx, word [si+DMA_COUNT]
+    inc ebx
+    movzx eax, word [si+DMA_ADDRESS]
+    movzx ecx, byte [si+DMA_PAGE]
+    cmp si, dma16
+    jne .units
+    shl ebx, 1
+    shl eax, 1
+    and cl, 0feh
+.units:
+    shl ecx, 16
+    add ecx, eax
+    mov eax, [game_limit]
+    shr eax, 16
+    mov dl, cl
+    mov cl, [game_frame_shift]
+    shl eax, cl
+    mov cl, dl
+    cmp eax, ebx
+    jne .restore
+    lea eax, [ebx+ecx]
+    cmp eax, 100000h
+    ja .restore
+    call dma_source_split
+    cmp cx, [game_segment]
+    jne .moved
+    cmp bx, [game_offset]
+    je .restore
+.moved:
+    ; With the old block end in the tail copy, the ring wrap reads the new buffer.
+    cmp byte [sb_tail_valid], 0
+    je .wrap
+    call .switch
+    jmp .restore
+.wrap:
+    ; Else the ring wrap must be in the frames mixed ahead.
+    mov edi, [mix_period]
+    shl edi, OUTPUT_SHIFT
+    lea eax, [edi-1]
+    sub eax, [game_started]
+    mul dword [game_step]
+    add eax, [game_origin]
+    adc edx, 0
+    div dword [game_limit]
+    mov eax, edx
+    xor edx, edx
+    div dword [game_step]
+    cmp eax, RING_FRAMES
+    jae .restore
+    call .switch
+    cmp byte [sb_switch_remix], 0
+    je .restore
+    cmp word [sb_record_segment], 0
+    je .restore
+    neg eax
+    lea eax, [edi+eax-1]
+    mov [sb_patch_clock], eax
+    mov [sb_patch_limit], edi
+    call output_clock
+    add eax, 32
+    cmp eax, [sb_patch_clock]
+    jae .start
+    mov eax, [sb_patch_clock]
+.start:
+    cmp eax, edi
+    jae .restore
+    mov [sb_patch_clock], eax
+    ; Every period of the frames needs stored game parts.
+    mov ecx, eax
+    shr ecx, OUTPUT_SHIFT
+    mov ebx, edi
+    dec ebx
+    shr ebx, OUTPUT_SHIFT
+.recorded:
+    mov eax, ecx
+    shl eax, OUTPUT_SHIFT
+    push di
+    call ring_offset
+    mov di, ax
+    call sb_record_bit
+    pop di
+    test [sb_record_halves], al
+    jz .restore
+    inc ecx
+    cmp ecx, ebx
+    jbe .recorded
+    call sb_remix
+.restore:
+    popf
+    pop es
+    popad
+.done:
+    ret
+.switch:
+    mov [game_segment], cx
+    mov [game_offset], bx
+    ret
+sb_switch_remix db 0
+
 %ifdef OWN_HOST
 sb_real_irq:
     cmp word [own_host_active+2], 0
     je .done
     les di, [own_host_active]
+    cmp byte [es:di], 2
+    je .done
     cmp byte [es:di], 0
     je .take
     cmp byte [es:di+1], 0
@@ -157,9 +363,6 @@ sb_real_irq:
 .vector:
     mov [sb_real_vector], eax
     mov byte [sb_real_pending], 1
-    ; The jump at the end of audio_irq delivers the interrupt to the game,
-    ; straight to its handler (2: audio_irq_reflected has nothing to pass).
-    mov byte [virtual_pic_delivered], 2
 .done:
     ret
 ; A client's real-mode call was interrupted. Its protected-mode handler gets
@@ -202,14 +405,68 @@ sb_real_irq:
 sb_real_vector dd 0
 sb_real_pending db 0
 
+; Physical IRQs that arrived in protected mode and have no protected-mode
+; handler. The real chain gets them when this IRQ ends.
+host_real_pending:
+    cmp word [own_host_active+2], 0
+    je .done
+    les di, [own_host_active]
+    cmp byte [es:di], 1
+    jne .done
+    ; The interrupted code must accept IRQs.
+    push ds
+    mov bx, [irq_sp]
+    mov ds, [irq_ss]
+    test byte [bx+9], 2
+    pop ds
+    jz .done
+    mov ax, [es:di+6]
+    test ax, ax
+    jz .done
+    mov [host_pending_entry], ax
+    mov [host_pending_entry+2], es
+    call physical_pic_isr
+    call far [host_pending_entry]
+    or [host_pending_irqs], ax
+.done:
+    ret
+
+; IF is clear. Stack: the interrupted IRQ frame.
+host_pending_tail:
+    push ax
+    push bx
+    push ds
+    xor ax, ax
+    xchg ax, [cs:host_pending_irqs]
+.next:
+    bsf bx, ax
+    jz .done
+    btr ax, bx
+    push ax
+    add bx, 8
+    cmp bx, 16
+    jb .vector
+    add bx, 70h-16
+.vector:
+    shl bx, 2
+    xor ax, ax
+    mov ds, ax
+    pushf
+    call far [bx]
+    cli
+    pop ax
+    jmp .next
+.done:
+    pop ds
+    pop bx
+    pop ax
+    jmp audio_irq.tail
+host_pending_entry dd 0
+host_pending_irqs dw 0
+
 sb_dos_vector:
     cmp al, [cs:guest_vector]
     jne .chain
-    ; While the driver has stepped aside the vector is DOS's to give and
-    ; take: audio_release and audio_engage move it through INT 21h with this
-    ; byte clear, and a game on the real card installs its own handler.
-    cmp byte [cs:audio_engaged], 0
-    je .chain
     cmp dword [cs:host_irq_slot], 0
     je .saved
     push ax
@@ -249,26 +506,8 @@ sb_dos_vector:
 sb_game_vector dd 0
 sb_host_guest_irq dw guest_irq
 sb_host_ports dw trap_ports
-    dd 38464443h
+    dd 34464443h
     dw cd_deferred_refill, cd_refill_pending, virtual_pic_request, last_clock
-    ; CDF4: the disk IRQs that go straight to the real-mode handler.
-    dw config_disk_mask
-    ; CDF5: the host sets this byte before it runs a real-mode handler for an
-    ; interrupt it has already ended at the controller (see virtual_pic_write).
-    dw sb_stray_eoi
-    ; CDF6: the host sets this byte when it delivers the virtual interrupt
-    ; to the client (see virtual_pic_write).
-    dw virtual_pic_delivered
-    ; CDF7: the bytes behind the virtual card's cheapest ports, which the
-    ; host answers from protected mode without a switch to real mode: the
-    ; mixer index, the DSP interrupt bits, the reply count, the mixer
-    ; registers, the first controller's state (its flip-flop at +0), and
-    ; the single-cycle hold (host/resident.asm, resident_io .regular).
-    dw virtual_mixer_index, virtual_dsp_irq, reply_count, virtual_mixer
-    dw dma8, sb_single_hold
-    ; CDF8: the virtual card's model. The ESS's 2xEh answer comes from its
-    ; status register (ess_fifo.asm), which only the driver keeps, so the
-    ; host passes that read on (host/resident.asm, resident_io .status).
-    dw virtual_model
+    dw host_info, host_jemm_version
 sb_old_dos dd 0
 %endif

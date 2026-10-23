@@ -189,6 +189,12 @@ dpmi_callback_pm:
     lea ebx, [ebp+dpmi_callbacks+eax]
     cmp word [ebx], 0
     je dpmi_callback_abort
+%ifdef RESIDENT_HOST
+    ; A parent's callback can run while its child is current.
+    mov ax, [ebx]
+    call dpmi_nested_enter
+    setc [ebp+dpmi_callback_flip]
+%endif
     mov ax, [ebx+8]
     mov edx, [ebx+12]
     mov ecx, 50
@@ -312,6 +318,24 @@ dpmi_callback_done:
     mov ecx, 50
     cld
     rep movsb
+    ; A procedure that popped an IRET frame gets the IF of that frame.
+    movzx eax, word [ebp+dpmi_callback_regs+48]
+    shl eax, 4
+    movzx edx, word [ebp+dpmi_callback_regs+46]
+    cmp edx, 6
+    jb .flags_ready
+    add eax, edx
+    mov dx, [eax-6]
+    cmp dx, [ebp+dpmi_callback_regs+42]
+    jne .flags_ready
+    mov dx, [eax-4]
+    cmp dx, [ebp+dpmi_callback_regs+44]
+    jne .flags_ready
+    mov dx, [eax-2]
+    and dx, 200h
+    and word [ebp+dpmi_callback_regs+32], 0fdffh
+    or [ebp+dpmi_callback_regs+32], dx
+.flags_ready:
     lea esi, [ebp+dpmi_callback_context]
     lea edi, [ebp+mon_return]
     mov ecx, 9
@@ -358,6 +382,12 @@ dpmi_callback_done:
     add esi, 2
     loop .segments
     mov byte [ebp+dpmi_callback_active], 0
+%ifdef RESIDENT_HOST
+    shr byte [ebp+dpmi_callback_flip], 1
+    jnc .size_ready
+    call dpmi_nested_toggle
+.size_ready:
+%endif
     cli
     mov ax, 10h
     mov ds, ax
@@ -399,6 +429,29 @@ dpmi_callback_stubs:
 %assign slot slot+1
 %endrep
     times 0 / (($-dpmi_callback_stubs) = 16*6) db 0
+; INT 33h 0Ch handler. Keep the event: dpmi_mouse_deliver calls the client's
+; handler outside this IRQ (Igor reads the disk in its timer handler).
+dpmi_mouse_stub:
+    cmp word [cs:dpmi_mouse_vector+4], 0
+    je .done
+    pushf
+    cli
+    cmp byte [cs:dpmi_mouse_pending], 0
+    je .new
+    or [cs:dpmi_mouse_regs], ax
+    jmp .stored
+.new:
+    mov [cs:dpmi_mouse_regs], ax
+.stored:
+    mov [cs:dpmi_mouse_regs+2], bx
+    mov [cs:dpmi_mouse_regs+4], cx
+    mov [cs:dpmi_mouse_regs+6], dx
+    mov [cs:dpmi_mouse_regs+8], si
+    mov [cs:dpmi_mouse_regs+10], di
+    mov byte [cs:dpmi_mouse_pending], 1
+    popf
+.done:
+    retf
 dpmi_callback_enter:
     pushf
     cli
@@ -504,6 +557,14 @@ dpmi_callback_real_return:
     iret
 
 dpmi_callback_active db 0
+dpmi_mouse_pending db 0
+dpmi_mouse_depth db 0
+dpmi_mouse_vector dd 0
+    dw 0
+dpmi_mouse_regs times 6 dw 0
+dpmi_mouse_ebx dd 0
+dpmi_mouse_ax dw 0
+dpmi_mouse_wide db 0
 dpmi_callback_index dw 0
 ; Slots with a stub in use: one bit per slot. The live mask is the running
 ; client's own slots. The inherited mask holds the slots of its suspended
@@ -517,10 +578,10 @@ dpmi_callback_return_frame times 36 db 0
     times 512 db 0
 dpmi_callback_real_top:
 HOST_PROTECTED
-    ; 1920 keeps the resident host inside one real-mode segment.
+%ifndef RESIDENT_HOST
     times 1920 db 0
 dpmi_callback_kernel_top:
-dpmi_callback_user_top:
+%endif
 dpmi_callbacks times 16*20 db 0
 dpmi_callback_context times 116 db 0
 

@@ -3,6 +3,9 @@
 
 %define BRIDGE_BOTTOM 3fa000h
 %define BRIDGE_TOP 3fc000h
+%define BRIDGE_SOFT_COUNT 1
+; INT 23h and 24h: the fork's stubs (dpmi_bridge_int_table).
+%define BRIDGE_INT_COUNT 2
 struc bridge_frame
     .previous: resd 1
     .stack: resd 1
@@ -22,24 +25,22 @@ struc bridge_frame
     .regs: resb 50
     .reflect: resb 1
     .vector: resw 1
-    .padding: resb 3
+    .software: resb 1
+    .padding: resb 2
 endstruc
 
 HOST_REAL
 dpmi_bridge_real_allocate:
-    mov bx, 128
-    cmp byte [dpmi_client16], 0
-    je .size_ready
-    mov bx, 128+DPMI_XFER_PARAS
-.size_ready:
 %ifdef RESIDENT_HOST
+    ; dpmi_nested_save allocates the block of a child.
+    mov ax, [dpmi_nested_segment]
     cmp byte [dpmi_nested_depth], 0
-    je .allocate
-    add bx, 128
-.allocate:
+    jne .store
 %endif
+    mov bx, 128+DPMI_XFER_PARAS
     call dpmi_real_allocate
     jc .done
+.store:
     mov [dpmi_bridge_real_segment], ax
 .done:
     ret
@@ -117,6 +118,7 @@ dpmi_bridge_install:
     mov word [ebp+dpmi_bridge_mask], 0
     mov byte [ebp+dpmi_bridge_int_hooks], 0
     mov byte [ebp+dpmi_bridge_retf], 0
+    mov byte [ebp+dpmi_bridge_soft_active], 0
     popad
 dpmi_bridge_install_vectors:
     pushad
@@ -139,7 +141,22 @@ dpmi_bridge_install_vectors:
     inc ebx
     cmp ebx, 16
     jb .irq
-    ; INT 1Ch, 23h and 24h get stubs of their own (DPMI 0.9, section 2.4.2),
+    xor ebx, ebx
+.software:
+    movzx edx, byte [ebp+dpmi_bridge_soft_numbers+ebx]
+    mov ecx, [ebp+mon_real_base]
+    shl ecx, 12
+    mov cx, [ebp+dpmi_bridge_soft_stubs+ebx*2]
+    mov eax, [edx*4]
+    cmp eax, ecx
+    je .soft_saved
+    mov [ebp+dpmi_bridge_soft_vectors+ebx*4], eax
+.soft_saved:
+    mov [edx*4], ecx
+    inc ebx
+    cmp ebx, BRIDGE_SOFT_COUNT
+    jb .software
+    ; INT 23h and 24h get stubs of their own (DPMI 0.9, section 2.4.2),
     ; unless a controller's vectors cover them.
     xor ebx, ebx
 .int:
@@ -163,7 +180,7 @@ dpmi_bridge_install_vectors:
     mov [edx*4], ecx
 .int_next:
     inc ebx
-    cmp ebx, 3
+    cmp ebx, BRIDGE_INT_COUNT
     jb .int
     mov byte [ebp+dpmi_bridge_installed], 1
     popad
@@ -171,6 +188,7 @@ dpmi_bridge_install_vectors:
 
 dpmi_bridge_remove:
     pushad
+    call dpmi_pic_restore
     mov word [ebp+dpmi_bridge_mask], 0
     mov byte [ebp+dpmi_bridge_int_hooks], 0
     cmp byte [ebp+dpmi_bridge_installed], 0
@@ -190,6 +208,21 @@ dpmi_bridge_remove:
     cmp ebx, 16
     jb .irq
     xor ebx, ebx
+.software:
+    movzx edx, byte [ebp+dpmi_bridge_soft_numbers+ebx]
+    mov eax, [ebp+mon_real_base]
+    shl eax, 12
+    mov ax, [ebp+dpmi_bridge_soft_stubs+ebx*2]
+    cmp [edx*4], eax
+    jne .soft_next
+    mov eax, [ebp+dpmi_bridge_soft_vectors+ebx*4]
+    mov [edx*4], eax
+.soft_next:
+    inc ebx
+    cmp ebx, BRIDGE_SOFT_COUNT
+    jb .software
+    mov byte [ebp+dpmi_bridge_soft_mask], 0
+    xor ebx, ebx
 .int:
     movzx edx, byte [ebp+dpmi_bridge_int_table+ebx]
     mov eax, [ebp+mon_real_base]
@@ -201,7 +234,7 @@ dpmi_bridge_remove:
     mov [edx*4], eax
 .int_next:
     inc ebx
-    cmp ebx, 3
+    cmp ebx, BRIDGE_INT_COUNT
     jb .int
     mov byte [ebp+dpmi_bridge_installed], 0
 .done:
@@ -228,6 +261,13 @@ dpmi_bridge_real_vector:
     lea esi, [eax*4]
     cmp byte [ebp+dpmi_bridge_installed], 0
     je .done
+    xor ebx, ebx
+.software:
+    cmp al, [ebp+dpmi_bridge_soft_numbers+ebx]
+    je .soft_vector
+    inc ebx
+    cmp ebx, BRIDGE_SOFT_COUNT
+    jb .software
     movzx ebx, byte [ebp+mon_master]
     sub eax, ebx
     cmp eax, 8
@@ -248,7 +288,7 @@ dpmi_bridge_real_vector:
     lea esi, [ebp+dpmi_bridge_vectors+eax*4]
     jmp .done
 .int:
-    ; INT 1Ch, 23h and 24h hold a stub of their own.
+    ; INT 23h and 24h hold a stub of their own.
     xor ebx, ebx
 .table:
     mov eax, esi
@@ -264,12 +304,88 @@ dpmi_bridge_real_vector:
     jmp .done
 .next:
     inc ebx
-    cmp ebx, 3
+    cmp ebx, BRIDGE_INT_COUNT
     jb .table
+    jmp .done
+.soft_vector:
+    mov edx, [ebp+mon_real_base]
+    shl edx, 12
+    mov dx, [ebp+dpmi_bridge_soft_stubs+ebx*2]
+    cmp [esi], edx
+    jne .done
+    lea esi, [ebp+dpmi_bridge_soft_vectors+ebx*4]
 .done:
     pop edx
     pop ebx
     pop eax
+    ret
+
+; AL=vector of a reflected IRQ. A real-mode handler that was installed after
+; the bridge (Jutland, Aegis) chains to the stub during the reflection. The
+; stub must then continue to the saved vector, or the BIOS timer stops.
+dpmi_bridge_mark_irq:
+    push eax
+    call dpmi_vector_irq
+    jc .mark
+    mov al, -1
+.mark:
+    inc eax
+    mov [ebp+dpmi_bridge_irq_chain], al
+    pop eax
+    ret
+
+; AL=vector. CF set and AL=IRQ 0-15 for a PIC vector.
+dpmi_vector_irq:
+    sub al, [ebp+mon_master]
+    cmp al, 8
+    jb .done
+    add al, [ebp+mon_master]
+    sub al, [ebp+mon_slave]
+    cmp al, 8
+    jae .done
+    add al, 8
+    stc
+.done:
+    ret
+
+; The reflection starts at the saved vector. Clear the marks of this IRQ, or
+; the stub would pass new IRQs of this level to the real chain only.
+dpmi_bridge_unmark_irq:
+    push eax
+    movzx eax, byte [ebp+dpmi_bridge_irq_chain]
+    test eax, eax
+    jz .done
+    dec eax
+    btr [ebp+dpmi_irq_reflecting], eax
+    mov byte [ebp+dpmi_bridge_irq_chain], 0
+.done:
+    pop eax
+    ret
+
+; A reflected IRQ must finish the real chain that entered this bridge.
+dpmi_bridge_chained_vector:
+    call dpmi_bridge_real_vector
+    push ebx
+    push edx
+    mov edx, [ebp+dpmi_bridge_context]
+    test edx, edx
+    jz .done
+    cmp byte [edx+bridge_frame.software], 0
+    jne .done
+    movzx ebx, word [edx+bridge_frame.entry+2]
+    shl ebx, 4
+    movzx edx, word [edx+bridge_frame.entry]
+    add edx, ebx
+    movzx ebx, word [edx+44]
+    cmp ebx, 16
+    jae .done
+    call dpmi_bridge_vector
+    cmp al, dl
+    jne .done
+    lea esi, [ebp+dpmi_bridge_vectors+ebx*4]
+.done:
+    pop edx
+    pop ebx
     ret
 
 dpmi_bridge_update:
@@ -288,7 +404,7 @@ dpmi_bridge_update:
     cmp ebx, 16
     jb .irq
     mov [ebp+dpmi_bridge_mask], cx
-    ; The stubs of INT 1Ch, 23h and 24h read the same answer.
+    ; The stubs of INT 23h and 24h read the same answer.
     xor ebx, ebx
     xor ecx, ecx
 .int:
@@ -298,9 +414,28 @@ dpmi_bridge_update:
     bts ecx, ebx
 .int_next:
     inc ebx
-    cmp ebx, 3
+    cmp ebx, BRIDGE_INT_COUNT
     jb .int
     mov [ebp+dpmi_bridge_int_hooks], cl
+    ; INT 1Ch's stub (the author's) reads its own answer.
+    xor ebx, ebx
+    xor ecx, ecx
+.software:
+    movzx edx, byte [ebp+dpmi_bridge_soft_numbers+ebx]
+    call dpmi_bridge_hooked
+    jnc .soft_next
+    bts ecx, ebx
+.soft_next:
+    inc ebx
+    cmp ebx, BRIDGE_SOFT_COUNT
+    jb .software
+    mov [ebp+dpmi_bridge_soft_mask], cl
+%ifdef RESIDENT_HOST
+    movzx eax, byte [ebp+dpmi_guest_vector]
+    imul eax, 6
+    cmp word [ebp+mon_vectors+eax+4], 0
+    setne byte [ebp+dpmi_audio_pm_handler]
+%endif
     popad
     ret
 
@@ -386,6 +521,11 @@ dpmi_bridge_pm:
     mov [edi+bridge_frame.switch], eax
     movzx ebx, word [esi+44]
     mov [edi+bridge_frame.vector], bx
+    mov byte [edi+bridge_frame.software], 0
+    test bx, 200h
+    jz .entry_ready
+    mov byte [edi+bridge_frame.software], 1
+.entry_ready:
     mov [ebp+dpmi_bridge_context], edi
     mov [ebp+dpmi_bridge_stack], edi
     mov [ebp+mon_tss+4], edi
@@ -403,9 +543,15 @@ dpmi_bridge_pm:
     movzx eax, word [ebp+dpmi_bridge_real_segment]
     mov [ebp+mon_return+16], eax
     mov byte [ebp+dpmi_step_active], 0
-    ; Bit 9 marks a software INT 1Ch, 23h or 24h, bit 8 an SB IRQ.
+    ; Bit 9 marks a software interrupt, bit 8 an SB IRQ. INT 1Ch takes the
+    ; author's path (dpmi_bridge_soft_enter), INT 23h and 24h ours (.software).
+    test bh, 2
+    jz .hardware_entry
+    cmp bl, 1ch
+    je dpmi_bridge_soft_enter
     btr ebx, 9
-    jc .software
+    jmp .software
+.hardware_entry:
     ; The interrupted real-mode code had interrupts enabled.
     mov byte [ebp+dpmi_vif], 1
     btr ebx, 8
@@ -426,7 +572,7 @@ dpmi_bridge_pm:
     mov ds, dx
     MON_IRETD
 .software:
-    ; A reflected INT 1Ch, 23h or 24h keeps the virtual interrupt flag (DPMI
+    ; A reflected INT 23h or 24h keeps the virtual interrupt flag (DPMI
     ; 0.9, section 2.4.2). Its handler gets the registers of the real-mode
     ; code that raised it, from the stub's entry stack, and the segments of
     ; the client's real-mode call. Without a handler the frame returns to
@@ -453,6 +599,43 @@ dpmi_bridge_pm:
     cmp word [esi+4], 0
     je mon_dpmi.done
     jmp dpmi_deliver_reflected
+
+dpmi_bridge_soft_enter:
+    and ebx, 0ffh
+    imul ebx, 6
+    lea ebx, [ebp+mon_vectors+ebx]
+    mov edx, [ebx]
+    mov ax, [ebx+4]
+    call dpmi_code_target
+    jc dpmi_locked_abort
+    push ebx
+    sub esp, 60
+    mov dword [esp+40], dpmi_bridge_return
+    mov dword [esp+44], 3bh
+    mov eax, 202h
+    call dpmi_virtual_flags
+    mov [esp+48], eax
+    mov eax, [ebp+dpmi_locked_cursor]
+    mov [esp+52], eax
+    mov dword [esp+56], DPMI_IRQ_SS
+    call dpmi_client_segments
+    movzx eax, ax
+    mov [esp], eax
+    movzx edx, dx
+    mov [esp+4], edx
+    mov ebx, [ebp+dpmi_bridge_context]
+    movzx esi, word [ebx+bridge_frame.entry+2]
+    shl esi, 4
+    movzx eax, word [ebx+bridge_frame.entry]
+    add esi, eax
+    add esi, 12
+    lea edi, [esp+8]
+    mov ecx, 8
+    cld
+    rep movsd
+    mov esi, [esp+60]
+    mov ebx, esp
+    jmp dpmi_deliver_software
 
 dpmi_bridge_return:
     int 0f5h
@@ -481,9 +664,26 @@ dpmi_bridge_done:
     jne dpmi_locked_abort
     cmp word [esp+56], DPMI_IRQ_SS
     jne dpmi_locked_abort
+    cmp byte [ebx+bridge_frame.software], 0
+    je .hardware_stack
+    movzx edi, word [ebx+bridge_frame.entry+2]
+    shl edi, 4
+    movzx eax, word [ebx+bridge_frame.entry]
+    add edi, eax
+    mov byte [ebp+dpmi_bridge_soft_active], 0
+%assign soft_reg 0
+%rep 8
+%if soft_reg != 12
+    mov eax, [esp+8+soft_reg]
+    mov [edi+12+soft_reg], eax
+%endif
+%assign soft_reg soft_reg+4
+%endrep
+.hardware_stack:
     mov eax, [ebx+bridge_frame.locked_cursor]
     cmp [esp+52], eax
     jne dpmi_locked_abort
+    mov eax, [ebx+bridge_frame.locked_cursor]
     cmp [ebp+dpmi_locked_cursor], eax
     jne dpmi_locked_abort
     mov eax, [ebx+bridge_frame.locked_depth]
@@ -578,9 +778,40 @@ dpmi_bridge_done:
 
 dpmi_bridge_stack dd BRIDGE_TOP
 dpmi_bridge_context dd 0
-dpmi_bridge_int_table db 1ch,23h,24h
+; INT 1Ch has the author's stub (dpmi_bridge_soft_numbers).
+dpmi_bridge_int_table db 23h,24h
 
 HOST_REAL
+dpmi_bridge_soft_numbers db 1ch
+dpmi_bridge_soft_stubs dw dpmi_bridge_soft_0
+dpmi_bridge_soft_vectors times BRIDGE_SOFT_COUNT dd 0
+dpmi_bridge_soft_mask db 0
+dpmi_bridge_soft_active db 0
+
+%assign soft 0
+%rep BRIDGE_SOFT_COUNT
+dpmi_bridge_soft_%+soft:
+    pushf
+    test byte [cs:dpmi_bridge_soft_mask], 1<<soft
+    jz .chain
+    test byte [cs:dpmi_bridge_soft_active], 1<<soft
+    jnz .chain
+%if soft = 0
+%ifdef RESIDENT_HOST
+    cmp byte [cs:resident_refill_busy], 0
+    jne .chain
+%endif
+%endif
+    or byte [cs:dpmi_bridge_soft_active], 1<<soft
+    popf
+    push strict word 21ch
+    jmp dpmi_bridge_enter
+.chain:
+    popf
+    jmp far [cs:dpmi_bridge_soft_vectors+soft*4]
+%assign soft soft+1
+%endrep
+
 dpmi_bridge_stubs:
 %assign irq 0
 %rep 16
@@ -633,6 +864,15 @@ dpmi_bridge_irq_%+irq:
 .requested:
     pop ax
 %endif
+    cmp byte [cs:dpmi_bridge_irq_chain], irq+1
+    je .chained
+    test byte [cs:dpmi_irq_reflecting+(irq>>3)], 1<<(irq&7)
+    jnz .chained
+%if irq < 2
+    push byte irq
+    call dpmi_bridge_owned
+    jc .chain
+%endif
     call dpmi_bridge_blocked
 %if irq = 6 || irq >= 8 && irq <= 11 || irq >= 14
     ; The CD refill can wait for the disk and RTC IRQs.
@@ -659,11 +899,43 @@ dpmi_bridge_irq_%+irq:
     popf
     push strict word irq
     jmp dpmi_bridge_defer
+.chained:
+    ; The hook chains once. A later IRQ at this stub is a new one.
+    mov byte [cs:dpmi_bridge_irq_chain], 0
+    and byte [cs:dpmi_irq_reflecting+(irq>>3)], 0ffh & ~(1<<(irq&7))
 .chain:
     popf
     jmp far [cs:dpmi_bridge_vectors+irq*4]
 %assign irq irq+1
 %endrep
+
+; Word argument=master IRQ. CF=1 when the protected handler of this level
+; calls the real vector (On the Ball chains through a raw switch). The real
+; chain then owns the EOI, as with function 0302h.
+dpmi_bridge_owned:
+    pusha
+    mov bp, sp
+    mov cx, [bp+18]
+    bt [cs:dpmi_pic_service], cx
+    jnc .done
+    ; A new IRQ of this level is in service in the controller.
+    mov al, 0bh
+    out 20h, al
+    in al, 20h
+    xchg ax, bx
+    mov al, 0ah
+    out 20h, al
+    bt bx, cx
+    cmc
+    jnc .done
+    btr [cs:dpmi_pic_service], cx
+%ifdef RESIDENT_HOST
+    bts word [cs:dpmi_real_eoi], cx
+    stc
+%endif
+.done:
+    popa
+    ret 2
 
 ; A virtual guest IRQ during a real-mode call, entered like an IRQ handler.
 dpmi_bridge_virtual:
@@ -683,7 +955,7 @@ dpmi_bridge_virtual:
     mov byte [cs:dpmi_sti_sb_held], 1
     iret
 
-; Real-mode INT 1Ch, 23h and 24h reach a protected-mode handler that the
+; Real-mode INT 23h and 24h reach a protected-mode handler that the
 ; client installed with 0205h (DPMI 0.9, section 2.4.2). The entry word
 ; carries the vector in its low byte and bit 9 as the mark of a software
 ; interrupt. Without a handler, or while the client cannot take a delivery,
@@ -712,9 +984,8 @@ dpmi_bridge_int_%1:
     popf
     jmp far [cs:dpmi_bridge_int_vectors+%2*4]
 %endmacro
-DPMI_BRIDGE_INT 1ch, 0
-DPMI_BRIDGE_INT 23h, 1
-DPMI_BRIDGE_INT 24h, 2
+DPMI_BRIDGE_INT 23h, 0
+DPMI_BRIDGE_INT 24h, 1
 
 dpmi_bridge_defer:
     push bp
@@ -735,6 +1006,9 @@ dpmi_bridge_defer:
 .eoi:
     out 20h, al
     bts word [cs:dpmi_pending_irqs], bx
+%ifdef RESIDENT_HOST
+    bts word [cs:dpmi_physical_pending], bx
+%endif
     pop bx
     pop ax
     pop bp
@@ -813,14 +1087,18 @@ dpmi_bridge_retf db 0
 ; The disk IRQs. IRQ 14 and 15 unless the driver passes the mask that UCDDSET
 ; found (CDF4, see host/resident.asm).
 dpmi_disk_mask dw 0c000h
+dpmi_irq_reflecting dd 0
+; The real-mode stubs read the virtual in-service levels.
+dpmi_pic_service dd 0
 dpmi_bridge_installed db 0
+dpmi_bridge_irq_chain db 0
 dpmi_bridge_vectors times 16 dd 0
 dpmi_bridge_depth dd 0
-; INT 1Ch, 23h and 24h: a bit per vector with a protected-mode handler, the
+; INT 23h and 24h: a bit per vector with a protected-mode handler, the
 ; vectors the stubs replaced, and the stubs.
 dpmi_bridge_int_hooks db 0
-dpmi_bridge_int_vectors times 3 dd 0
-dpmi_bridge_int_stubs dw dpmi_bridge_int_1ch,dpmi_bridge_int_23h,dpmi_bridge_int_24h
+dpmi_bridge_int_vectors times BRIDGE_INT_COUNT dd 0
+dpmi_bridge_int_stubs dw dpmi_bridge_int_23h,dpmi_bridge_int_24h
 dpmi_bridge_entry dd 0
     times 32 db 0
 dpmi_bridge_return_frame times 36 db 0

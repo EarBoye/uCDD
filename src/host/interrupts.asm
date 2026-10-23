@@ -125,8 +125,6 @@ dpmi_step_check:
 .pop_word:
     mov dx, [esi]
 .pop_value:
-    mov eax, [ebx+60]
-    call .inner_image
     cmp byte [ebp+dpmi_sti_shadow], 0
     je .pop_tf_ready
     mov eax, edx
@@ -157,7 +155,6 @@ dpmi_step_check:
     call dpmi_sti_begin
     jmp .done
 .enable:
-    call dpmi_cli_learn_popf
     mov byte [ebp+dpmi_vif], 1
     mov byte [ebp+dpmi_step_active], 0
     and word [ebx+56], 0feffh
@@ -189,8 +186,6 @@ dpmi_step_check:
     call .stack
     pop ecx
     jc .done
-    mov eax, [ebx+60]
-    mov [ebp+dpmi_step_image], eax
     cmp ecx, 4
     jne .iret_word
     mov eax, [esi]
@@ -217,9 +212,6 @@ dpmi_step_check:
     mov [ebx+48], eax
     mov [ebx+52], edx
     mov edx, edi
-    mov eax, [ebp+dpmi_step_image]
-    lea eax, [eax+ecx*2]
-    call .inner_image
     cmp byte [ebp+dpmi_sti_shadow], 0
     je .iret_tf_ready
     shr edi, 8
@@ -242,26 +234,6 @@ dpmi_step_check:
     mov [ebx+56], edx
     xor edi, edi
     jmp .enable
-; An image pushed inside a region with an injected TF carries the physical
-; IF. EAX=stack offset of the image. Clear IF in EDX when the image is below
-; the armed stack slot.
-.inner_image:
-    cmp byte [ebp+dpmi_tf_armed], 0
-    je .outer
-    ; A copy of the injected image has TF and keeps its IF.
-    test dh, 1
-    jnz .outer
-    push ecx
-    mov cx, [ebx+64]
-    cmp cx, [ebp+dpmi_tf_ss]
-    pop ecx
-    jne .outer
-    and eax, [ebp+dpmi_tf_mask]
-    cmp eax, [ebp+dpmi_tf_esp]
-    jae .outer
-    and edx, 0fffffdffh
-.outer:
-    ret
 .iret_target:
     push eax
     push edx
@@ -306,7 +278,10 @@ dpmi_step_check:
     call .fetch
     jc .done
     cmp al, 0b2h
-    jne .done
+    je .extended_lss
+    mov al, 0fh
+    jmp .simple
+.extended_lss:
     inc edi
     call .effective_address
     jc .done
@@ -598,11 +573,57 @@ dpmi_step_check:
     jae .done
     test dl, 6
     jnz .done
-    cmp byte [ebp+dpmi_step_address_size], 4
-    jne .done
     mov edx, [ebp+dpmi_debug_regs+28]
     test dl, 0ffh
     jnz .done
+    cmp al, 8dh
+    je .simple_lea
+    cmp al, 0fh
+    je .simple_movzx
+    cmp al, 50h
+    jb .simple_segment_push
+    cmp al, 5fh
+    jbe .simple_stack_register
+.simple_segment_push:
+    cmp al, 06h
+    je .simple_push_segment
+    cmp al, 0eh
+    je .simple_push_segment
+    cmp al, 16h
+    je .simple_push_segment
+    cmp al, 1eh
+    je .simple_push_segment
+    cmp al, 0f6h
+    je .simple_test_byte
+    cmp byte [ebp+dpmi_step_address_size], 4
+    je .simple_dispatch
+    cmp al, 0ebh
+    je .simple_jump
+    cmp al, 70h
+    jb .simple_small_register
+    cmp al, 7fh
+    jbe .simple_branch
+.simple_small_register:
+    cmp al, 83h
+    je .simple_adjust_immediate
+    cmp al, 8bh
+    je .simple_nonbranch
+    cmp al, 40h
+    jb .done
+    cmp al, 4fh
+    jbe .simple_count_register
+    cmp al, 0b0h
+    jb .simple_word_register
+    cmp al, 0bfh
+    jbe .simple_move
+    jmp .done
+.simple_word_register:
+    cmp al, 86h
+    jb .done
+    cmp al, 8bh
+    ja .done
+    jmp .simple_move
+.simple_dispatch:
     cmp al, 40h
     jb .simple_other
     cmp al, 4fh
@@ -613,7 +634,7 @@ dpmi_step_check:
     cmp al, 81h
     je .simple_compare_immediate
     cmp al, 83h
-    je .simple_compare_immediate
+    je .simple_adjust_immediate
     cmp al, 0ffh
     je .simple_count_operand
     cmp al, 0ebh
@@ -666,6 +687,199 @@ dpmi_step_check:
     je .simple_store_word
     mov [ebx+esi], al
     jmp .simple_advance
+.simple_push_segment:
+    cmp ecx, 2
+    jne .done
+    mov esi, 0
+    cmp al, 06h
+    je .simple_push_value
+    mov esi, 52
+    cmp al, 0eh
+    je .simple_push_value
+    mov esi, 64
+    cmp al, 16h
+    je .simple_push_value
+    mov esi, 4
+    jmp .simple_push_value
+.simple_lea:
+    call .fetch
+    jc .done
+    cmp al, 0c0h
+    jae .done
+    mov esi, eax
+    shr esi, 3
+    and esi, 7
+    movzx esi, byte [ebp+dpmi_full_registers+esi]
+    push esi
+    call .effective_address
+    pop esi
+    jc .done
+    cmp ecx, 2
+    jne .simple_lea_wide
+    mov [ebx+esi], dx
+    jmp .simple_advance
+.simple_lea_wide:
+    mov [ebx+esi], edx
+    jmp .simple_advance
+.simple_movzx:
+    call .fetch
+    jc .done
+    cmp al, 0b6h
+    je .simple_movzx_byte
+    cmp al, 0b7h
+    jne .done
+    cmp ecx, 4
+    jne .done
+    mov esi, 2
+    jmp .simple_movzx_width
+.simple_movzx_byte:
+    mov esi, 1
+.simple_movzx_width:
+    push ecx
+    push esi
+    inc edi
+    call .fetch
+    jc .simple_movzx_bad_width
+    mov esi, eax
+    shr esi, 3
+    and esi, 7
+    movzx esi, byte [ebp+dpmi_full_registers+esi]
+    push esi
+    mov ecx, [esp+4]
+    cmp al, 0c0h
+    jb .simple_movzx_memory
+    and eax, 7
+    cmp ecx, 1
+    jne .simple_movzx_register_word
+    movzx esi, byte [ebp+dpmi_byte_registers+eax]
+    jmp .simple_movzx_register
+.simple_movzx_register_word:
+    movzx esi, byte [ebp+dpmi_full_registers+eax]
+.simple_movzx_register:
+    lea eax, [ebx+esi]
+    inc edi
+    jmp .simple_movzx_read
+.simple_movzx_memory:
+    call .effective_address
+    jc .simple_movzx_bad_target
+    push edi
+    xor edi, edi
+    call dpmi_read_buffer
+    pop edi
+    jc .simple_movzx_bad_target
+.simple_movzx_read:
+    cmp ecx, 1
+    jne .simple_movzx_read_word
+    movzx edx, byte [eax]
+    jmp .simple_movzx_store
+.simple_movzx_read_word:
+    movzx edx, word [eax]
+.simple_movzx_store:
+    pop esi
+    add esp, 4
+    pop ecx
+    cmp ecx, 2
+    jne .simple_lea_wide
+    mov [ebx+esi], dx
+    jmp .simple_advance
+.simple_movzx_bad_target:
+    add esp, 4
+.simple_movzx_bad_width:
+    add esp, 8
+    jmp .done
+.simple_stack_register:
+    mov edx, eax
+    and eax, 7
+    cmp eax, 4
+    je .done
+    movzx esi, byte [ebp+dpmi_full_registers+eax]
+    test dl, 8
+    jnz .simple_pop_register
+.simple_push_value:
+    mov eax, [ebx+esi]
+    push edi
+    push dword [ebx+60]
+    push eax
+    mov eax, ecx
+    neg eax
+    call .adjust_stack
+    call .write_stack
+    jc .simple_push_bad
+    pop eax
+    cmp ecx, 2
+    jne .simple_push_dword
+    mov [esi], ax
+    jmp .simple_push_done
+.simple_push_dword:
+    mov [esi], eax
+.simple_push_done:
+    add esp, 4
+    pop edi
+    jmp .simple_advance
+.simple_push_bad:
+    add esp, 4
+    pop dword [ebx+60]
+    pop edi
+    jmp .done
+.simple_pop_register:
+    push edi
+    push esi
+    call .stack
+    jc .simple_pop_bad
+    cmp ecx, 2
+    jne .simple_pop_dword
+    movzx edx, word [esi]
+    jmp .simple_pop_loaded
+.simple_pop_dword:
+    mov edx, [esi]
+.simple_pop_loaded:
+    pop esi
+    mov eax, ecx
+    call .adjust_stack
+    cmp ecx, 2
+    jne .simple_pop_store_dword
+    mov [ebx+esi], dx
+    jmp .simple_pop_done
+.simple_pop_store_dword:
+    mov [ebx+esi], edx
+.simple_pop_done:
+    pop edi
+    jmp .simple_advance
+.simple_pop_bad:
+    pop esi
+    pop edi
+    jmp .done
+.simple_test_byte:
+    call .fetch
+    jc .done
+    test al, 38h
+    jnz .done
+    mov ecx, 1
+    cmp al, 0c0h
+    jb .simple_test_memory
+    and eax, 7
+    movzx esi, byte [ebp+dpmi_byte_registers+eax]
+    add esi, ebx
+    inc edi
+    jmp .simple_test_value
+.simple_test_memory:
+    call .effective_address
+    jc .done
+    push edi
+    xor edi, edi
+    call dpmi_read_buffer
+    pop edi
+    jc .done
+    mov esi, eax
+.simple_test_value:
+    movzx eax, byte [esi]
+    push eax
+    call .fetch
+    pop edx
+    jc .done
+    inc edi
+    test dl, al
+    jmp .simple_flags
 .simple_store_word:
     mov [ebx+esi], ax
     jmp .simple_advance
@@ -694,9 +908,15 @@ dpmi_step_check:
     jmp .simple_direction
 .simple_full:
     cmp eax, 4
-    je .done
+    jne .simple_source_stack
+    cmp dl, 8bh
+    jne .done
+.simple_source_stack:
     cmp esi, 4
-    je .done
+    jne .simple_full_offsets
+    cmp dl, 89h
+    jne .done
+.simple_full_offsets:
     movzx eax, byte [ebp+dpmi_full_registers+eax]
     movzx esi, byte [ebp+dpmi_full_registers+esi]
 .simple_direction:
@@ -920,6 +1140,46 @@ dpmi_step_check:
 .simple_compare_bad:
     pop eax
     jmp .done
+.simple_adjust_immediate:
+    call .fetch
+    jc .done
+    cmp al, 0c0h
+    jb .simple_adjust_other
+    mov edx, eax
+    and edx, 38h
+    jz .simple_adjust_register
+    cmp edx, 28h
+    jne .simple_adjust_other
+.simple_adjust_register:
+    and eax, 7
+    movzx esi, byte [ebp+dpmi_full_registers+eax]
+    inc edi
+    call .fetch
+    jc .done
+    inc edi
+    movsx eax, al
+    test edx, edx
+    jnz .simple_subtract_register
+    cmp ecx, 2
+    jne .simple_add_dword
+    add [ebx+esi], ax
+    jmp .simple_flags
+.simple_add_dword:
+    add [ebx+esi], eax
+    jmp .simple_flags
+.simple_subtract_register:
+    cmp ecx, 2
+    jne .simple_subtract_dword
+    sub [ebx+esi], ax
+    jmp .simple_flags
+.simple_subtract_dword:
+    sub [ebx+esi], eax
+    jmp .simple_flags
+.simple_adjust_other:
+    cmp byte [ebp+dpmi_step_address_size], 4
+    jne .done
+    mov al, 83h
+    jmp .simple_compare_immediate
 ; EDX is zero for a read, one for a write. Return the operand in ESI.
 .simple_operand:
     push edx
@@ -1006,6 +1266,10 @@ dpmi_step_check:
 .simple_branch_target:
     mov edx, [ebx+48]
     add edx, edi
+    cmp byte [ebp+dpmi_window_size], 2
+    jne .simple_branch_wide
+    movzx edx, dx
+.simple_branch_wide:
     mov ax, [ebx+52]
     call dpmi_code_target
     jc .done
@@ -1063,10 +1327,12 @@ dpmi_step_check:
     jmp .next
 .simple_advance:
     add [ebx+48], edi
+    cmp byte [ebp+dpmi_window_size], 2
+    jne .simple_advanced
+    and dword [ebx+48], 0ffffh
+.simple_advanced:
     inc dword [esp+12]
-    ; These instructions keep the same 32-bit code segment.
-    mov ecx, 4
-    jmp .decode
+    jmp .next
 .done:
     popad
     ret
@@ -1677,154 +1943,62 @@ dpmi_step_window:
     popad
     ret
 
-; EBX=frame of a CLI that turned the virtual IF off. When a PUSHF put the
-; current flags on the stack just before the CLI, set TF in that image and do
-; not step: the POPF or IRET that loads it traps once. CF when the code does
-; not match.
-dpmi_tf_inject:
+; EBX=frame of a CLI, CX=mask. When a PUSHF just before the CLI put the flags
+; on the stack, or PUSHF and POP reg did, AND that image with CX. With IF off,
+; PUSHF pushed the physical IF: clear IF. With IF on after an NT leak, the image
+; was pushed with IF on: clear NT.
+dpmi_quiet_image:
     pushad
-    test byte [ebx+57], 1
-    jnz .no
-    mov ax, [ebx+52]
-    mov edx, [ebx+48]
-    sub edx, 1
-    jc .no
-    mov ecx, 1
-    mov edi, 2
-    call dpmi_code_buffer
-    jc .no
-    cmp byte [eax], 9ch
-%ifdef INJECT_REG
-    je .image_stack
-    cmp byte [eax], 0
-    jne .register
-    ; PUSHFD, POP EAX, AND EAX,200h, CLI keeps only the IF in EAX, and an
-    ; OR into a later PUSHFD image restores it. Set TF in EAX.
-    mov ax, [ebx+52]
-    mov edx, [ebx+48]
-    sub edx, 7
-    jc .no
-    mov ecx, 7
-    mov edi, 2
-    call dpmi_code_buffer
-    jc .no
-    cmp dword [eax], 0025589ch
-    jne .no
-    cmp word [eax+4], 0002h
-    jne .no
-    cmp dword [ebx+36], 200h
-    jne .no
-    mov ax, [ebx+64]
-    call dpmi_descriptor
-    jc .no
-    mov ecx, 0ffffffffh
-    mov edx, [ebx+60]
-    test byte [esi+6], 40h
-    jnz .masked
-    mov ecx, 0ffffh
-    movzx edx, dx
-.masked:
-    or byte [ebx+37], 1
-    mov [ebp+dpmi_tf_mask], ecx
-    mov [ebp+dpmi_tf_esp], edx
-    mov ax, [ebx+64]
-    mov [ebp+dpmi_tf_ss], ax
-    mov byte [ebp+dpmi_tf_armed], 1
-    mov byte [ebp+dpmi_armed_pass], 0
-    popad
-    clc
-    ret
-.register:
-    ; PUSHF, POP reg, CLI keeps the image in a register. Set TF there: the
-    ; PUSH reg, POPF that restores it traps once.
-    movzx esi, byte [eax]
-    sub esi, 58h
-    cmp esi, 7
-    ja .no
-    cmp esi, 4
-    je .no
-    push esi
     mov ax, [ebx+52]
     mov edx, [ebx+48]
     sub edx, 2
-    jc .no_register
-    mov ecx, 1
+    jc .done
+    mov ecx, 2
     mov edi, 2
     call dpmi_code_buffer
-    jc .no_register
+    jc .done
+    cmp byte [eax+1], 9ch
+    je .stack
     cmp byte [eax], 9ch
-    jne .no_register
-    mov ax, [ebx+64]
-    call dpmi_descriptor
-    jc .no_register
-    mov ecx, 0ffffffffh
-    mov edx, [ebx+60]
-    test byte [esi+6], 40h
-    jnz .register_stack
-    mov ecx, 0ffffh
-    movzx edx, dx
-.register_stack:
-    pop esi
-    shl esi, 2
-    neg esi
-    lea esi, [ebx+esi+36]
-    mov ax, [esi]
-    cmp ax, [ebx+56]
-    jne .no
-    or byte [esi+1], 1
-    mov [ebp+dpmi_tf_mask], ecx
-    mov [ebp+dpmi_tf_esp], edx
-    mov ax, [ebx+64]
-    mov [ebp+dpmi_tf_ss], ax
-    mov byte [ebp+dpmi_tf_armed], 1
-    mov byte [ebp+dpmi_armed_pass], 0
-    popad
-    clc
-    ret
-.no_register:
-    pop esi
-    jmp .no
-.image_stack:
-%else
-    jne .no
-%endif
-    mov ax, [ebx+64]
-    call dpmi_descriptor
-    jc .no
-    mov ecx, 0ffffffffh
-    mov edx, [ebx+60]
-    test byte [esi+6], 40h
-    jnz .stack
-    mov ecx, 0ffffh
-    movzx edx, dx
+    jne .done
+    movzx eax, byte [eax+1]
+    sub al, 58h
+    cmp al, 7
+    ja .done
+    cmp al, 4
+    je .done
+    movzx eax, byte [ebp+dpmi_full_registers+eax]
+    add eax, ebx
+    jmp .image
 .stack:
-    push ecx
+    mov ax, [ebx+64]
+    call dpmi_descriptor
+    jc .done
+    mov edx, [ebx+60]
+    test byte [esi+6], 40h
+    jnz .wide
+    movzx edx, dx
+.wide:
     mov ax, [ebx+64]
     mov ecx, 2
     mov edi, 1
     call dpmi_buffer
-    pop edi
-    jc .no
+    jc .done
+.image:
+    ; The frame has no NT here; the image has the physical NT.
     mov cx, [eax]
-    cmp cx, [ebx+56]
-    jne .no
-    or byte [eax+1], 1
-    mov [ebp+dpmi_tf_mask], edi
-    mov [ebp+dpmi_tf_esp], edx
-    mov ax, [ebx+64]
-    mov [ebp+dpmi_tf_ss], ax
-    mov byte [ebp+dpmi_tf_armed], 1
-    mov byte [ebp+dpmi_armed_pass], 0
+    xor cx, [ebx+56]
+    test cx, 0bfffh
+    jnz .done
+    mov ecx, [esp+24]
+    and [eax], cx
+.done:
     popad
-    clc
-    ret
-.no:
-    popad
-    stc
     ret
 
-; EBX=frame. CF when the frame has TF from an injected image. Code can copy
-; an image and load it again later, so every such TF counts.
+; EBX=frame. CF when a ring-3 frame has TF outside stepping and the STI
+; shadow. Stepping that a handler stopped can leave this TF. 0.9.4 treated it
+; as IF on, and without that Settlers II loads about 7 s slower.
 dpmi_tf_loaded:
     test byte [ebx+57], 1
     jz .no
@@ -1840,117 +2014,21 @@ dpmi_tf_loaded:
     clc
     ret
 
-; EBX=frame of a CLI that turned the virtual IF off. Find or add its site.
-; When earlier regions from this site ended with a trapped STI, do not step:
-; record the stack as for an injected image. CF when the host must not step.
-dpmi_cli_site_check:
-    pushad
-    mov dword [ebp+dpmi_cli_site], -1
-    mov ax, [ebx+52]
-    call dpmi_descriptor
-    jc .step
-    call dpmi_descriptor_base
-    add eax, [ebx+48]
-    ; A site takes the first free slot from the one its address hashes to,
-    ; so a known site is found in a few probes. Freed and evicted slots leave
-    ; gaps in the runs, so the whole table is searched before a site counts
-    ; as new.
-    mov ecx, eax
-    shr ecx, 2
-    and ecx, DPMI_CLI_SITES-1
-    mov esi, ecx
-.find:
-    cmp [ebp+dpmi_cli_linear+ecx*4], eax
-    je .found
-    inc ecx
-    and ecx, DPMI_CLI_SITES-1
-    cmp ecx, esi
-    jne .find
-.empty:
-    cmp dword [ebp+dpmi_cli_linear+ecx*4], 0
-    je .replace
-    inc ecx
-    and ecx, DPMI_CLI_SITES-1
-    cmp ecx, esi
-    jne .empty
-    mov edx, DPMI_CLI_SITES
-.evict:
-    movzx ecx, byte [ebp+dpmi_cli_next]
-    inc byte [ebp+dpmi_cli_next]
-    and byte [ebp+dpmi_cli_next], DPMI_CLI_SITES-1
-    cmp byte [ebp+dpmi_cli_score+ecx], 0ffh
-    jne .replace
-    dec edx
-    jnz .evict
-.replace:
-    mov [ebp+dpmi_cli_linear+ecx*4], eax
-    mov byte [ebp+dpmi_cli_score+ecx], 0
-.found:
-    mov [ebp+dpmi_cli_site], ecx
-    mov al, [ebp+dpmi_cli_score+ecx]
-    cmp al, 2
-    jb .step
-    cmp al, 0ffh
-    je .step
-    mov ax, [ebx+64]
-    call dpmi_descriptor
-    jc .step
-    mov ecx, 0ffffffffh
-    mov edx, [ebx+60]
-    test byte [esi+6], 40h
-    jnz .quiet
-    mov ecx, 0ffffh
-    movzx edx, dx
-.quiet:
-    mov [ebp+dpmi_tf_mask], ecx
-    mov [ebp+dpmi_tf_esp], edx
-    mov ax, [ebx+64]
-    mov [ebp+dpmi_tf_ss], ax
-    mov byte [ebp+dpmi_tf_armed], 2
-    mov byte [ebp+dpmi_armed_pass], 0
-    mov dword [ebp+dpmi_quiet_steps], DPMI_QUIET_STEPS
-    popad
-    stc
-    ret
-.step:
-    popad
-    clc
-    ret
-
-; A region ended with a trapped STI.
-dpmi_cli_learn_sti:
-    push eax
-    call dpmi_cli_top_site
-    jc .done
-    cmp byte [ebp+dpmi_cli_score+eax], 3
-    jae .done
-    inc byte [ebp+dpmi_cli_score+eax]
+; EBX=frame of a host service entry (ES, DS, PUSHAD, EIP, CS, EFLAGS).
+dpmi_tf_entry:
+    push ebx
+    sub ebx, 8
+    call dpmi_tf_loaded
+    jnc .done
+    call dpmi_tf_fired
 .done:
-    call dpmi_tf_disarm
-    pop eax
+    pop ebx
     ret
 
-; A region ended with POPF or IRET. Step at this site from now on.
-dpmi_cli_learn_popf:
-    push eax
-    call dpmi_cli_top_site
-    jc .done
-    mov byte [ebp+dpmi_cli_score+eax], 0ffh
-.done:
-    call dpmi_tf_disarm
-    pop eax
-    ret
-
-; Return EAX=index of the site that started the current top-level region,
-; or CF.
-dpmi_cli_top_site:
-    mov eax, [ebp+dpmi_cli_site]
-    cmp eax, DPMI_CLI_SITES
-    jae .none
-    call dpmi_top_level
-    ret
-.none:
-    stc
+; EBX=frame from dpmi_tf_loaded. Clear TF and turn the virtual IF on.
+dpmi_tf_fired:
+    and word [ebx+56], 0feffh
+    mov byte [ebp+dpmi_vif], 1
     ret
 
 ; CF when a handler runs: a bridged IRQ, a locked IRQ handler, an exception
@@ -1970,71 +2048,16 @@ dpmi_top_level:
     stc
     ret
 
-; The top-level region ended. A handler keeps the state of the region that
-; it interrupted.
-dpmi_tf_disarm:
-    call dpmi_top_level
-    jc .done
-    mov byte [ebp+dpmi_tf_armed], 0
-    mov dword [ebp+dpmi_cli_site], -1
-.done:
-    ret
-
-; EBX=frame of a step. A quiet region can end with a POPF that was not
-; seen. When the fallback steps too long without an end, turn the virtual
-; IF on and step at this site from now on. CF when the IF is on.
-dpmi_quiet_limit:
-    cmp byte [ebp+dpmi_tf_armed], 2
-    jne .run
-    dec dword [ebp+dpmi_quiet_steps]
-    jnz .run
-    mov dword [ebp+dpmi_quiet_steps], DPMI_QUIET_STEPS
-    push eax
-    mov ax, [ebx+64]
-    cmp ax, [ebp+dpmi_tf_ss]
-    jne .inside
-    mov eax, [ebx+60]
-    and eax, [ebp+dpmi_tf_mask]
-    cmp eax, [ebp+dpmi_tf_esp]
-    jbe .inside
-    pop eax
-    call dpmi_cli_learn_popf
-    mov byte [ebp+dpmi_vif], 1
-    mov byte [ebp+dpmi_step_active], 0
-    and word [ebx+56], 0feffh
-    stc
-    ret
-.inside:
-    pop eax
-.run:
-    clc
-    ret
-
-; EBX=frame of a host service entry (ES, DS, PUSHAD, EIP, CS, EFLAGS).
-; An injected image loaded just before the entry turns the virtual IF on.
-dpmi_tf_entry:
-    push ebx
-    sub ebx, 8
-    call dpmi_tf_loaded
-    jnc .done
-    call dpmi_tf_fired
-.done:
-    pop ebx
-    ret
-
-; EBX=frame with TF from an injected image. The client set its IF again.
-dpmi_tf_fired:
-    and word [ebx+56], 0feffh
-    mov byte [ebp+dpmi_tf_armed], 0
-    mov byte [ebp+dpmi_vif], 1
-    ret
-
-; EAX holds physical flags on entry and client flags on return.
+; EAX holds physical flags on entry and client flags on return. NT marks an
+; image with the virtual IF off: see dpmi_quiet_entry.
 dpmi_virtual_flags:
-    and eax, 0fffffdffh
+    and eax, 0ffffbdffh
     cmp byte [ebp+dpmi_vif], 0
-    je .trace
+    je .disabled
     or eax, 200h
+    jmp .trace
+.disabled:
+    or eax, 4000h
 .trace:
     cmp byte [ebp+dpmi_sti_shadow], 0
     je .ordinary_tf
@@ -2054,57 +2077,172 @@ dpmi_virtual_flags:
 dpmi_restore_flags:
     mov word [ebp+dpmi_vif], 1
     test eax, 200h
-    jz .disabled
-    call dpmi_tf_disarm
-    jmp .done
-.disabled:
+    jnz .done
     call dpmi_clear_vif
-    cmp byte [ebp+dpmi_step_active], 0
-    je .done
-    or eax, 100h
 .done:
     and eax, 0fffd8fffh
     or eax, 202h
     ret
 
-; Clear the virtual IF. Trace the client until it sets IF again, but not in a
-; handler: the host sees the return of the handler.
+; Clear the virtual IF. A handler does not step: the host sees its return.
 dpmi_clear_vif:
-    mov word [ebp+dpmi_vif], 0
+    mov byte [ebp+dpmi_vif], 0
     cmp dword [ebp+dpmi_locked_depth], 0
-    jne .done
+    jne .handler
     cmp byte [ebp+dpmi_exception_active], 0
-    jne .done
+    jne .handler
     cmp byte [ebp+dpmi_callback_active], 0
-    jne .done
-    mov byte [ebp+dpmi_step_active], 1
+    je .done
+.handler:
+    mov byte [ebp+dpmi_step_active], 0
 .done:
+    ret
+
+; A top-level client with the virtual IF off and no stepping runs with NT. IRET
+; then faults (dpmi_task_return), and PUSHF marks its image with NT. A POPF or
+; IRET that loads an image without NT clears NT: the next host entry turns the
+; virtual IF on. dpmi_virtual_flags marks host images the same way.
+
+; EBX is a five-dword protected frame minus 40 bytes, at entry from the client.
+dpmi_quiet_entry:
+    mov byte [ebp+dpmi_quiet_nt], 0
+    test byte [ebx+44], 3
+    jz .done
+    test byte [ebx+50], 2
+    jnz .done
+    test byte [ebx+49], 40h
+    jz .clear
+    and byte [ebx+49], 0bfh
+    mov byte [ebp+dpmi_quiet_nt], 1
+    ; With IF on, code loaded an image pushed with IF off.
+    cmp byte [ebp+dpmi_quiet], 2
+    jne .done
+    mov byte [ebp+dpmi_quiet_leak], 1
+    jmp .done
+.clear:
+    cmp byte [ebp+dpmi_quiet], 1
+    jne .done
+    cmp word [ebp+dpmi_vif], 0
+    jne .done
+    mov byte [ebp+dpmi_vif], 1
+.done:
+    ret
+
+; EBX is a five-dword protected frame minus 40 bytes, at return to the client.
+dpmi_quiet_exit:
+    test byte [ebx+44], 3
+    jz .done
+    test byte [ebx+50], 2
+    jnz .done
+    and byte [ebx+49], 0bfh
+    mov byte [ebp+dpmi_quiet], 0
+    call dpmi_top_level
+    jc .done
+    mov byte [ebp+dpmi_quiet], 2
+    cmp word [ebp+dpmi_vif], 0
+    jne .done
+    mov byte [ebp+dpmi_quiet], 1
+    or byte [ebx+49], 40h
+.done:
+    ret
+
+; EBX=frame of an exception. CF when it is not an IRET that faulted on NT. With
+; the virtual IF off, the decoder runs the IRET. Otherwise the code loaded an
+; image with NT: clear NT in the image that the IRET loads. The host then runs
+; the IRET without NT, and the IRET does not change the virtual IF. Another
+; #TS on NT is stepped once without NT.
+dpmi_task_return:
+    cmp byte [ebp+dpmi_quiet_nt], 0
+    je .no
+    cmp dword [ebx+40], 10
+    je .vector
+    cmp dword [ebx+40], 13
+    jne .no
+.vector:
+    pushad
+    mov esi, [ebx+48]
+.prefix:
+    mov ax, [ebx+52]
+    mov edx, esi
+    mov ecx, 1
+    mov edi, 2
+    call dpmi_code_buffer
+    jc .bad
+    cmp byte [eax], 66h
+    jne .opcode
+    inc esi
+    mov eax, esi
+    sub eax, [ebx+48]
+    cmp eax, 2
+    ja .bad
+    jmp .prefix
+.opcode:
+    cmp byte [eax], 0cfh
+    jne .bad
+    cmp word [ebp+dpmi_vif], 0
+    jne .image
+    mov esi, [ebx+48]
+    mov di, [ebx+52]
+    call dpmi_step_check
+    cmp esi, [ebx+48]
+    jne .handled
+    cmp di, [ebx+52]
+    jne .handled
+    ; The decoder rejected it.
+.step:
+    mov byte [ebp+dpmi_step_active], 1
+    or byte [ebx+57], 1
+    jmp .handled
+.image:
+    xor edx, edx
+    cmp esi, [ebx+48]
+    je .size
+    mov edx, 6
+.size:
+    mov ax, [ebx+52]
+    call dpmi_step_code_size
+    jc .handled
+    xor ecx, edx
+    mov ax, [ebx+64]
+    call dpmi_descriptor
+    jc .handled
+    mov edx, [ebx+60]
+    test byte [esi+6], 40h
+    jnz .wide
+    movzx edx, dx
+.wide:
+    lea edx, [edx+ecx*2]
+    mov ax, [ebx+64]
+    mov ecx, 2
+    mov edi, 1
+    call dpmi_buffer
+    jc .handled
+    and byte [eax+1], 0bfh
+.handled:
+    popad
+    clc
+    ret
+.bad:
+    cmp dword [ebx+40], 10
+    je .step
+    popad
+.no:
+    stc
     ret
 
 HOST_REAL
 dpmi_vif db 1
 dpmi_step_active db 0
 HOST_PROTECTED
+dpmi_quiet db 0
+dpmi_quiet_nt db 0
+dpmi_quiet_leak db 0
 dpmi_step_address_size db 0
 dpmi_step_segment dw 0
 dpmi_step_ea_segment dw 0
 dpmi_step_modrm db 0
 dpmi_step_code dd 0
 dpmi_step_code_ip dd 0
-dpmi_step_image dd 0
-dpmi_tf_esp dd 0
-dpmi_tf_mask dd 0
-dpmi_tf_ss dw 0
-dpmi_tf_armed db 0
-; Returns to the client with an IRQ pending inside the armed region.
-dpmi_armed_pass db 0
-DPMI_CLI_SITES equ 256
-dpmi_cli_site dd -1
-dpmi_cli_linear times DPMI_CLI_SITES dd 0
-dpmi_cli_score times DPMI_CLI_SITES db 0
-dpmi_cli_next db 0
-dpmi_quiet_steps dd 0
-DPMI_QUIET_STEPS equ 20000
 dpmi_page_generation dd 0
 dpmi_window_generation dd 0
 dpmi_window_descriptor dd 0
@@ -2121,7 +2259,6 @@ HOST_PROTECTED
 dpmi_sti_begin:
     cmp byte [ebp+dpmi_vif], 0
     jne .enabled
-    call dpmi_cli_learn_sti
     mov eax, [ebx+56]
     call dpmi_virtual_flags
     shr eax, 8
@@ -2164,6 +2301,29 @@ dpmi_sti_retire:
     je .done
     or word [ebx+48], 100h
 .done:
+    ret
+
+; CF unless the instruction in the STI shadow is POPF or IRET.
+dpmi_sti_loads_flags:
+    pushad
+    mov ax, [ebp+dpmi_sti_cs]
+    mov edx, [ebp+dpmi_sti_ip]
+    mov ecx, 2
+    mov edi, 2
+    call dpmi_code_buffer
+    jc .done
+    mov cl, [eax]
+    cmp cl, 66h
+    jne .opcode
+    mov cl, [eax+1]
+.opcode:
+    cmp cl, 9dh
+    je .done
+    cmp cl, 0cfh
+    je .done
+    stc
+.done:
+    popad
     ret
 %ifndef RESIDENT_HOST
 HOST_REAL

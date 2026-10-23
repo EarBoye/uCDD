@@ -5,10 +5,14 @@ HOST_REAL
 dpmi_ivt_snapshot:
     pushad
     push es
+    ; The first MCB does not change. A child makes no DOS call here.
+    cmp word [cs:dpmi_first_mcb], 0
+    jne .mcb_ready
     mov ah, 52h
     int 21h
     mov ax, [es:bx-2]
     mov [cs:dpmi_first_mcb], ax
+.mcb_ready:
 %ifdef RESIDENT_HOST
     mov eax, [cs:resident_game_vector]
     mov si, ax

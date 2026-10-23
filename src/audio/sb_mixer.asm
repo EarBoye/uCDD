@@ -24,11 +24,21 @@ virtual_mixer_write:
     cmp byte [virtual_model], 1
     je .pro
     ja .done                        ; the SB 2.0: no mixer
-    ; The CT1745. 00h resets; 80h-82h are read only (80h and 81h are the
-    ; card's IRQ and DMA, which "should only be changed by system software",
+    ; The CT1745. 00h resets; 80h and 82h are read only here (80h is the
+    ; card's IRQ, which "should only be changed by system software",
     ; SBG:1047-1052).
     test bl, bl
     jz .reset
+    ; 81h, the DMA select, is writable on the CT2290 (F12). A game that
+    ; clears its 16-bit bits plays 16-bit sound on the 8-bit channel (the
+    ; author's 0.9.3d).
+    cmp bl, 81h
+    jne .not_dma_select
+    mov [virtual_mixer+81h], al
+    test al, 0e0h
+    setz byte [sb_dma16_low]
+    jmp .done
+.not_dma_select:
     cmp bl, 0ah
     je .sb16_mic
     mov cx, 5

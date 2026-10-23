@@ -17,6 +17,7 @@ guest_dma_ports dw 2,3,83h,0c4h,0c6h,8bh
 audio_irq_busy db 0
 audio_irq_mask_bit db 0
 sb_single db 0
+sb_dma16_low db 0
 sb_input db 0
 sb_finished db 0
 sb_paused db 0
@@ -48,19 +49,12 @@ game_origin dd 0
 ; 8000h for unsigned 16-bit single-cycle data, otherwise zero.
 sb_sign8 dd 0
 sb_sign16 dw 0
-%ifdef VIRTUAL_IRQ
-; Command 80h: set while a silence plays, until the output clock reaches
-; sb_silence_end. Then the 8-bit interrupt is signalled.
-sb_silence db 0
-sb_silence_end dd 0
-%endif
 %ifdef RESIDENT_AUDIO
 game_physical dd 0
 sb_patch_active db 0
 sb_patch_available db 0
 sb_patch_clock dd 0
 sb_patch_limit dd 0
-sb_patch_base dw 0
 ; Set when a single-cycle block starts a stream: the block does not signal
 ; until the game has run. 1: the output interrupt that follows the start does
 ; not signal. 2: no signal until SB_HOLD_FRAMES of output have played since
@@ -68,5 +62,8 @@ sb_patch_base dw 0
 sb_single_hold db 0
 sb_hold_clock dd 0
 SB_HOLD_FRAMES equ 128
+sb_remix_end dd 0
+sb_record_segment dw 0
+sb_record_halves db 0
 %endif
 %endif

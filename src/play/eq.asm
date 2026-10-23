@@ -404,7 +404,7 @@ eq_set_gain:
 eq_calibrate:
     push gs
     mov di, ring
-    mov cx, RING_FRAMES*2
+    mov cx, EQ_CHUNK*2
 .noise:
     call random
     mov [di], ax
@@ -470,7 +470,7 @@ eq_calibrate:
     call hook_reset
     call eq_apply
     mov di, ring
-    mov cx, RING_FRAMES*2
+    mov cx, EQ_CHUNK*2
     xor ax, ax
     rep stosw
     pop gs

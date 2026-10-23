@@ -90,12 +90,6 @@ dpmi_write_vector:
     cmp edi, esi
     jne .done
     call dpmi_bridge_update
-%ifdef RESIDENT_HOST
-    movzx eax, byte [ebp+dpmi_guest_vector]
-    imul eax, 6
-    cmp word [ebp+mon_vectors+eax+4], 0
-    setne byte [ebp+dpmi_audio_pm_handler]
-%endif
 .done:
     jmp mon_dpmi.success
 
@@ -273,7 +267,6 @@ dpmi_deliver_exception:
 dpmi_exception_return:
     int 0f3h
     ud2
-dpmi_debug_code times 64 db 0
 dpmi_first_exception times 16 db 0ffh
 dpmi_exception_done:
     DPMI_DEBUG_STOP
@@ -391,6 +384,7 @@ dpmi_reflect:
     sub ebp, .base
     mov ebx, esp
     call dpmi_locked_capture
+    call dpmi_quiet_entry
     cmp byte [ebp+dpmi_active], 1
     jne .bad_gate
     cmp word [ebx+44], 3bh
@@ -628,6 +622,19 @@ dpmi_deliver_interrupt_disabled:
     mov byte [ebp+dpmi_deliver_disabled], 1
 ; EBX=interrupt frame, ESI=protected vector.
 dpmi_deliver_interrupt:
+%ifdef RESIDENT_HOST
+    ; A parent's handler returns through the host to get the parent's state
+    ; (Judge Dredd: JD.EXE calls INT 08h, LAW.EXE handles it).
+    cmp byte [ebp+dpmi_nested_depth], 0
+    je .own
+    cmp byte [ebp+dpmi_parent_mode], 0
+    jne .own
+    movzx eax, word [esi+4]
+    shr eax, 3
+    bt [ebp+dpmi_parent_map], eax
+    jc dpmi_deliver_software
+.own:
+%endif
     push esi
     mov edx, [esi]
     mov ax, [esi+4]
@@ -728,6 +735,16 @@ dpmi_software_interrupt:
     mov ebx, esp
     call dpmi_tf_entry
     cmp word [esi+4], 0
+    je .reflect
+    cmp byte [ebp+dpmi_reflect_vector], 33h
     jne dpmi_deliver_interrupt
+    ; Keep the registers for the client's translation (dpmi_mouse_wide_regs).
+    mov eax, [ebx+24]
+    mov [ebp+dpmi_mouse_ebx], eax
+    mov ax, [ebx+36]
+    mov [ebp+dpmi_mouse_ax], ax
+    mov byte [ebp+dpmi_mouse_wide], 1
+    jmp dpmi_deliver_interrupt
+.reflect:
     cld
     jmp dpmi_dos_translate

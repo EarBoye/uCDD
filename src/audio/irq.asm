@@ -43,6 +43,17 @@ virtual_irq_tick:
     ret
 .not_ess:
 %endif
+    ; Command 80h: the 8-bit interrupt once the silence has played (the
+    ; author's 0.9.4-a2), raised on the virtual line as any other.
+    cmp byte [silence_active], 0
+    je .silence_done
+    mov eax, [periods]
+    sub eax, [silence_deadline]
+    js .silence_done
+    mov byte [silence_active], 0
+    mov al, 1
+    call virtual_dsp_raise
+.silence_done:
     cmp byte [game_active], 0
     je .done
     mov si, [game_dma]
@@ -95,17 +106,16 @@ virtual_irq_tick:
 .single_end:
     push eax
     mov eax, [game_block_bytes]
+    cmp byte [game_adpcm], 0
+    je .pcm_units
+    mov eax, [adpcm_bytes]
+.pcm_units:
     call .controller_stop
     mov byte [sb_finished], 1
     ; 91h leaves high-speed mode at the end of its block (SBG:1349-1350); a
     ; reset after it is a cold start again (trap.asm, sb_warm).
     mov byte [sb_highspeed], 0
     mov byte [sb_warm], 0
-%ifdef SB_CARDS
-    ; An ADPCM block's last ticks, run while the buffer still holds its
-    ; bytes (sb_adpcm.asm).
-    call sb_adpcm_close
-%endif
     pop eax
     mov eax, [game_block_bytes]
     jmp .byte_position
@@ -214,20 +224,6 @@ virtual_irq_tick:
     ret
 .fresh:
     mov byte [virtual_irq_stale], 0
-    ret
-
-; Command 80h: signal the 8-bit interrupt once the silence has played.
-sb_silence_tick:
-    cmp byte [sb_silence], 0
-    je .done
-    mov eax, [periods]
-    shl eax, OUTPUT_SHIFT
-    sub eax, [sb_silence_end]
-    js .done
-    mov byte [sb_silence], 0
-    mov al, 1
-    call virtual_dsp_raise
-.done:
     ret
 
 ; AL=the DSP interrupt bits to set (1 the 8-bit, 2 the 16-bit). The DSP's
@@ -376,6 +372,10 @@ virtual_irq_take:
     cmp byte [virtual_pic_request], 0
     je .done
     call physical_pic_isr
+%ifdef OWN_HOST
+    call virtual_pic_host_service
+    and al, ah
+%endif
     test al, [guest_irq_priority]
     jnz .done
     mov byte [virtual_pic_request], 0
@@ -419,6 +419,9 @@ virtual_pic_read:
     ret
 .service:
     or al, [virtual_pic_service]
+%ifdef OWN_HOST
+    call virtual_pic_host_service
+%endif
     ret
 .mask:
     and al, [pic_visible_bits]
@@ -429,29 +432,29 @@ virtual_pic_read:
     ret
 
 virtual_pic_write:
+    ; ICW2-ICW4 follow ICW1 on the data port (pMAX under VCPI).
     cmp dx, 21h
+    jne .command
+    cmp byte [pic_init_words], 0
     je .mask
-    ; ICW1 starts an initialisation, which is not emulated. The ICW2 to ICW4
-    ; bytes that follow on port 21h are not mask writes: count them off.
+    dec byte [pic_init_words]
+    jmp .physical
+.command:
     test al, 10h
-    jz .not_icw1
-    mov ah, 1
-    test al, 2
-    jnz .single
-    inc ah
-.single:
-    test al, 1
-    jz .icw_counted
-    inc ah
-.icw_counted:
-    mov [pic_icw_pending], ah
-    jmp .fault
-.not_icw1:
-    ; OCW3 (bits 7 and 4 clear, bit 3 set): bit 1 with bit 0 selects what
-    ; port 20h reads, 0Ah the request register, 0Bh the in-service register;
-    ; bit 2 polls; bits 6:5 set or clear special mask mode, which the
-    ; physical controller keeps for itself as it serves the mixer as well;
-    ; with none of them it does nothing (8259A data sheet, OCW3).
+    jnz .init
+    cmp al, 48h
+    je .physical
+    cmp al, 68h
+    je .physical
+    cmp al, 0ah
+    je .select
+    cmp al, 0bh
+    je .select
+    cmp al, 20h
+    je .eoi
+    ; The other OCW3 forms (bits 7 and 4 clear, bit 3 set): bit 2 polls;
+    ; bit 1 with bit 0 selects what port 20h reads; with none of them it
+    ; does nothing (8259A data sheet, OCW3).
     mov ah, al
     and ah, 98h
     cmp ah, 08h
@@ -467,35 +470,55 @@ virtual_pic_write:
     and al, 0bh
     jmp .select
 .ocw2:
-    ; OCW2, by bits 6:5 (bit 7 adds a rotation, which the physical
-    ; controller keeps for itself, as it does the automatic rotation, 00,
-    ; and set priority, 10 with bit 7; 10 alone does nothing): 01 the
-    ; non-specific EOI, whatever the level bits, which count only in the
-    ; specific form, 11.
     mov ah, al
-    and ah, 60h
-    cmp ah, 20h
-    jne .not_plain_eoi
-    mov al, 20h
-    jmp .eoi
-.not_plain_eoi:
-    cmp ah, 60h
-    jne .done
+    and ah, 0f8h
+    ; Set the priority on the physical controller.
+    cmp ah, 0c0h
+    je .physical
+    ; Rotate on a specific EOI: the physical controller keeps the rotation
+    ; for itself; the EOI is the specific one.
+    cmp ah, 0e0h
+    jne .specific
     and al, 7fh
     mov ah, 60h
-.not_eoi:
+.specific:
+    cmp ah, 60h
+    jne .other
+%ifdef OWN_HOST
+    call virtual_pic_host_specific
+    jc .done
+%endif
     cmp al, [guest_eoi]
     je .guest_eoi
-    cmp ah, 60h
-    je .physical
-.fault:
-%ifdef MOUNTED_AUDIO
-    mov byte [fault], 5
-%else
-    mov byte [fault], 1
-%endif
+    jmp .physical
+.other:
+    ; Bits 6:5 01: the non-specific EOI, whatever the level bits and with or
+    ; without the rotation of bit 7. 00 (the automatic rotation) and 10
+    ; alone do nothing here.
+    and ah, 60h
+    cmp ah, 20h
+    jne .done
+    mov al, 20h
+    jmp .eoi
 .done:
     ret
+.init:
+    ; ICW2, ICW3 unless single, ICW4 if requested.
+    mov ah, 2
+    test al, 2
+    jz .cascade
+    dec ah
+.cascade:
+    test al, 1
+    jz .words
+    inc ah
+.words:
+    mov [pic_init_words], ah
+    mov byte [virtual_pic_service], 0
+    mov byte [virtual_pic_delivered], 0
+    mov byte [virtual_pic_mask], 0
+    mov byte [physical_pic_read], 0ah
+    jmp .physical
 .select:
     mov [physical_pic_read], al
 .physical:
@@ -516,6 +539,12 @@ virtual_pic_write:
     inc dword [irq_stray]
     ret
 .eoi_live:
+%endif
+%ifdef OWN_HOST
+    ; A real-mode handler the host runs to completion does not change the
+    ; virtual interrupt's owner (the author's 0.9.3c).
+    call virtual_pic_host_eoi
+    jc .done
 %endif
     ; With no virtual interrupt in service the EOI is the hardware's. A
     ; non-specific EOI with nothing in service does nothing, so it can go
@@ -546,11 +575,6 @@ virtual_pic_write:
     mov al, 20h
     jmp .physical
 .mask:
-    cmp byte [pic_icw_pending], 0
-    je .mask_write
-    dec byte [pic_icw_pending]
-    ret
-.mask_write:
     mov [virtual_pic_mask], al
     mov ah, [guest_irq_bit]
     not ah
@@ -564,6 +588,104 @@ virtual_pic_write:
     or al, [audio_irq_mask_bit]
     jmp .physical
 
+%ifdef OWN_HOST
+virtual_pic_host_service:
+    push es
+    push di
+    mov ah, 0ffh
+    cmp word [own_host_active+2], 0
+    je .done
+    les di, [own_host_active]
+    cmp byte [es:di], 1
+    jne .done
+    or al, [es:di+4]
+    mov ah, [es:di+5]
+.done:
+    pop di
+    pop es
+    ret
+
+; Complete real handlers do not change virtual audio ownership.
+virtual_pic_host_eoi:
+virtual_pic_host_specific:
+    push bx
+    push cx
+    push es
+    push di
+    mov bh, al
+    cmp word [own_host_active+2], 0
+    je .no_host
+    les di, [own_host_active]
+    cmp byte [es:di], 2
+    je .complete
+    cmp byte [es:di], 1
+    jne .no_host
+    cmp al, 20h
+    jne .specific
+    call physical_pic_isr
+    and al, [es:di+5]
+    push ax
+    mov bl, [es:di+4]
+    and bl, [es:di+5]
+    test bl, bl
+    jz .not_owned
+    mov bh, al
+    or al, bl
+    or al, [virtual_pic_service]
+    movzx cx, al
+    bsf cx, cx
+    mov al, 1
+    shl al, cl
+    test bl, al
+    jz .not_owned
+    ; The host ended the owned IRQ in hardware. A physical IRQ of the same
+    ; level is nested in its handler, and this EOI ends that IRQ.
+    test bh, al
+    jnz .not_owned
+    not al
+    and [es:di+4], al
+    pop ax
+    stc
+    jmp .restore
+.specific:
+    mov cl, al
+    and cl, 7
+    mov ch, 1
+    shl ch, cl
+    push ax
+    push dx
+    call physical_pic_isr
+    pop dx
+    test [es:di+4], ch
+    jz .not_owned
+    test al, ch
+    jnz .not_owned
+    not ch
+    and [es:di+4], ch
+    pop ax
+    stc
+    jmp .restore
+.not_owned:
+    pop ax
+    jmp .none
+.no_host:
+    cmp bh, 20h
+    jne .none
+    call physical_pic_isr
+.none:
+    clc
+    jmp .restore
+.complete:
+    call physical_write
+    stc
+.restore:
+    pop di
+    pop es
+    pop cx
+    pop bx
+    ret
+%endif
+
 virtual_dsp_irq db 0
 f2h_last dd 0
 f2h_calls dd 0
@@ -571,7 +693,6 @@ f2h_held db 0
 f2h_seen db 0
 virtual_pic_mask db 0ffh
 ; ICW bytes still to come on port 21h after an ICW1.
-pic_icw_pending db 0
 ; The interrupt counters UCDD -STATUS prints (driver.asm, control 10): the
 ; virtual interrupt's whole life, so a fault shows on the PC with the
 ; release build (an EOI swallowed as the game's, a handler never reached,
@@ -618,6 +739,7 @@ virtual_pic_delivered db 0
 ; requested or in service.
 virtual_irq_stale db 0
 DRV_PROFILE_DATA
+pic_init_words db 0
 
 
 ; CDF2 exposes these offsets to the protected host.

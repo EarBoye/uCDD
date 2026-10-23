@@ -1,6 +1,6 @@
 # Fork changes (`fixes` branch, unreleased)
 
-These changes are on top of Beta 0.9.3b. ISSUES.md records how each was
+These changes were made on top of Beta 0.9.3b, and the author's releases up to Beta 0.9.4-a6 are merged in (24 Oct 2026). Where both fixed the same thing, the author's version is the one kept; ISSUES.md (UPA6) lists each place. ISSUES.md records how each was
 tested; the ones marked hardware ran on a Pentium MMX 233 with an ESS
 ES1868, the rest in emulators (QEMU, DOSBox-X, 86Box with MS-DOS 7.1 and
 JemmEx).
@@ -87,6 +87,160 @@ JemmEx).
 ## Build
 
 - `--audio-period-frames`, `--no-refill-hint`, `--verify-mix`, `--profile-host` and `--profile-driver` as described in BUILDING.md. The flat sink, register flags image and word I/O split are in every resident-audio build.
+
+
+# Beta 0.9.4-a6
+
+## Changes in 0.9.4-a6
+
+- Run the Sound Blaster port trap on its own stack when a game leaves little stack below its stack pointer. This fixes the JemmEx exception in The 7th Guest.
+- Play 8-bit sound blocks that run past the end of a 64 KiB DMA page. The DMA address wraps to the start of the same page, as on the hardware. This fixes the missing sound and the stop at the Kremlin picture in the intro of The Big Red Adventure.
+- Keep three output periods in the audio ring instead of two. When an audio interrupt comes late, μCDD mixes the missed periods and does not play an old period again. This fixes the crackling CD-Audio in the hotel room of The Big Red Adventure, whose mouse driver keeps interrupts off for longer than one period. The resident driver uses about 1 KB more conventional memory.
+- Do not refill the CD-Audio queue from the audio interrupt while a protected-mode game is in a real-mode call. The DPMI host now refills the queue when the call returns. This prevents a JemmEx exception during a BIOS disk call.
+- DPMI host: give a protected-mode mouse driver call (INT 33h) its 32-bit EBX back after the real-mode call. This fixes the cursor in The Big Red Adventure.
+- Add an FM fader to the UCDDSET mixer. μCDD now passes the FM volume that a game sets through the Sound Blaster mixer to the physical card, scaled by the fader. Before, a game's FM volume change had no effect under μCDD. At 100 percent, the FM level that the card had before installation stays. An existing `UCDD.CFG` keeps its settings and gets the FM level when it is saved again.
+- Add volume hotkeys for the master, FM, and PCM levels. By default, Ctrl+Alt+Keypad + and - change the master volume, R and F the CD-Audio volume, T and G the FM volume, and Y and H the PCM volume. The hotkey step applies to all levels. The volume hotkeys of an existing `UCDD.CFG` take these defaults.
+- Add The 7th Guest and The Big Red Adventure to the [compatibility list](https://github.com/vorvek/uCDD/wiki/Compatibility).
+
+# Beta 0.9.4-a5
+
+## Changes in 0.9.4-a5
+
+- Read small CD-ROM data requests from raw images with one disk read for six sectors. Small data reads are about four times faster, and the intro video of The End of the World now plays at about native speed. The CD work buffer is about 10 KB larger. It goes to upper memory when a UMB is free; otherwise it uses conventional memory.
+- DPMI host: pass the mouse event handler call (INT 33h function 0Ch) from protected-mode programs to the mouse driver. This fixes the mouse in Igor: Objetivo Uikokahonia.
+- Remove duplicate code in the driver and the DPMI host.
+- Add a Fireworks visualization to UCDDPLAY. Rockets rise on bass hits and burst into gold, chrome, and burgundy sparks. Louder music starts more rockets.
+- Add Future Dimension, Igor: Objetivo Uikokahonia (Spanish CD version), Mortal Kombat Trilogy, PowerSlave, Sensible World of Soccer, Sensible World of Soccer 96/97, and Witchaven to the [compatibility list](https://github.com/vorvek/uCDD/wiki/Compatibility).
+
+# Beta 0.9.4-a4
+
+## Changes in 0.9.4-a4
+
+- Mix game sound correctly when a game starts a new sound block before the old block ends, or changes its DMA buffer at a block end. This fixes the crackling sound effects in Prototype and the echoes and crackling in Savage Warriors. The resident driver uses about 0.9 KB more upper memory. Conventional memory use does not change.
+- Give the DPMI host's locked interrupt stack eight levels instead of four, and keep two levels free for software interrupts. This fixes Fantasy General, which stopped on the map when the mouse moved.
+- Move the list of working games to the [compatibility list](https://github.com/vorvek/uCDD/wiki/Compatibility) in the wiki. Add Prototype, Savage Warriors, and Fantasy General to the list.
+
+# Beta 0.9.4-a3
+
+## Changes in 0.9.4-a3
+
+- Play single-cycle Creative ADPCM sound. μCDD converts it to PCM and mixes it with the CD-Audio. This fixes the missing sound effects in Tornado, The Patrician, and Town With No Name.
+- Accept short Sound Blaster DMA blocks, blocks shorter than one output period, and DMA buffers up to 64 KB. This fixes the sound in The Incredible Machine 2 and Alien Terminator.
+- Accept DSP commands 00h and 38h, the busy bit on DSP status reads, the length of DSP 4 Cxh commands, starts without arguments, and DSP commands 04h, 05h, 0Eh, and 0Fh. This fixes the sound startup in The Case of the Cautious Condor, Murder Makes Strange Deadfellows, Necromantics, Panic Soldier, Tornado, and Unlimited Warriors.
+- Trap the DMA master clear and mask-all ports, and split word writes to the PIC and wide Sound Blaster port access into bytes. This fixes the sound in Assault Rigs, Oscar, and The End of the World.
+- Pass the PIC initialization words, follow the rotated PIC priority, and send the EOI to the hardware for an owned interrupt that is in service. Sound no longer stops while the mouse moves in Magic Carpet 2 and XS, and Creature Shock starts.
+- Fill the CD-Audio queue from the Sound Blaster interrupt when a game stops the timer. This fixes the CD-Audio in Future Dimension and Judge Dredd.
+- Do not let a key that skips an intro stop a CD-Audio refill in DOS. Wait for the rest of a DSP command before a refill. This fixes the stopped CD-Audio and the hang in Prototype.
+- Remove old mouse bytes before each BIOS mouse setup call. The mouse no longer stays still in On the Ball, Golden Immortal, Syndicate Wars, Thunderscape, and XS when it moves while the game loads.
+- Ignore the request length of CD-ROM IOCTL and read requests, and stop reads at the lead-out. This fixes the CD access in Jetstrike, Lollypop, Tao, Angst, Necromantics, and Pinball Prelude.
+- Mount CUE sheets that have only audio tracks. This fixes Edna and Defender of the Crown.
+- Return the status for a repeated INIT request and follow the file table entry of open handles. This fixes Ultimate Body Blows.
+- Start the disk cache after DOS starts. This fixes the exception when MechWarrior 2: Ghost Bear's Legacy asks for the next disc during installation.
+- DPMI host: run the handlers of a parent program with the parent's settings while a child program runs, and share the parent's descriptors, callbacks, and interrupt vectors. This fixes the start and the sound effects of Judge Dredd, and Track Attack and Maximum Roadkill.
+- DPMI host: reflect INT 2Bh, translate DOS EXEC and more 32-bit DOS calls, and pass register-only mouse and multiplex calls. This fixes B.I.G., Genocide 2, Crusade, and Napion 3D.
+- DPMI host: report the real memory totals, detect the CPU, clear new pages, reuse freed blocks, and find free linear space faster. This fixes Hardball 4, X-Men: Children of the Atom, and Tao, and makes Mr. Tomato, Star Command: Revolution, and Queen: The Eye load faster.
+- DPMI host: handle STI, interrupt-flag, and INT nn faults from programs, and deliver real-mode interrupts that wait at the end of the audio interrupt. This fixes the Command & Conquer expansions, On the Ball, and Metal Rage.
+- Add a Chorus Line visualization to UCDDPLAY. A row of gold and chrome vector dancers with linked arms kicks in a wave. Louder frequency bands give higher kicks.
+- Add 133 games to the list of working Redbook-audio games. FIFA International Soccer and Rugby World Cup 95 need `UCDD -install -vcpi`.
+
+# Beta 0.9.4-a2
+
+## Changes in 0.9.4-a2
+
+- Accept CD-ROM requests with a short or zero length field when the command uses only the static header, and accept play requests with a zero length field. This fixes the missing CD music in Tunnel B1.
+- Mount CD images whose ISO volume descriptor states a volume larger than the image or has a nonstandard root directory record. This fixes the mount of The City of Lost Children, FX Fighter, and Hexen.
+- Support word reads of the Sound Blaster mixer index and data ports, and byte reads of the mixer index port. This fixes the startup crash in Hexen.
+- Play Sound Blaster PCM from DMA buffers above 1 MB for 8-bit and 16-bit, mono and stereo, single-cycle and auto-initialize transfers. Accept detection blocks that are longer than their DMA buffer. This fixes the sound initialization error in MadSpace.
+- Pass display configuration, palette, and VBE mode and window calls (INT 10h) from 16-bit protected-mode programs to the BIOS. This fixes the "not VGA" error in MadSpace.
+- Report a pending DMA request and the terminal count in the DMA status registers. This fixes the sound initialization error in Earth 2140.
+- Support the DSP silence command (80h). This fixes the stopped sound effects in The Varginha Incident.
+- Add a Vector Balls visualization to UCDDPLAY. A gold and a chrome strand of shaded balls turn as a double helix. Louder frequency bands make the helix wider and the balls larger.
+- Use a 128-frame audio output period instead of 32 frames. Sound no longer crackles or stops while a mouse driver holds the mouse interrupt for several milliseconds. The resident driver uses about 1.5 KB more conventional memory.
+- Add Earth 2140, Extreme Assault, Grand Theft Auto, Hexen: Beyond Heretic, Ignition, Iron Man and X-O Manowar in Heavy Metal, MadSpace, Mass Destruction, Network Q RAC Rally Championship, Nihilist, Nitro Racers, Power F1, Redneck Rampage, Roketz, Shadow Warrior, Star General, Syndicate Wars, Tempest 2000, The City of Lost Children, The Varginha Incident, Tunnel B1, X-Men: The Ravages of Apocalypse, XS, Z.A.R., and the English edition of Dráscula to the list of working Redbook-audio games.
+
+# Beta 0.9.4-a1
+
+## Changes in 0.9.4-a1
+
+- Extend bounded protected-mode instruction decoding for stack operations, address calculations, zero-extension loads, and register arithmetic.
+- Skip virtual debug-register scans when no client breakpoints are enabled.
+- Run protected-mode code with the virtual interrupt flag off at full speed. The host marks these regions with the NT flag and steps the program only while an interrupt waits. Settlers II missions load in about 19 seconds instead of about 115 seconds.
+- Start CD-Audio tracks faster. A play request reads 32 KB before it returns, and the timer fills the rest of the queue. A play request in Fascination takes about 34 ms instead of about 550 ms, and the mouse no longer stops at each track start.
+- Move the command parser, help text, and CUE and MDM code of UCDD.EXE into a second segment. This gives about 19.5 KB of room for resident code. The resident size does not change.
+- Keep the interrupted program's stack frame when a raw mode switch returns to protected mode during a host real-mode call. This fixes the crash on the table load in Absolute Pinball, a regression from 0.9.3a.
+- Seek and the location IOCTL now work on ISO images. Data reads accept Red Book addresses.
+- An application eject on a multi-disc set no longer releases the whole set.
+- `UCDD -unmount` accepts the CUE file name. CUE files with a UTF-8 byte-order mark or with INDEX 02 and higher now mount.
+- Apply the game volume once to direct DAC output. Reject invalid DSP sample rates and drop the remaining bytes of a rejected DSP command.
+- UCDDSET keeps the old UCDD.CFG when a save fails, ignores Ctrl+Break, and stops the capture of the key that started it.
+- UCDDPLAY: fix the calendar click on track 10, discs that start after track 1, and the READ LONG request length.
+- Show the version in the startup notice of UCDD, UCDDSET, and UCDDPLAY, and in the installation message.
+- Recommend that the mouse driver loads before uCDD.
+
+# Beta 0.9.4
+
+## Changes in 0.9.4
+
+- Add a Cubes visualization to UCDDPLAY. Eight rotating wireframe cubes change size with the frequency levels.
+
+- Support the Borland runtime used by Super Street Fighter II Turbo. Translate its protected-mode DOS buffers and PSP queries, supply its vendor API, and accept unchanged CR0 writes.
+- Clear the direction flag before preparing DOS register frames and preserve interrupted registers across protected-mode hardware handlers. This fixes startup and gameplay crashes in Super Street Fighter II Turbo.
+- Add Super Street Fighter II Turbo to the list of working Redbook-audio games. Start SF2TURBO directly to bypass MAKESWP.
+- Grow the DPMI memory-block table in extended memory when needed. This fixes false out-of-memory errors in Carmageddon's high-resolution and 3dfx modes when the game needs more than 256 memory blocks.
+- Add MechWarrior 2: 31st Century Combat and MechWarrior 2: Mercenaries to the list of working Redbook-audio games.
+- Forward real-mode BIOS timer callbacks to protected-mode DPMI handlers.
+- Support demand-mode DMA and PIC special mask mode used by Wipeout. Use a specific EOI for the output IRQ so that the mixer can run when the game masks an interrupt.
+- Accept word and dword PIC acknowledgements used by the Wipeout intro. Keep the interrupt mask unchanged and preserve real IRQ acknowledgement ownership.
+- Preserve deferred physical IRQs when a protected-mode program ends. Complete them on the restored real-mode interrupt chain, and keep pending IRQs when a child returns to its parent. This fixes ignored keyboard input after the Wipeout intro.
+- Decode simple 16-bit register instructions in bounded groups, and read the code size again for each instruction.
+- Add The Settlers II: Veni, Vidi, Vici (DOS Gold Edition 1.51) to the list of working Redbook-audio games.
+- Add Wipeout to the list of working Redbook-audio games.
+- Preserve the saved real-mode interrupt chain when a protected-mode handler returns through the same hardware interrupt bridge. This fixes the Fatal Racing intro startup freeze.
+- Hide VCPI detection from child programs while a protected-mode parent is active. This keeps movie sound inside the audio host and fixes the return from movies in Fatal Racing and Worms United.
+- Accept Sound Blaster playback requests made before the game programs its masked DMA channel. Read the selected DMA mode port through the physical backend. This fixes missing sound effects and the sound setup error in Manic Karts.
+- Add Fatal Racing and Manic Karts to the list of working Redbook-audio games.
+- Add Hyper 3-D Pinball to the list of working Redbook-audio games.
+- Add Earthworm Jim to the list of working Redbook-audio games.
+- Add Earthworm Jim 2 to the list of working Redbook-audio games.
+- Put the CD-ROM device header at offset zero. This fixes the driver entry address used by Mortal Kombat 3 during startup.
+- Add Mortal Kombat 3 to the list of working Redbook-audio games.
+- Add Worms United to the list of working Redbook-audio games.
+- Add World Rally Fever: Born on the Road to the list of working Redbook-audio games.
+- Add Rise 2: Resurrection (Director's Cut DOS edition) to the list of working Redbook-audio games.
+- Add Eradicator (DOS Release Version 1.0) to the list of working Redbook-audio games.
+- Add Shattered Steel (DOS 1.14) to the list of working Redbook-audio games.
+- Accept a CLTS instruction in virtual-8086 mode when the task-switched bit is already clear. This fixes the first startup fault in the DOS4GW 1.6 runtime used by Diggers 2.
+- Hide VCPI detection through simulated real-mode interrupts. Keep VCPI access available for the host's own startup query.
+- Preserve virtual interrupt flags when a CLI call uses different return paths. This fixes the timer wait during Diggers 2 startup.
+- Accept stereo DMA blocks with an odd number of 16-bit samples. This fixes missing sound effects in Surface Tension.
+- Add Surface Tension to the list of working Redbook-audio games.
+- Add Heroes of Might and Magic II: The Succession Wars (DOS base game from Deluxe Edition) to the list of working Redbook-audio games.
+- Add Diggers 2: Extractors to the list of working Redbook-audio games.
+
+# Beta 0.9.3d
+
+## Changes in 0.9.3d
+
+- Add a Landscape visualization to UCDDPLAY. Frequency levels form wireframe ridges that move from the horizon toward the listener.
+- Correct DPMI free-memory information. This fixes false insufficient-memory errors in Warcraft and Warcraft II.
+- Accept the fixed CD-ROM control blocks used by Warcraft II and the short control request headers used by SuperKarts.
+- Support Sound Blaster interrupt detection with high DSP time constants and 16-bit audio through an 8-bit DMA channel. This fixes sound card detection and sound effects in The Horde.
+- Improve conversion of low-rate Sound Blaster PCM with linear interpolation. This reduces distortion in The Horde.
+- Keep CD audio refills active when games stop the BIOS timer, as SuperKarts does. Prevent retrace timing from delaying an urgent refill, which caused gaps in The Horde.
+- Grow DPMI memory blocks in place when the adjacent address range is free. This fixes a page fault in Inferno.
+- Support unsigned 8-bit Sound Blaster 16 single-cycle audio commands with and without FIFO. This fixes sound effects in Inferno.
+- Add Alien Logic: A Skyrealms of Jorune Adventure, Inferno, Quarantine, Quarantine II: Road Warrior, SuperKarts, The Horde, and Warcraft II: Tides of Darkness to the list of working Redbook-audio games. Add a note about Alien Logic's CD music behavior.
+
+# Beta 0.9.3c
+
+## Changes in 0.9.3c
+
+- Add a Lissajous visualization to UCDDPLAY. The stereo channels draw an XY trace with fading trails.
+- Preserve interrupt ownership when protected-mode programs call real-mode interrupt handlers. This prevents unrelated BIOS interrupt acknowledgments from clearing the virtual Sound Blaster interrupt state and fixes silent or repeating sound effects in Batman Forever.
+- Use 16-bit interrupt and callback stacks for 16-bit DPMI programs. This fixes the startup failure in Chasm: The Rift.
+- Return the data-read status expected by SHSUCDX while CD audio plays. This fixes the CD check in affected Carmageddon editions with a full installation.
+- Add Alpha Storm and Chasm: The Rift to the list of working Redbook-audio games.
+- Add a Carmageddon compatibility note for the European editions' SHSUCDX requirement and the high-resolution font repair.
 
 # Beta 0.9.3b
 
