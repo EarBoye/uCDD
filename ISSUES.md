@@ -393,6 +393,73 @@ changed volumes.
   fails to engage at a mount (the card did not start) sets bit 7 of the
   fault byte and leaves CD audio silent until the next mount.
 
+## The count and the block interrupt
+
+### F8: the count short of the boundary at an auto-init block interrupt (23 Oct 2026)
+
+- Symptom: the CT2290's 8237 count sits on the block's boundary at every
+  block interrupt; through uCDD it was about 7Dh short (hardware: HWKIT,
+  19 Oct, D7 and D9 at 128 frames; F8 on `sound-engine-library`). In 86Box
+  at 32 frames (irq-batch, regression r32ib) every auto-init case of SBT16
+  reads the count short of the boundary in each of its first eight block
+  interrupts, by 8 to 122 units, about one to two output periods; every
+  single-cycle case reads it on the boundary.
+- Citation: vsb-spec 7.8 (one position, the card's fetch point: the count
+  moves sample by sample, never passes what uCDD has taken, never moves back
+  within a lap, and the block interrupt comes when that position crosses a
+  block's end); 8237A.txt:253-256; SBG:1590; ct2290.md.
+- Family: none: the virtual card's count and its auto-init block interrupt,
+  under every engine. Surveyed: DMX (mixes one block ahead of the count,
+  F18), HMI (writes up to the count), LucasArts' iMUSE (F2), Miles
+  (auto-init half-buffer interrupts), others (MIDAS, DSMI).
+- Baseline: irq-batch at 32 frames (r32ib) and the bare cards of the same
+  regression.
+- Reproducer: rsum's count at the block interrupt (ucdd-bench 00ce121):
+  fails r32ib and r32d9 in every auto-init case; passes the bare cards in
+  all 40 cases of both runs (L4).
+- Cause [read]: for auto-init the block interrupt follows the mix
+  (virtual_irq_tick through game_elapsed, which returns game_mix_frame, what
+  uCDD has taken), while the count follows the output clock (trap.asm
+  .dma_read: the smaller of the clock and the mix). Two positions one to two
+  periods apart: at the interrupt the count is that far short.
+- Hypothesis: one position for auto-init, the output clock plus one period,
+  never past the mix and never back within the transfer. game_elapsed
+  returns it, so the count, the block interrupt, the current block of DAh
+  and D9h, and the pause snapshot all use it; virtual_irq_tick takes the
+  clock its caller has just read. Single-cycle stays as it is: its count
+  already sits on the boundary at the interrupt (the transfer is finished in
+  the virtual card's state when the interrupt is raised), and its interrupt
+  must come once the mix has taken the block's end, or a game that restarts
+  from its handler misses sb_patch's window (one period, the write-ahead)
+  and the chain gets a gap [read].
+- Expected: the count at each auto-init interrupt on the boundary or up to
+  about a period past; auto-init interrupts about one period later than
+  now; the count nearer what is taken (DMX's margin, F18); DAh ends the
+  block the position is in, and when the mix has already taken past that
+  block's end, up to one period of the next block plays.
+- Plan: 7ed5820d (151 runs: 29 probes, 122 recordings, about 220 min).
+  Blocked: F2TEST (no verdict against a run without uCDD yet) and DMACNT's
+  verdict (the CT2290's numbers).
+
+### DMAMASK: a masked channel does not stall the virtual transfer (found 23 Oct 2026, open)
+
+- Symptom [86Box]: SBT16 C6 00 22050 M masks the 8-bit channel for 100 ms
+  after the second block interrupt. On the bare card the transfer stalls
+  and the third interrupt comes 137 to 142 ms after the second, on the
+  boundary. Through uCDD it comes mid-block and at no fixed time: 111.7 ms
+  after the first with the count at 029Ah (irq-batch, r32ib-001), 172.3 ms
+  with 05F7h (D9, r32d9-001). The regression's M check asks only whether the
+  transfer resumes, so it passed.
+- Citation: the 8237 services no request on a masked channel (8237A data
+  sheet, the mask register), so the DSP's transfer waits; vsb-spec says
+  nothing of a mask during a transfer yet.
+- Family: none (the virtual 8237).
+- Cause: not found. A guess [read]: the stream's position is worked out
+  from the output frame (mix.asm, game_elapsed), and nothing re-bases it at
+  the unmask as .resume does after D4h.
+- Next: its own change loop after F8; rsum's M case to judge the third
+  interrupt's time and count.
+
 ## Performance
 
 ### IRQCOST: the fixed cost of each card interrupt (23 Oct 2026)
