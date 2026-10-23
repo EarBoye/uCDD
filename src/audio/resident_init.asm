@@ -19,6 +19,8 @@ audio_activate:
     mov word [audio_error_text], memory_control_message
     call cd_memory_low
     jc .cleanup
+    ; The ESS takes the WSS ring (sb_model).
+    call sb_model
     mov bx, RING_PARAS*2
     cmp byte [sound_card], 3
     jne .pro_size

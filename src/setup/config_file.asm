@@ -173,7 +173,7 @@ config_valid:
 
 ; Check the physical card. A card without a high DMA channel keeps H5.
 physical_valid:
-    cmp byte [sound_card], 3
+    cmp byte [sound_card], 4
     ja .bad
     cmp byte [sound_card], 0
     je .port
@@ -230,6 +230,11 @@ value_listed:
 config_derive:
     movzx ax, byte [config_master_volume]
     mov bl, [sound_card]
+    ; The ESS mixer keeps the Sound Blaster Pro master register.
+    cmp bl, 4
+    jne .model
+    mov bl, 1
+.model:
     cmp bl, 3
     je .none
     cmp bl, 2

@@ -93,10 +93,12 @@ dsp_write:
     clc
     ret
 physical_reset:
+    mov al, 1
+; AL=reset value. The ESS extended mode sets bit 1 to clear the FIFO.
+.value:
     mov byte [dsp_failed], 0
     mov dx, [sb_base]
     add dx, 6
-    mov al, 1
     call physical_write
     mov cx, 64
 .delay:
@@ -126,7 +128,18 @@ physical_reset:
 .success:
     clc
     ret
+; Model 4 is the ESS AudioDrive in extended mode, on the WSS ring: from here
+; on it is ring type 2 with ess_native set. Callers that size the ring run
+; this before they read the model.
+sb_model:
+    cmp byte [sound_card], 4
+    jne .done
+    mov byte [sound_card], 2
+    mov byte [ess_native], 1
+.done:
+    ret
 sb_start:
+    call sb_model
     cmp byte [sound_card], 2
     je wss_start
     cmp byte [sound_card], 0
@@ -447,6 +460,19 @@ audio_irq:
     call sb_mono_next
     jmp .acknowledged
 .wss:
+    cmp byte [ess_native], 0
+    je .codec
+    ; Bit 0: the extended mode DMA counter overflowed. Reading 2xEh clears it.
+    mov dx, [sb_base]
+    add dx, 0ch
+    call physical_read
+    test al, 1
+    jz .unowned
+    inc dx
+    inc dx
+    call physical_read
+    jmp .acknowledged
+.codec:
     mov dx, [sb_base]
     add dx, 6
     call physical_read

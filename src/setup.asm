@@ -599,13 +599,13 @@ wss_port_choice:
     choice virtual_wss_base,2,wss_port_list,text_hex3,0
 wss_irq_choice:
     choice virtual_wss_irq,1,wss_irq_list,text_decimal,0
-model_values db 4
-    dw 0,1,3,2
+model_values db 5
+    dw 0,1,3,2,4
 no_values db 0
 virtual_model_values db 3
     dw 0,1,3
-model_names dw sb16_name,pro_name,wss_name,sb_name
-output_texts dw output_16,output_pro,output_16,output_sb
+model_names dw sb16_name,pro_name,wss_name,sb_name,ess_name
+output_texts dw output_16,output_pro,output_16,output_sb,output_16
 
 psp dw 0
 resident_entry dd 0
@@ -633,6 +633,7 @@ sb16_name db 'Sound Blaster 16',0
 pro_name db 'Sound Blaster Pro',0
 wss_name db 'Windows Sound System',0
 sb_name db 'Sound Blaster 1.5/2.0',0
+ess_name db 'ESS AudioDrive',0
 output_16 db '44.1 kHz, 16-bit stereo.',0
 output_pro db '8-bit stereo. Nominal rate: 22.05 kHz.',0
 output_sb db '22.22 kHz, 8-bit mono.',0

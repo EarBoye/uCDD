@@ -144,6 +144,44 @@ pro_start:
     stc
     ret
 
+; The ESS start's (audio/wss_output.asm, ess_setup); pro_start has the same
+; steps inline.
+; Set the 8-bit DMA channel ports, take the interrupt vector and unmask the IRQ.
+output_prepare:
+    mov al, [sb_dma8]
+    mov [dma_channel], al
+    movzx bx, al
+    shl bx, 1
+    mov [dma_address_port], bx
+    inc bx
+    mov [dma_count_port], bx
+    mov word [dma_page_port], 83h
+    cmp al, 1
+    je .irq
+    mov word [dma_page_port], 82h
+.irq:
+    mov al, [sb_irq]
+    add al, 8
+    mov ah, 35h
+    int 21h
+    mov [old_irq], bx
+    mov [old_irq+2], es
+    mov dx, audio_irq
+    mov al, [sb_irq]
+    add al, 8
+    mov ah, 25h
+    int 21h
+    mov dx, 21h
+    call physical_read
+    mov [saved_pic], al
+    mov cl, [sb_irq]
+    mov ah, 1
+    shl ah, cl
+    not ah
+    and al, ah
+    call physical_write
+    ret
+
 sb_mono_next:
     mov al, 14h
     call dsp_write

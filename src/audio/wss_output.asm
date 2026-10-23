@@ -4,6 +4,8 @@
 %include "audio/wss_codec.asm"
 
 wss_start:
+    cmp byte [ess_native], 0
+    jne ess_setup
     call wss_ready
     jc .fail
     mov al, 9
@@ -117,16 +119,31 @@ wss_start:
 wss_stop:
     cmp byte [sb_running], 0
     je .done
+    cmp byte [ess_native], 0
+    je .codec_stop
+    mov ax, 00b8h
+    call ess_write
+    jmp .mask
+.codec_stop:
     mov ax, 0c09h
     call indexed_write
+.mask:
     mov dx, 0ah
     mov al, [dma_channel]
     or al, 4
     call physical_write
+    cmp byte [ess_native], 0
+    je .codec_status
+    ; A reset returns the chip to Sound Blaster compatibility mode.
+    call physical_reset
+    call ess_mixer_restore
+    jmp .stopped
+.codec_status:
     mov dx, [sb_base]
     add dx, 6
     xor al, al
     call physical_write
+.stopped:
     mov dx, 21h
     mov al, [saved_pic]
     call physical_write
@@ -173,3 +190,216 @@ wss_restore:
     ret
 wss_saved times 16 db 0
 wss_saved_valid db 0
+
+; ESS AudioDrive extended mode: 16-bit signed stereo through the first audio
+; channel, on the 8-bit DMA channel, with the same ring as the WSS codec.
+ess_native db 0
+; Auto-initialize DAC, demand transfer of four bytes, 16-bit signed stereo.
+ess_table:
+    db 0b8h,04h, 0b9h,02h, 0b6h,00h, 0b7h,71h, 0b7h,0bch
+; 795.5 kHz / 18 = 44194 Hz. The ES1868 and later adjust their clock to make
+; it 44100 Hz (register BAh bit 6); ess_setup sets that, or else tells the mixer
+; the real rate. Filter clock 7.16 MHz / 5. One interrupt for each period.
+    db 0a1h,0eeh, 0a2h,0fbh
+    db 0a4h,(-PERIOD_BYTES) & 0ffh, 0a5h,((-PERIOD_BYTES) >> 8) & 0ffh
+; SI=table of register and value pairs, CX=count.
+ess_list:
+    lodsw
+    call ess_write
+    loop ess_list
+    ret
+; AL=register, AH=value.
+ess_write:
+    call dsp_write
+    mov al, ah
+    jmp dsp_write
+; AL=register. Keep the bits of CH and set the bits of CL.
+ess_modify:
+    mov bl, al
+    call ess_read
+    jc .done
+    and al, ch
+    or al, cl
+    mov ah, al
+    mov al, bl
+    jmp ess_write
+.done:
+    ret
+; AL=register. Returns AL=value, CF set on failure. Keeps BX and CX.
+ess_read:
+    push ax
+    mov al, 0c0h
+    call dsp_write
+    pop ax
+    call dsp_write
+    jc .done
+    push cx
+    mov cx, 65535
+    mov dx, [sb_base]
+    add dx, 0eh
+.wait:
+    call physical_read
+    test al, 80h
+    loopz .wait
+    pop cx
+    jz .fail
+    sub dx, 4
+    call physical_read
+    clc
+    ret
+.fail:
+    stc
+.done:
+    ret
+%ifdef RESIDENT_AUDIO
+; The sample rate generator divides 795.5 kHz, so 44.1 and 22.05 kHz come out
+; at 44194 and 22097 Hz. Chips from the ES1868 on can trim their clock to make
+; them exact: BAh bit 6. If the bit does not follow writes, the mixer is told
+; the real rate instead, as for the SB Pro, so games and disc audio keep time.
+ess_rate_adjust:
+    ; Only the ES1868 documents register BAh. Other chips keep the rate the
+    ; data sheets give.
+    call ess_identify
+    jc .real_rate
+    mov al, 0bah
+    mov cx, 2000h
+    call ess_modify
+    jc .real_rate
+    mov al, 0bah
+    call ess_read
+    jc .real_rate
+    test al, 40h
+    jnz .real_rate
+    mov al, 0bah
+    mov cx, 2040h
+    call ess_modify
+    jc .real_rate
+    mov al, 0bah
+    call ess_read
+    jc .real_rate
+    test al, 40h
+    jz .real_rate
+    ret
+.real_rate:
+    mov dword [output_rate], ESS_RATE
+    mov dword [cd_step], (44100*65536)/ESS_RATE
+    mov dword [cd_step_remainder], (44100*65536) % ESS_RATE
+    ret
+; 14.31818 MHz / 18 / 18
+ESS_RATE equ 44192
+
+; CF clear for an ES1868 or ES1878: with index 40h written once, four reads
+; of the mixer data port give 18h, then 68h or 78h, and the configuration
+; address (both data sheets, "Identifying the ES18x8"). On the ES1878 BAh
+; also carries the ADC offset adjust in bits 4:0, which the trim write
+; leaves at zero. Not the ES1869 (18h 69h): its BAh is the offset adjust
+; alone and its manual documents no clock trim. The ES1887 and ES1888 use
+; 40h as a configuration register and fail this on purpose. The index is written once because writing it again may restart
+; the sequence; the real ES1868 answers 18h 68h to this order.
+; physical_read loads AX (the QPI call), so the first byte is held in CL.
+ess_identify:
+    mov al, 40h
+    call wss_read
+    mov cl, al
+    call physical_read
+    mov bl, al
+    call physical_read
+    call physical_read
+    cmp cl, 18h
+    jne .other
+    cmp bl, 68h
+    je .known
+    cmp bl, 78h
+    je .known
+.other:
+    stc
+    ret
+.known:
+    clc
+    ret
+%endif
+
+; The mixer registers the start writes. A reset does not touch the mixer, so
+; the stop puts them back.
+ess_mixer_save:
+    xor bx, bx
+.register:
+    mov al, [ess_registers+bx]
+    call wss_read
+    mov [ess_saved+bx], al
+    inc bx
+    cmp bx, 3
+    jb .register
+    mov byte [ess_saved_valid], 1
+    ret
+ess_mixer_restore:
+    cmp byte [ess_saved_valid], 0
+    je .done
+    mov byte [ess_saved_valid], 0
+    xor bx, bx
+.register:
+    mov al, [ess_registers+bx]
+    mov ah, [ess_saved+bx]
+    call indexed_write
+    inc bx
+    cmp bx, 3
+    jb .register
+.done:
+    ret
+ess_registers db 14h,22h,26h
+ess_saved times 3 db 0
+ess_saved_valid db 0
+ess_setup:
+    ; Reset with bit 1 set to clear the FIFO, then enable the extended commands.
+    mov al, 3
+    call physical_reset.value
+    jc ess_modify.done
+    mov al, 0c6h
+    call dsp_write
+    mov si, ess_table
+    mov cx, 5
+    call ess_list
+    mov cl, 4
+    call ess_list
+%ifdef RESIDENT_AUDIO
+    call ess_rate_adjust
+%endif
+    ; Stereo: only bits 1 and 0 change. Then the interrupt and DMA request
+    ; enables.
+    mov al, 0a8h
+    mov cx, 0fc01h
+    call ess_modify
+    mov al, 0b1h
+    mov cx, 0f50h
+    call ess_modify
+    mov al, 0b2h
+    call ess_modify
+    jc ess_modify.done
+    call ess_mixer_save
+    ; Audio 1 play volume in the mixer.
+    mov ax, 0ff14h
+    call indexed_write
+    mov al, 22h
+    mov ah, [master_register]
+    call indexed_write
+    ; The 8-bit DMA channel in demand mode (the controller keeps the bus for
+    ; all bytes of one request), the vector and the IRQ, then the DAC.
+    call output_prepare
+    cli
+    mov es, [output_segment]
+    xor bx, bx
+    mov cx, RING_BYTES-1
+    mov ah, 18h
+    call pro_dma
+    mov byte [sb_running], 1
+    ; Enable the voice input, then start the auto-initialize DAC transfer.
+    mov al, 0d1h
+    call dsp_write
+    mov ax, 05b8h
+    call ess_write
+    sti
+    jnc .started
+    call wss_stop
+    stc
+.started:
+    ret

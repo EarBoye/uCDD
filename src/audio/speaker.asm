@@ -33,6 +33,9 @@ speaker_test:
     mov ax, 5801h
     int 21h
     jc .restore
+    mov al, [sound_card]
+    mov [speaker_model], al
+    call sb_model
     mov bx, RING_PARAS*2
     cmp byte [sound_card], 3
     jne .pro_size
@@ -44,7 +47,7 @@ speaker_test:
 .allocate_dma:
     mov ah, 48h
     int 21h
-    jc .restore
+    jc .unmodel
     mov [output_allocation], ax
     call ring_place
     mov [output_segment], ax
@@ -68,6 +71,13 @@ speaker_test:
     mov byte [fault], 1
 .stop:
     call sb_stop
+    ; The start replaced the ESS model with its ring type. Restore the setting.
+.unmodel:
+    mov byte [ess_native], 0
+    mov al, [speaker_model]
+    mov [sound_card], al
+    cmp word [output_allocation], 0
+    je .restore
     mov es, [output_allocation]
     mov ah, 49h
     int 21h
@@ -144,6 +154,7 @@ mix_half:
 .skip:
     ret
 
+speaker_model db 0
 speaker_policy db 0
 speaker_strategy dw 0
 speaker_umb db 0
