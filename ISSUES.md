@@ -445,6 +445,14 @@ changed volumes.
   - the stray-EOI marks where his host now hands the EOI to the real-mode
     handler (F14's design): F14's known-bad games (Mortal Kombat Trilogy,
     Theme Hospital) must pass the sound check before any kit.
+- F2 at 32 frames [read]: his ring is RING_PERIODS periods (3 by default),
+  96 frames at 32, and his mix_catch_up mixes RING_PERIODS-1 periods ahead.
+  output_clock reads within the ring, so a period interrupt late by more
+  than about two periods (1.5 ms at 32 frames) aliases the clock again, as
+  before 7994cd1; a larger ring would also mix the game's stream further
+  ahead (F18). His default of 128 frames gives 384 frames (8.7 ms). For
+  testing at 32: --audio-ring-periods up to 4 (build.py), up to 8 in
+  layout.inc. The fix, for later: a ring size apart from the write-ahead.
 - Before any kit: regression list a at 32 frames, the sound check (with
   F14's games, Hexen, Descent), the CD mounts (an audio-only sheet, INDEX 02,
   a byte-order mark), UCDD.CFG from each older version (our 4 at 38 bytes,
@@ -667,6 +675,9 @@ changed volumes.
   within about 1.5% of the bare card; the count at the interrupt as D1.
   Sound check rg32: as D1 (Hexen's on-time drops to about 0.6 in some runs
   of both builds: an audiocmp weakness, below).
+- Merged away (24 Oct, UPA6): the author's three-period ring replaces this
+  one; at 32 frames the alias returns for interrupts over about two periods
+  late (UPA6).
 - Not fixed by the ring (24 Oct, found reading the author's Beta 0.9.4-a6,
   which mixes the missed periods two periods ahead) [read]: the sound
   during a hold. The handler still mixes one slot ahead, so during a hold
