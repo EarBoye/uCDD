@@ -3,6 +3,7 @@
 
 %define DIRECT_OUTPUT 1
 %define OUTPUT_SHIFT 9
+%define RING_PERIODS 2
 %include "audio/layout.inc"
 
 speaker_test:
@@ -45,30 +46,12 @@ speaker_test:
     int 21h
     jc .restore
     mov [output_allocation], ax
-    cmp byte [sound_card], 3
-    jne .pro_align
-    add ax, RING_PARAS/8-1
-    and ax, ~(RING_PARAS/8-1)
-    jmp .dma_ready
-.pro_align:
-    cmp byte [sound_card], 1
-    jne .align_dma
-    add ax, RING_PARAS/4-1
-    and ax, ~(RING_PARAS/4-1)
-    jmp .dma_ready
-.align_dma:
-    add ax, RING_PARAS-1
-    and ax, ~(RING_PARAS-1)
-.dma_ready:
+    call ring_place
     mov [output_segment], ax
-    mov es, ax
-    xor di, di
+    mov [output_spare], dx
     mov word [speaker_half], 0
-    mov word [next_half], 0
-    mov dword [periods], 0
     mov byte [fault], 0
-    call mix_half
-    call mix_half
+    call mix_fill
     call sb_start
     jc .failed
     mov ax, 40h
@@ -168,6 +151,7 @@ speaker_half dw 0
 speaker_left dw 0
 output_allocation dw 0
 output_segment dw 0
+output_spare dw 0
 fault db 0
 speaker_tone:
     dw 0,588,1171,1742,2296,2828,3333,3806

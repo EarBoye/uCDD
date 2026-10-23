@@ -500,6 +500,9 @@ dpmi_mouse_depth db 0
 dpmi_mouse_vector dd 0
     dw 0
 dpmi_mouse_regs times 6 dw 0
+dpmi_mouse_ebx dd 0
+dpmi_mouse_ax dw 0
+dpmi_mouse_wide db 0
 dpmi_callback_index dw 0
 dpmi_callback_regs times 50 db 0
 dpmi_callback_resume dd 0

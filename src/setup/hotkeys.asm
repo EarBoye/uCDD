@@ -14,18 +14,18 @@ hotkeys_screen:
     mov word [form_draw], hotkeys_draw
     mov word [form_keys], hotkeys_keys
     mov word [form_notes], hotkey_notes
-    mov word [form_status_row], 0112h
+    mov word [form_status_row], 0113h
     call form_run
     form_restore
     mov byte [form_done], 0
     ret
 
 hotkeys_draw:
-    mov dx, 0504h
+    mov dx, 0404h
     mov si, modifiers_heading
     mov bl, A_TITLE
     call put_text
-    mov dx, 0608h
+    mov dx, 0508h
     mov si, ctrl_name
     mov bl, A_BOX
     call put_text
@@ -38,22 +38,25 @@ hotkeys_draw:
     mov dl, 44
     mov si, win_name
     call put_text
-    mov dx, 0704h
+    mov dx, 0604h
     mov si, modifiers_text
     call put_text
-    mov dx, 0904h
+    mov dx, 0804h
     mov si, hotkeys_header
     mov bl, A_TITLE
     call put_text
-    mov dx, 0a04h
+    mov dx, 0904h
     mov cx, 68
     mov al, 0c4h
     mov bl, A_BOX
     call put_repeat
-    mov dx, 0b04h
+    mov dx, 0a04h
     mov si, hotkey_labels
     call put_text
-    mov dx, 1104h
+    mov dx, 0a28h
+    mov si, volume_labels
+    call put_text
+    mov dx, 1204h
     mov si, hotkeys_text
     call put_text
     ret
@@ -63,7 +66,7 @@ hotkeys_keys:
     jne .escape
     cmp al, '.'
     je .done
-    ; Items 5 to 9 are the keys.
+    ; Items 5 to 15 are the keys.
     push ax
     mov ax, bx
     sub ax, hotkey_items
@@ -414,22 +417,29 @@ capture_read:
     pop bx
     ret
 
-HOTKEY_ITEMS equ 12
+HOTKEY_ITEMS equ 18
 hotkey_items:
-    item 6,4,1,0, NONE,4,NONE,1, format_modifier,toggle_modifier,0,0
-    item 6,16,1,1, NONE,4,0,2, format_modifier,toggle_modifier,0,0
-    item 6,27,1,2, NONE,4,1,3, format_modifier,toggle_modifier,0,0
-    item 6,40,1,3, NONE,4,2,NONE, format_modifier,toggle_modifier,0,0
-    item 11,34,12,0, 0,5,NONE,NONE, format_choice,choice_popup,choice_cycle,disc_keys_choice
-    item 12,34,12,0, 4,6,NONE,NONE, format_key,key_capture,0,0
-    item 13,34,12,1, 5,7,NONE,NONE, format_key,key_capture,0,0
-    item 14,34,12,2, 6,8,NONE,NONE, format_key,key_capture,0,0
-    item 15,34,12,3, 7,9,NONE,NONE, format_key,key_capture,0,0
-    item 16,34,12,4, 8,10,NONE,NONE, format_key,key_capture,0,0
-    item 20,29,8,0, 9,NONE,NONE,11, format_label,page_ok,0,ok_label
-    item 20,41,8,0, 9,NONE,10,NONE, format_label,page_cancel,0,cancel_label
+    item 5,4,1,0, NONE,4,NONE,1, format_modifier,toggle_modifier,0,0
+    item 5,16,1,1, NONE,4,0,2, format_modifier,toggle_modifier,0,0
+    item 5,27,1,2, NONE,4,1,3, format_modifier,toggle_modifier,0,0
+    item 5,40,1,3, NONE,8,2,NONE, format_modifier,toggle_modifier,0,0
+    item 10,25,12,0, 0,5,NONE,8, format_choice,choice_popup,choice_cycle,disc_keys_choice
+    item 11,25,12,0, 4,6,NONE,9, format_key,key_capture,0,0
+    item 12,25,12,1, 5,7,NONE,10, format_key,key_capture,0,0
+    item 13,25,12,2, 6,16,NONE,11, format_key,key_capture,0,0
+    item 10,59,12,5, 3,9,4,NONE, format_key,key_capture,0,0
+    item 11,59,12,6, 8,10,5,NONE, format_key,key_capture,0,0
+    item 12,59,12,3, 9,11,6,NONE, format_key,key_capture,0,0
+    item 13,59,12,4, 10,12,7,NONE, format_key,key_capture,0,0
+    item 14,59,12,7, 11,13,7,NONE, format_key,key_capture,0,0
+    item 15,59,12,8, 12,14,7,NONE, format_key,key_capture,0,0
+    item 16,59,12,9, 13,15,7,NONE, format_key,key_capture,0,0
+    item 17,59,12,10, 14,16,7,NONE, format_key,key_capture,0,0
+    item 20,29,8,0, 7,NONE,NONE,17, format_label,page_ok,0,ok_label
+    item 20,41,8,0, 15,NONE,16,NONE, format_label,page_cancel,0,cancel_label
 hotkey_notes dw 0,0,0,0,disc_keys_note
-    dw key_note,key_note,key_note,key_note,key_note,0,0
+    times HOTKEY_COUNT dw key_note
+    dw 0,0
 disc_keys_choice:
     choice config_disc_keys,1,disc_keys_list,text_disc_keys,disc_keys_changed
 disc_keys_values db 3
@@ -452,15 +462,25 @@ shift_name db 'Shift',0
 win_name db 'Win',0
 modifiers_text db 'Hold the selected modifier keys, then press the hotkey.',0
 hotkeys_header db 'Action'
-    times 25 db ' '
+    times 16 db ' '
+    db 'Key'
+    times 11 db ' '
+    db 'Action'
+    times 14 db ' '
     db 'Key',0
 hotkey_labels db 'Select disc 1 to 10',10
     db 'Next disc',10
     db 'Previous disc',10
-    db 'Eject the disc',10
-    db 'CD audio volume up',10
-    db 'CD audio volume down',0
-hotkeys_text db 'The game also receives each key. The key names are for a US keyboard.',0
+    db 'Eject the disc',0
+volume_labels db 'Master volume up',10
+    db 'Master volume down',10
+    db 'CD volume up',10
+    db 'CD volume down',10
+    db 'FM volume up',10
+    db 'FM volume down',10
+    db 'PCM volume up',10
+    db 'PCM volume down',0
+hotkeys_text db 'The game also receives each key.',0
 disc_keys_note db 'KEYB also uses Ctrl+Alt+F1 and F2.',0
 key_note db 'Del turns this hotkey off.',0
 disc_keys_numbers db '1 to 0',0

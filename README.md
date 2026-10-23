@@ -32,7 +32,7 @@ Copy `UCDD.EXE` and `UCDDSET.EXE` into one directory and run `UCDDSET`.
     </td>
     <td align="center" width="33%">
       <strong>Mixer</strong><br>
-      <a href="docs/ucddset-mixer.png"><img src="docs/ucddset-mixer.png" alt="UCDDSET CD audio, game audio, and master volume controls" width="100%"></a><br>
+      <a href="docs/ucddset-mixer.png"><img src="docs/ucddset-mixer.png" alt="UCDDSET CD audio, wave, FM, and master volume controls" width="100%"></a><br>
       <sub>Set audio levels and volume steps.</sub>
     </td>
   </tr>
@@ -41,8 +41,9 @@ Copy `UCDD.EXE` and `UCDDSET.EXE` into one directory and run `UCDDSET`.
 - **Physical** is the card in the machine. μCDD plays the mix on it. For a Plug and Play WSS codec, enter the WSS base address, four ports below the codec index port.
 - **Virtual** is what games see: a Sound Blaster (SB16, SB Pro, or SB 1.5/2.0, which report DSP 4.05, 3.02, or 2.01) and a WSS codec. The WSS codec uses the DMA Low channel of the virtual Sound Blaster, and a game can move its IRQ through the WSS board register. Where possible, match the virtual model to the physical card. For example, a virtual SB Pro on an SB Pro-compatible card keeps the game sound in 8-bit stereo and avoids a 16-bit conversion.
 - **Detect** reads the physical card from the hardware. `BLASTER` only fills in values that the tests cannot find. **Test** plays a tone on each speaker. Both need DOS without the μCDD audio driver.
+- **Mixer** sets the CD-Audio, wave, FM, and master levels. The wave level applies to the game's PCM sound. The FM level scales the FM volume that the game sets through the Sound Blaster mixer. At 100 percent, the FM level that the card had before installation stays. On an SB16, the same level also applies to a MIDI daughterboard.
 
-`UCDDSET` saves to `UCDD.CFG`. `UCDD -install` runs `UCDDSET`, which copies the settings into the driver and sets `BLASTER` for the virtual Sound Blaster. Other `BLASTER` fields, such as `P330`, are kept. If `UCDD.CFG` is missing or from an older version, the `UCDDSET` menu opens first. Changes take effect at the next boot.
+`UCDDSET` saves to `UCDD.CFG`. `UCDD -install` runs `UCDDSET`, which copies the settings into the driver and sets `BLASTER` for the virtual Sound Blaster. Other `BLASTER` fields, such as `P330`, are kept. If `UCDD.CFG` is missing or not valid, the `UCDDSET` menu opens first. A file from 0.9.4-a5 or earlier loads with the default volume hotkeys. Changes take effect at the next boot.
 
 CONFIG.SYS:
 ```dos
@@ -74,7 +75,7 @@ Install once per boot, before the redirector. `UCDD -install -units 2` creates t
 
 It is recommended to load your mouse driver before μCDD.
 
-With one drive, JEMMEX, and free UMBs, a sample installation used 2,096 bytes of conventional memory with `LH UCDD -install`. When loaded low and moved to upper memory, it used 2,384 bytes.
+With one drive, JEMMEX, and free UMBs, a sample installation used 3,120 bytes of conventional memory with `LH UCDD -install`. When loaded low and moved to upper memory, it used 3,408 bytes.
 
 ```dos
 UCDD -mount C:\IMAGES\GAME.CUE
@@ -117,9 +118,12 @@ All listed images are opened before the mount replaces the current disc. If a li
 | Select disc 1 to 10 | Ctrl+Alt+1 to Ctrl+Alt+0 (or F1 to F10) |
 | Next / previous disc | Ctrl+Alt+PgDn / Ctrl+Alt+PgUp |
 | Eject | Ctrl+Alt+E |
-| CD-Audio volume up / down | Ctrl+Alt+Keypad + / Ctrl+Alt+Keypad - |
+| Master volume up / down | Ctrl+Alt+Keypad + / Ctrl+Alt+Keypad - |
+| CD-Audio volume up / down | Ctrl+Alt+R / Ctrl+Alt+F |
+| FM volume up / down | Ctrl+Alt+T / Ctrl+Alt+G |
+| PCM volume up / down | Ctrl+Alt+Y / Ctrl+Alt+H |
 
-The modifier keys can be any mix of Ctrl, Alt, Shift, and Win. The keys still reach the game. Key names are US layout; on other layouts, use the key in the same position.
+The modifier keys can be any mix of Ctrl, Alt, Shift, and Win. The keys still reach the game.
 
 Eject makes the drive report no disc and keeps the image open. A disc key, or next or previous disc, inserts a disc again. The hotkeys control the MDM drive, or the first μCDD drive when no MDM file is mounted.
 

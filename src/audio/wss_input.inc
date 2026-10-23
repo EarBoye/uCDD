@@ -93,14 +93,7 @@
 .wss_volume:
     sub bx, 6
     shl bx, 2
-    xor ecx, ecx
-    test al, 80h
-    jnz .wss_gain
-    and ax, 3fh
-    mov si, ax
-    shl si, 2
-    mov ecx, [wss_attenuation+si]
-.wss_gain:
+    call wss_level
     mov [wss_gain+bx], ecx
     jmp .done
 .wss_format:

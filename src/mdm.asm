@@ -533,15 +533,22 @@ mdm_scan:
     ret
 
 %ifdef RESIDENT_AUDIO
-; BL 3 raises and BL 4 lowers the CD audio volume.
+; BX 3 to 10 selects a volume key. An even key raises a level and an odd key
+; lowers it: CD, master, FM, then PCM.
 hotkey_volume:
     push ds
+    push si
+    push di
     push cs
     pop ds
-    mov al, [config_cd_volume]
+    sub bx, 3
+    mov si, bx
+    and si, 0eh
+    mov di, [volume_levels+si]
+    mov al, [di]
     mov ah, [config_volume_step]
-    cmp bl, 3
-    jne .down
+    test bl, 1
+    jnz .down
     add al, ah
     cmp al, 100
     jbe .store
@@ -552,10 +559,15 @@ hotkey_volume:
     jnc .store
     xor al, al
 .store:
-    mov [config_cd_volume], al
-    call cd_gain_update
+    mov [di], al
+    call [volume_updates+si]
+    pop di
+    pop si
     pop ds
     ret
+
+volume_levels dw config_cd_volume,config_master_volume,config_fm_volume,config_game_volume
+volume_updates dw cd_gain_update,master_update,fm_update,pcm_update
 %endif
 
 mdm_timer:

@@ -45,8 +45,7 @@ mix_half:
 .cd_ready:
 %endif
 %endif
-    mov eax, [periods]
-    inc eax
+    mov eax, [mix_period]
     shl eax, OUTPUT_SHIFT
 %ifdef RESIDENT_AUDIO
     cmp byte [sb_patch_active], 0

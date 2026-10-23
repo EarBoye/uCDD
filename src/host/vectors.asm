@@ -545,6 +545,16 @@ dpmi_software_interrupt:
     mov ebx, esp
     call dpmi_tf_entry
     cmp word [esi+4], 0
+    je .reflect
+    cmp byte [ebp+dpmi_reflect_vector], 33h
     jne dpmi_deliver_interrupt
+    ; Keep the registers for the client's translation (dpmi_mouse_wide_regs).
+    mov eax, [ebx+24]
+    mov [ebp+dpmi_mouse_ebx], eax
+    mov ax, [ebx+36]
+    mov [ebp+dpmi_mouse_ax], ax
+    mov byte [ebp+dpmi_mouse_wide], 1
+    jmp dpmi_deliver_interrupt
+.reflect:
     cld
     jmp dpmi_dos_translate

@@ -807,6 +807,7 @@ dpmi_dispatch:
     movzx ecx, word [ebx+32]
     cmp ecx, 2048
     ja dpmi_bad_value
+    call dpmi_mouse_wide_regs
     mov ax, [ebx+36]
     cmp al, 0
     jne .copy_stack
@@ -840,6 +841,36 @@ dpmi_dispatch:
 .prepare_error:
     add esp, 4
     jmp dpmi_error
+
+; DOS/4GW passes INT 33h to real mode with 16-bit BX. The SVGA mouse driver
+; of Big Red Adventure takes the cursor segment from the upper half of EBX.
+; EBX=client frame, EDI=real-mode register structure.
+dpmi_mouse_wide_regs:
+    cmp byte [ebp+dpmi_mouse_wide], 0
+    je .done
+    mov byte [ebp+dpmi_mouse_wide], 0
+    cmp byte [ebx+36], 0
+    jne .far
+    cmp byte [ebx+24], 33h
+    je .target
+    ret
+.far:
+    mov eax, [33h*4]
+    cmp eax, [edi+42]
+    jne .done
+.target:
+    mov ax, [edi+28]
+    cmp ax, [ebp+dpmi_mouse_ax]
+    jne .done
+    mov eax, [edi+16]
+    cmp eax, 0ffffh
+    ja .done
+    cmp ax, [ebp+dpmi_mouse_ebx]
+    jne .done
+    mov eax, [ebp+dpmi_mouse_ebx]
+    mov [edi+16], eax
+.done:
+    ret
 
 ; EBX=client frame, EDI=real-mode register structure, ECX=word count.
 dpmi_stack_copy:

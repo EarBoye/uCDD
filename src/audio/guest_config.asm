@@ -14,30 +14,9 @@ guest_configure:
     ; A game can still select another IRQ in the WSS board register.
     mov al, [virtual_wss_irq]
     mov [wss_guest_irq], ax
-    movzx edi, byte [config_game_volume]
-    cmp di, 100
-    je .levels
-    mov ebx, 100
-    mov si, sb_pcm_gain
-    mov cx, 2
-    call guest_scale
-    mov si, wss_attenuation
-    mov cx, 64
-    call guest_scale
-.levels:
+    call sb_pcm_update
     call cd_gain_update
     call guest_ports_init
-    ret
-
-; SI dword table, CX count, EDI percent, EBX 100.
-guest_scale:
-    mov eax, [si]
-    imul eax, edi
-    xor edx, edx
-    div ebx
-    mov [si], eax
-    add si, 4
-    loop guest_scale
     ret
 
 guest_ports_init:

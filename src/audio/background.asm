@@ -67,36 +67,15 @@ cd_timer_refill:
     les bx, [own_host_active]
     cmp byte [es:bx], 1
     jne .synchronous
-    ; The audio IRQ interrupted real-mode code with IF set. Hold the client.
-    cmp byte [cd_irq_forced], 0
-    je .deferred
-    mov bp, sp
-    test byte [ss:bp+45], 2
-    jz .deferred
-    mov bx, [es:bx+8]
-    test bx, bx
-    jz .deferred
-    cmp byte [es:bx], 0
-    jne .deferred
-    mov byte [es:bx], 1
-    mov [cd_host_hold], bx
-    mov [cd_host_hold+2], es
-    mov word [cd_host_missed], 0
-    mov byte [cd_background_reads], CD_TIMER_MAX_READS
-    jmp .synchronous
-.deferred:
+    ; With a protected-mode client, real-mode code runs inside a host call.
+    ; A refill from this IRQ nests DOS and the BIOS in that call and breaks
+    ; JEMMEX's nested execution (Earthworm Jim). The host refills when the
+    ; call returns.
     mov byte [cd_refill_pending], 1
     jmp .done
 .synchronous:
 %endif
     call cd_refill_run
-%ifdef OWN_HOST
-    cmp word [cd_host_hold+2], 0
-    je .done
-    les bx, [cd_host_hold]
-    mov byte [es:bx], 0
-    mov dword [cd_host_hold], 0
-%endif
 .done:
     pop gs
     pop fs
@@ -267,7 +246,6 @@ cd_irq_refill db 0
 cd_irq_entry db 0
 cd_irq_forced db 0
 cd_host_missed dw 0
-cd_host_hold dd 0
 cd_background_set db 0
 cd_background_reads db 0
 

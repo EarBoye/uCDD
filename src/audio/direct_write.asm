@@ -20,7 +20,7 @@ sb_dac_write:
     mov byte [sb_dac_enabled], 1
 .ready:
     call output_clock
-    add eax, PERIOD_FRAMES*2
+    add eax, RING_FRAMES
     pop dx
     mov es, [sb_tail_segment]
     mov bx, [sb_dac_head]

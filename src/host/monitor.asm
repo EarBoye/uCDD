@@ -979,6 +979,9 @@ mon_resume:
     pop dword [ebp+mon_resume_sp]
     pop dword [ebp+mon_switch+16]
     add esp, 40
+%ifdef RESIDENT_HOST
+    call resident_refill_callback
+%endif
     ret
 
 mon_exception:

@@ -13,6 +13,7 @@
 qpi dd 0
 output_segment dw 0
 output_allocation dw 0
+output_spare dw 0
 cd_half_allocation dw 0
 cd_half_segment dw 0
 cd_work_allocation dw 0

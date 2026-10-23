@@ -97,15 +97,24 @@ output_clock:
     mov ebx, RING_WORDS-1
     sub ebx, eax
     shr ebx, 1
-    mov eax, [periods]
-    shl eax, OUTPUT_SHIFT
-    mov edx, eax
-    xor edx, ebx
-    test edx, PERIOD_FRAMES
-    jz .same_half
-    add eax, PERIOD_FRAMES
-.same_half:
+    mov eax, ebx
+    shr eax, OUTPUT_SHIFT
     and ebx, PERIOD_FRAMES-1
+    ; The first period at or after [periods] in the ring slot that plays.
+    push ecx
+    push eax
+    mov eax, [periods]
+    xor edx, edx
+    mov ecx, RING_PERIODS
+    div ecx
+    pop eax
+    pop ecx
+    sub eax, edx
+    jge .slot_ahead
+    add eax, RING_PERIODS
+.slot_ahead:
+    add eax, [periods]
+    shl eax, OUTPUT_SHIFT
     add eax, ebx
     mov [last_clock], eax
     ret
@@ -201,6 +210,21 @@ mixer_read:
 .done:
     ret
 
+%ifdef RESIDENT_AUDIO
+; The mixer can use more stack than a game leaves below its own stack pointer.
+%macro callback_stack_enter 0
+    cmp byte [cs:callback_depth], 0
+    jne %%nested
+    mov [cs:callback_ss], ss
+    mov [cs:callback_sp], sp
+    push cs
+    pop ss
+    mov sp, callback_stack_top
+%%nested:
+    inc byte [cs:callback_depth]
+%endmacro
+%endif
+
 port_callback:
 %ifdef RESIDENT_AUDIO
     cmp byte [cs:callback_set], 0
@@ -208,6 +232,7 @@ port_callback:
     stc
     retf
 .active:
+    callback_stack_enter
 %endif
     pushad
     movzx ebp, sp
@@ -220,6 +245,7 @@ port_callback:
     mov dword [ss:ebp+12], 0
     jmp .data_ready
 .emm_entry:
+    callback_stack_enter
     pushad
     mov ebp, esp
     push ds
@@ -421,6 +447,8 @@ port_callback:
 .mixer_volume:
     cmp bl, 22h
     je .master_pair
+    cmp bl, 26h
+    je .fm_pair
     cmp bl, 28h
     je .cd_pair
     cmp bl, 4
@@ -437,6 +465,9 @@ port_callback:
     jmp .volume_pair
 .cd_pair:
     mov bx, 36h
+    jmp .volume_pair
+.fm_pair:
+    mov bx, 34h
 .volume_pair:
     mov ah, al
     and al, 0f0h
@@ -452,8 +483,6 @@ port_callback:
     cmp bl, 37h
     ja .done
     and bl, 0feh
-    cmp bl, 34h
-    je .done
     mov al, [virtual_mixer+bx]
     and al, 0f0h
     mov ah, [virtual_mixer+bx+1]
@@ -465,14 +494,22 @@ port_callback:
     jmp .volume_update
 .cd_view:
     cmp bl, 36h
-    jne .voice_view
+    jne .fm_view
     mov [virtual_mixer+28h], al
+    jmp .volume_update
+.fm_view:
+    cmp bl, 34h
+    jne .voice_view
+    mov [virtual_mixer+26h], al
     jmp .volume_update
 .voice_view:
     mov [virtual_mixer+4], al
 .volume_update:
 %ifdef MOUNTED_AUDIO
     call cd_gain_update
+%endif
+%ifdef RESIDENT_AUDIO
+    call fm_update
 %endif
 .voice_gain:
     call sb_pcm_update
@@ -1309,6 +1346,7 @@ port_callback:
     cmp edx, eax
     ja .argument_rejected
 .buffer_address:
+    mov byte [game_page_wrap], 0
     movzx eax, word [si+DMA_ADDRESS]
     cmp si, dma16
     jne .byte_address
@@ -1324,17 +1362,27 @@ port_callback:
 .address_window:
     add ecx, eax
     add eax, ebx
+    push eax
+    push ecx
+    push ebx
+    call dma_source_split
+    mov [pending_source_segment], cx
+    mov [pending_source_offset], bx
+    pop ebx
+    pop ecx
+    pop eax
     cmp si, dma16
     je .word_window
+    ; An 8-bit block past the end of the 64 KiB page wraps to the page start
+    ; (Big Red Adventure), as the DMA address counter does.
     cmp eax, 65536
-    ja .argument_rejected
-    jmp .address_limit
+    jbe .address_limit
+    mov byte [game_page_wrap], 1
+    jmp .linear_limit
 .word_window:
     cmp eax, 131072
     ja .argument_rejected
 .address_limit:
-    cmp si, dma16
-    jne .linear_limit
     mov eax, ecx
     and eax, 15
     add eax, ebx
@@ -1343,6 +1391,12 @@ port_callback:
 .linear_limit:
     mov eax, ecx
     add eax, ebx
+    cmp byte [game_page_wrap], 0
+    je .end_ready
+    mov eax, ecx
+    or ax, 0ffffh
+    inc eax
+.end_ready:
     ; The mixer reads the game's view of memory, so a buffer in a UMB
     ; (Jurassic Park) needs no physical copy.
     cmp eax, 100000h
@@ -1359,6 +1413,10 @@ port_callback:
     ; Source offsets include game_offset.
     mov eax, ecx
     and al, 0f0h
+    cmp byte [game_page_wrap], 0
+    je .physical_ready
+    and eax, 0ffff0000h
+.physical_ready:
     mov [game_physical], eax
     jmp .source_ready
 .low_source:
@@ -1417,11 +1475,10 @@ port_callback:
     mov dword [game_limit], 0
 .pcm_ring:
     mov byte [sb_dac_enabled], 0
-    mov bx, si
-    and bx, 15
-    mov [game_offset], bx
-    shr esi, 4
-    mov [game_segment], si
+    mov ax, [pending_source_offset]
+    mov [game_offset], ax
+    mov ax, [pending_source_segment]
+    mov [game_segment], ax
     mov byte [game_start_pending], 1
     mov dword [game_exit_frame], 0
     mov byte [sb_paused], 0
@@ -1774,6 +1831,13 @@ port_callback:
     pop es
     pop ds
     popad
+%ifdef RESIDENT_AUDIO
+    dec byte [cs:callback_depth]
+    jnz .stack_ready
+    mov ss, [cs:callback_ss]
+    mov sp, [cs:callback_sp]
+.stack_ready:
+%endif
     clc
     retf
 
@@ -2076,12 +2140,35 @@ emm_dma_snapshot:
 trap_ports:
 %include "audio/ports.inc"
     dw 0
+; ECX=linear DMA start, EBX=buffer bytes, SI=channel. Returns CX=segment,
+; BX=offset of the mixer source. An 8-bit buffer past the end of its 64 KiB
+; page gets the page as segment: the 16-bit offset then wraps like the DMA
+; address counter.
+dma_source_split:
+    mov bx, cx
+    cmp si, dma16
+    je .linear
+    movzx eax, cx
+    add eax, ebx
+    cmp eax, 65536
+    jbe .linear
+    shr ecx, 16
+    shl cx, 12
+    ret
+.linear:
+    and bx, 15
+    shr ecx, 4
+    ret
+
 trapped_count dw 0
 callback_set db 0
 trap_remove_failed db 0
 old_callback dd 0
 port_calls dd 0
 last_clock dd 0
+game_page_wrap db 0
+pending_source_segment dw 0
+pending_source_offset dw 0
 game_start_pending db 0 ; 1: wait for mixing, 2: wait for output.
 dma_pending_command db 0
 dma_pending_count dw 0
@@ -2140,7 +2227,9 @@ virtual_mixer:
     db 0ffh
     times 22h-5 db 0
     db 0ffh
-    times 28h-23h db 0
+    times 26h-23h db 0
+    db 0ffh
+    db 0
     db 0ffh
     times 30h-29h db 0
     times 8 db 0f8h
@@ -2166,6 +2255,12 @@ sb_id_phase db 0
 %ifdef RESIDENT_AUDIO
 callback_port dw 0
 callback_value db 0
+callback_ss dw 0
+callback_sp dw 0
+callback_depth db 0
+    align 2
+times 512 db 0
+callback_stack_top:
 %endif
 %ifdef WSS_INPUT
 %include "audio/wss_state.inc"

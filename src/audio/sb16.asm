@@ -152,7 +152,7 @@ sb_start:
     jc .fail
     mov si, mixer_registers
     mov di, mixer_saved
-    mov cx, 4
+    mov cx, 6
 .mixer:
     mov dx, [sb_base]
     add dx, 4
@@ -162,14 +162,23 @@ sb_start:
     call physical_read
     mov [di], al
     inc di
+    ; Registers 34h and 35h hold the FM level, which fm_init sets below.
     ; Registers 30h and 31h hold the master volume.
+    cmp cx, 4
+    ja .next
     mov al, 0f8h
     cmp cx, 2
     jbe .level
     mov al, [master_register]
 .level:
     call physical_write
+.next:
     loop .mixer
+%ifdef RESIDENT_AUDIO
+    mov al, [mixer_saved]
+    mov ah, [mixer_saved+1]
+    call fm_init
+%endif
     mov al, [sb_irq]
     add al, 8
     mov ah, 35h
@@ -274,7 +283,7 @@ sb_stop:
     pop ds
     mov si, mixer_registers
     mov di, mixer_saved
-    mov cx, 4
+    mov cx, 6
 .mixer:
     mov dx, [sb_base]
     add dx, 4
@@ -325,35 +334,15 @@ audio_irq:
 %ifdef RESIDENT_AUDIO
     call sb_patch
 %endif
-    inc dword [periods]
 %ifdef MOUNTED_AUDIO
+    ; The DMA position gives the period that plays, also after a late IRQ.
     call output_clock
     shr eax, OUTPUT_SHIFT
     mov [periods], eax
-    and ax, 1
-    xor ax, 1
-    shl ax, OUTPUT_SHIFT+2
-    test byte [sound_card], 1
-    jz .half_ready
-    shr ax, 2
-    cmp byte [sound_card], 3
-    jne .half_ready
-    shr ax, 1
-.half_ready:
-    mov [next_half], ax
+%else
+    inc dword [periods]
 %endif
-    mov es, [output_segment]
-    mov di, [next_half]
-    mov ax, PERIOD_BYTES
-    test byte [sound_card], 1
-    jz .half_size
-    shr ax, 2
-    cmp byte [sound_card], 3
-    jne .half_size
-    shr ax, 1
-.half_size:
-    xor [next_half], ax
-    call mix_half
+    call mix_catch_up
 %ifdef VIRTUAL_IRQ
     call virtual_irq_tick
 %ifdef OWN_HOST
@@ -532,6 +521,89 @@ audio_irq_unmask:
     call physical_write
     ret
 
+; Mix every period from mix_period to the last one the ring holds ahead of
+; the period that plays. Periods the DMA passed before their mix are lost.
+mix_catch_up:
+    mov eax, [periods]
+    cmp [mix_period], eax
+    ja .ahead
+    inc eax
+    mov [mix_period], eax
+.ahead:
+    mov eax, [periods]
+    add eax, RING_PERIODS
+    cmp [mix_period], eax
+    jae .done
+    call mix_next
+    jmp .ahead
+.done:
+    ret
+
+; Mix period mix_period into its ring slot.
+mix_next:
+    mov eax, [mix_period]
+    shl eax, OUTPUT_SHIFT
+    call ring_offset
+    mov di, ax
+    mov es, [output_segment]
+    call mix_half
+    inc dword [mix_period]
+    ret
+
+; Mix the whole ring before the output starts.
+mix_fill:
+    mov dword [periods], 0
+    mov dword [mix_period], 0
+.next:
+    call mix_next
+    cmp dword [mix_period], RING_PERIODS
+    jb .next
+    ret
+
+; EAX: an output frame. Returns AX: its byte offset in the output ring.
+ring_offset:
+    push edx
+    push ecx
+    xor edx, edx
+    mov ecx, RING_FRAMES
+    div ecx
+    mov eax, edx
+    shl ax, 2
+    test byte [sound_card], 1
+    jz .done
+    shr ax, 2
+    and ax, 0fffeh
+    cmp byte [sound_card], 3
+    jne .done
+    shr ax, 1
+.done:
+    pop ecx
+    pop edx
+    ret
+
+; AX: a block of two ring sizes. Returns AX: the ring segment, which does not
+; cross a 64 KiB page, and DX: the other ring size.
+ring_place:
+    mov cx, RING_PARAS
+    cmp byte [sound_card], 3
+    jne .pro
+    shr cx, 1
+.pro:
+    test byte [sound_card], 1
+    jz .size_ready
+    shr cx, 2
+.size_ready:
+    mov dx, ax
+    add dx, cx
+    mov bx, ax
+    and bx, 0fffh
+    add bx, cx
+    cmp bx, 1000h
+    jbe .done
+    xchg ax, dx
+.done:
+    ret
+
 audio_irq_old_mask db 0
 old_irq dd 0
 dma_pages db 8bh,89h,8ah
@@ -541,13 +613,13 @@ dma_address_port dw 0c4h
 dma_count_port dw 0c6h
 irq_ss dw 0
 irq_sp dw 0
-next_half dw 0
+mix_period dd 0
 periods dd 0
 saved_pic db 0
 sb_running db 0
 dsp_failed db 0
-mixer_registers db 30h,31h,32h,33h
-mixer_saved times 4 db 0
+mixer_registers db 34h,35h,30h,31h,32h,33h
+mixer_saved times 6 db 0
 
 %include "audio/wss_output.asm"
 %include "audio/pro_output.asm"

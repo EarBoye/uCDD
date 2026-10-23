@@ -66,9 +66,11 @@ def main():
                         help='Build host counters in build/profile. Use with --resident-audio.')
     parser.add_argument('--audio-period-frames', type=int, choices=(32, 64, 128, 256),
                         default=128, help='Set the resident audio output period for testing.')
+    parser.add_argument('--audio-ring-periods', type=int, choices=(2, 3, 4),
+                        default=3, help='Set the number of output periods in the DMA ring for testing.')
     args = parser.parse_args()
-    if args.audio_period_frames != 128 and not args.resident_audio:
-        parser.error('--audio-period-frames requires --resident-audio.')
+    if (args.audio_period_frames != 128 or args.audio_ring_periods != 3) and not args.resident_audio:
+        parser.error('--audio-period-frames and --audio-ring-periods require --resident-audio.')
     if args.profile_host:
         if not args.resident_audio:
             parser.error('--profile-host requires --resident-audio.')
@@ -77,7 +79,8 @@ def main():
     for source, name in [('src/ucdd.asm', 'UCDD.EXE'),
                          ('src/setup.asm', 'UCDDSET.EXE')]:
         if args.resident_audio and name == 'UCDD.EXE':
-            assemble_resident_host((f'OUTPUT_SHIFT={args.audio_period_frames.bit_length()-1}',),
+            assemble_resident_host((f'OUTPUT_SHIFT={args.audio_period_frames.bit_length()-1}',
+                                    f'RING_PERIODS={args.audio_ring_periods}'),
                                    profile=args.profile_host)
         else:
             assemble(source, name, exe=True)

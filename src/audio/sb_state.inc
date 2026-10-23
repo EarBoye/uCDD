@@ -48,7 +48,6 @@ sb_patch_clock dd 0
 sb_patch_limit dd 0
 sb_remix_end dd 0
 sb_record_segment dw 0
-sb_record_bias dw 0
 sb_record_halves db 0
 %endif
 %endif

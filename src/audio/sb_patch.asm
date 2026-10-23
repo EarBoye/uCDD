@@ -32,8 +32,7 @@ sb_patch:
     mov byte [sb_patch_available], 0
     inc eax
     and al, 0feh
-    mov edx, [periods]
-    add edx, 2
+    mov edx, [mix_period]
     shl edx, OUTPUT_SHIFT
     cmp eax, edx
     jae .restore
@@ -57,31 +56,27 @@ sb_patch:
     ret
 
 ; Mix [sb_patch_clock, sb_patch_limit) again. A frame f is at ring frame
-; f mod 2*PERIOD_FRAMES. The new game part replaces the stored one.
+; f mod RING_FRAMES. The new game part replaces the stored one.
 sb_remix:
     mov eax, [sb_patch_limit]
     mov [sb_remix_end], eax
     call sb_filter_seed
 .part:
+    ; Each part ends at the ring wrap.
     mov eax, [sb_patch_clock]
-    or eax, PERIOD_FRAMES*2-1
-    inc eax
+    xor edx, edx
+    mov ecx, RING_FRAMES
+    div ecx
+    sub ecx, edx
+    add ecx, [sb_patch_clock]
+    mov eax, ecx
     cmp eax, [sb_remix_end]
     jb .split
     mov eax, [sb_remix_end]
 .split:
     mov [sb_patch_limit], eax
-    mov ax, [sb_patch_clock]
-    and ax, PERIOD_FRAMES*2-1
-    shl ax, 2
-    test byte [sound_card], 1
-    jz .offset
-    shr ax, 2
-    and ax, 0fffeh
-    cmp byte [sound_card], 3
-    jne .offset
-    shr ax, 1
-.offset:
+    mov eax, [sb_patch_clock]
+    call ring_offset
     mov di, ax
     mov es, [output_segment]
     mov byte [sb_patch_active], 1
@@ -100,12 +95,10 @@ sb_filter_seed:
     cmp word [sb_record_segment], 0
     je .done
     push es
-    mov si, [sb_patch_clock]
-    dec si
-    and si, PERIOD_FRAMES*2-1
-    shl si, 2
-    add si, [sb_record_bias]
-    and si, RING_BYTES*2-1
+    mov eax, [sb_patch_clock]
+    dec eax
+    call ring_offset
+    mov si, ax
     mov es, [sb_record_segment]
 %macro seed_channel 1
     movsx eax, word [es:si+%1/4]
@@ -138,50 +131,40 @@ sb_filter_seed:
 .done:
     ret
 
-; ES:DI: start of an output half. Its stored game part becomes zero.
+; ES:DI: start of an output period. Its stored game part becomes zero.
 sb_record_clear:
     cmp word [sb_record_segment], 0
     je .done
     pushad
     push es
-    mov ax, di
-    shr ax, OUTPUT_SHIFT+2
-    and al, 1
-    inc ax
+    call sb_record_bit
     or [sb_record_halves], al
     mov es, [sb_record_segment]
-    add di, [sb_record_bias]
-    and di, RING_BYTES*2-1
-    mov cx, RING_BYTES*2
-    sub cx, di
-    cmp cx, PERIOD_BYTES
-    jbe .first
-    mov cx, PERIOD_BYTES
-.first:
-    mov bx, PERIOD_BYTES
-    sub bx, cx
-    shr cx, 1
+    mov cx, PERIOD_BYTES/2
     xor ax, ax
-    rep stosw
-    mov cx, bx
-    shr cx, 1
-    xor di, di
     rep stosw
     pop es
     popad
 .done:
     ret
 
-; ES:DI: an output half mixed without stored game parts.
+; ES:DI: an output period mixed without stored game parts.
 sb_record_lost:
     push ax
-    mov ax, di
-    shr ax, OUTPUT_SHIFT+2
-    and al, 1
-    inc ax
+    call sb_record_bit
     not al
     and [sb_record_halves], al
     pop ax
+    ret
+
+; DI: the ring offset of an output period. Returns AL: its bit.
+sb_record_bit:
+    push cx
+    mov cx, di
+    shr cx, OUTPUT_SHIFT+2
+    mov al, 1
+    shl al, cl
+    pop cx
     ret
 
 ; EAX: game part of the word at ES:DI. Returns EAX minus the stored part
@@ -193,8 +176,6 @@ sb_record_word:
     push si
     push edx
     mov si, di
-    add si, [sb_record_bias]
-    and si, RING_BYTES*2-1
     mov es, [sb_record_segment]
     movsx edx, word [es:si]
     mov [es:si], ax
@@ -256,12 +237,10 @@ sb_dma_switch:
     mov cl, dl
     cmp eax, ebx
     jne .restore
-    add ebx, ecx
-    cmp ebx, 100000h
+    lea eax, [ebx+ecx]
+    cmp eax, 100000h
     ja .restore
-    mov bx, cx
-    and bx, 15
-    shr ecx, 4
+    call dma_source_split
     cmp cx, [game_segment]
     jne .moved
     cmp bx, [game_offset]
@@ -274,8 +253,7 @@ sb_dma_switch:
     jmp .restore
 .wrap:
     ; Else the ring wrap must be in the frames mixed ahead.
-    mov edi, [periods]
-    add edi, 2
+    mov edi, [mix_period]
     shl edi, OUTPUT_SHIFT
     lea eax, [edi-1]
     sub eax, [game_started]
@@ -286,7 +264,7 @@ sb_dma_switch:
     mov eax, edx
     xor edx, edx
     div dword [game_step]
-    cmp eax, PERIOD_FRAMES*2
+    cmp eax, RING_FRAMES
     jae .restore
     call .switch
     cmp byte [sb_switch_remix], 0
@@ -306,20 +284,25 @@ sb_dma_switch:
     cmp eax, edi
     jae .restore
     mov [sb_patch_clock], eax
-    ; Both halves of the frames need stored game parts.
-    mov cl, OUTPUT_SHIFT
-    shr eax, cl
-    and al, 1
-    inc ax
+    ; Every period of the frames needs stored game parts.
+    mov ecx, eax
+    shr ecx, OUTPUT_SHIFT
+    mov ebx, edi
+    dec ebx
+    shr ebx, OUTPUT_SHIFT
+.recorded:
+    mov eax, ecx
+    shl eax, OUTPUT_SHIFT
+    push di
+    call ring_offset
+    mov di, ax
+    call sb_record_bit
+    pop di
     test [sb_record_halves], al
     jz .restore
-    mov eax, edi
-    dec eax
-    shr eax, cl
-    and al, 1
-    inc ax
-    test [sb_record_halves], al
-    jz .restore
+    inc ecx
+    cmp ecx, ebx
+    jbe .recorded
     call sb_remix
 .restore:
     popf

@@ -15,7 +15,16 @@
 %undef CD_HALF_BYTES
 %define CD_HALF_BYTES CD_PREFETCH_BYTES
 %endif
-%define RING_BYTES (PERIOD_BYTES * 2)
+; The output ring holds RING_PERIODS periods. The mixer fills every period
+; behind the DMA position, so an IRQ may be RING_PERIODS-1 periods late.
+%ifndef RING_PERIODS
+%define RING_PERIODS 3
+%endif
+%if RING_PERIODS < 2 || RING_PERIODS > 8
+%error RING_PERIODS must be 2 to 8.
+%endif
+%define RING_FRAMES (PERIOD_FRAMES * RING_PERIODS)
+%define RING_BYTES (PERIOD_BYTES * RING_PERIODS)
 %define RING_WORDS (RING_BYTES / 2)
 %define RING_PARAS (RING_BYTES / 16)
 %define PERIOD_SCALE (4096 / PERIOD_FRAMES)

@@ -33,30 +33,14 @@ audio_activate:
     int 21h
     jc .cleanup
     mov [output_allocation], ax
-    cmp byte [sound_card], 3
-    jne .pro_align
-    add ax, RING_PARAS/8-1
-    and ax, ~(RING_PARAS/8-1)
-    jmp .dma_ready
-.pro_align:
-    cmp byte [sound_card], 1
-    jne .align_dma
-    add ax, RING_PARAS/4-1
-    and ax, ~(RING_PARAS/4-1)
-    jmp .dma_ready
-.align_dma:
-    add ax, RING_PARAS-1
-    and ax, ~(RING_PARAS-1)
-    ; The free part of the allocation keeps the game part of each output word.
-    mov bx, ax
-    sub bx, [output_allocation]
-    shl bx, 4
-    add bx, RING_BYTES
-    mov [sb_record_bias], bx
-    mov bx, [output_allocation]
-    mov [sb_record_segment], bx
-.dma_ready:
+    call ring_place
     mov [output_segment], ax
+    mov [output_spare], dx
+    test byte [sound_card], 1
+    jnz .dma_ready
+    ; The spare ring keeps the game part of each output word.
+    mov [sb_record_segment], dx
+.dma_ready:
     mov word [audio_error_text], cd_half_memory_message
     call cd_half_allocate
     jc .cleanup
@@ -73,11 +57,7 @@ audio_activate:
     call cd_open
     jc .cleanup
     call virtual_irq_init
-    mov ax, [output_segment]
-    mov es, ax
-    xor di, di
-    call mix_half
-    call mix_half
+    call mix_fill
     mov word [audio_error_text], port_trap_rejected_message
     call trap_install
     jc .cleanup

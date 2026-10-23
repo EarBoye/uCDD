@@ -1,3 +1,16 @@
+# Beta 0.9.4-a6
+
+## Changes in 0.9.4-a6
+
+- Run the Sound Blaster port trap on its own stack when a game leaves little stack below its stack pointer. This fixes the JemmEx exception in The 7th Guest.
+- Play 8-bit sound blocks that run past the end of a 64 KiB DMA page. The DMA address wraps to the start of the same page, as on the hardware. This fixes the missing sound and the stop at the Kremlin picture in the intro of The Big Red Adventure.
+- Keep three output periods in the audio ring instead of two. When an audio interrupt comes late, μCDD mixes the missed periods and does not play an old period again. This fixes the crackling CD-Audio in the hotel room of The Big Red Adventure, whose mouse driver keeps interrupts off for longer than one period. The resident driver uses about 1 KB more conventional memory.
+- Do not refill the CD-Audio queue from the audio interrupt while a protected-mode game is in a real-mode call. The DPMI host now refills the queue when the call returns. This prevents a JemmEx exception during a BIOS disk call.
+- DPMI host: give a protected-mode mouse driver call (INT 33h) its 32-bit EBX back after the real-mode call. This fixes the cursor in The Big Red Adventure.
+- Add an FM fader to the UCDDSET mixer. μCDD now passes the FM volume that a game sets through the Sound Blaster mixer to the physical card, scaled by the fader. Before, a game's FM volume change had no effect under μCDD. At 100 percent, the FM level that the card had before installation stays. An existing `UCDD.CFG` keeps its settings and gets the FM level when it is saved again.
+- Add volume hotkeys for the master, FM, and PCM levels. By default, Ctrl+Alt+Keypad + and - change the master volume, R and F the CD-Audio volume, T and G the FM volume, and Y and H the PCM volume. The hotkey step applies to all levels. The volume hotkeys of an existing `UCDD.CFG` take these defaults.
+- Add The 7th Guest and The Big Red Adventure to the [compatibility list](https://github.com/vorvek/uCDD/wiki/Compatibility).
+
 # Beta 0.9.4-a5
 
 ## Changes in 0.9.4-a5

@@ -36,10 +36,13 @@ config_load:
     jne .invalid
     cmp ax, 12
     je .old
+    cmp ax, 36
+    je .five_keys
     cmp ax, CONFIG_SIZE
     jne .invalid
     cmp byte [file_buffer+4], CONFIG_VERSION
     jne .invalid
+.copy:
     mov si, file_buffer
     mov di, config_data
     mov cx, CONFIG_SIZE
@@ -75,6 +78,40 @@ config_load:
     call config_defaults
     mov al, LOAD_UNREADABLE
     ret
+.five_keys:
+    ; Version 2 has five keys and no FM level. The volume keys take the
+    ; current defaults. The other settings stay.
+    cmp byte [file_buffer+4], 2
+    jne .invalid
+    mov byte [file_buffer+35], 100
+    std
+    mov si, file_buffer+35
+    mov di, file_buffer+CONFIG_SIZE-1
+    mov cx, 12
+    rep movsb
+    cld
+    mov si, config_default+22
+    mov di, file_buffer+22
+    mov cx, 8
+    rep movsb
+    ; A kept key that equals a default volume key turns that volume key off.
+    mov di, file_buffer+22
+.conflict:
+    mov al, [di]
+    cmp al, [file_buffer+19]
+    je .off
+    cmp al, [file_buffer+20]
+    je .off
+    cmp al, [file_buffer+21]
+    jne .kept
+.off:
+    mov byte [di], 0
+.kept:
+    inc di
+    cmp di, file_buffer+30
+    jb .conflict
+    mov byte [file_buffer+4], CONFIG_VERSION
+    jmp .copy
 
 config_defaults:
     mov si, config_default
@@ -122,6 +159,8 @@ config_valid:
     cmp byte [config_game_volume], 100
     ja .bad
     cmp byte [config_master_volume], 100
+    ja .bad
+    cmp byte [config_fm_volume], 100
     ja .bad
     movzx ax, byte [config_volume_step]
     mov si, step_values

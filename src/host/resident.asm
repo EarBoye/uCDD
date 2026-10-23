@@ -614,6 +614,16 @@ HOST_PROTECTED
 host_protected_start:
 resident_refill_schedule:
     pushad
+    test byte [esp+32+4+44], 3
+    jz resident_refill_check.done
+    test dword [esp+32+4+48], 20000h
+    jnz resident_refill_check.done
+    jmp resident_refill_check
+; A real-mode call returned to the host. A client that stays in real-mode
+; calls gets no IRQ in protected mode, so the refill runs here.
+resident_refill_callback:
+    pushad
+resident_refill_check:
     cmp byte [ebp+dpmi_sti_shadow], 0
     jne .done
     cmp byte [ebp+dpmi_active], 1
@@ -632,10 +642,6 @@ resident_refill_schedule:
     jne .done
     cmp dword [ebp+dpmi_bridge_depth], 0
     jne .done
-    test byte [esp+32+4+44], 3
-    jz .done
-    test dword [esp+32+4+48], 20000h
-    jnz .done
     ; Give the foreground mixer time after a retrace.
     movzx edx, byte [ebp+resident_vga_ready]
     mov edi, [ebp+resident_refill_clock]
@@ -654,8 +660,10 @@ resident_refill_schedule:
     sub eax, [ebp+resident_vga_clock]
     cmp eax, 128
     jb .done
+    ; The checks come once per output period. With 256-frame periods a
+    ; window that ends at 192 frames is missed (Earthworm Jim title).
     xor edx, edx
-    cmp eax, 192
+    cmp eax, 384
     seta dl
     xor dl, 1
 .hint_ready:
@@ -698,11 +706,18 @@ resident_refill_schedule:
 .window:
     mov byte [ebp+resident_refill_busy], 1
     HOST_COUNT refill, 0
+    ; From mon_resume this call nests in a finished real-mode call whose
+    ; caller still reads its registers (resident_audio_take). Keep them.
+    sub esp, 52
+    lea esi, [ebp+mon_rm_regs]
+    mov edi, esp
+    mov ecx, 50
+    cld
+    rep movsb
     sub esp, 52
     mov edi, esp
     xor eax, eax
     mov ecx, 13
-    cld
     rep stosd
     mov edi, esp
     mov word [edi+32], 202h
@@ -710,6 +725,11 @@ resident_refill_schedule:
     mov [edi+42], eax
     mov al, 1
     call mon_real_far
+    add esp, 52
+    mov esi, esp
+    lea edi, [ebp+mon_rm_regs]
+    mov ecx, 50
+    rep movsb
     add esp, 52
     mov esi, [ebp+resident_refill_clock]
     test esi, esi

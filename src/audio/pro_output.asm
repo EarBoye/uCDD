@@ -8,7 +8,7 @@ pro_start:
     je .dma
     mov si, pro_registers
     mov di, pro_saved
-    mov cx, 3
+    mov cx, 4
 .save:
     mov dx, [sb_base]
     add dx, 4
@@ -28,6 +28,13 @@ pro_start:
     mov ah, [pro_saved+2]
     or ah, 22h
     call indexed_write
+%ifdef RESIDENT_AUDIO
+    mov al, [pro_saved+3]
+    mov ah, al
+    shl ah, 4
+    and al, 0f0h
+    call fm_init
+%endif
 .dma:
     mov al, [sb_dma8]
     mov [dma_channel], al
@@ -65,9 +72,9 @@ pro_start:
     cmp byte [sound_card], 3
     je .mono
     mov byte [pro_priming], 1
-    mov es, [output_segment]
-    mov byte [es:RING_BYTES/4], 80h
-    mov bx, RING_BYTES/4
+    mov es, [output_spare]
+    mov byte [es:0], 80h
+    xor bx, bx
     xor cx, cx
     mov ah, 48h
     call pro_dma
@@ -95,6 +102,7 @@ pro_start:
     stc
     ret
 .start:
+    mov es, [output_segment]
     xor bx, bx
     mov cx, RING_BYTES/4-1
     mov ah, 58h
@@ -115,6 +123,7 @@ pro_start:
     clc
     ret
 .mono:
+    mov es, [output_segment]
     xor bx, bx
     mov cx, RING_BYTES/8-1
     mov ah, 58h
@@ -143,6 +152,7 @@ sb_mono_next:
     mov al, (PERIOD_BYTES/8-1) >> 8
     jmp dsp_write
 
+; ES:BX: the buffer. CX: the count less one. AH: the mode.
 pro_dma:
     pushf
     cli
@@ -154,7 +164,8 @@ pro_dma:
     mov dx, 0ch
     xor al, al
     call physical_write
-    movzx eax, word [output_segment]
+    mov ax, es
+    movzx eax, ax
     shl eax, 4
     movzx ebx, bx
     add eax, ebx
@@ -214,13 +225,13 @@ pro_stop:
     mov ah, [pro_saved+bx]
     call indexed_write
     inc bx
-    cmp bx, 3
+    cmp bx, 4
     jb .restore
 .stopped:
     mov byte [sb_running], 0
 .done:
     ret
 
-pro_registers db 22h,04h,0eh
-pro_saved times 3 db 0
+pro_registers db 22h,04h,0eh,26h
+pro_saved times 4 db 0
 pro_priming db 0

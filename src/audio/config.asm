@@ -3,9 +3,9 @@
 
 ; UCDD.CFG contents. At installation, UCDDSET checks the file and copies the
 ; complete record into the driver.
-CONFIG_VERSION equ 2
-CONFIG_SIZE equ 36
-HOTKEY_COUNT equ 5
+CONFIG_VERSION equ 4
+CONFIG_SIZE equ 42
+HOTKEY_COUNT equ 11
 config_data db 'uCDD',CONFIG_VERSION
 sound_card db 0
 sb_base dw 220h
@@ -21,8 +21,9 @@ virtual_dma16 db 5
 config_modifiers db 3
 ; 0 off, 1 keys 1 to 0, 2 keys F1 to F10.
 config_disc_keys db 1
-; Next, previous, eject, volume up, volume down. Bit 7 marks an E0 key.
-config_keys db 51h,49h,12h,4eh,4ah
+; Next, previous, eject, then up and down keys for the CD, master, FM, and
+; PCM levels. Bit 7 marks an E0 key.
+config_keys db 51h,49h,12h,13h,21h,4eh,4ah,14h,22h,15h,23h
 config_cd_volume db 100
 config_game_volume db 100
 config_master_volume db 100
@@ -35,4 +36,4 @@ virtual_wss_base dw 530h
 virtual_wss_irq db 11
 ; UCDDSET sets the DSP version reply: minor in the high byte.
 virtual_dsp_version dw 0504h
-    db 0
+config_fm_volume db 100
