@@ -25,7 +25,7 @@ evidence is from the fork's own line, as each doc says).
 | `feature/disk-irq` | A PCI disk controller on any IRQ no longer freezes DOS/4GW games: `UCDD -install` finds the controllers through the PCI BIOS and their IRQs go straight to the real-mode handler; UCDDSET shows them and takes one by hand. | `docs/disk-irq.md` |
 | `feature/step-aside` | While no mounted disc has CD audio and the physical card can be the virtual one, the driver steps aside: no output stream, no port traps, no DPMI host, so a game runs as it does without μCDD. | `docs/step-aside.md` |
 | `feature/fast-dma` | The chipset's own fast DMA timing on the output channel (Intel PIIX family, 82378 and EISA, ALi, OPTi, VIA and AMD-756, SiS), which gives back most of the memory bus the output stream takes. Builds on the two branches above, which it contains. | `docs/fast-dma.md`, `docs/platform-dma.md` |
-| `feature/ess` | Native ESS AudioDrive output (ES1868 and its family), with the ES1868's clock trimmed to an exact 44.1 kHz. In preparation. | |
+| `feature/ess` | Native ESS AudioDrive output: 44.1 kHz 16-bit stereo through the chip's extended mode instead of the SB Pro's 8-bit, with the ES1868's and ES1878's clock trimmed to an exact 44.1 kHz. Full rate; the half-rate mode needs a change to the mixer first. Also fixes the vector `wss_stop` puts back. | `docs/ess.md` |
 
 The three settings these branches add share one `UCDD.CFG` layout (version
 5: the author's version 4 record, then the disk IRQ, the step-aside switch
