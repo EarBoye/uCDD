@@ -120,6 +120,12 @@ dpmi_ems_name times 8 db 0
 dpmi_ems:
     cmp ax, 0de00h
     jne .chain
+    ; Stepped aside, the driver offers no DPMI: VCPI stays visible.
+    push ds
+    mov ds, [cs:dpmi_ems_gateway-dpmi_ems_base]
+    cmp byte [dpmi_dormant], 0
+    pop ds
+    jne .chain
     push bp
     mov bp, sp
     push bx
@@ -139,6 +145,8 @@ dpmi_ems:
 %endif
 dpmi_mux:
     cmp ax, 1687h
+    jne .chain
+    cmp byte [cs:dpmi_dormant], 0
     jne .chain
     xor ax, ax
     mov bx, 1
@@ -1104,7 +1112,11 @@ dpmi_refill_flag dw resident_refill_busy
 dpmi_pending_entry dw 0
 dpmi_refill_flag dw 0
 %endif
-%if dpmi_audio_pm_handler-dpmi_active != 1 || dpmi_virtual_entry-dpmi_active != 2 || dpmi_real_eoi-dpmi_active != 4 || dpmi_real_priority-dpmi_active != 5 || dpmi_pending_entry-dpmi_active != 6 || dpmi_refill_flag-dpmi_active != 8
+; The driver sets this byte while it has stepped aside (audio/standby.asm):
+; no DPMI is offered and VCPI stays visible, so a protected-mode game runs
+; under its own extender.
+dpmi_dormant db 0
+%if dpmi_audio_pm_handler-dpmi_active != 1 || dpmi_virtual_entry-dpmi_active != 2 || dpmi_real_eoi-dpmi_active != 4 || dpmi_real_priority-dpmi_active != 5 || dpmi_pending_entry-dpmi_active != 6 || dpmi_refill_flag-dpmi_active != 8 || dpmi_dormant-dpmi_active != 10
     %error Invalid resident IRQ state layout
 %endif
 dpmi_cpu db 3

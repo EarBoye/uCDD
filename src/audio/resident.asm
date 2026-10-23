@@ -49,6 +49,7 @@ audio_linked db 0
 %include "audio/background.asm"
 %include "audio/irq.asm"
 %include "audio/sb_patch.asm"
+%include "audio/standby.asm"
 %include "audio/host_jemm.asm"
 %include "audio/host_emm.asm"
 %ifdef OWN_HOST

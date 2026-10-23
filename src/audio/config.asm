@@ -3,8 +3,8 @@
 
 ; UCDD.CFG contents. At installation, UCDDSET checks the file and copies the
 ; complete record into the driver.
-CONFIG_VERSION equ 4
-CONFIG_SIZE equ 42
+CONFIG_VERSION equ 5
+CONFIG_SIZE equ 45
 HOTKEY_COUNT equ 11
 config_data db 'uCDD',CONFIG_VERSION
 sound_card db 0
@@ -37,3 +37,15 @@ virtual_wss_irq db 11
 ; UCDDSET sets the DSP version reply: minor in the high byte.
 virtual_dsp_version dw 0504h
 config_fm_volume db 100
+; Version 5 adds three bytes after version 4's record. The same layout is used
+; on the fork's feature branches (disk IRQ, step-aside, fast DMA), so any of
+; them can be taken alone or together; a byte a branch does not use is 0.
+; Reserved: the disk IRQ set by hand, on its branch.
+config_reserved_disk db 0
+; 1 keeps the physical output and the traps on at all times. 0 lets the
+; driver step aside while no disc is bound for CD audio and the physical card
+; can stand in for the virtual one (audio/standby.asm).
+config_audio_always db 0
+; Reserved: the fast DMA switch, on its branch.
+config_reserved_dma db 0
+config_size_check equ 1 / (($-config_data) = CONFIG_SIZE)
