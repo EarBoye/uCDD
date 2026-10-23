@@ -514,6 +514,15 @@ changed volumes.
   within about 1.5% of the bare card; the count at the interrupt as D1.
   Sound check rg32: as D1 (Hexen's on-time drops to about 0.6 in some runs
   of both builds: an audiocmp weakness, below).
+- Not fixed by the ring (24 Oct, found reading the author's Beta 0.9.4-a6,
+  which mixes the missed periods two periods ahead) [read]: the sound
+  during a hold. The handler still mixes one slot ahead, so during a hold
+  of a whole period or more the card plays slots not refilled this lap:
+  sound from one ring ago (11.6 ms at 32 frames), as the two-period ring
+  did. The ring fixed the clock and the count, not this. Covering a hold
+  needs sound mixed before it starts (write-ahead, which is latency), and
+  mixing the game's stream further ahead takes its samples earlier than a
+  card fetches them (F18). Open; it belongs with the period comparison.
 - Not run: the physical SB Pro, SB 2.0, WSS and ESS paths (reading only:
   their DMA is set as the whole ring and one period). See PHYSPRO.
 - Hardware: the kit repeats PLKIT's B4 (forty 4 ms holds): the alias
