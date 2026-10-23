@@ -114,6 +114,20 @@ virtual interrupts all taken and ended. Michael heard nothing wrong. The
 price: the timedemo took 415 realtics against D7's 369 at 128 frames
 (12.5% slower; the builds differ in more than the period, so the share
 that is the period is not yet measured).
+
+24 Oct 2026, fixed for the clock on branch `count-position` (7994cd1,
+ISSUES.md F2, the ring): the output ring is 512 frames, so a period
+interrupt late by up to 15 periods at 32 frames is read right. [86Box:
+idle, the period count matches the BIOS ticks (75.8 and 75.4 a tick,
+nominal 75.69; the two-period ring 69.3 and 72.7), each 2 or 4 ms hold
+counts once as a whole-period late; SBT16's rates through uCDD within
+about 1.5% of the bare card, where they were about 5% short.] So the
+aliasing was common in 86Box, and the "86Box plays slow" note of 22 Oct
+was mostly this. The count also cannot step back within a transfer since
+F8's fix (30c82ca). Dark Forces' sound check is unchanged (speed 1.04,
+about 70 steps back): its fault is not this. Hardware: not yet; the kit
+repeats PLKIT's 4 ms holds (the alias predicts no periods lost, M3 the
+same loss).
 ### F3. A single-cycle count that hovers (King's Quest V)
 
 At the end of King's Quest V's run the count of a 16 KB single-cycle
