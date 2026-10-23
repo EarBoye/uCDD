@@ -502,6 +502,50 @@ changed volumes.
   set-up (all already written as the whole ring and one period); the
   install and audio_engage, which mixed two silent periods into a
   two-period ring (the rest of a larger ring now gets them copied on).
+- Result (7994cd1) [86Box]: a reproducer turned up after this row was
+  written. UCDD -STATUS around CLIGAP holds: idle, the ring counts 75.8 and
+  75.4 periods a BIOS tick against the nominal 75.69, where D1 counted 69.3
+  and 72.7 (4-8% short and unsteady); 2 and 4 ms holds now each count once
+  as a whole-period late (558 and 586 in 400 holds, D1 193 and 303). So in
+  86Box the two-period ring lost periods to aliasing unseen, and that, not
+  86Box, made uCDD's virtual card about 5% slow there since 22 Oct (the
+  bench's note blamed the emulator: corrected, L1). Regression r32rg against
+  r32cp: every SBT16 case now within the bare cards' interrupt count, rates
+  within about 1.5% of the bare card; the count at the interrupt as D1.
+  Sound check rg32: as D1 (Hexen's on-time drops to about 0.6 in some runs
+  of both builds: an audiocmp weakness, below).
+- Not run: the physical SB Pro, SB 2.0, WSS and ESS paths (reading only:
+  their DMA is set as the whole ring and one period). See PHYSPRO.
+- Hardware: the kit repeats PLKIT's B4 (forty 4 ms holds): the alias
+  predicts no periods lost against the ticks, M3 (the card stopping
+  unacknowledged) the same loss as on period-late.
+
+### PHYSPRO: uCDD over a physical SB Pro gives no virtual interrupts in 86Box (found 24 Oct 2026, open)
+
+- Symptom [86Box]: with 86Box's Sound Blaster Pro v2 as the physical card
+  (IRQ 5, DMA 1) and the virtual SB Pro on IRQ 7, SBT16 through uCDD gets a
+  few interrupts and stops (1Ch at 22050 Hz: D7 17 in 777 ms, D9 6, D1 5,
+  the ring 1, all at 32 frames), then none in the next three cases; at 128
+  and 256 frames none at all (D7 at 128 too, the build the PC ran for days
+  on the SB16). Install reports no error.
+- Not known: whether it is the bench's set-up (the physical and the
+  virtual card both on DMA 1) or the driver's SB Pro output path. The PC
+  has the SB16, so no hardware result says either way.
+- Rule: every Creative card must work as the physical card (CONTEXT.md hard
+  rules). Next: the same with the virtual card on another DMA channel and
+  on the SB16 model, then the pro_output path read against the SB Pro's
+  documents.
+
+### Seen in passing (24 Oct 2026, not yet rows)
+
+- After a DSP reset ends a high-speed transfer the bare card's count stops
+  mid-block (SBT16 L3 0073h, L4 0222h) and the virtual card's reads the
+  full count (07FFh, 0FFFh), on irq-batch, D1 and the ring.
+- The sound check's on-time for Hexen is bimodal on this bench: 0.99-1.00
+  or 0.60-0.61 on D1 and on the ring alike. audiocmp's strong matches
+  (r > 0.85) lock onto a repetition of the same sound about 0.43 s away, just
+  past its 0.4 s tolerance (bench runs rg32, rg32c, cp32b; the wave pieces
+  themselves unchanged). An instrument fault, for the bench.
 
 ### DMAMASK: a masked channel does not stall the virtual transfer (found 23 Oct 2026, open)
 

@@ -454,11 +454,14 @@ ring; on the Sound Blaster models the mix is what uCDD has taken
 [reading]. The virtual ESS keeps its own rule (vess-spec.md,
 ess_fifo_count; rule 6).
 
-Still open: the clock can alias two periods back when a period interrupt is
-late (F2): the position's clamp now holds the count, and a ring of more
-than two periods would remove the alias. A stop or pause that lands after
-the mix has taken past the position plays up to one period more than the
-card would.
+The clock (7994cd1, 24 Oct 2026): the output ring is 512 frames (16 periods
+at 32 frames), so a period interrupt late by up to 15 periods is read right;
+on the two-period ring a late interrupt aliased the clock two periods back
+(F2) [emu, 86Box: the period count against the BIOS ticks exact on the
+ring, 4-8% short before].
+
+Still open: a stop or pause that lands after the mix has taken past the
+position plays up to one period more than the card would.
 
 ## 8. Interrupts
 
