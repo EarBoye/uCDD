@@ -462,6 +462,47 @@ changed volumes.
 - Hardware: not yet (the PC runs irq-batch; a kit after the deeper ring or
   with it).
 
+### F2, the ring: a late period interrupt aliases the output clock (24 Oct 2026)
+
+- Symptom: F2 (on `sound-engine-library`): the polled count stepped back
+  in six games. Hexen's trace [trace, 20 Oct]: the count climbs and falls
+  back two output periods every fourth read, with no block interrupt
+  between, cycling inside a two-period window.
+- Cause [read]: output_clock takes the period from [periods] and the
+  position within it from the DMA count, and the ring holds two periods. A
+  period interrupt more than one period late leaves the card two or more
+  periods past [periods]; the half the DMA is in then names the wrong
+  period, and the clock reads two periods back. The handler's resync then
+  sets [periods] two periods short: the next mix frames lie two periods
+  behind, so the game's stream is mixed again from there (heard as a
+  repeat), and the count's position (F8, since 30c82ca) is held until the
+  mix passes it again.
+- Citation: vsb-spec 7.8 (the count never moves back within a lap); the
+  physical ring's size is the driver's own choice, about which the
+  documents say nothing; the 8237 auto-initialises over any length.
+- Family: none: the output clock, under every engine.
+- Baseline: count-position 30c82ca at 32 frames (r32cp, cp32).
+- Reproducer: none in 86Box. CLIGAP's holds (2 and 4 ms, 400 each) against
+  idle steps in one boot: 86Box's own rate moves 5% between two idle steps,
+  more than the effect, and a 4 ms hold gives a whole-period late only about
+  half the time (runs gapd1a, gapd1b). On the PC, PLKIT B4 (period-late, 32
+  frames, the CT2290) lost about 66 periods against the ticks over forty 4 ms
+  holds: either this alias or the card stopping unacknowledged (M3). The
+  fix stands on reading in 86Box; the next kit repeats B4 on it: the alias
+  predicts no periods lost, M3 the same loss as before.
+- Hypothesis: a ring of 512 frames (16 periods at 32 frames, 8 at 64, 4 at
+  128, 2 at 256 as today); output_clock takes the position modulo the whole
+  ring, so a late interrupt is read right up to 15 periods (10.9 ms) at 32
+  frames; the handler refills the slot after the one playing. Mixing stays
+  one period ahead: no added latency. Two periods a build can keep the old
+  form (the same arithmetic at two).
+- Paths to check (L2): output_clock's 15 callers (the meaning unchanged:
+  an absolute frame); the slot pick at .acknowledged (joined from the SB16,
+  SB Pro, WSS and ESS paths); the SB Pro's, SB 2.0's, WSS's and ESS's DMA
+  set-up (all already written as the whole ring and one period); the
+  install and audio_engage, which mixed two silent periods into a
+  two-period ring (the rest of a larger ring now gets them copied on).
+
 ### DMAMASK: a masked channel does not stall the virtual transfer (found 23 Oct 2026, open)
 
 - Symptom [86Box]: SBT16 C6 00 22050 M masks the 8-bit channel for 100 ms
