@@ -462,6 +462,14 @@ changed volumes.
   JemmEx field, and none of our later fields. Now CDF9: his CDF4 as it is,
   then our fields 4 bytes on; the host reads CDF9, and his CDF4 and older
   as he does (host/resident.asm, host/v86.asm, audio/sb_patch.asm).
+- sb_patch.asm (24 Oct, found while isolating the step-aside branch)
+  [read]: the merge took the author's file whole, and with it went three of
+  ours besides the patch design his remix replaces: the delivered mark in
+  sb_real_irq (our virtual PIC ends the game's interrupt only once it is
+  delivered: without it the virtual interrupt stayed in service after a
+  delivery through audio_irq's jump), the CLD in sb_patch (the remix runs
+  from the port trap with the game's direction flag), and the step-aside
+  check in sb_dos_vector. All three are back.
 - Before any kit: regression list a at 32 frames, the sound check (with
   F14's games, Hexen, Descent), the CD mounts (an audio-only sheet, INDEX 02,
   a byte-order mark), UCDD.CFG from each older version (our 4 at 38 bytes,

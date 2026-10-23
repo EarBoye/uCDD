@@ -10,6 +10,11 @@ sb_patch_initial:
 .done:
     ret
 
+; Called from audio_irq at .acknowledged (the handler's stack, interrupts
+; off, DS=CS) and from port_callback at a block start (the trap's stack, the
+; game's interrupt and direction flags, DS=CS). Every register it uses is
+; saved; the flags go under its own PUSHF, so the CLI and CLD below do not
+; leak to either caller.
 sb_patch:
     cmp byte [sb_patch_available], 0
     je .done
@@ -19,6 +24,9 @@ sb_patch:
     push es
     pushf
     cli
+    ; From the port trap this runs with the game's direction flag; the mixer
+    ; stores forward.
+    cld
     call output_clock
     add eax, 32
     cmp byte [sb_patch_available], 2
@@ -363,6 +371,9 @@ sb_real_irq:
 .vector:
     mov [sb_real_vector], eax
     mov byte [sb_real_pending], 1
+    ; The jump at the end of audio_irq delivers the interrupt to the game,
+    ; straight to its handler (2: audio_irq_reflected has nothing to pass).
+    mov byte [virtual_pic_delivered], 2
 .done:
     ret
 ; A client's real-mode call was interrupted. Its protected-mode handler gets
@@ -467,6 +478,11 @@ host_pending_irqs dw 0
 sb_dos_vector:
     cmp al, [cs:guest_vector]
     jne .chain
+    ; While the driver has stepped aside the vector is DOS's to give and
+    ; take: audio_release and audio_engage move it through INT 21h with this
+    ; byte clear, and a game on the real card installs its own handler.
+    cmp byte [cs:audio_engaged], 0
+    je .chain
     cmp dword [cs:host_irq_slot], 0
     je .saved
     push ax
