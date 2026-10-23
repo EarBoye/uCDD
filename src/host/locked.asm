@@ -431,3 +431,6 @@ dpmi_locked_depth dd 0
 HOST_PROTECTED
 dpmi_exception_sp dd 0
 dpmi_exception_cursor dd 0
+; Outer handlers' cursor and SP by level; one entry more than the levels,
+; as the save comes before dpmi_stack_acquire.
+dpmi_exception_saved times (DPMI_LOCK_LEVELS+1)*8 db 0

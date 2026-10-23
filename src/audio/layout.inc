@@ -2,7 +2,7 @@
 ; SPDX-License-Identifier: GPL-3.0-only
 
 %ifndef OUTPUT_SHIFT
-%define OUTPUT_SHIFT 12
+%define OUTPUT_SHIFT 7
 %endif
 %if OUTPUT_SHIFT < 5 || OUTPUT_SHIFT > 12
 %error OUTPUT_SHIFT must be 5 to 12.

@@ -94,10 +94,12 @@ dsp_write:
     clc
     ret
 physical_reset:
+    mov al, 1
+; AL: the reset value.
+.value:
     mov byte [dsp_failed], 0
     mov dx, [sb_base]
     add dx, 6
-    mov al, 1
     call physical_write
     mov cx, 64
 .delay:
@@ -180,26 +182,7 @@ sb_start:
     mov ah, [mixer_saved+1]
     call fm_init
 %endif
-    mov al, [sb_irq]
-    add al, 8
-    mov ah, 35h
-    int 21h
-    mov [old_irq], bx
-    mov [old_irq+2], es
-    mov dx, audio_irq
-    mov al, [sb_irq]
-    add al, 8
-    mov ah, 25h
-    int 21h
-    mov dx, 21h
-    call physical_read
-    mov [saved_pic], al
-    mov cl, [sb_irq]
-    mov ah, 1
-    shl ah, cl
-    not ah
-    and al, ah
-    call physical_write
+    call output_hook
     cli
     mov al, [dma_channel]
     or al, 4
@@ -256,6 +239,53 @@ sb_start:
 .fail:
     stc
     ret
+; Select the 8-bit DMA channel, then hook the IRQ.
+dma8_output_hook:
+    mov al, [sb_dma8]
+    mov [dma_channel], al
+    movzx bx, al
+    shl bx, 1
+    mov [dma_address_port], bx
+    inc bx
+    mov [dma_count_port], bx
+    mov word [dma_page_port], 83h
+    cmp al, 1
+    je output_hook
+    mov word [dma_page_port], 82h
+; Hook the card IRQ and unmask it.
+output_hook:
+    mov al, [sb_irq]
+    add al, 8
+    push ax
+    mov ah, 35h
+    int 21h
+    mov [old_irq], bx
+    mov [old_irq+2], es
+    mov dx, audio_irq
+    pop ax
+    mov ah, 25h
+    int 21h
+    mov dx, 21h
+    call physical_read
+    mov [saved_pic], al
+    mov cl, [sb_irq]
+    mov ah, 1
+    shl ah, cl
+    not ah
+    and al, ah
+    jmp physical_write
+; Put back the IRQ vector and the PIC mask.
+output_unhook:
+    mov al, [sb_irq]
+    add al, 8
+    push ds
+    lds dx, [old_irq]
+    mov ah, 25h
+    int 21h
+    pop ds
+    mov al, [saved_pic]
+    mov dx, 21h
+    jmp physical_write
 sb_stop:
     cmp byte [sound_card], 2
     je wss_stop
@@ -272,16 +302,7 @@ sb_stop:
     mov dx, [sb_base]
     add dx, 0fh
     call physical_read
-    mov al, [saved_pic]
-    mov dx, 21h
-    call physical_write
-    push ds
-    mov al, [sb_irq]
-    add al, 8
-    lds dx, [old_irq]
-    mov ah, 25h
-    int 21h
-    pop ds
+    call output_unhook
     mov si, mixer_registers
     mov di, mixer_saved
     mov cx, 6

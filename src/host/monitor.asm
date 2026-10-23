@@ -567,6 +567,7 @@ mon_irq:
     mov ax, 10h
     mov ds, ax
     mov es, ax
+    cld
     call .base
 .base:
     pop ebp
@@ -644,6 +645,9 @@ mon_irq:
     movzx eax, ax
     cmp eax, 256
     jae .done
+%ifdef RESIDENT_HOST
+    call resident_audio_deliver
+%endif
     mov edx, eax
     imul eax, 6
     lea esi, [ebp+mon_vectors+eax]
@@ -992,6 +996,7 @@ mon_exception:
     mov ax, 10h
     mov ds, ax
     mov es, ax
+    cld
     call .base
 .base:
     pop ebp
@@ -1366,8 +1371,6 @@ mon_exception:
     jnc .fault_frame
     call dpmi_tf_fired
 .fault_frame:
-    cmp byte [ebp+dpmi_exception_active], 0
-    jne .unhandled
     mov eax, [esp+40]
     cmp eax, 32
     jae .unhandled
@@ -1721,10 +1724,23 @@ mon_tss_end:
 %ifdef RESIDENT_HOST
 section .pages
 mon_pages resb 12287
+%elifdef TAIL_NOBITS
+; The page area and the stacks follow the image, so the image fits a COM file.
+section .pages nobits align=16
+mon_pages resb 12287
+    resb 2048
+mon_kernel_stack_top:
+%ifndef HOST_DPMI
+    resb 2048
+%endif
+mon_client_stack_top:
+section .text
+HOST_PROTECTED
 %else
 HOST_SCRATCH
 mon_pages times 12287 db 0
 %endif
+%ifndef TAIL_NOBITS
 HOST_PROTECTED
 %ifdef RESIDENT_HOST
 mon_client_stack_top equ mon_kernel_stack_top
@@ -1735,6 +1751,7 @@ mon_kernel_stack_top:
     times 2048 db 0
 %endif
 mon_client_stack_top:
+%endif
 %endif
 %ifdef HOST_DPMI
 %include "host/dpmi.asm"

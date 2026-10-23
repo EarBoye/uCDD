@@ -103,6 +103,10 @@ def assemble_resident_host(defines=(), profile=False):
     host = (BUILD / 'UCDDHOST.BIN').read_bytes()
     if len(host) > 65535:
         raise ValueError('The host exceeds one segment.')
+    # The default is the product period: 128 frames in 3 periods.
+    defines = (*(() if any(d.startswith('OUTPUT_SHIFT=') for d in defines) else ('OUTPUT_SHIFT=7',)),
+               *(() if any(d.startswith('RING_PERIODS=') for d in defines) else ('RING_PERIODS=3',)),
+               *defines)
     resident_defines = ('RESIDENT_AUDIO=1', 'OWN_HOST=1', f'OWN_HOST_SIZE={len(host)}', *defines)
     # The host follows the program image in the file.
     offset = 0

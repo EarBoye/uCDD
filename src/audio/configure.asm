@@ -52,16 +52,19 @@ config_run_setup:
     mov [setup_strategy], ax
     mov ax, 5802h
     int 21h
-    jc .failed
+    jc .strategy
     mov [setup_umb], al
+.strategy:
     xor bx, bx
     mov ax, 5801h
     int 21h
     jc .restore_failed
+    cmp byte [setup_umb], 0ffh
+    je .exec
     xor bx, bx
     mov ax, 5803h
     int 21h
-    jc .restore_failed
+.exec:
     mov [setup_exec+4], cs
     mov [setup_exec+8], cs
     mov [setup_exec+12], cs
@@ -103,8 +106,11 @@ config_run_setup:
     mov ax, 5801h
     int 21h
     movzx bx, byte [setup_umb]
+    cmp bl, 0ffh
+    je .none
     mov ax, 5803h
     int 21h
+.none:
     ret
 
 setup_exec dw 0, setup_tail, 0, setup_fcb, 0, setup_fcb, 0
@@ -116,7 +122,7 @@ setup_fcb times 37 db 0
 setup_sp dw 0
 setup_ss dw 0
 setup_strategy dw 0
-setup_umb db 0
+setup_umb db 0ffh
 config_path_message db 'The program directory cannot be read.',13,10,'$'
 setup_exec_message db 'UCDDSET.EXE cannot be started.',13,10,'$'
 setup_exit_message db 'Sound setup did not complete. The audio driver is not installed.',13,10,'$'

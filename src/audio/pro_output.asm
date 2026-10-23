@@ -36,38 +36,7 @@ pro_start:
     call fm_init
 %endif
 .dma:
-    mov al, [sb_dma8]
-    mov [dma_channel], al
-    movzx bx, al
-    shl bx, 1
-    mov [dma_address_port], bx
-    inc bx
-    mov [dma_count_port], bx
-    mov word [dma_page_port], 83h
-    cmp al, 1
-    je .irq
-    mov word [dma_page_port], 82h
-.irq:
-    mov al, [sb_irq]
-    add al, 8
-    mov ah, 35h
-    int 21h
-    mov [old_irq], bx
-    mov [old_irq+2], es
-    mov dx, audio_irq
-    mov al, [sb_irq]
-    add al, 8
-    mov ah, 25h
-    int 21h
-    mov dx, 21h
-    call physical_read
-    mov [saved_pic], al
-    mov cl, [sb_irq]
-    mov ah, 1
-    shl ah, cl
-    not ah
-    and al, ah
-    call physical_write
+    call dma8_output_hook
     mov byte [sb_running], 1
     cmp byte [sound_card], 3
     je .mono
@@ -78,8 +47,7 @@ pro_start:
     xor cx, cx
     mov ah, 48h
     call pro_dma
-    mov al, 0d1h
-    call dsp_write
+    call dsp_speaker_on
     mov al, 14h
     call dsp_write
     xor al, al
@@ -132,8 +100,7 @@ pro_start:
     call dsp_write
     mov al, 211
     call dsp_write
-    mov al, 0d1h
-    call dsp_write
+    call dsp_speaker_on
     call sb_mono_next
     jc .stop_failed
     clc
@@ -142,6 +109,26 @@ pro_start:
     call pro_stop
 .fail:
     stc
+    ret
+
+; D1h, then its time: the DSP may need up to 112 ms for it.
+dsp_speaker_on:
+    mov al, 0d1h
+    call dsp_write
+    jc .done
+    mov dx, [sb_base]
+    add dx, 0ch
+    mov bx, 4
+.round:
+    mov cx, 65535
+.busy:
+    call physical_read
+    test al, 80h
+    jz .done
+    loop .busy
+    dec bx
+    jnz .round
+.done:
     ret
 
 sb_mono_next:
@@ -197,6 +184,17 @@ pro_dma:
 pro_stop:
     cmp byte [sb_running], 0
     je .done
+    ; Mask the IRQ before the reset, so that no block end runs the handler.
+    pushf
+    cli
+    mov dx, 21h
+    call physical_read
+    mov cl, [sb_irq]
+    mov ah, 1
+    shl ah, cl
+    or al, ah
+    call physical_write
+    popf
     call physical_reset
     mov al, 0d3h
     call dsp_write
@@ -207,16 +205,7 @@ pro_stop:
     mov dx, [sb_base]
     add dx, 0eh
     call physical_read
-    mov dx, 21h
-    mov al, [saved_pic]
-    call physical_write
-    push ds
-    mov al, [sb_irq]
-    add al, 8
-    lds dx, [old_irq]
-    mov ah, 25h
-    int 21h
-    pop ds
+    call output_unhook
     cmp byte [sound_card], 3
     je .stopped
     xor bx, bx

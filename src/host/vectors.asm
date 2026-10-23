@@ -119,8 +119,9 @@ dpmi_code_target:
     ret
 
 dpmi_exceptions times 32*6 db 0
+; Client exception handlers running, nested (an exception in a handler reaches
+; the handlers again).
 dpmi_exception_active db 0
-
 ; AX=return SS, EDX=return ESP. Keep all registers.
 dpmi_stack_target:
     pushad
@@ -169,6 +170,12 @@ dpmi_deliver_exception:
     mov eax, [esp+52]
     mov [ebp+dpmi_first_exception+12], eax
 .recorded:
+    ; Keep the outer handler's place by level.
+    movzx eax, byte [ebp+dpmi_exception_active]
+    push dword [ebp+dpmi_exception_cursor]
+    pop dword [ebp+dpmi_exception_saved+eax*8]
+    push dword [ebp+dpmi_exception_sp]
+    pop dword [ebp+dpmi_exception_saved+eax*8+4]
     call dpmi_stack_acquire
     mov edi, [ebp+dpmi_locked_cursor]
     mov [ebp+dpmi_exception_cursor], edi
@@ -177,7 +184,7 @@ dpmi_deliver_exception:
     lea eax, [edi+8]
     mov [ebp+dpmi_exception_sp], eax
     add edi, 3e0000h
-    mov byte [ebp+dpmi_exception_active], 1
+    inc byte [ebp+dpmi_exception_active]
     mov edx, [esi]
     movzx eax, word [esi+4]
     push eax
@@ -243,8 +250,8 @@ dpmi_exception_done:
 .base:
     pop ebp
     sub ebp, .base
-    cmp byte [ebp+dpmi_exception_active], 1
-    jne .bad_return
+    cmp byte [ebp+dpmi_exception_active], 0
+    je .bad_return
     cmp byte [ebp+dpmi_client16], 0
     jne .word_return
     cmp word [esp+44], 3bh
@@ -280,7 +287,13 @@ dpmi_exception_done:
     cld
     rep movsd
 .restored:
-    mov byte [ebp+dpmi_exception_active], 0
+    ; The innermost handler has returned: the outer one's place comes back.
+    dec byte [ebp+dpmi_exception_active]
+    movzx eax, byte [ebp+dpmi_exception_active]
+    push dword [ebp+dpmi_exception_saved+eax*8]
+    pop dword [ebp+dpmi_exception_cursor]
+    push dword [ebp+dpmi_exception_saved+eax*8+4]
+    pop dword [ebp+dpmi_exception_sp]
     mov eax, [esp+48]
     call dpmi_restore_flags
     mov [esp+48], eax
@@ -336,6 +349,7 @@ dpmi_reflect:
     mov ax, 10h
     mov ds, ax
     mov es, ax
+    cld
     call .base
 .base:
     pop ebp
@@ -367,7 +381,6 @@ dpmi_reflect:
     jne .other
     jmp dpmi_dos.host
 .other:
-    cld
     jmp dpmi_dos_translate
 .bad_gate:
     sub dword [esp+40], 2

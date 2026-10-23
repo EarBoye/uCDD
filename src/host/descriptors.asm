@@ -192,12 +192,11 @@ dpmi_descriptors:
     jmp mon_dpmi.success
 .rights:
     mov cx, [ebx+32]
-    mov al, cl
-    and al, 70h
-    cmp al, 70h
-    jne dpmi_bad_value
+    test cl, 10h
+    jz dpmi_bad_value
     test ch, 20h
     jnz dpmi_bad_value
+    or cl, 60h
     mov [esi+5], cl
     and byte [esi+6], 0fh
     and ch, 0f0h
@@ -248,15 +247,14 @@ dpmi_descriptors:
     call dpmi_buffer
     jc .bad_set
     pop esi
-    mov dl, [eax+5]
-    and dl, 70h
-    cmp dl, 70h
-    jne dpmi_bad_value
+    test byte [eax+5], 10h
+    jz dpmi_bad_value
     test byte [eax+6], 20h
     jnz dpmi_bad_value
     mov edx, [eax]
     mov [esi], edx
     mov edx, [eax+4]
+    or edx, 6000h
     mov [esi+4], edx
     jmp mon_dpmi.success
 .bad_buffer:

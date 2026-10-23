@@ -332,6 +332,7 @@ sb_real_irq:
     call virtual_irq_take
     test ax, ax
     jz .done
+    call virtual_irq_deliver
     xor ax, ax
     mov es, ax
     movzx bx, byte [guest_vector]

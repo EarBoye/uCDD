@@ -51,6 +51,8 @@ DOS=HIGH,UMB
 DEVICE=C:\JEMMEX\JEMMEX.EXE
 ```
 
+Do not use the JEMMEX option `VME`. When VME is on, a CLI instruction in a game changes only the virtual interrupt flag. Then the port trap returns with interrupts on. `NOVME` is the default.
+
 AUTOEXEC.BAT:
 ```dos
 LH C:\UCDD\UCDD.EXE -install

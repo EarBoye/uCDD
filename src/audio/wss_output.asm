@@ -36,39 +36,12 @@ wss_start:
     call indexed_write
     mov ax, ((PERIOD_FRAMES-1) >> 8)*256+14
     call indexed_write
-    mov al, [sb_dma8]
-    mov [dma_channel], al
-    movzx bx, al
-    shl bx, 1
-    mov [dma_address_port], bx
-    inc bx
-    mov [dma_count_port], bx
-    mov word [dma_page_port], 83h
-    cmp al, 1
-    je .irq
-    mov word [dma_page_port], 82h
-.irq:
-    mov al, [sb_irq]
-    add al, 8
-    mov ah, 35h
-    int 21h
-    mov [old_irq], bx
-    mov [old_irq+2], es
-    mov dx, audio_irq
-    mov al, [sb_irq]
-    add al, 8
-    mov ah, 25h
-    int 21h
-    cli
-    mov dx, 21h
-    call physical_read
-    mov [saved_pic], al
-    mov cl, [sb_irq]
-    mov ah, 1
-    shl ah, cl
-    not ah
-    and al, ah
+    mov dx, [sb_base]
+    add dx, 6
+    xor al, al
     call physical_write
+    call dma8_output_hook
+    cli
     mov dx, 0ah
     mov al, [dma_channel]
     or al, 4
@@ -99,10 +72,6 @@ wss_start:
     mov al, [dma_channel]
     mov dx, 0ah
     call physical_write
-    mov dx, [sb_base]
-    add dx, 6
-    xor al, al
-    call physical_write
     mov ax, 0d09h
     call indexed_write
     mov byte [sb_running], 1
@@ -127,16 +96,7 @@ wss_stop:
     add dx, 6
     xor al, al
     call physical_write
-    mov dx, 21h
-    mov al, [saved_pic]
-    call physical_write
-    push ds
-    lds dx, [old_irq]
-    mov al, [sb_irq]
-    add al, 8
-    mov ah, 25h
-    int 21h
-    pop ds
+    call output_unhook
     mov byte [sb_running], 0
     call wss_restore
 .done:

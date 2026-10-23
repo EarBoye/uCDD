@@ -411,6 +411,14 @@ mon_iret:
     jmp .pic_only
 %endif
 .audio_ready:
+%ifdef RESIDENT_HOST
+    call resident_audio_deliver
+    jnc .delivered
+    ; A reset ended the held request: the handler must not run.
+    mov byte [ebp+dpmi_sti_sb_held], 0
+    jmp .pic_only
+.delivered:
+%endif
     movzx eax, byte [ebp+dpmi_guest_vector]
     mov edx, eax
     imul eax, 6
@@ -537,6 +545,9 @@ dpmi_client_init:
     call dpmi_debug_reset
     mov byte [ebp+dpmi_sti_shadow], 0
     mov byte [ebp+dpmi_callback_sti], 0
+%ifdef RESIDENT_HOST
+    call resident_audio_release
+%endif
     mov byte [ebp+dpmi_sti_sb_held], 0
 %ifdef RESIDENT_HOST
     call resident_refill_reset
@@ -651,6 +662,7 @@ dpmi_enter_client:
     MON_IRETD
 
 dpmi_dispatch:
+    cld
     mov byte [ebp+dpmi_dos_via21], 0
     movzx eax, word [ebx+36]
     mov [ebp+dpmi_last_call], ax
@@ -1076,6 +1088,9 @@ dpmi_finish:
 %endif
     mov byte [ebp+dpmi_sti_shadow], 0
     mov byte [ebp+dpmi_callback_sti], 0
+%ifdef RESIDENT_HOST
+    call resident_audio_release
+%endif
     mov byte [ebp+dpmi_sti_sb_held], 0
 %ifdef RESIDENT_HOST
     call resident_refill_reset

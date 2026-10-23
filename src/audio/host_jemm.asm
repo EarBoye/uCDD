@@ -202,6 +202,8 @@ host_io_irq:
     je .done
     cmp byte [ebx+virtual_pic_service], 0
     jne .done
+    cmp byte [ebx+virtual_pic_taken], 0
+    jne .done
     mov al, [ebx+guest_irq_bit]
     test [ebx+virtual_pic_mask], al
     jnz .done

@@ -189,6 +189,11 @@ cd_refill_wait:
 %endif
     call physical_pic_isr
     or al, [virtual_pic_service]
+    ; A masked IRQ cannot be delivered, so it does not hold the refill.
+    mov ah, [virtual_pic_mask]
+    not ah
+    and ah, [virtual_pic_taken]
+    or al, ah
     jz .free
     DIAG_INC diag_ref_pic
     stc

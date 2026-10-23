@@ -260,6 +260,29 @@ dpmi_dos_tile_room:
     clc
     ret
 
+; Real-mode segment for selector AX. A flat (base 0, page-granular) segment gets A000h.
+dpmi_dos_real_segment:
+    call dpmi_descriptor
+    jc .done
+    call dpmi_descriptor_base
+    cmp eax, 100000h
+    jae .fail
+    test eax, eax
+    jnz .based
+    test byte [esi+6], 80h
+    jz .based
+    mov ax, 0a000h
+    ret
+.based:
+    test al, 0fh
+    jnz .fail
+    shr eax, 4
+    ret
+.fail:
+    stc
+.done:
+    ret
+
 dpmi_dos_translate:
     cmp byte [ebp+dpmi_reflect_vector], 33h
     jne .mux
@@ -270,6 +293,10 @@ dpmi_dos_translate:
     jne .dos
     cmp word [ebx+36], 168ah
     je dpmi_vendor_query
+    cmp word [ebx+36], 1686h
+    jne .dos
+    mov word [ebx+36], 0
+    jmp mon_dpmi.success
 .dos:
     cmp byte [ebp+dpmi_reflect_vector], 21h
     jne .ordinary
@@ -375,27 +402,15 @@ dpmi_dos_translate:
     mov ax, [ebx+4]
     test ax, ax
     jz .ds_ready
-    call dpmi_descriptor
+    call dpmi_dos_real_segment
     jc dpmi_dos.unsupported
-    call dpmi_descriptor_base
-    cmp eax, 100000h
-    jae dpmi_dos.unsupported
-    test al, 0fh
-    jnz dpmi_dos.unsupported
-    shr eax, 4
 .ds_ready:
     mov [edi+36], ax
     mov ax, [ebx]
     test ax, ax
     jz .es_ready
-    call dpmi_descriptor
+    call dpmi_dos_real_segment
     jc dpmi_dos.unsupported
-    call dpmi_descriptor_base
-    cmp eax, 100000h
-    jae dpmi_dos.unsupported
-    test al, 0fh
-    jnz dpmi_dos.unsupported
-    shr eax, 4
 .es_ready:
     mov [edi+34], ax
 .reflect:
@@ -430,6 +445,19 @@ dpmi_dos_translate:
     mov ax, [esi]
     and ax, 08d5h
     or [ebx+48], ax
+    ; A game requires this deviation: INT 16h returns with the virtual IF on.
+    cmp byte [ebp+dpmi_reflect_vector], 16h
+    jne .flag_kept
+    ; Only at top level: a handler must not nest on the locked stacks.
+    call dpmi_top_level
+    jc .flag_kept
+    cmp byte [ebp+dpmi_vif], 0
+    jne .flag_kept
+    mov byte [ebp+dpmi_vif], 1
+    mov byte [ebp+dpmi_step_active], 0
+    and word [ebx+48], 0feffh
+    or word [ebx+48], 200h
+.flag_kept:
     jmp mon_dpmi.done
 .descriptor_full:
     mov ax, 8011h

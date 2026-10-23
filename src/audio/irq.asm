@@ -25,6 +25,7 @@ virtual_irq_init:
 virtual_irq_reset:
     mov byte [virtual_dsp_irq], 0
     mov byte [virtual_pic_request], 0
+    mov byte [virtual_pic_taken], 0
     mov dword [virtual_block_seen], 0
     ret
 
@@ -166,8 +167,9 @@ virtual_irq_take:
     mov al, [guest_irq_bit]
     test [virtual_pic_mask], al
     jnz .done
-    cmp byte [virtual_pic_service], 0
-    jne .done
+    mov al, [virtual_pic_service]
+    or al, [virtual_pic_taken]
+    jnz .done
     cmp byte [virtual_pic_request], 0
     je .done
     call physical_pic_isr
@@ -177,10 +179,13 @@ virtual_irq_take:
 %endif
     test al, [guest_irq_priority]
     jnz .done
-    mov byte [virtual_pic_request], 0
+    ; The IRQ stays a request until the host or the real chain delivers it.
     mov al, [guest_irq_bit]
-    mov [virtual_pic_service], al
+    mov [virtual_pic_taken], al
     DIAG_INC diag_taken
+%ifndef OWN_HOST
+    call virtual_irq_deliver
+%endif
     inc bx
 .done:
     mov ax, bx
@@ -189,6 +194,17 @@ virtual_irq_take:
     pop bx
     pop ds
     retf
+
+; The handler runs now: the IRQ is in service, like an INTA on a real PIC.
+virtual_irq_deliver:
+    mov al, [virtual_pic_taken]
+    test al, al
+    jz .done
+    mov byte [virtual_pic_taken], 0
+    mov byte [virtual_pic_request], 0
+    mov [virtual_pic_service], al
+.done:
+    ret
 
 physical_pic_isr:
     mov dx, 20h
@@ -283,6 +299,7 @@ virtual_pic_write:
     inc ah
 .words:
     mov [pic_init_words], ah
+    mov byte [virtual_pic_taken], 0
     mov byte [virtual_pic_service], 0
     mov byte [virtual_pic_mask], 0
     mov byte [physical_pic_read], 0ah
@@ -443,6 +460,7 @@ physical_irq_bit db 20h
 pic_visible_bits db 0dfh
 physical_pic_read db 0ah
 pic_init_words db 0
+virtual_pic_taken db 0
 
 %ifdef RESIDENT_AUDIO
 emm_pic_mask_shadow db 0ffh
@@ -452,3 +470,4 @@ emm_pic_mask_shadow db 0ffh
 cdf2_service_check equ 1 / ((virtual_pic_service-virtual_pic_request) = 1)
 cdf2_visible_check equ 1 / ((pic_visible_bits-virtual_pic_request) = 8)
 cdf2_mode_check equ 1 / ((physical_pic_read-virtual_pic_request) = 9)
+cdf2_taken_check equ 1 / ((virtual_pic_taken-virtual_pic_request) = 11)

@@ -257,25 +257,26 @@ host_storage_allocate:
     mov ax, 5803h
     mov bx, 1
     int 21h
-    jc .plain
+    jc .conventional
     mov ax, 5801h
     mov bx, 40h
     int 21h
-    jc .restore_plain
-    call host_pair_allocate
+    jc .conventional
+    call host_gateway_allocate
     pushf
     call host_dos_restore
     popf
     jnc .gateway_ready
+.conventional:
+    ; Without UMB support 5803h fails; the last-fit strategy still applies.
     mov ax, 5803h
     xor bx, bx
     int 21h
-    jc .plain
     mov ax, 5801h
-    xor bx, bx
+    mov bx, 2
     int 21h
     jc .restore_plain
-    call host_pair_allocate
+    call host_gateway_allocate
     pushf
     call host_dos_restore
     popf
@@ -284,7 +285,7 @@ host_storage_allocate:
 .restore_plain:
     call host_dos_restore
 .plain:
-    call host_pair_allocate
+    call host_gateway_allocate
     jc .bad
 .gateway_ready:
     mov ax, 4300h
@@ -330,38 +331,6 @@ host_storage_allocate:
     stc
     ret
 
-host_pair_allocate:
-    call host_stack_allocate
-    jc .bad
-    call host_gateway_allocate
-    jnc .done
-    call host_stack_release
-.bad:
-    stc
-.done:
-    ret
-
-host_stack_allocate:
-    mov bx, HOST_STACK_PARAS
-    mov ah, 48h
-    int 21h
-    jc .bad
-    mov [host_stack_segment], ax
-    clc
-.bad:
-    ret
-
-host_stack_release:
-    mov ax, [host_stack_segment]
-    test ax, ax
-    jz .done
-    mov es, ax
-    mov ah, 49h
-    int 21h
-    mov word [host_stack_segment], 0
-.done:
-    ret
-
 host_dos_save:
     mov ax, 5800h
     int 21h
@@ -369,7 +338,9 @@ host_dos_save:
     mov [host_dos_strategy], ax
     mov ax, 5802h
     int 21h
-    jc .bad
+    jnc .link
+    xor ax, ax
+.link:
     mov [host_dos_umb], al
     clc
     ret
@@ -386,36 +357,34 @@ host_dos_restore:
     int 21h
     ret
 
+; One block holds the gateway and, in its last 128 paragraphs, the host stack.
 host_gateway_allocate:
-    mov bx, HOST_GATEWAY_MIN_PARAS
+    mov bx, HOST_GATEWAY_MAX_PARAS+HOST_STACK_PARAS
+.try:
+    mov si, bx
     mov ah, 48h
     int 21h
-    jc .bad
+    jnc .got
+    ; Take the largest block when it still holds the gateway.
+    cmp si, HOST_GATEWAY_MAX_PARAS+HOST_STACK_PARAS
+    jne .bad
+    cmp bx, HOST_GATEWAY_MIN_PARAS+HOST_STACK_PARAS
+    jae .try
+.bad:
+    stc
+    ret
+.got:
     mov [host_gateway_segment], ax
     call host_gateway_measure
-    mov es, [host_gateway_segment]
-    mov bx, [host_prefix_bytes]
-    shr bx, 4
-    mov ah, 4ah
-    int 21h
-    jnc .done
-    mov es, [host_gateway_segment]
-    mov ah, 49h
-    int 21h
-    mov word [host_gateway_segment], 0
-    mov bx, HOST_GATEWAY_MAX_PARAS
-    mov ah, 48h
-    int 21h
-    jc .bad
-    mov [host_gateway_segment], ax
-    call host_gateway_measure
-    mov es, [host_gateway_segment]
-    mov bx, [host_prefix_bytes]
-    shr bx, 4
-    mov ah, 4ah
-    int 21h
-    jc .free_bad
-.done:
+    mov dx, [host_prefix_bytes]
+    shr dx, 4
+    add dx, HOST_STACK_PARAS
+    cmp si, dx
+    jb .free_bad
+    mov ax, [host_gateway_segment]
+    add ax, si
+    sub ax, HOST_STACK_PARAS
+    mov [host_stack_segment], ax
     clc
     ret
 .free_bad:
@@ -423,7 +392,6 @@ host_gateway_allocate:
     mov ah, 49h
     int 21h
     mov word [host_gateway_segment], 0
-.bad:
     stc
     ret
 
@@ -600,8 +568,8 @@ host_storage_release:
     mov ah, 49h
     int 21h
     mov word [host_gateway_segment], 0
+    mov word [host_stack_segment], 0
 .done:
-    call host_stack_release
     ret
 
 host_gateway_segment dw 0
@@ -842,6 +810,38 @@ resident_pending:
     xor eax, eax
     ret
 resident_audio_request dd 0
+; The taken SB IRQ is delivered: it moves from request to in-service.
+; CF=1: nothing was taken, a reset ended it.
+resident_audio_deliver:
+    push eax
+    mov esi, [ebp+resident_audio_request]
+    test esi, esi
+    jz .done
+    mov al, [esi+11]
+    test al, al
+    jz .none
+    mov byte [esi+11], 0
+    mov byte [esi], 0
+    mov [esi+1], al
+.done:
+    clc
+    pop eax
+    ret
+.none:
+    stc
+    pop eax
+    ret
+
+; A held take goes back to a request when its client ends.
+resident_audio_release:
+    cmp byte [ebp+dpmi_sti_sb_held], 0
+    je .done
+    mov esi, [ebp+resident_audio_request]
+    test esi, esi
+    jz .done
+    mov byte [esi+11], 0
+.done:
+    ret
 resident_refill_clock dd 0
 resident_refill_last dd 0
 resident_audio_take:
@@ -850,6 +850,8 @@ resident_audio_take:
     jz .take
     cmp byte [esi], 0
     je .none
+    cmp byte [esi+11], 0
+    jne .none
 .take:
     call dpmi_hardware_room
     jc .none
