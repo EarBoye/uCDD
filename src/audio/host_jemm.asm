@@ -57,6 +57,10 @@ host_gate:
     je .untrap
     cmp al, 11
     je .remove_host
+    cmp al, 20h
+    je .count_pair
+    cmp al, 21h
+    je .sb16_enter
 .error:
     or byte [ebp+48], 1
 .done:
@@ -89,6 +93,64 @@ host_gate:
 .output:
     mov al, [ebp+16]
     out dx, al
+    jmp .done
+; Two of the driver's own sequences in one call each (ISSUES.md IRQCOST:
+; every call into this gate is a trip into JemmEx's ring 0 and back, and
+; the handler made 13 a period). The same ports in the same order as the
+; single calls they replace.
+; 1A20h, output_clock's two reads of the 8237 count: CX = the flip-flop
+; port (D8h or 0Ch), DX = the count port; returns BX = the first read,
+; CX = the second, each the low byte then the high byte after the
+; flip-flop is cleared.
+.count_pair:
+    push esi
+    movzx esi, word [ebp+24]
+    call .count_once
+    mov [ebp+16], ax
+    call .count_once
+    mov [ebp+24], ax
+    pop esi
+    jmp .done
+.count_once:
+    xchg edx, esi
+    xor eax, eax
+    out dx, al
+    xchg edx, esi
+    in al, dx
+    mov ah, al
+    in al, dx
+    xchg al, ah
+    ret
+; 1A21h, the SB16's interrupt entry (sb16.asm audio_irq_enter16): the IRQ
+; masked at the master controller (CL = its bit), mixer register 82h read
+; (DX = the card's base), and when 82h shows the 16-bit request without
+; the MPU-401's, that request acknowledged at 2xFh. With the MPU-401's
+; bit set the acknowledge is left to the caller, after its MPU-401 work,
+; as before. Returns BL = 82h, BH = the mask before, CH = 1 when 2xFh was
+; read.
+.sb16_enter:
+    push edx
+    mov dx, 21h
+    in al, dx
+    mov [ebp+17], al
+    or al, [ebp+24]
+    out dx, al
+    mov edx, [esp]
+    add dx, 4
+    mov al, 82h
+    out dx, al
+    inc dx
+    in al, dx
+    mov [ebp+16], al
+    mov byte [ebp+25], 0
+    and al, 6
+    cmp al, 2
+    jne .entered
+    add dx, 0fh-5
+    in al, dx
+    mov byte [ebp+25], 1
+.entered:
+    pop edx
     jmp .done
 .get:
     mov eax, [ebx+host_callback]

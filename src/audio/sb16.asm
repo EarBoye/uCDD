@@ -330,22 +330,21 @@ audio_irq:
     push fs
     cld
     DRV_TSC_BEGIN pirq
+    cmp byte [sound_card], 0
+    je .sb16
     call audio_irq_mask
     cmp byte [sound_card], 2
     je .wss
-    test byte [sound_card], 1
-    jnz .pro
+    jmp .pro
+.sb16:
     ; Mixer 82h names the card's sources on the line (Creative's Hardware
     ; Programming Guide, "Sharing of Interrupts"): bit 1 the 16-bit DMA
     ; that plays the output, bit 2 the MPU-401, bit 0 the 8-bit DMA and
     ; SB-MIDI. A reflected game IRQ shows none of them and must not advance
-    ; the physical output buffer.
-    mov dx, [sb_base]
-    add dx, 4
-    mov al, 82h
-    call physical_write
-    inc dx
-    call physical_read
+    ; the physical output buffer. The mask, the 82h read and, with the
+    ; MPU-401 quiet, the 16-bit acknowledge come in one call
+    ; (audio_irq_enter16); AH says whether 2xFh was read.
+    call audio_irq_enter16
 %ifdef VIRTUAL_IRQ
     test al, 4
     jz .no_mpu
@@ -353,7 +352,11 @@ audio_irq:
 .no_mpu:
 %endif
     test al, 2
-    jnz .output16
+    jz .not_output16
+    test ah, ah
+    jz .output16
+    jmp .acknowledged
+.not_output16:
     test al, 5
     jz .unowned
     ; The MPU-401 alone: the game reads its byte at 330h, which ends the
@@ -374,8 +377,9 @@ audio_irq:
     mov dx, [sb_base]
     add dx, 0fh
     call physical_read
-; Joined from the SB16 path above and from .pro_audio, .wss and .codec below,
-; once the card's own interrupt is acknowledged. On every path: the handler's
+; Joined from the SB16 path above (acknowledged in audio_irq_enter16 or at
+; .output16) and from .pro_audio, .wss and .codec below, once the card's own
+; interrupt is acknowledged. On every path: the handler's
 ; stack with PUSHAD, ES and FS saved, DS=CS, DF clear, the IRQ masked at the
 ; controller; ES and DI are not set yet; EBX holds nothing needed after here
 ; (the lateness check below uses it).
@@ -726,6 +730,48 @@ sb16_line_check:
     call audio_irq_poll
 .done:
     popad
+    ret
+%endif
+
+; The SB16's interrupt entry: what audio_irq_mask, the mixer 82h read and
+; the 16-bit acknowledge do, in that order, as one call into JemmEx's API
+; (host_gate 1A21h, ISSUES.md IRQCOST: five trips become one); the
+; acknowledge is left for later when the MPU-401's bit is set too. AL =
+; mixer 82h, AH = 1 when 2xFh was read. BX, CX and DX changed.
+audio_irq_enter16:
+%ifdef DIRECT_OUTPUT
+    call audio_irq_mask
+    mov dx, [sb_base]
+    add dx, 4
+    mov al, 82h
+    call physical_write
+    inc dx
+    call physical_read
+    mov ah, al
+    and ah, 6
+    cmp ah, 2
+    mov ah, 0
+    jne .entered
+    push ax
+    mov dx, [sb_base]
+    add dx, 0fh
+    call physical_read
+    pop ax
+    mov ah, 1
+.entered:
+    ret
+%else
+    mov cl, [sb_irq]
+    mov ah, 1
+    shl ah, cl
+    mov [audio_irq_mask_bit], ah
+    mov cl, ah
+    mov dx, [sb_base]
+    mov ax, 1a21h
+    call far [qpi]
+    mov [audio_irq_old_mask], bh
+    mov al, bl
+    mov ah, ch
     ret
 %endif
 

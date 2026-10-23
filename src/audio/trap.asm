@@ -113,9 +113,7 @@ trap_remove:
 output_clock:
     mov cx, 8
 .retry:
-    call .count
-    mov bx, ax
-    call .count
+    call .count_pair
     cmp bx, RING_WORDS-1
     ja .again
     cmp ax, RING_WORDS-1
@@ -150,6 +148,37 @@ output_clock:
     add eax, ebx
     mov [last_clock], eax
     ret
+; BX = the first read of the ring's count, AX = the second, each in ring
+; words. Both reads in one call into JemmEx's API (host_gate 1A20h,
+; ISSUES.md IRQCOST): six port accesses, one trip. CX is kept (the retry
+; count); DX changed.
+.count_pair:
+%ifdef DIRECT_OUTPUT
+    call .count
+    mov bx, ax
+    jmp .count
+%else
+    push cx
+    mov cx, 0d8h
+%ifdef RESIDENT_AUDIO
+    cmp byte [sound_card], 0
+    je .pair_flip_flop
+    mov cx, 0ch
+.pair_flip_flop:
+%endif
+    mov dx, [dma_count_port]
+    mov ax, 1a20h
+    call far [qpi]
+    mov ax, bx
+    call .units
+    xchg ax, cx
+    call .units
+    mov bx, cx
+    pop cx
+    ret
+%endif
+%ifdef DIRECT_OUTPUT
+; One read of the count, port by port (the build without JemmEx's API).
 .count:
     push bx
     mov al, 0
@@ -167,6 +196,10 @@ output_clock:
     call physical_read
     mov ah, al
     mov al, bl
+    pop bx
+%endif
+; AX = a count read of the card's DMA channel, made ring words.
+.units:
 %ifdef RESIDENT_AUDIO
     cmp byte [sound_card], 2
     jne .pro_count
@@ -189,7 +222,6 @@ output_clock:
     or ax, 1
 .count_ready:
 %endif
-    pop bx
     ret
 
 game_elapsed:
