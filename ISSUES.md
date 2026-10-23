@@ -393,6 +393,38 @@ changed volumes.
   fails to engage at a mount (the card did not start) sets bit 7 of the
   fault byte and leaves CD audio silent until the next mount.
 
+## The author's releases
+
+### UPA6: the author's Beta 0.9.4-a6 merged into our line (24 Oct 2026)
+
+- What: the author's releases 0.9.3c to 0.9.4-a6 (19 commits after
+  0.9.3b, our base) merged into count-position on the branch merge-a6.
+  The fork's main carries his releases only (fast-forwarded to a6 on 24
+  Oct).
+- Rule for this merge (Michael, 24 Oct 2026): his fixes take precedence
+  over ours. Where both sides fixed the same behaviour, his version is
+  kept and ours removed; where ours does something his does not (the DSP
+  4.13 identity and the command tables by model, the count position D1,
+  the 512-frame ring, the interrupt counters, the virtual ESS, F14), ours
+  is kept and fitted to his code. Where his behaviour disagrees with the
+  documents or the CT2290's measurements, his is kept and the disagreement
+  is written below as a row for later (mantra rule 7).
+- Citation: the documents are silent on which implementation to keep;
+  Michael's rule decides. Each behaviour's own citation stays with its row.
+- Family: none: the whole driver, every engine.
+- Baseline: count-position 00b13de; the author's a6 8252786.
+- Trial merge (24 Oct): 36 files conflict, about 130 places, about 4,500
+  lines in the markers; trap.asm 40 places, 1,558 lines.
+- Room: the DPMI host at 32 frames is 65,251 bytes on count-position and
+  62,417 on a6 (0.9.3b: 59,361); both sides' additions together come to
+  about 68,300, over the 65,535 limit. Taking his version where both fixed
+  the same thing gives some back; if it still does not fit, start-up code
+  moves out of the resident segment as he moved the driver's command
+  parser in a1 (Michael, 24 Oct).
+- Testing: held (Michael, 24 Oct). The merge is built, not run.
+- The merge table (each place where both sides did the same thing, what
+  was kept): filled in with the merge.
+
 ## The count and the block interrupt
 
 ### F8: the count short of the boundary at an auto-init block interrupt (23 Oct 2026)
