@@ -110,6 +110,9 @@ audio_activate:
     xor di, di
     call mix_half
     call mix_half
+%if RING_PERIODS > 2
+    call ring_fill
+%endif
     mov word [audio_error_text], port_trap_rejected_message
     call trap_install
     jc .cleanup

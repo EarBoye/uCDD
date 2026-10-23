@@ -1154,3 +1154,23 @@ sb_tail_prepare:
     pop es
     popad
     ret
+
+%if RING_PERIODS > 2
+; Called from the install (resident_init.asm) and audio_engage (standby.asm),
+; each just after mixing two silent periods at the ring's start: ES = the
+; output segment, DI just past them. The rest of the ring gets the same
+; silence, copied on, in whatever form the card plays (80h for 8-bit,
+; 0 for 16-bit): the mixer runs no further and takes no CD audio. SI, CX
+; and DI changed; DS kept.
+ring_fill:
+    push ds
+    push es
+    pop ds
+    xor si, si
+    mov cx, di
+    imul cx, cx, RING_PERIODS/2-1
+    cld
+    rep movsb
+    pop ds
+    ret
+%endif

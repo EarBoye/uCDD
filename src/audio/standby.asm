@@ -81,8 +81,8 @@ audio_release:
     mov byte [audio_engaged], 0
     ret
 
-; The install's tail again: the virtual PIC's view of the mask, two silent
-; halves in the ring, the ports, the card, the host.
+; The install's tail again: the virtual PIC's view of the mask, a silent
+; ring, the ports, the card, the host.
 audio_engage:
     call virtual_irq_init
     mov ax, [output_segment]
@@ -90,6 +90,9 @@ audio_engage:
     xor di, di
     call mix_half
     call mix_half
+%if RING_PERIODS > 2
+    call ring_fill
+%endif
     call trap_engage
     jc .failed
     ; sb_start hooks the vector through INT 21h while the byte is still

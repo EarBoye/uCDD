@@ -15,7 +15,18 @@
 %undef CD_HALF_BYTES
 %define CD_HALF_BYTES CD_PREFETCH_BYTES
 %endif
-%define RING_BYTES (PERIOD_BYTES * 2)
+; The physical output ring: 512 frames (11.6 ms at 44.1 kHz) in whole
+; periods, two at the least. The card interrupts once a period and the
+; driver mixes one period ahead, so the ring's size adds no latency; it is
+; the window output_clock reads the period in: a period interrupt late by up
+; to RING_PERIODS-1 periods is still counted right (F2: with two periods, one
+; more than a period late aliased the clock two periods back).
+%if OUTPUT_SHIFT >= 8
+%define RING_PERIODS 2
+%else
+%define RING_PERIODS (512 >> OUTPUT_SHIFT)
+%endif
+%define RING_BYTES (PERIOD_BYTES * RING_PERIODS)
 %define RING_WORDS (RING_BYTES / 2)
 %define RING_PARAS (RING_BYTES / 16)
 %define PERIOD_SCALE (4096 / PERIOD_FRAMES)

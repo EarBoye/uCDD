@@ -132,19 +132,18 @@ output_clock:
     mov eax, [last_clock]
     ret
 .stable:
+    ; The frame the card plays: [periods] gives the period it started, the
+    ; DMA position how far it is past that start, modulo the ring. Right
+    ; while the card is less than RING_PERIODS periods past [periods]: a
+    ; later period interrupt resyncs [periods] from this clock.
     movzx eax, ax
     mov ebx, RING_WORDS-1
     sub ebx, eax
     shr ebx, 1
     mov eax, [periods]
     shl eax, OUTPUT_SHIFT
-    mov edx, eax
-    xor edx, ebx
-    test edx, PERIOD_FRAMES
-    jz .same_half
-    add eax, PERIOD_FRAMES
-.same_half:
-    and ebx, PERIOD_FRAMES-1
+    sub ebx, eax
+    and ebx, RING_PERIODS*PERIOD_FRAMES-1
     add eax, ebx
     mov [last_clock], eax
     ret

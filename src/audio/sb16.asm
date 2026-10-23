@@ -393,9 +393,10 @@ audio_irq:
     ; How late this interrupt is: on time, the clock has just entered the
     ; period [periods] now names. Past half of it: late by over half a
     ; period. In the next one: a whole period late, and the card has played
-    ; the half this refill is for. Two periods or more alias (output_clock
-    ; sees two periods of ring) and show only as periods lost against the
-    ; timer ticks (UCDD -STATUS). EBX is free on every path into here.
+    ; the slot this refill is for. RING_PERIODS periods or more alias
+    ; (output_clock reads the period within the ring) and show only as
+    ; periods lost against the timer ticks (UCDD -STATUS). EBX is free on
+    ; every path into here.
     mov ebx, eax
     shr ebx, OUTPUT_SHIFT
     cmp ebx, [periods]
@@ -410,8 +411,9 @@ audio_irq:
 .late_done:
     shr eax, OUTPUT_SHIFT
     mov [periods], eax
-    and ax, 1
-    xor ax, 1
+    ; The ring's slot after the one the card plays.
+    inc ax
+    and ax, RING_PERIODS-1
     shl ax, OUTPUT_SHIFT+2
     test byte [sound_card], 1
     jz .half_ready
@@ -439,7 +441,14 @@ audio_irq:
 .half_size:
     mov cl, [ess_half]
     shr ax, cl
+    ; The other half of a two-period ring, for a build that does not read
+    ; the clock above; a mounted build sets next_half at every interrupt.
     xor [next_half], ax
+%if RING_PERIODS > 2
+%ifndef MOUNTED_AUDIO
+%error A ring of more than two periods needs the slot from the clock (MOUNTED_AUDIO).
+%endif
+%endif
 %ifdef ESS_FIFO_MODEL
     ; The virtual ESS's DAC ring must reach the output clock before the next
     ; half reads it (ess_fifo.asm: the mixer reads ESS_DELAY_FRAMES behind).
