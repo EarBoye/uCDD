@@ -197,6 +197,13 @@ both [hw]; the numbers are in [ct2290.md](ct2290.md).
   FIFO (16 samples) brings the first interrupt 0.7 ms forward; the virtual
   card shows no such difference. In stereo (B6h mode 30h) the virtual
   count is FCh words short [trace].
+  23 Oct 2026, fixed for auto-init on branch `count-position` (30c82ca,
+  ISSUES.md F8): the count and the block interrupt come from one position,
+  the frame heard plus one period, never past what uCDD has taken (vsb-spec
+  7.8). [86Box, 32 frames: every auto-init SBT16 case now reads the count
+  on the boundary or up to one period past it at the interrupt, where it
+  read one to two periods short; single-cycle was already on it; the sound
+  check as before.] Hardware: not yet.
 - **F9.** A block never acknowledged: the card raises one interrupt and
   stops the DMA within about two blocks until the acknowledge; the virtual
   card raises 7 interrupts in 300 ms and never stops.
