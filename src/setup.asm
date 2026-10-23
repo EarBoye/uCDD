@@ -46,6 +46,9 @@ start:
     cmp al, LOAD_OK
     je install_settings
 .menu:
+    ; The Disk row shows what the PCI scan finds (disk_scan.asm). The driver
+    ; scans for itself at install.
+    call disk_scan
     call main_menu
     jc .cancel
     cmp byte [handoff], 0
@@ -362,6 +365,19 @@ main_draw:
     mov si, always_label
     mov bl, A_BOX
     call put_text
+    ; The Disk row: what the PCI scan found (row 16), an IRQ set by hand
+    ; (row 17), and a warning when a disk IRQ is a sound card's (row 19).
+    mov dx, 1004h
+    mov si, disk_label
+    mov bl, A_BOX
+    call put_text
+    mov dx, 1028h
+    mov si, pci_irq_label
+    call put_text
+    mov dx, 1128h
+    mov si, other_irq_label
+    call put_text
+    call disk_draw
     ret
 
 main_keys:
@@ -557,7 +573,7 @@ model_changed:
     clc
     ret
 
-MAIN_ITEMS equ 19
+MAIN_ITEMS equ 20
 main_items:
     item 7,16,21,0, NONE,5,NONE,1, format_choice,choice_popup,choice_cycle,model_choice
     item 7,41,3,0, NONE,6,0,2, format_choice,choice_popup,choice_cycle,port_choice
@@ -569,8 +585,8 @@ main_items:
     item 11,49,3,0, 2,11,6,8, format_choice,choice_popup,choice_cycle,virtual_irq_choice
     item 11,57,3,0, 3,11,7,9, format_choice,choice_popup,choice_cycle,virtual_dma8_choice
     item 11,67,3,0, 4,11,8,NONE, format_choice,choice_popup,choice_cycle,virtual_dma16_choice
-    item 12,41,3,0, 6,18,NONE,11, format_choice,choice_popup,choice_cycle,wss_port_choice
-    item 12,49,3,0, 7,18,10,NONE, format_choice,choice_popup,choice_cycle,wss_irq_choice
+    item 12,41,3,0, 6,19,NONE,11, format_choice,choice_popup,choice_cycle,wss_port_choice
+    item 12,49,3,0, 7,19,10,NONE, format_choice,choice_popup,choice_cycle,wss_irq_choice
     item 20,5,9,0, 18,NONE,NONE,13, format_button,hotkeys_screen,0,hotkeys_label
     item 20,18,7,0, 18,NONE,12,14, format_button,mixer_screen,0,mixer_label
     item 20,31,8,0, 18,NONE,13,15, format_button,detect_action,0,detect_label
@@ -578,11 +594,14 @@ main_items:
     item 20,55,6,0, 18,NONE,15,17, format_button,save_action,0,save_label
     item 20,65,8,0, 18,NONE,16,NONE, format_button,cancel_action,0,cancel_label
     ; The step-aside switch: ticked, the driver stays on without a CD audio disc.
-    item 18,3,3,0, 10,12,NONE,NONE, format_tick,toggle_tick,0,always_tick
+    item 18,3,3,0, 19,12,NONE,NONE, format_tick,toggle_tick,0,always_tick
+    ; The Disk row: an IRQ set by hand for a disk card the PCI scan misses.
+    item 17,61,4,0, 10,18,NONE,NONE, format_choice,choice_popup,choice_cycle,disk_irq_choice
 main_notes dw 0,0,0,0,0
     dw virtual_note,virtual_note,virtual_note,virtual_note,virtual_note,wss_note,wss_note
     dw 0,0,0,0,0,0
     dw always_help
+    dw disk_note
 always_tick:
     tick config_audio_always,always_available
 ; CF set when the physical card cannot act as the virtual one (the driver's
@@ -655,6 +674,9 @@ applications_text db 'Set your applications to use the ',0
 virtual_cards_text db 'VIRTUAL CARDS',0
 always_label db 'uCDD driver always on',0
 always_help db 'Ticked: uCDD stays on even without a CD audio disc.',0
+disk_label db 'Disk',0
+pci_irq_label db 'PCI disk card IRQ',0
+other_irq_label db 'Other disk card IRQ',0
 hotkeys_label db 'Hotkeys',0
 mixer_label db 'Mixer',0
 detect_label db 'Detect',0
@@ -697,6 +719,8 @@ setup_usage_message db 'UCDDSET sets the sound cards, hotkeys, and volumes for u
 %include "setup/config_file.asm"
 %include "setup/blaster.asm"
 %include "setup/detect.asm"
+%include "disk_scan.asm"
+%include "setup/disk.asm"
 %include "audio/speaker.asm"
 %include "config_path.asm"
 setup_end:

@@ -8,8 +8,12 @@ host_v86_prepare:
     push es
     cmp byte [cs:resident_irq_slot], 1
     jne .done
+    ; CDF4's fields; CDF5 keeps them where they are.
     cmp dword [ds:bp+8], 34464443h
+    je .fields
+    cmp dword [ds:bp+8], 35464443h
     jne .done
+.fields:
     mov si, [ds:bp+22]
     mov ax, [si]
     cmp ax, 5605h

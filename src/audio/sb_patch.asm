@@ -503,8 +503,11 @@ sb_dos_vector:
 sb_game_vector dd 0
 sb_host_guest_irq dw guest_irq
 sb_host_ports dw trap_ports
-    dd 34464443h
+    ; CDF5: CDF4, then the disk IRQs that go straight to the real-mode
+    ; handler (host/resident.asm).
+    dd 35464443h
     dw cd_deferred_refill, cd_refill_pending, virtual_pic_request, last_clock
     dw host_info, host_jemm_version
+    dw config_disk_mask
 sb_old_dos dd 0
 %endif

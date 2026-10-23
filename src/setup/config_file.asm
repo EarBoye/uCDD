@@ -174,6 +174,10 @@ config_valid:
     ja .bad
     cmp byte [config_master_volume], 100
     ja .bad
+    movzx ax, byte [config_disk_irq]
+    mov si, disk_irq_values
+    call value_listed
+    jc .done
     cmp byte [config_audio_always], 1
     ja .bad
     cmp byte [config_fm_volume], 100

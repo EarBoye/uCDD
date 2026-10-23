@@ -40,8 +40,9 @@ config_fm_volume db 100
 ; Version 5 adds three bytes after version 4's record. The same layout is used
 ; on the fork's feature branches (disk IRQ, step-aside, fast DMA), so any of
 ; them can be taken alone or together; a byte a branch does not use is 0.
-; Reserved: the disk IRQ set by hand, on its branch.
-config_reserved_disk db 0
+; IRQ of a disk controller that the PCI scan does not find, or 0 (UCDDSET's
+; Disk row).
+config_disk_irq db 0
 ; 1 keeps the physical output and the traps on at all times. 0 lets the
 ; driver step aside while no disc is bound for CD audio and the physical card
 ; can stand in for the virtual one (audio/standby.asm).
@@ -49,3 +50,8 @@ config_audio_always db 0
 ; Reserved: the fast DMA switch, on its branch.
 config_reserved_dma db 0
 config_size_check equ 1 / (($-config_data) = CONFIG_SIZE)
+; Not in UCDD.CFG. UCDD -install scans the PCI BIOS (disk_scan.asm) and sets
+; the mask: IRQ 14 and 15, the IRQs of PCI disk controllers, and
+; config_disk_irq. Those IRQs go straight to the real-mode handler (see
+; host/bridge.asm).
+config_disk_mask dw 0c000h
