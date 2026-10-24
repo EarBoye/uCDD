@@ -10,6 +10,7 @@ Exit 0 when every check passes. Needs git and python3 only.
 
 from pathlib import Path
 import json
+import re
 import os
 import shutil
 import subprocess
@@ -91,7 +92,9 @@ def install_method(root, refs):
         (pkg / 'matrix' / 'matrix.toml').write_text('[families]\ncreative = "docs/sound-engines/creative.md"\n')
     toml = (pkg / 'method.toml').read_text()
     toml = toml.replace('worktree = "../refs"', f'worktree = "{refs}"')
-    toml = toml.replace('[references.keys]\n', '[references.keys]\nSBG = "creative/sbg.txt"\nMISSING = "creative/none.txt"\n')
+    # Replace whatever key table ships with the test's own two keys.
+    toml = re.sub(r'\[references\.keys\]\n(?:(?!\[)[^\n]*\n)*',
+                  '[references.keys]\nSBG = "creative/sbg.txt"\nMISSING = "creative/none.txt"\n', toml, count=1)
     (pkg / 'method.toml').write_text(toml)
     return pkg
 

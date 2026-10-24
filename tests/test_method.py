@@ -30,9 +30,12 @@ GOOD = """IRQ: a change
 
 Issue: {row}
 Evidence: data sheet: SBG 6-12
-Evidence: emulator: 86Box, D10, by hand
+Evidence: emulator: plan {plan}, 1 run
 Family: none: the interrupt path, every engine
 """
+# The pre-T2 form: an emulator claim with no plan. The hook refuses it with require on.
+BY_HAND = 'Evidence: emulator: 86Box, D10, by hand'
+RECORD_OFF = ('--dynarec', '0')
 LEDGER = tempfile.TemporaryDirectory(prefix='method-ledger-')
 os.environ['UCDD_LEDGER'] = LEDGER.name
 
@@ -58,6 +61,21 @@ class HookTests(unittest.TestCase):
         cls.tree = Path(cls.tmp.name) / 'tree'
         subprocess.run(['git', '-C', root, 'worktree', 'add', '-q', '--detach', str(cls.tree), ref],
                        check=True)
+        # The required regime (tightening r3, T2): every emulator claim names a plan the
+        # ledger holds as passed on the committed binaries. One build of the untouched
+        # tree is kept aside; good() records a pass on it right before each commit, so a
+        # comment-only change still matches and an earlier fail entry cannot leak in.
+        matrix = tomllib.loads((PACKAGE / 'matrix' / 'matrix.toml').read_text())
+        options = matrix['builds'][matrix['defaults']['build']]
+        subprocess.run([sys.executable, 'scripts/build.py', *options.split()], cwd=cls.tree,
+                       capture_output=True, check=True)
+        cls.build0 = Path(cls.tmp.name) / 'build0'
+        shutil.copytree(cls.tree / 'build', cls.build0)
+        shutil.rmtree(cls.tree / 'build')
+        result = subprocess.run([sys.executable, str(PACKAGE / 'matrix/plan.py'), '--test', 'SBT16',
+                                 '--save', '--format', 'json'], cwd=cls.tree, capture_output=True, text=True)
+        saved = json.loads(result.stdout)
+        cls.tag, cls.run0 = saved['tag'], saved['runs'][0]['id']
 
     @classmethod
     def tearDownClass(cls):
@@ -106,6 +124,13 @@ class HookTests(unittest.TestCase):
         with open(self.tree / name, 'a') as file:
             file.write(text)
 
+    def good(self, row):
+        """GOOD for this row, with a fresh passing ledger entry on the kept build."""
+        record = self.tool(PACKAGE / 'tools/ledger.py', 'record', self.tag, self.run0, 'pass',
+                           '--build-dir', self.build0, *RECORD_OFF)
+        self.assertEqual(record.returncode, 0, record.stderr)
+        return GOOD.format(row=row, plan=self.tag)
+
     def add_row(self, row):
         self.append('ISSUES.md', f'\n| `{row}` | a test row |\n')
         self.assertEqual(self.commit(f'ISSUES: {row}\n').returncode, 0)
@@ -120,12 +145,12 @@ class HookTests(unittest.TestCase):
     def test_row_committed_first(self):
         self.add_row('test-row-a')
         self.append('src/audio/irq.asm', '; x\n')
-        self.assertEqual(self.commit(GOOD.format(row='test-row-a')).returncode, 0)
+        self.assertEqual(self.commit(self.good('test-row-a')).returncode, 0)
 
     def test_row_in_the_same_commit_is_refused(self):
         self.append('ISSUES.md', '\n| `test-row-b` | a test row |\n')
         self.append('src/audio/irq.asm', '; x\n')
-        result = self.commit(GOOD.format(row='test-row-b'))
+        result = self.commit(self.good('test-row-b'))
         self.assertEqual(result.returncode, 1)
         self.assertIn('commit the row first', result.stderr)
 
@@ -194,14 +219,14 @@ class HookTests(unittest.TestCase):
     def test_join_needs_paths(self):
         self.add_row('test-row-h')
         self.touch_join()
-        result = self.commit(GOOD.format(row='test-row-h'))
+        result = self.commit(self.good('test-row-h'))
         self.assertEqual(result.returncode, 1)
         self.assertIn('audio_irq.acknowledged, a join', result.stderr)
 
     def test_join_named_in_paths(self):
         self.add_row('test-row-i')
         self.touch_join()
-        message = GOOD.format(row='test-row-i') + 'Paths: .acknowledged, all four paths checked\n'
+        message = self.good('test-row-i') + 'Paths: .acknowledged, all four paths checked\n'
         self.assertEqual(self.commit(message).returncode, 0)
 
     def test_join_comment_only_with_none(self):
@@ -214,20 +239,20 @@ class HookTests(unittest.TestCase):
         self.add_row('test-row-k')
         tag, run = self.saved_plan()
         record = self.tool(PACKAGE / 'tools/ledger.py', 'record', tag, run, 'pass',
-                           '--build-dir', self.build())
+                           '--build-dir', self.build(), *RECORD_OFF)
         self.assertEqual(record.returncode, 0, record.stderr)
         self.append('src/audio/irq.asm', '; a comment only: the binaries stay the same\n')
-        message = GOOD.format(row='test-row-k').replace('86Box, D10, by hand', f'plan {tag}, 1 run')
+        message = GOOD.format(row='test-row-k', plan=tag)
         result = self.commit(message)
         self.assertEqual(result.returncode, 0, result.stderr)
 
     def test_ledger_other_binaries(self):
         self.add_row('test-row-l')
         tag, run = self.saved_plan()
-        self.tool(PACKAGE / 'tools/ledger.py', 'record', tag, run, 'pass', '--build-dir', self.build())
+        self.tool(PACKAGE / 'tools/ledger.py', 'record', tag, run, 'pass', '--build-dir', self.build(), *RECORD_OFF)
         path = self.tree / 'src/audio/irq.asm'
         path.write_text(path.read_text().replace('\n    ret\n', '\n    nop\n    ret\n', 1))
-        message = GOOD.format(row='test-row-l').replace('86Box, D10, by hand', f'plan {tag}, 1 run')
+        message = GOOD.format(row='test-row-l', plan=tag)
         result = self.commit(message)
         self.assertEqual(result.returncode, 1)
         self.assertIn('ran other binaries', result.stderr)
@@ -236,10 +261,10 @@ class HookTests(unittest.TestCase):
         self.add_row('test-row-m')
         tag, run = self.saved_plan()
         build = self.build()
-        self.tool(PACKAGE / 'tools/ledger.py', 'record', tag, run, 'pass', '--build-dir', build)
-        self.tool(PACKAGE / 'tools/ledger.py', 'record', tag, run, 'fail', '--build-dir', build)
+        self.tool(PACKAGE / 'tools/ledger.py', 'record', tag, run, 'pass', '--build-dir', build, *RECORD_OFF)
+        self.tool(PACKAGE / 'tools/ledger.py', 'record', tag, run, 'fail', '--build-dir', build, *RECORD_OFF)
         self.append('src/audio/irq.asm', '; x\n')
-        message = GOOD.format(row='test-row-m').replace('86Box, D10, by hand', f'plan {tag}, 1 run')
+        message = GOOD.format(row='test-row-m', plan=tag)
         result = self.commit(message)
         self.assertEqual(result.returncode, 1)
         self.assertIn('did not pass', result.stderr)
@@ -247,7 +272,7 @@ class HookTests(unittest.TestCase):
     def test_ledger_unknown_plan(self):
         self.add_row('test-row-n')
         self.append('src/audio/irq.asm', '; x\n')
-        message = GOOD.format(row='test-row-n').replace('86Box, D10, by hand', 'plan abcdef12, 1 run')
+        message = GOOD.format(row='test-row-n', plan='abcdef12')
         result = self.commit(message)
         self.assertEqual(result.returncode, 1)
         self.assertIn('not in the ledger', result.stderr)
@@ -260,7 +285,7 @@ class HookTests(unittest.TestCase):
         plan['runs'][0]['repeat'] = 9
         path.write_text(json.dumps(plan))
         self.append('src/audio/irq.asm', '; x\n')
-        message = GOOD.format(row='test-row-o').replace('86Box, D10, by hand', f'plan {tag}, 1 run')
+        message = GOOD.format(row='test-row-o', plan=tag)
         result = self.commit(message)
         path.unlink()
         self.assertEqual(result.returncode, 1)
@@ -273,6 +298,110 @@ class HookTests(unittest.TestCase):
         result = self.tool(PACKAGE / 'tools/ledger.py', 'record', tag, f'{tag}-999', 'pass',
                            '--build-dir', '.')
         self.assertIn('has no run', result.stderr)
+
+    def test_require_names_a_plan(self):
+        # Tightening r3, T2: an emulator claim with no plan is refused while require is on.
+        self.add_row('test-row-x1')
+        self.append('src/audio/irq.asm', '; x\n')
+        message = self.good('test-row-x1').replace(f'Evidence: emulator: plan {self.tag}, 1 run', BY_HAND)
+        result = self.commit(message)
+        self.assertEqual(result.returncode, 1, result.stderr)
+        self.assertIn('name the plan', result.stderr)
+
+    def test_dynarec_on_is_a_comparison(self):
+        # A run recorded with the recompiler on is a comparison, never evidence.
+        self.add_row('test-row-x2')
+        self.append('src/audio/irq.asm', '; x\n')
+        message = self.good('test-row-x2')
+        record = self.tool(PACKAGE / 'tools/ledger.py', 'record', self.tag, self.run0, 'pass',
+                           '--build-dir', self.build0, '--dynarec', '1')
+        self.assertIn('comparison', record.stdout)
+        result = self.commit(message)
+        self.assertEqual(result.returncode, 1, result.stderr)
+        self.assertIn('recompiler', result.stderr)
+        self.assertIn('not evidence', result.stderr)
+
+    def test_dynarec_unknown_is_a_comparison(self):
+        self.add_row('test-row-x3')
+        self.append('src/audio/irq.asm', '; x\n')
+        message = self.good('test-row-x3')
+        saved = os.environ.pop('RIG_DYNAREC', None)
+        try:
+            self.tool(PACKAGE / 'tools/ledger.py', 'record', self.tag, self.run0, 'pass',
+                      '--build-dir', self.build0)
+        finally:
+            if saved is not None:
+                os.environ['RIG_DYNAREC'] = saved
+        result = self.commit(message)
+        self.assertEqual(result.returncode, 1, result.stderr)
+        self.assertIn('recompiler', result.stderr)
+
+    def test_dynarec_read_from_the_run_config(self):
+        # The runners pass the run's 86box.cfg; cpu_use_dynarec decides.
+        self.add_row('test-row-x4')
+        self.append('src/audio/irq.asm', '; x\n')
+        message = self.good('test-row-x4')
+        config = Path(self.tmp.name) / '86box.cfg'
+        config.write_text('[Machine]\ncpu_family = pentium_p55c\ncpu_use_dynarec = 1\n')
+        self.tool(PACKAGE / 'tools/ledger.py', 'record', self.tag, self.run0, 'pass',
+                  '--build-dir', self.build0, '--config', config)
+        self.assertEqual(self.commit(message).returncode, 1)
+        config.write_text('[Machine]\ncpu_family = pentium_p55c\ncpu_use_dynarec = 0\n')
+        record = self.tool(PACKAGE / 'tools/ledger.py', 'record', self.tag, self.run0, 'pass',
+                          '--build-dir', self.build0, '--config', config)
+        self.assertNotIn('comparison', record.stdout)
+        result = self.commit(message)
+        self.assertEqual(result.returncode, 0, result.stderr)
+
+    def reference_local(self, keys):
+        """A method.local.toml with a reference worktree holding the named keys' files."""
+        refs = Path(self.tmp.name) / 'refs'
+        refs.mkdir(exist_ok=True)
+        lines = ['[references]', f'worktree = "{refs}"', '[references.keys]']
+        for key, name in keys.items():
+            (refs / name).write_text('a document\n')
+            lines.append(f'{key} = "{name}"')
+        local = Path(self.tmp.name) / 'method.local.toml'
+        local.write_text('\n'.join(lines) + '\n')
+        return local
+
+    def test_reference_key_unknown_refused(self):
+        # Tightening r3, T4: a data-sheet citation names a key we hold, or says silent.
+        self.add_row('test-row-x5')
+        self.append('src/audio/irq.asm', '; x\n')
+        message = self.good('test-row-x5').replace('data sheet: SBG 6-12', 'data sheet: BOGUS 1-2, something')
+        local = self.reference_local({'SBG': 'sbg.txt'})
+        saved = os.environ.get('UCDD_METHOD_LOCAL')
+        os.environ['UCDD_METHOD_LOCAL'] = str(local)
+        try:
+            result = self.commit(message)
+        finally:
+            if saved is None:
+                del os.environ['UCDD_METHOD_LOCAL']
+            else:
+                os.environ['UCDD_METHOD_LOCAL'] = saved
+        self.assertEqual(result.returncode, 1, result.stderr)
+        self.assertIn('not a reference key', result.stderr)
+
+    def test_reference_key_known_passes(self):
+        self.add_row('test-row-x6')
+        self.append('src/audio/irq.asm', '; x\n')
+        message = self.good('test-row-x6')
+        local = self.reference_local({'SBG': 'sbg.txt'})
+        saved = os.environ.get('UCDD_METHOD_LOCAL')
+        os.environ['UCDD_METHOD_LOCAL'] = str(local)
+        try:
+            result = self.commit(message)
+            self.append('src/audio/irq.asm', '; y\n')
+            silent = self.commit(self.good('test-row-x6').replace(
+                'data sheet: SBG 6-12', 'data sheet: silent; the CT2290 decides (HWPROBE 19 Oct)'))
+        finally:
+            if saved is None:
+                del os.environ['UCDD_METHOD_LOCAL']
+            else:
+                os.environ['UCDD_METHOD_LOCAL'] = saved
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(silent.returncode, 0, silent.stderr)
 
     def test_upstream_reference_refused(self):
         self.append('ISSUES.md', '\nSee vorvek/uCDD#3 for the original report.\n')
@@ -304,7 +433,7 @@ class HookTests(unittest.TestCase):
         since = self.since()
         self.add_row('test-row-p')
         self.append('src/audio/irq.asm', '; x\n')
-        self.assertEqual(self.commit(GOOD.format(row='test-row-p')).returncode, 0)
+        self.assertEqual(self.commit(self.good('test-row-p')).returncode, 0)
         head = self.git('rev-parse', 'HEAD').stdout.strip()
         result = self.tool(PACKAGE / 'tools/ci.py', '--dry-run', '--branch', head, '--check-after', since)
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
@@ -314,14 +443,14 @@ class HookTests(unittest.TestCase):
     def test_family_needed(self):
         self.add_row('test-row-q')
         self.append('src/audio/irq.asm', '; x\n')
-        message = GOOD.format(row='test-row-q').replace('Family: none: the interrupt path, every engine\n', '')
+        message = self.good('test-row-q').replace('Family: none: the interrupt path, every engine\n', '')
         result = self.commit(message)
         self.assertEqual(result.returncode, 1)
         self.assertIn('no Family: trailer', result.stderr)
 
     def family_message(self, row, family='creative'):
-        return GOOD.format(row=row).replace('Family: none: the interrupt path, every engine',
-                                            f'Family: {family}: its CT-VOICE path')
+        return self.good(row).replace('Family: none: the interrupt path, every engine',
+                                      f'Family: {family}: its CT-VOICE path')
 
     def test_family_page_must_name_the_row(self):
         self.add_row('test-row-r')
@@ -337,7 +466,11 @@ class HookTests(unittest.TestCase):
         self.assertEqual(self.commit('Sound engine library: test-row-s on its family\n').returncode, 0)
         self.append('src/audio/irq.asm', '; x\n')
         result = self.commit(self.family_message('test-row-s'))
-        self.assertEqual(result.returncode, 0, result.stderr)
+        # Under the required regime every code commit cites a plan, so rule 10's survey
+        # check now fires as well (the cited SBT16 plan surveys no family). This test is
+        # about the page: that problem must be gone; the survey is test_family_survey_in_the_cited_plan's.
+        self.assertNotIn('is not on docs/sound-engines/creative.md', result.stderr)
+        self.assertIn('no cited plan surveys creative', result.stderr)
 
     def test_family_unknown(self):
         self.add_row('test-row-t')
@@ -353,9 +486,9 @@ class HookTests(unittest.TestCase):
         self.commit('Sound engine library: test-row-u on its family\n')
         build = self.build()
         tag, run = self.saved_plan()
-        self.tool(PACKAGE / 'tools/ledger.py', 'record', tag, run, 'pass', '--build-dir', build)
+        self.tool(PACKAGE / 'tools/ledger.py', 'record', tag, run, 'pass', '--build-dir', build, *RECORD_OFF)
         self.append('src/audio/irq.asm', '; a comment only\n')
-        message = self.family_message('test-row-u').replace('86Box, D10, by hand', f'plan {tag}, 1 run')
+        message = self.family_message('test-row-u')
         result = self.commit(message)
         self.assertEqual(result.returncode, 1)
         self.assertIn('no cited plan surveys creative', result.stderr)
@@ -365,9 +498,9 @@ class HookTests(unittest.TestCase):
         plan = json.loads(survey.stdout)
         for each in plan['runs']:
             self.tool(PACKAGE / 'tools/ledger.py', 'record', plan['tag'], each['id'], 'pass',
-                      '--build-dir', build)
+                      '--build-dir', build, *RECORD_OFF)
         message = self.family_message('test-row-u').replace(
-            '86Box, D10, by hand', f'plan {tag}, 1 run; plan {plan["tag"]}, the creative survey')
+            f'plan {self.tag}, 1 run', f'plan {tag}, 1 run; plan {plan["tag"]}, the creative survey')
         result = self.commit(message)
         self.assertEqual(result.returncode, 0, result.stderr)
 
@@ -397,14 +530,14 @@ class HookTests(unittest.TestCase):
     def test_game_named_in_driver_code(self):
         self.add_row('test-row-v')
         self.append('src/audio/irq.asm', "special db 'DOOM.EXE',0\n")
-        result = self.commit(GOOD.format(row='test-row-v'))
+        result = self.commit(self.good('test-row-v'))
         self.assertEqual(result.returncode, 1)
         self.assertIn('names DOOM.EXE in driver code', result.stderr)
 
     def test_game_named_in_a_comment(self):
         self.add_row('test-row-w')
         self.append('src/audio/irq.asm', "; Seen first in DOOM.EXE's DMX path (F4).\n")
-        result = self.commit(GOOD.format(row='test-row-w'))
+        result = self.commit(self.good('test-row-w'))
         self.assertEqual(result.returncode, 0, result.stderr)
 
     def test_local_path_refused(self):

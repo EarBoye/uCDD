@@ -3,7 +3,8 @@
 An "Evidence: data sheet: ..." trailer must start with a key from
 method.toml [references].keys, or with "silent". Each key names a file in
 the reference library worktree ([references].worktree, relative to the
-method package, or absolute), and that file must exist. A citation that
+method package, or absolute), in the current worktree (the fork's own
+docs/*.md specs), or on one of the row refs; it must exist in one of them. A citation that
 names nothing we hold is refused: the document was not open when the fix
 was written, which is the failure this check exists for.
 
@@ -17,6 +18,7 @@ the other grades keep their own rules.
 
 from pathlib import Path
 import re
+import subprocess
 import sys
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -29,11 +31,29 @@ SHEET_WORDS = [w.lower() for w in methodlib.CONFIG.get('grades', {}).get('data s
 TRAILER = re.compile(r'^Evidence:\s*(.+)$', re.I | re.M)
 
 
+ROW_REFS = list(methodlib.CONFIG.get('rows', {}).get('refs', [])) + \
+    list(methodlib.CONFIG.get('recall', {}).get('refs', []))
+
+
 def worktree():
     if not WORKTREE:
         return None
     path = Path(WORKTREE).expanduser()
     return path if path.is_absolute() else (methodlib.PACKAGE / path).resolve()
+
+
+def held(name, tree):
+    """The document is in the reference worktree, in the current worktree (the fork's
+    own specs under docs/), or on one of the row refs (a spec kept on another branch)."""
+    if tree is not None and (tree / name).exists():
+        return True
+    if (Path.cwd() / name).exists():
+        return True
+    for ref in ROW_REFS:
+        done = subprocess.run(['git', 'cat-file', '-e', f'{ref}:{name}'], capture_output=True)
+        if done.returncode == 0:
+            return True
+    return False
 
 
 def sheet_citations(message):
@@ -66,6 +86,7 @@ def problems(message):
                        f'(method.toml [references].keys: {", ".join(sorted(KEYS)) or "none"}); '
                        'cite the document we hold, or say silent and what decided')
             continue
-        if not (tree / KEYS[first]).exists():
-            out.append(f'"data sheet: {citation}": key {first} names {KEYS[first]}, which is not in {tree}')
+        if not held(KEYS[first], tree):
+            out.append(f'"data sheet: {citation}": key {first} names {KEYS[first]}, which is not in {tree}, '
+                       'the worktree, or the row refs')
     return out

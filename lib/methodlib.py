@@ -66,6 +66,12 @@ def entries(tag=None):
     return [entry for entry in found if tag is None or entry['plan'] == tag]
 
 
+def is_evidence(entry):
+    """A run counts as evidence only with the dynamic recompiler off, recorded as such
+    (dynarec False). On (True) or unknown (None) is a comparison. Tightening r3, T2."""
+    return entry.get('dynarec') is False
+
+
 def latest(tag, spot=False):
     """The newest entry for each run of a plan, the originals or the spot checks."""
     newest = {}

@@ -240,13 +240,15 @@ def ledger_problems(target, evidence):
                 problems.append(f'plan {tag}: the saved plan no longer matches its tag (edited?)')
                 continue
             newest = methodlib.latest(tag)
-            missing, failed, unknown, other = [], [], [], []
+            missing, failed, comparison, unknown, other = [], [], [], [], []
             for run in plan['runs']:
                 entry = newest.get(run['id'])
                 if not entry:
                     missing.append(run['id'])
                 elif entry['verdict'] != 'pass':
                     failed.append(run['id'])
+                elif not methodlib.is_evidence(entry):
+                    comparison.append(run['id'])
                 elif run['config']['mode'] != 'base':
                     options = run.get('build_options', '')
                     if options not in built:
@@ -258,6 +260,8 @@ def ledger_problems(target, evidence):
                             expected.get(name) != digest for name, digest in entry['binaries'].items()):
                         other.append(run['id'])
             for names, what in ((missing, 'have no result'), (failed, 'did not pass'),
+                                (comparison, 'ran with the recompiler on or unrecorded (a comparison, not evidence; '
+                                             'record with --config or --dynarec 0)'),
                                 (unknown, 'recorded no binaries'),
                                 (other, 'ran other binaries than this commit builds')):
                 if names:

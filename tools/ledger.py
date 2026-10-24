@@ -23,6 +23,7 @@ import datetime
 import os
 import platform
 import random
+import re
 import sys
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / 'lib'))
@@ -35,6 +36,20 @@ def plan_or_exit(tag):
         raise SystemExit(f'ledger: plan {tag} is not saved in {methodlib.ledger_dir()}: '
                          'run plan.py with --save before running it')
     return plan
+
+
+def dynarec_of(args):
+    """False (off, evidence), True (on, comparison) or None (unknown, comparison)."""
+    if args.config:
+        text = Path(args.config).read_text(errors='replace')
+        match = re.search(r'^\s*cpu_use_dynarec\s*=\s*(\d+)', text, re.M)
+        if not match:
+            raise SystemExit(f'ledger: {args.config} has no cpu_use_dynarec line')
+        return match.group(1) != '0'
+    if args.dynarec is not None:
+        return args.dynarec != '0'
+    value = os.environ.get('RIG_DYNAREC')
+    return None if value is None else value != '0'
 
 
 def record(args):
@@ -52,11 +67,14 @@ def record(args):
         'tools': {name: methodlib.sha256(name) for name in args.tool},
         'outputs': {name: methodlib.sha256(name) for name in args.output},
         'note': args.note, 'spot': os.environ.get('UCDD_SPOT') == '1', 'host': platform.node(),
+        'dynarec': dynarec_of(args),
     }
     if args.build_dir and not entry['binaries']:
         raise SystemExit(f'ledger: no built files in {args.build_dir}')
     methodlib.append(entry)
-    print(f'ledger: {args.run} {args.verdict}' + (' (spot check)' if entry['spot'] else ''))
+    print(f'ledger: {args.run} {args.verdict}' + (' (spot check)' if entry['spot'] else '')
+          + ('' if methodlib.is_evidence(entry) else
+             ' (comparison: the recompiler was on or not recorded; not evidence)'))
 
 
 def show(args):
@@ -66,10 +84,15 @@ def show(args):
     for run in plan['runs']:
         entry = newest.get(run['id'])
         verdict = entry['verdict'] if entry else 'not run'
+        if entry and not methodlib.is_evidence(entry):
+            verdict += '*'
         counts[verdict] = counts.get(verdict, 0) + 1
         when = entry['time'] if entry else ''
-        print(f'{run["id"]}  {run["test"]:14} {verdict:8} {when}')
+        dyn = '' if not entry else {False: 'dynarec off', True: 'dynarec ON', None: 'dynarec ?'}[entry.get('dynarec')]
+        print(f'{run["id"]}  {run["test"]:14} {verdict:9} {when}  {dyn}')
     print('; '.join(f'{verdict}: {count}' for verdict, count in sorted(counts.items())))
+    if any(v.endswith('*') for v in counts):
+        print('* comparison: the recompiler was on or not recorded; not evidence (record with --config)')
     return 0 if counts.get('pass', 0) == len(plan['runs']) else 1
 
 
@@ -110,6 +133,8 @@ def main():
     one.add_argument('--tool', action='append', default=[])
     one.add_argument('--output', action='append', default=[])
     one.add_argument('--note', default='')
+    one.add_argument('--config', help="the run's 86box.cfg: cpu_use_dynarec decides evidence or comparison")
+    one.add_argument('--dynarec', choices=('0', '1'), help='when no 86box.cfg is at hand')
     for name in ('show', 'spot', 'audit'):
         command = commands.add_parser(name)
         command.add_argument('plan')
