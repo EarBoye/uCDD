@@ -112,7 +112,7 @@ marker = '(?i)\b(joined from|called (from|with)|far entry|on (both|every|each) p
 # Where an Issue: row must already be committed: the parent commit and the
 # notes branches. A ref that does not exist here is skipped.
 [rows]
-refs = ["HEAD", "sound-engine-library", "spec-first", "origin/sound-engine-library", "origin/spec-first"]
+refs = ["HEAD", "notes", "origin/notes", "sound-engine-library", "spec-first", "origin/sound-engine-library", "origin/spec-first"]
 paths = ["ISSUES.md", "docs/*.md"]
 
 # The builds compared for "Evidence: none". The bset.sh variants, with the
