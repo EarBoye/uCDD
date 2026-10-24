@@ -247,6 +247,8 @@ dpmi_entry:
     call dpmi_bridge_real_allocate
     jc .exit
     mov byte [dpmi_audio_pm_handler], 0
+    mov byte [dpmi_rm_call], 0
+    mov byte [dpmi_raw_rm], 0
     mov byte [dpmi_active], 1
     mov byte [dpmi_exit_code], 1
     cli
@@ -846,6 +848,22 @@ dpmi_dispatch:
     push eax
     call dpmi_stack_copy
     jc .stack_error
+    ; The resident reads this: 1 in a real-mode call with no host depth, 2 with depth or
+    ; with a bridged IRQ, callback, exception or raw switch on top.
+    movzx eax, byte [ebp+dpmi_rm_call]
+    push eax
+    mov al, 2
+    cmp byte [ebp+dpmi_callback_active], 0
+    jne .rm_mark
+    cmp dword [ebp+dpmi_locked_depth], 0
+    jne .rm_mark
+    cmp dword [ebp+dpmi_stack_depth], 0
+    jne .rm_mark
+    cmp dword [ebp+dpmi_bridge_depth], 0
+    jne .rm_mark
+    dec al
+.rm_mark:
+    mov [ebp+dpmi_rm_call], al
     mov ax, [ebx+36]
     cmp al, 0
     jne .far_call
@@ -862,6 +880,8 @@ dpmi_dispatch:
     call dpmi_pic_real_chain
     call mon_real_far_copy
 .stack_done:
+    pop eax
+    mov [ebp+dpmi_rm_call], al
     call dpmi_large_stack_restore
     jmp mon_dpmi.success
 .stack_error:
@@ -1183,11 +1203,19 @@ dpmi_refill_flag dw resident_refill_busy
 dpmi_pending_entry dw 0
 dpmi_refill_flag dw 0
 %endif
-%if dpmi_audio_pm_handler-dpmi_active != 1 || dpmi_virtual_entry-dpmi_active != 2 || dpmi_real_eoi-dpmi_active != 4 || dpmi_real_priority-dpmi_active != 5 || dpmi_pending_entry-dpmi_active != 6 || dpmi_refill_flag-dpmi_active != 8
+dpmi_rm_call db 0
+%if dpmi_rm_call-dpmi_active != 10 || dpmi_audio_pm_handler-dpmi_active != 1 || dpmi_virtual_entry-dpmi_active != 2 || dpmi_real_eoi-dpmi_active != 4 || dpmi_real_priority-dpmi_active != 5 || dpmi_pending_entry-dpmi_active != 6 || dpmi_refill_flag-dpmi_active != 8
     %error Invalid resident IRQ state layout
 %endif
 dpmi_cpu db 3
 dpmi_psp dw 0
+%if dpmi_psp-dpmi_active != 12
+    %error Invalid resident IRQ state layout
+%endif
+; The saved dpmi_rm_call of a callback, an exception and a raw switch.
+dpmi_cb_rm db 0
+dpmi_exc_rm db 0
+dpmi_raw_rm db 0
 dpmi_environment dw 0
 dpmi_client16 db 0
 ; The code size of the current client. dpmi_client16 has the size of the

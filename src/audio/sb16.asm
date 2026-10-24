@@ -379,6 +379,9 @@ audio_irq:
     mov eax, [cd_produced]
     sub eax, [cd_consumed]
 %ifdef UCDD_DIAG
+    ; The low-water mark starts when the first data has arrived.
+    cmp dword [cd_produced], 0
+    je .queue_seen
     mov edx, eax
     not edx
     cmp edx, [diag_queue_low]
@@ -390,11 +393,19 @@ audio_irq:
     jae .refill_ready
     mov byte [cd_refill_pending], 2
 .refill_ready:
-    ; The host refills in protected mode. A client that stays in real mode
-    ; starves it, and this IRQ then refills.
+    ; The host refills in protected mode. A live client that stays in real
+    ; mode starves it, and this IRQ then refills. Without a client only a
+    ; stopped timer starts a refill.
     cmp byte [cd_refill_pending], 0
-    jne .host_wait
+    je .host_idle
+    call cd_client_live
+    je .host_wait
+.host_idle:
     mov word [cd_host_missed], 0
+    ; Without a live client an urgent queue refills from this IRQ.
+    cmp byte [cd_refill_pending], 2
+    jne .host_checked
+    mov byte [cd_irq_refill], 1
     jmp .host_checked
 .host_wait:
     cmp word [cd_host_missed], CD_HOST_STARVED

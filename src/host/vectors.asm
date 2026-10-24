@@ -202,6 +202,14 @@ dpmi_deliver_exception:
     lea eax, [edi+8]
     mov [ebp+dpmi_exception_sp], eax
     add edi, 3e0000h
+    cmp byte [ebp+dpmi_exception_active], 0
+    jne .rm_kept
+    mov al, [ebp+dpmi_rm_call]
+    mov [ebp+dpmi_exc_rm], al
+    cmp al, 1
+    jne .rm_kept
+    mov byte [ebp+dpmi_rm_call], 2
+.rm_kept:
     inc byte [ebp+dpmi_exception_active]
     mov edx, [esi]
     movzx eax, word [esi+4]
@@ -307,6 +315,10 @@ dpmi_exception_done:
 .restored:
     ; The innermost handler has returned: the outer one's place comes back.
     dec byte [ebp+dpmi_exception_active]
+    jnz .rm_outer
+    mov al, [ebp+dpmi_exc_rm]
+    mov [ebp+dpmi_rm_call], al
+.rm_outer:
     movzx eax, byte [ebp+dpmi_exception_active]
     push dword [ebp+dpmi_exception_saved+eax*8]
     pop dword [ebp+dpmi_exception_cursor]

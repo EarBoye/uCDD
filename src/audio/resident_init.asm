@@ -93,8 +93,15 @@ audio_activate:
     int 21h
     mov [cd_old_bios], bx
     mov [cd_old_bios+2], es
+    mov ax, 3528h
+    int 21h
+    mov [cd_old_idle], bx
+    mov [cd_old_idle+2], es
     mov dx, cd_bios
     mov ax, 2513h
+    int 21h
+    mov dx, cd_idle
+    mov ax, 2528h
     int 21h
     mov dx, cd_timer
     mov ax, 2508h

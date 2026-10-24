@@ -23,7 +23,8 @@ struc bridge_frame
     .regs: resb 50
     .reflect: resb 1
     .software: resb 1
-    .padding: resb 4
+    .rmcall: resb 1
+    .padding: resb 3
 endstruc
 
 HOST_REAL
@@ -414,6 +415,12 @@ dpmi_bridge_pm:
     mov [edi+bridge_frame.locked_depth], eax
     mov ax, [ebp+dpmi_vif]
     mov [edi+bridge_frame.vif], ax
+    mov al, [ebp+dpmi_rm_call]
+    mov [edi+bridge_frame.rmcall], al
+    cmp al, 1
+    jne .rm_kept
+    mov byte [ebp+dpmi_rm_call], 2
+.rm_kept:
     mov al, [ebp+mon_int_opcode+1]
     mov [edi+bridge_frame.opcode], al
     mov al, [ebp+mon_rm_kind]
@@ -598,6 +605,8 @@ dpmi_bridge_done:
     mov [ebp+mon_tss+4], eax
     mov eax, [ebx+bridge_frame.previous]
     mov [ebp+dpmi_bridge_context], eax
+    mov al, [ebx+bridge_frame.rmcall]
+    mov [ebp+dpmi_rm_call], al
     dec dword [ebp+dpmi_bridge_depth]
     mov eax, [ebx+bridge_frame.stack]
     mov [ebp+dpmi_bridge_stack], eax

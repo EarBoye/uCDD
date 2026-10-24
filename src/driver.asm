@@ -41,6 +41,7 @@ dos_entered db 0
 sda_pointer dd 0
 sda_size dw 0
 indos_pointer dd 0
+old_int23 dd 0
 old_int24 dd 0
 unit_pointer dw 0
 control_op dw 0
@@ -1386,13 +1387,21 @@ dos_enter:
     call handle_check
     xor ax, ax
     mov es, ax
+    ; A nested entry keeps the hooks and the saved vectors of the outer one.
+    cmp byte [cs:dos_entered], 0
+    jne .vectors_kept
     pushf
     cli
+    mov eax, [es:23h*4]
+    mov [cs:old_int23], eax
+    mov word [es:23h*4], break_ignore
+    mov [es:23h*4+2], cs
     mov eax, [es:24h*4]
     mov [cs:old_int24], eax
     mov word [es:24h*4], critical_error
     mov [es:24h*4+2], cs
     popf
+.vectors_kept:
     mov byte [cs:dos_entered], 1
     pop es
     pop ds
@@ -1498,6 +1507,8 @@ dos_leave:
     mov es, ax
     pushf
     cli
+    mov eax, [cs:old_int23]
+    mov [es:23h*4], eax
     mov eax, [cs:old_int24]
     mov [es:24h*4], eax
     popf
@@ -1519,6 +1530,7 @@ dos_leave:
 
 critical_error:
     mov al, 3
+break_ignore:
     iret
 
 %include "mdm.asm"

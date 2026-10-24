@@ -137,6 +137,12 @@ cd_open:
     int 21h
     mov [cd_indos], bx
     mov [cd_indos+2], es
+%ifdef OWN_HOST
+    mov ah, 52h
+    int 21h
+    mov ax, [es:bx-2]
+    mov [cd_first_mcb], ax
+%endif
 %ifdef RESIDENT_AUDIO
     call cd_cache_open
 %endif

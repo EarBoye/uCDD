@@ -133,6 +133,11 @@ dpmi_raw:
     mov [ebp+dpmi_raw_segs+2], gs
     call dpmi_locked_capture
     call dpmi_quiet_entry
+    cmp byte [ebp+dpmi_raw_rm], 0
+    je .rm_back
+    mov byte [ebp+dpmi_raw_rm], 0
+    mov byte [ebp+dpmi_rm_call], 1
+.rm_back:
     mov eax, [esp+16]
     mov [ebp+dpmi_raw_bp], eax
     mov ax, [esp+8]
@@ -184,6 +189,11 @@ dpmi_raw_pm:
     mov es, ax
     mov ss, ax
     mov ebp, edi
+    cmp byte [ebp+dpmi_rm_call], 1
+    jne .rm_kept
+    mov byte [ebp+dpmi_raw_rm], 1
+    mov byte [ebp+dpmi_rm_call], 2
+.rm_kept:
     mov esp, [ebp+mon_tss+4]
     mov eax, [ebp+dpmi_raw_switch]
     mov [ebp+mon_switch+16], eax

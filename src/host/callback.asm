@@ -360,6 +360,10 @@ dpmi_callback_done:
     add esi, 2
     loop .segments
     mov byte [ebp+dpmi_callback_active], 0
+    push eax
+    mov al, [ebp+dpmi_cb_rm]
+    mov [ebp+dpmi_rm_call], al
+    pop eax
 %ifdef RESIDENT_HOST
     shr byte [ebp+dpmi_callback_flip], 1
     jnc .size_ready
@@ -450,6 +454,12 @@ dpmi_callback_enter:
     mov [cs:dpmi_callback_regs+40], gs
     mov [cs:dpmi_callback_regs+46], sp
     mov [cs:dpmi_callback_regs+48], ss
+    mov al, [cs:dpmi_rm_call]
+    mov [cs:dpmi_cb_rm], al
+    cmp al, 1
+    jne .rm_kept
+    mov byte [cs:dpmi_rm_call], 2
+.rm_kept:
     mov byte [cs:dpmi_callback_active], 1
     mov ax, cs
     mov ds, ax

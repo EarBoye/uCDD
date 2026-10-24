@@ -6,11 +6,33 @@
 CD_REFILL_URGENT equ CD_READ_BYTES*2
 ; About 190 ms of output periods without a timer call.
 CD_TIMER_STARVED equ 8192/PERIOD_FRAMES
-; About 370 ms of output periods without a host refill.
-CD_HOST_STARVED equ CD_TIMER_STARVED*2
+; About 23 ms of output periods without a host refill. The hold refill
+; then keeps the queue near its threshold.
+CD_HOST_STARVED equ 8
 %endif
 CD_TIMER_READS equ 4
-CD_TIMER_MAX_READS equ 32
+CD_TIMER_MAX_READS equ 8
+CD_HOLD_READS equ 2
+; Hold refills run only below this queue level (0.75 s), or when urgent.
+CD_HOLD_LOW equ 131072
+
+; DOS calls INT 28h while it waits for a key, with InDOS 1 (the prompt). Refill
+; there after the chain, as the timer does.
+cd_idle:
+    pushf
+    call far [cs:cd_old_idle]
+    mov byte [cs:cd_idle_entry], 1
+    jmp cd_timer_refill
+
+; Refusals of the INT 28h path are not counted.
+%macro DIAG_REF 1
+%ifdef UCDD_DIAG
+    cmp byte [cd_idle_now], 0
+    jne %%skip
+    inc word [%1]
+%%skip:
+%endif
+%endmacro
 
 cd_timer:
     mov word [cs:cd_timer_missed], 0
@@ -26,6 +48,9 @@ cd_timer_refill:
     push cs
     pop ds
     cli
+    mov al, 0
+    xchg al, [cd_idle_entry]
+    mov [cd_idle_now], al
 %ifdef OWN_HOST
     mov al, 0
     xchg al, [cd_irq_entry]
@@ -47,34 +72,47 @@ cd_timer_refill:
 %endif
     ; Between refills the read limit is the timer budget. Each tick adds a
     ; few reads, and a tick that cannot read keeps its share.
+%ifdef OWN_HOST
+    cmp byte [cd_irq_forced], 0
+    jne .budget
+%endif
+    cmp byte [cd_idle_now], 0
+    jne .budget
     cmp byte [cd_background_reads], CD_TIMER_MAX_READS-CD_TIMER_READS
     ja .budget
     add byte [cd_background_reads], CD_TIMER_READS
 .budget:
     call cd_refill_wait
     jc .done
+%ifdef OWN_HOST
+    call cd_client_live
+    je .hold
+%endif
     les bx, [cd_indos]
-    cmp word [es:bx-1], 0
+    mov ax, [es:bx-1]
+    cmp byte [cd_idle_now], 0
+    je .dos_checked
+    ; The idle call: DOS waits in one call (InDOS 1) with no critical error.
+    sub ax, 100h
+.dos_checked:
+    test ax, ax
 %ifdef UCDD_DIAG
     jne .dos_busy
 %else
     jne .done
 %endif
 %ifdef OWN_HOST
-    cmp byte [own_host_refill], 1
-    jne .synchronous
-    les bx, [own_host_active]
-    cmp byte [es:bx], 1
-    jne .synchronous
-    ; With a protected-mode client, real-mode code runs inside a host call.
-    ; A refill from this IRQ nests DOS and the BIOS in that call and breaks
-    ; JEMMEX's nested execution (Earthworm Jim). The host refills when the
-    ; call returns.
-    mov byte [cd_refill_pending], 1
-    DIAG_INC diag_ref_defer
-    jmp .done
-.synchronous:
+    cmp byte [cd_irq_forced], 0
+    je .counted
+    mov byte [cd_background_reads], CD_HOLD_READS
+.counted:
 %endif
+    cmp byte [cd_idle_now], 0
+    je .counted_idle
+    mov byte [cd_background_reads], CD_TIMER_READS
+    DIAG_INC diag_run_idle
+    jmp .run
+.counted_idle:
 %ifdef UCDD_DIAG
 %ifdef OWN_HOST
     ; The timer tail counts at 0 and the audio IRQ tail at 1.
@@ -85,6 +123,7 @@ cd_timer_refill:
     inc word [diag_run_timer]
 %endif
 %endif
+.run:
     call cd_refill_run
 .done:
     pop gs
@@ -95,10 +134,129 @@ cd_timer_refill:
     iret
 %ifdef UCDD_DIAG
 .queue_full:
-    DIAG_INC diag_ref_queue
+    DIAG_REF diag_ref_queue
     jmp .done
 .dos_busy:
-    DIAG_INC diag_ref_dos
+    DIAG_REF diag_ref_dos
+    jmp .done
+%endif
+%ifdef OWN_HOST
+    ; A live client is in a real-mode call. Read only when the interrupted
+    ; code belongs to the current program or to the client: a refill in DOS,
+    ; a driver or XMS/EMS code breaks JEMMEX nested execution (Earthworm Jim).
+.hold:
+    cmp byte [cd_idle_now], 0
+    jne .done
+    mov al, [cd_refill_pending]
+    mov ah, al
+    cmp al, 1
+    adc al, 0
+    mov [cd_refill_pending], al
+    cmp ah, 2
+    je .low
+    mov eax, [cd_produced]
+    sub eax, [cd_consumed]
+    cmp eax, CD_HOLD_LOW
+    jb .low
+    DIAG_INC diag_hold_idle
+    jmp .done
+.low:
+    xor si, si
+    les bx, [own_host_active]
+    cmp byte [es:bx+10], 0
+    je .refuse
+    add si, 2
+    les di, [cd_indos]
+    cmp word [es:di-1], 0
+    jne .refuse
+    add si, 2
+    mov bp, sp
+    test byte [ss:bp+45], 2
+    jz .refuse
+    add si, 2
+    les bx, [own_host_active]
+    cmp byte [es:bx+10], 1
+    jne .refuse
+    mov di, [es:bx+8]
+    test di, di
+    jz .refuse
+    cmp byte [es:di], 0
+    jne .refuse
+    add si, 2
+    mov dx, [es:bx+12]
+    ; At the timer tail the frame is the interrupted code only when INT 8
+    ; leads to this routine or to the host stub, which chains with a jump.
+    cmp byte [cd_irq_forced], 0
+    jne .frame_ready
+    xor ax, ax
+    mov es, ax
+    mov ax, [es:8*4+2]
+    mov cx, cs
+    cmp ax, cx
+    je .frame_ready
+    cmp ax, [own_host_active+2]
+    jne .refuse
+.frame_ready:
+    ; The walk ends at the last conventional block, so code in upper memory
+    ; is refused. The owner of the block that holds CS+IP/16 must be the
+    ; current PSP, the client PSP or its parent.
+    les bx, [sda_pointer]
+    mov cx, [es:bx+10h]
+    mov ax, [ss:bp+40]
+    shr ax, 4
+    add ax, [ss:bp+42]
+    mov bx, [cd_first_mcb]
+.walk:
+    mov es, bx
+    cmp byte [es:0], 'M'
+    je .block
+    cmp byte [es:0], 'Z'
+    jne .refuse_cs
+.block:
+    mov di, [es:3]
+    mov si, ax
+    sub si, bx
+    dec si
+    cmp si, di
+    jb .found
+    cmp byte [es:0], 'Z'
+    je .refuse_cs
+    add bx, di
+    jc .refuse_cs
+    inc bx
+    jnz .walk
+.refuse_cs:
+    mov si, 8
+    jmp .refuse
+.found:
+    mov bx, [es:1]
+    test bx, bx
+    jz .refuse_cs
+    cmp bx, cx
+    je .owned
+    cmp bx, dx
+    je .owned
+    mov es, dx
+    cmp bx, [es:16h]
+    jne .refuse_cs
+.owned:
+    les bx, [own_host_active]
+    mov di, [es:bx+8]
+    mov byte [es:di], 1
+    cmp byte [cd_irq_forced], 0
+    je .budget_kept
+    mov byte [cd_background_reads], CD_HOLD_READS
+.budget_kept:
+    mov word [cd_host_missed], 0
+    DIAG_INC diag_hold_run
+    call cd_refill_run
+    les bx, [own_host_active]
+    mov di, [es:bx+8]
+    mov byte [es:di], 0
+    jmp .done
+.refuse:
+    DIAG_INC diag_hold_refused+si
+    DIAG_INC diag_ref_defer
     jmp .done
 %endif
 
@@ -146,6 +304,7 @@ cd_deferred_refill:
     jmp .done
 .cancel:
     mov byte [cd_refill_pending], 0
+    mov word [cd_host_missed], 0
 .done:
     pop gs
     pop fs
@@ -163,19 +322,33 @@ cd_deferred_refill:
     jmp .done
 %endif
 cd_refill_pending db 0
+cd_first_mcb dw 0
+
+; ZF set: a protected-mode client is live. Keeps all registers.
+cd_client_live:
+    cmp byte [own_host_refill], 1
+    jne .no
+    push es
+    push bx
+    les bx, [own_host_active]
+    cmp byte [es:bx], 1
+    pop bx
+    pop es
+.no:
+    ret
 %endif
 
 ; CF set: the refill waits. A gate that refuses counts in the diagnostics.
 cd_refill_wait:
     cmp byte [busy], 0
     je .bios
-    DIAG_INC diag_ref_busy
+    DIAG_REF diag_ref_busy
     stc
     ret
 .bios:
     cmp byte [cd_bios_busy], 0
     je .dsp
-    DIAG_INC diag_ref_bios
+    DIAG_REF diag_ref_bios
     stc
     ret
 .dsp:
@@ -183,7 +356,7 @@ cd_refill_wait:
     ; The game is between the bytes of a DSP command (Prototype).
     call cd_dsp_wait
     jnc .pic
-    DIAG_INC diag_ref_dsp
+    DIAG_REF diag_ref_dsp
     ret
 .pic:
 %endif
@@ -195,7 +368,7 @@ cd_refill_wait:
     and ah, [virtual_pic_taken]
     or al, ah
     jz .free
-    DIAG_INC diag_ref_pic
+    DIAG_REF diag_ref_pic
     stc
     ret
 .free:
@@ -260,6 +433,11 @@ cd_background_remove:
     lds dx, [cd_old_bios]
     mov ax, 2513h
     int 21h
+    push cs
+    pop ds
+    lds dx, [cd_old_idle]
+    mov ax, 2528h
+    int 21h
     pop ds
     mov byte [cd_background_set], 0
 .done:
@@ -305,6 +483,9 @@ cd_dsp_waits db 0
 
 cd_old_timer dd 0
 cd_old_bios dd 0
+cd_old_idle dd 0
+cd_idle_entry db 0
+cd_idle_now db 0
 cd_bios_busy db 0
 cd_timer_missed dw 0
 cd_irq_refill db 0
