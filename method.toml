@@ -109,10 +109,13 @@ require = true
 files = ["*.asm", "*.inc"]
 marker = '(?i)\b(joined from|called (from|with)|far entry|on (both|every|each) paths?)\b'
 
-# Where an Issue: row must already be committed: the parent commit and the
-# notes branches. A ref that does not exist here is skipped.
+# Where an Issue: row must already be committed: the notes branch and the
+# sound-engine library (tightening r3.3, T1: the ISSUES.md copies on the
+# code branches are frozen; spec-first is no longer read). HEAD stays: the
+# self-tests commit their rows on the fixture's own HEAD, and without it 21
+# of the 67 fail. A ref that does not exist here is skipped.
 [rows]
-refs = ["HEAD", "notes", "origin/notes", "sound-engine-library", "spec-first", "origin/sound-engine-library", "origin/spec-first"]
+refs = ["HEAD", "notes", "origin/notes", "sound-engine-library", "origin/sound-engine-library"]
 paths = ["ISSUES.md", "docs/*.md"]
 
 # The builds compared for "Evidence: none". The bset.sh variants, with the
@@ -185,6 +188,7 @@ EMUSRC = "Sound Cards/Emulator and driver source/Emulator and driver source.txt"
 "8237" = "Reference parts and specs/8237A.txt"
 "8259" = "Reference parts and specs/8259A.txt"
 "82C206" = "Reference parts and specs/82C206_Integrated_Peripheral_Controller_199608.txt"
+"206" = "Reference parts and specs/82C206_Integrated_Peripheral_Controller_199608.txt"  # the rows' name for 82C206
 UM82C206 = "Reference parts and specs/UM82C206.txt"
 EISA = "Reference parts and specs/eisabook.txt"
 I386 = "Reference parts and specs/i386.txt"
@@ -194,18 +198,23 @@ DPMI09 = "Memory managers and DOS extenders/1990_04_23-DPMI_Spec_v09.txt"
 DPMI10 = "Memory managers and DOS extenders/1991_03_12-DPMI_Spec_v10.txt"
 VCPI = "Memory managers and DOS extenders/Virtual Control Program Interface specification v1 - EDM2.txt"
 XMS = "Memory managers and DOS extenders/XMS35.txt"
+XMS30 = "Memory managers and DOS extenders/XMS30.txt"  # XMS 3.0, January 1991 (Michael, 25 Oct 2026)
 EMS = "Memory managers and DOS extenders/LIM 4.0 Specs (EMS) · OpenRakis_Spice86 Wiki.txt"
 JEMM = "Memory managers and DOS extenders/Jemm Readme.txt"
+JR = "Memory managers and DOS extenders/Jemm Readme.txt"  # the rows' name for JEMM (host-cdrom-spec.md: "Jemm readme (JR)")
 QPI = "Memory managers and DOS extenders/Jemm QPI (QPIEMU.txt, public domain).txt"
 ECMA119 = "CD-ROM/ECMA-119_2nd_edition_december_1987.txt"
 MSCDEX = "CD-ROM/MSCDEX21.txt"
 SHSUCDX = "CD-ROM/shsucdx.txt"
 RBIL = "Ralf Brown's Interrupt List/INTERRUP.1ST"
+PCIBIOS = "Reference parts and specs/PCI_BIOS_Specification_Revision_2.1_199408.txt"  # PCI BIOS 2.1, 1994 (Michael, 25 Oct 2026)
 PORTS = "Ralf Brown's Interrupt List/PORTS.A"
 PIIX = "Chipsets/Pentium/82371FB_82371SB_PIIX_PIIX3_datasheet_final.txt"
 PIIX3 = "Chipsets/Pentium/290550-001_82371FB_82371SB_PCI_ISA_IDE_Xcelerator_199605.txt"
+PIIXp = "Chipsets/Pentium/290550-001_82371FB_82371SB_PCI_ISA_IDE_Xcelerator_199605.txt"  # the rows' name for PIIX3 (refs notes/chipsets.md)
 PIIX4 = "Chipsets/Pentium/290562_82371AB_PCI-TO-ISA_IDE_XCELERATOR_PIIX4_199704.txt"
 SIO = "Chipsets/486/1993_Intel_82378_PCI-ISA_System_IO.txt"
+SIO93 = "Chipsets/486/1993_Intel_82378_PCI-ISA_System_IO.txt"  # the rows' name for SIO
 SIOZB = "Chipsets/Pentium/290571-001_82378ZB_82379ZB_System_IO_and_System_IO_APIC_199603.txt"
 # Generated keys (DOC_ + the file stem) for the rest of the library; rename freely,
 # the hook only needs the key to exist and its file to be there.
@@ -291,6 +300,7 @@ VP = "Chipsets/Pentium/VT82C580VP_Apollo_VP_199602.txt"
 "686B" = "Chipsets/P6/VT82C686B.txt"
 # The fork's own specifications on the code branches (looked up in the current worktree):
 VSB = "docs/vsb-spec.md"
+vsb-spec = "docs/vsb-spec.md"  # the rows' name for VSB ("vsb-spec 7.8")
 VESS = "docs/vess-spec.md"
 HOSTCD = "docs/host-cdrom-spec.md"
 PDMA = "docs/platform-dma.md"
