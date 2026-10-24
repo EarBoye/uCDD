@@ -570,6 +570,7 @@ changed volumes.
 | trap.asm, the mixer data read | mixer_read | virtual_mixer_read by model | ours |
 | trap.asm, the trap's exit | the waiting start replayed | the queued single-cycle command started (the guide's queue) | both |
 | trap.asm, data | his ADPCM tables, the trap's own 512-byte stack | our DSP state | both |
+- Evidence state (24 Oct 2026): built, not run; no emulator claim and no ledger entry; prove under plan 45bc14ec (list a) and plan cdee6f75 (the sound check, once it has recompiler-off references: DYNAREC) before this reaches fixes.
 
 ## The count and the block interrupt
 
@@ -639,6 +640,7 @@ changed volumes.
   mask case is DMAMASK below.
 - Hardware: not yet (the PC runs irq-batch; a kit after the deeper ring or
   with it).
+- Evidence state (24 Oct 2026): the emulator claim predates the ledger; re-prove under plan 45bc14ec (list a) and plan cdee6f75 (the sound check, once it has recompiler-off references: DYNAREC) before this reaches fixes.
 
 ### F2, the ring: a late period interrupt aliases the output clock (24 Oct 2026)
 
@@ -709,6 +711,7 @@ changed volumes.
 - Hardware: the kit repeats PLKIT's B4 (forty 4 ms holds): the alias
   predicts no periods lost against the ticks, M3 (the card stopping
   unacknowledged) the same loss as on period-late.
+- Evidence state (24 Oct 2026): the emulator claim predates the ledger; re-prove under plan 45bc14ec (list a) and plan cdee6f75 (the sound check, once it has recompiler-off references: DYNAREC) before this reaches fixes.
 
 ### PHYSPRO: uCDD over a physical SB Pro gives no virtual interrupts in 86Box (found 24 Oct 2026, open)
 
@@ -834,6 +837,7 @@ audio, and no test of any kind has run on it there.
 - Evidence: data sheet (PCI BIOS 2.1, INT 1Ah B101h, B10Ah, B108h; class
   01h; PCI interrupts level-triggered and held until serviced); reading.
   Built, not run on 0.9.4-a6.
+- Evidence state (24 Oct 2026): built, not run; no emulator claim and no ledger entry; prove under plan 45bc14ec (list a) and plan cdee6f75 (the sound check, once it has recompiler-off references: DYNAREC) before this reaches fixes.
 
 ### STEPASIDE: the driver steps aside while it has nothing to add (reconstructed 24 Oct 2026; built, not run)
 - Behaviour: while no mounted image is bound for CD audio and the
@@ -850,6 +854,7 @@ audio, and no test of any kind has run on it there.
 - Commit: d6c2008 on feature/step-aside (also under feature/fast-dma).
 - Evidence: data sheet silent (the driver's own policy: a game on the real
   card, as without the driver); reading. Built, not run on 0.9.4-a6.
+- Evidence state (24 Oct 2026): built, not run; no emulator claim and no ledger entry; prove under plan 45bc14ec (list a) and plan cdee6f75 (the sound check, once it has recompiler-off references: DYNAREC) before this reaches fixes.
 
 ### FASTDMA: the chipset's own fast DMA timing on the output channel (reconstructed 24 Oct 2026; built, not run)
 - Cost addressed: in the default ISA DMA timing each byte holds the bus
@@ -867,6 +872,7 @@ audio, and no test of any kind has run on it there.
   Intel 82371FB/SB/AB MBDMA, 82378 and EISA 40Bh/4D6h, ALi, OPTi, VIA 45h,
   SiS 70h/71h); reading. Built, not run on 0.9.4-a6. STATE question 2
   (ALi and OPTi bits 3:2) is Michael's to overrule.
+- Evidence state (24 Oct 2026): built, not run; no emulator claim and no ledger entry; prove under plan 45bc14ec (list a) and plan cdee6f75 (the sound check, once it has recompiler-off references: DYNAREC) before this reaches fixes.
 
 ### ESSOUT: native ESS AudioDrive output (reconstructed 24 Oct 2026; built, not run)
 - Limit addressed: an ESS AudioDrive could only be the physical card as a
@@ -887,6 +893,7 @@ audio, and no test of any kind has run on it there.
   9e10a45 silent, INT 21h AX=25xxh takes the vector in AL and the handler
   in DS:DX); reading. Built, not run on 0.9.4-a6 (17c78fc built at 128 and
   32 frames and without resident audio; 9e10a45 at 128 frames).
+- Evidence state (24 Oct 2026): built, not run; no emulator claim and no ledger entry; no plan covers the ESS path yet (list a and the sound check are Sound Blaster only); a plan for it is needed before this reaches fixes.
 
 ## Performance
 
@@ -1037,6 +1044,7 @@ since playback reads memory.
 Not worth changing: the CLI and STI path; a virtual ESS model (the
 capture and mix are the same whatever the game believes it talks to); the
 mixer for MMX (a few percent of the mixer's share, in a full segment).
+- Evidence state (24 Oct 2026): the emulator claim predates the ledger; re-prove under plan 45bc14ec (list a) and plan cdee6f75 (the sound check, once it has recompiler-off references: DYNAREC) before this reaches fixes.
 
 ## Fixed after the reviews
 
