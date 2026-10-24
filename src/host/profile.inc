@@ -38,4 +38,15 @@
 %endif
 %endmacro
 
+; Count a gate in the IRQ path (host area of the diagnostic block). Keeps
+; the registers and flags.
+%macro HOST_DIAG 1
+%ifdef RESIDENT_HOST
+    push ecx
+    mov cl, %1
+    call resident_diag
+    pop ecx
+%endif
+%endmacro
+
 %endif

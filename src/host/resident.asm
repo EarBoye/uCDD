@@ -6,6 +6,7 @@
 ; Offsets in the driver's diagnostic block part that this host writes.
 DIAG_HOST_REFUSED equ 0
 DIAG_HOST_ABORT equ 20
+; The IRQ gate counters follow the abort record: counter indices 20 to 27.
 
 %define SPLIT_HOST 1
 %macro HOST_REAL 0
@@ -104,6 +105,9 @@ resident_host_init:
     movzx edx, word [ds:bp+24]
     add edx, ecx
     mov [cs:resident_counters], edx
+    movzx edx, word [ds:bp+26]
+    add edx, ecx
+    mov [cs:resident_bios_busy], edx
     jmp .version3
 .version4:
     cmp dword [ds:bp+8], 34464443h
@@ -231,6 +235,8 @@ resident_traps dd 0
 resident_game_vector dd 0
 ; The driver's diagnostic block that the host writes (CDF5).
 resident_counters dd 0
+; The driver's cd_bios_busy byte: 1 while it reads the disc image through INT 13h.
+resident_bios_busy dd 0
 resident_ports:
 %define PORT_MIXER_LABEL resident_mixer_ports
 %include "audio/ports.inc"
@@ -828,6 +834,7 @@ resident_audio_deliver:
     pop eax
     ret
 .none:
+    HOST_DIAG 25
     stc
     pop eax
     ret
@@ -844,6 +851,19 @@ resident_audio_release:
     ret
 resident_refill_clock dd 0
 resident_refill_last dd 0
+; CL=index of the counter in the host area of the diagnostic block.
+resident_diag:
+    pushfd
+    push edi
+    mov edi, [ebp+resident_counters]
+    test edi, edi
+    jz .done
+    movzx ecx, cl
+    inc word [edi+ecx*2+DIAG_HOST_REFUSED]
+.done:
+    pop edi
+    popfd
+    ret
 resident_audio_take:
     mov esi, [ebp+resident_audio_request]
     test esi, esi
@@ -851,10 +871,18 @@ resident_audio_take:
     cmp byte [esi], 0
     je .none
     cmp byte [esi+11], 0
-    jne .none
+    jne .held
 .take:
     call dpmi_hardware_room
-    jc .none
+    jnc .room
+    cmp byte [ebp+resident_refill_busy], 0
+    jne .refill
+    HOST_DIAG 21
+    jmp .none
+.refill:
+    HOST_DIAG 20
+    jmp .none
+.room:
     lea edi, [ebp+mon_rm_regs]
     mov dword [edi+46], 0
     mov word [edi+32], 2
@@ -864,6 +892,8 @@ resident_audio_take:
     call mon_real_far
     movzx eax, word [edi+28]
     ret
+.held:
+    HOST_DIAG 24
 .none:
     xor eax, eax
     ret

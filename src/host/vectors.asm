@@ -125,16 +125,8 @@ dpmi_exception_active db 0
 ; AX=return SS, EDX=return ESP. Keep all registers.
 dpmi_stack_target:
     pushad
-    mov cx, ax
-    and cx, 3
-    cmp cx, 3
-    jne .bad
-    call dpmi_descriptor
+    call dpmi_stack_check
     jc .bad
-    mov al, [esi+5]
-    and al, 0fah
-    cmp al, 0f2h
-    jne .bad
     mov edx, [esp+20]
     dec edx
     test byte [esi+6], 40h
@@ -149,6 +141,32 @@ dpmi_stack_target:
     ret
 .bad:
     popad
+    stc
+    ret
+
+; IRET loads SS:ESP without a limit check. Code that uses ESP as a register
+; can take an IRQ with an ESP outside its stack. Check only the selector.
+dpmi_stack_selector:
+    pushad
+    call dpmi_stack_check
+    popad
+    ret
+; AX=SS. CF=1 unless it is a present writable ring 3 data selector (ESI=its
+; descriptor). Clobbers EAX, ECX, EDX.
+dpmi_stack_check:
+    mov cx, ax
+    and cx, 3
+    cmp cx, 3
+    jne .bad
+    call dpmi_descriptor
+    jc .bad
+    mov al, [esi+5]
+    and al, 0fah
+    cmp al, 0f2h
+    jne .bad
+    clc
+    ret
+.bad:
     stc
     ret
 

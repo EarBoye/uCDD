@@ -574,6 +574,9 @@ mon_irq:
     sub ebp, .base
     inc dword [ebp+mon_irqs]
     HOST_COUNT irqentry, 0
+%ifdef RESIDENT_HOST
+    call dpmi_pic_sync
+%endif
 %ifdef HOST_DPMI
     lea ebx, [esp+8]
     call dpmi_locked_capture
@@ -634,7 +637,10 @@ mon_irq:
 .audio_done:
 %ifdef HOST_DPMI
     call dpmi_hardware_room
-    jc .done
+    jnc .callback_room
+    HOST_DIAG 26
+    jmp .done
+.callback_room:
 %endif
     cmp dword [ebp+mon_irq_callback], 0
     je .done
@@ -802,6 +808,11 @@ mon_dpmi:
 %ifdef HOST_DPMI
 mon_real_irq:
     push dword 0
+    jmp mon_real_irq_start
+; As mon_real_irq with the register copy count in ECX.
+mon_real_irq_copy:
+    push ecx
+mon_real_irq_start:
     mov byte [ebp+mon_rm_kind], 0
     mov [ebp+mon_int_opcode+1], al
     call dpmi_bridge_mark_irq

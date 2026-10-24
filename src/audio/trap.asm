@@ -398,6 +398,7 @@ port_callback:
     jmp .done
 .reset:
     mov byte [silence_active], 0
+    mov byte [sb_starved], 0
     mov byte [dma_pending_command], 0
     mov byte [sb_id_value], 0aah
     mov byte [sb_id_phase], 0
@@ -454,6 +455,7 @@ port_callback:
     je .cd_pair
     cmp bl, 4
     jne .volume16
+    or byte [sb_pro_curve], 1
     mov bx, 32h
     jmp .volume_pair
 .dma_select:
@@ -462,9 +464,11 @@ port_callback:
     setz byte [sb_dma16_low]
     jmp .done
 .master_pair:
+    or byte [sb_pro_curve], 2
     mov bx, 30h
     jmp .volume_pair
 .cd_pair:
+    or byte [sb_pro_curve], 4
     mov bx, 36h
     jmp .volume_pair
 .fm_pair:
@@ -483,6 +487,15 @@ port_callback:
     jb .done
     cmp bl, 37h
     ja .done
+    ; The SB16 register of a channel ends its SB Pro curve.
+    push bx
+    sub bl, 30h
+    shr bl, 1
+    xor bh, bh
+    mov al, [curve_bits+bx]
+    not al
+    and [sb_pro_curve], al
+    pop bx
     and bl, 0feh
     mov al, [virtual_mixer+bx]
     and al, 0f0h
@@ -525,6 +538,7 @@ port_callback:
     cld
     rep stosw
     mov [sb_filter_bypass], al
+    mov [sb_pro_curve], al
     mov al, 0cch
     mov [virtual_mixer+4], al
     mov [virtual_mixer+22h], al
@@ -555,6 +569,9 @@ port_callback:
     jne .unowned_dma
     and al, 4
     mov [si+DMA_MASK], al
+    jnz .mask_set
+    mov byte [sb_starved], 0
+.mask_set:
 %ifdef WSS_INPUT
     test al, al
     jnz .done
@@ -587,6 +604,7 @@ port_callback:
     mov [si+DMA_MODE], al
     jmp .done
 .clear_mask:
+    mov byte [sb_starved], 0
     mov byte [si+DMA_MASK], 0
     mov dx, 0ah
     mov bx, [guest_dma8]
@@ -632,7 +650,10 @@ port_callback:
     shl ah, cl
     mov byte [si+DMA_MASK], 0
     test al, ah
-    jz .all_output
+    jnz .all_masked
+    mov byte [sb_starved], 0
+    jmp .all_output
+.all_masked:
     mov byte [si+DMA_MASK], 4
 .all_output:
     or al, ah
@@ -657,6 +678,7 @@ port_callback:
 .count:
     mov bx, DMA_COUNT
 .dma_word:
+    mov byte [sb_starved], 0
     mov dword [si+DMA_POSITION], 0
     mov byte [si+3], 0
     cmp si, dma16
@@ -828,10 +850,8 @@ port_callback:
     jmp .done
 .force_irq:
 %ifdef VIRTUAL_IRQ
-    mov byte [virtual_dsp_irq], 1
-    DIAG_INC diag_raised
-    mov al, [guest_irq_bit]
-    mov [virtual_pic_request], al
+    ; The IRQ comes after the next port access, not on return from this OUT.
+    mov byte [force_pending], 2
 %endif
     jmp .done
 .resume8:
@@ -996,6 +1016,9 @@ port_callback:
     test byte [virtual_mixer+0eh], 2
     jz .legacy_rate
     mov byte [pending_frame_shift], 1
+    ; A 41h rate is per channel already.
+    cmp byte [legacy_per_channel], 0
+    jne .legacy_rate
     shr ax, 1
     jmp .legacy_rate
 .legacy_mono:
@@ -1058,11 +1081,16 @@ port_callback:
     mov ah, [block_low]
     cmp ax, 4000
     jb .argument_rejected
-    ; Each time constant is valid, down to 3906 Hz.
-.set_rate:
     ; Games can request a little more than the documented 45000 Hz.
     cmp ax, 48000
     ja .argument_rejected
+    ; On DSP 4, 41h also sets the rate of 14h, 1Ch, 90h and 91h.
+    cmp byte [virtual_dsp_version], 4
+    jb .set_rate
+    mov [legacy_rate], ax
+    mov byte [legacy_per_channel], 1
+    ; Each time constant is valid, down to 3906 Hz.
+.set_rate:
     mov [game_rate], ax
     movzx eax, ax
     shl eax, 16
@@ -1123,6 +1151,7 @@ port_callback:
     mov eax, 48000
 .time_limit:
     mov [legacy_rate], ax
+    mov byte [legacy_per_channel], 0
     test byte [virtual_mixer+0eh], 2
     jz .time_mono
     shr ax, 1
@@ -1172,6 +1201,7 @@ port_callback:
     mov [legacy_block], ax
 .validate_start:
     mov byte [pending_short], 0
+    mov byte [sb_starved], 0
     mov byte [sb_finished], 0
     mov byte [sb_single], 0
     mov byte [sb_input], 0
@@ -1239,13 +1269,6 @@ port_callback:
     cmp bl, 45h
     jne .argument_rejected
 .direction_ready:
-    cmp byte [sb_single], 0
-    je .block_length
-    ; MadSpace plays a single-cycle block longer than its auto-init DMA buffer.
-    test byte [si+DMA_MODE], 10h
-    jnz .block_length
-    cmp ax, [si+DMA_COUNT]
-    ja .argument_rejected
 .block_length:
     movzx edx, ax
     inc edx
@@ -1345,8 +1368,14 @@ port_callback:
     ja .argument_rejected
     neg eax
     add eax, ebx
+    test eax, eax
+    jz .argument_rejected
     cmp edx, eax
-    ja .argument_rejected
+    jbe .buffer_address
+    ; The 8237 ends at terminal count: the DSP waits for the missing bytes and
+    ; sends no IRQ (Pinball Wizard 2000).
+    mov edx, eax
+    mov byte [sb_starved], 1
 .buffer_address:
     mov byte [game_page_wrap], 0
     movzx eax, word [si+DMA_ADDRESS]
@@ -1655,7 +1684,8 @@ port_callback:
     jmp .result
 .status:
 %ifdef VIRTUAL_IRQ
-    and byte [virtual_dsp_irq], 0feh
+    mov ah, 0feh
+    call virtual_dsp_ack
 %ifdef RESIDENT_AUDIO
     call emm_irq_ack
 %endif
@@ -1667,7 +1697,8 @@ port_callback:
     jmp .result
 .status16:
 %ifdef VIRTUAL_IRQ
-    and byte [virtual_dsp_irq], 0fdh
+    mov ah, 0fdh
+    call virtual_dsp_ack
 %ifdef RESIDENT_AUDIO
     call emm_irq_ack
 %endif
@@ -1800,6 +1831,14 @@ port_callback:
 %endif
     mov [ss:bp+28], al
 .done:
+%ifdef VIRTUAL_IRQ
+    cmp byte [force_pending], 0
+    je .force_ready
+    dec byte [force_pending]
+    jnz .force_ready
+    call virtual_force_raise
+.force_ready:
+%endif
     cmp byte [dma_pending_command], 0
     je .pending_done
     cmp byte [arguments], 0
@@ -2249,6 +2288,10 @@ arguments db 0
 block_low db 0
 legacy_block dw 0
 legacy_rate dw 22050
+force_pending db 0
+curve_bits db 2, 1, 0, 4
+legacy_per_channel db 0
+sb_starved db 0
 reply dw 0
 reply_count db 0
 dsp_status_reads db 0

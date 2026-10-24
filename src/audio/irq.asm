@@ -23,13 +23,43 @@ virtual_irq_init:
     ret
 
 virtual_irq_reset:
+    mov byte [force_pending], 0
     mov byte [virtual_dsp_irq], 0
     mov byte [virtual_pic_request], 0
     mov byte [virtual_pic_taken], 0
     mov dword [virtual_block_seen], 0
     ret
 
+; AH: DSP interrupt bits to keep. A request without a DSP interrupt is stale,
+; unless the host took it. The output IRQ must not run in between.
+virtual_dsp_ack:
+    pushf
+    cli
+    and [virtual_dsp_irq], ah
+    jnz .done
+    cmp byte [virtual_pic_taken], 0
+    jne .done
+    mov byte [virtual_pic_request], 0
+.done:
+    popf
+    ret
+
+; The F2h interrupt of the DSP.
+virtual_force_raise:
+    mov byte [virtual_dsp_irq], 1
+    DIAG_INC diag_raised
+    mov al, [guest_irq_bit]
+    mov [virtual_pic_request], al
+    ret
+
 virtual_irq_tick:
+    ; A game that polls an untrapped port gets the IRQ at the next tick.
+    cmp byte [force_pending], 0
+    je .force_done
+    dec byte [force_pending]
+    jnz .force_done
+    call virtual_force_raise
+.force_done:
     cmp byte [silence_active], 0
     je .silence_done
     mov eax, [periods]
@@ -142,6 +172,8 @@ virtual_irq_tick:
     ret
 .sb:
 %endif
+    cmp byte [sb_starved], 0
+    jne .done
     cmp byte [virtual_dsp_irq], 0
     jne .overrun
     mov al, [game_irq_bit]

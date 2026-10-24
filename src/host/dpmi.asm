@@ -440,6 +440,7 @@ mon_iret:
 .pic_only:
     call dpmi_pic_next
     jc .no_irq
+    mov ecx, eax
     movzx edx, byte [ebp+mon_master]
     cmp eax, 8
     jb .irq_vector
@@ -451,7 +452,18 @@ mon_iret:
     imul eax, 6
     lea esi, [ebp+mon_vectors+eax]
     cmp word [esi+4], 0
-    jne .pic_protected
+    je .pic_reflect
+%ifdef RESIDENT_HOST
+    ; A disk IRQ during an INT 13h call goes to the BIOS, not to the client.
+    mov ebx, 0c040h
+    bt ebx, ecx
+    jnc .pic_protected
+    call dpmi_pic_disk_busy
+    jz .pic_protected
+%else
+    jmp .pic_protected
+%endif
+.pic_reflect:
     mov [ebp+dpmi_reflect_vector], dl
     call dpmi_pic_reflect
     jmp .real_irq
@@ -839,7 +851,12 @@ dpmi_dispatch:
     jne .far_call
 .interrupt:
     movzx eax, byte [ebx+24]
+    call dpmi_pic_simulated
+    jc .irq_call
     call mon_real_int_copy
+    jmp .stack_done
+.irq_call:
+    call mon_real_irq_copy
     jmp .stack_done
 .far_call:
     call dpmi_pic_real_chain
@@ -1090,6 +1107,10 @@ dpmi_finish:
     mov byte [ebp+dpmi_callback_sti], 0
 %ifdef RESIDENT_HOST
     call resident_audio_release
+    ; Give the disk IRQ bits of the real mask back to the game.
+    mov byte [ebp+dpmi_pic_open], 1
+    call dpmi_pic_sync
+    mov byte [ebp+dpmi_pic_open], 0
 %endif
     mov byte [ebp+dpmi_sti_sb_held], 0
 %ifdef RESIDENT_HOST

@@ -346,7 +346,7 @@ dpmi_locked_done:
     jc dpmi_locked_abort
     mov edx, [esi+12]
     mov ax, [esi+16]
-    call dpmi_stack_target
+    call dpmi_stack_selector
     jc dpmi_locked_abort
     cmp dword [esi+24], 53495251h
     je .registers_ready

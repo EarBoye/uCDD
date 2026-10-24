@@ -15,6 +15,47 @@ sb_mono_left dd 0
 %endif
 %endmacro
 
+; Game samples decode at half level. The gain doubles them while no CD audio
+; plays. It rises in steps of 1/16 per period and falls in four periods with the CD.
+mix_gain_update:
+    pushad
+    mov eax, 65536
+%ifdef CD_IMAGE_TEST
+    ; The CD play state decides, not the data of this period.
+    cmp byte [cd_started], 1
+    jne .target
+%ifdef MOUNTED_AUDIO
+    ; A silent CD does not need the headroom.
+    mov ecx, [cd_gain]
+    or ecx, [cd_gain+4]
+    jz .target
+%endif
+    mov eax, 32768
+.target:
+%endif
+    sub eax, [game_boost]
+    cmp eax, 2048
+    jle .high
+    mov eax, 2048
+.high:
+    ; The fall takes four periods.
+    cmp eax, -8192
+    jge .low
+    mov eax, -8192
+.low:
+    add [game_boost], eax
+    mov ebx, [game_boost]
+    mov eax, [sb_pcm_gain]
+    mul ebx
+    shr eax, 15
+    mov [mix_gain], eax
+    mov eax, [sb_pcm_gain+4]
+    mul ebx
+    shr eax, 15
+    mov [mix_gain+4], eax
+    popad
+    ret
+
 ; ES:DI is one output half. Sources use the current virtual playback state.
 mix_half:
 %ifdef SPEAKER_TEST
@@ -45,6 +86,13 @@ mix_half:
 .cd_ready:
 %endif
 %endif
+%ifdef RESIDENT_AUDIO
+    ; A remix repeats a period that has its gain.
+    cmp byte [sb_patch_active], 0
+    jne .gain_ready
+%endif
+    call mix_gain_update
+.gain_ready:
     mov eax, [mix_period]
     shl eax, OUTPUT_SHIFT
 %ifdef RESIDENT_AUDIO
@@ -176,9 +224,15 @@ mix_half:
     jne .frame
     cmp dword [game_limit], 0
     je .frame
-    cmp dword [sb_pcm_gain], 32768
+    ; The decoded game samples are half level: gain 32768 with CD, 65536 without.
+    mov eax, 32768
+    cmp byte [cd_valid], 0
+    jne .unity_gain
+    add eax, eax
+.unity_gain:
+    cmp [mix_gain], eax
     jne .fast_frame
-    cmp dword [sb_pcm_gain+4], 32768
+    cmp [mix_gain+4], eax
     jne .fast_frame
     cmp dword [cd_gain], 256
     ja .fast_frame
@@ -212,11 +266,6 @@ mix_half:
     sub ebp, [game_limit]
 .unity_copy:
     mov eax, [fs:si]
-    mov ebx, eax
-    and ebx, 80008000h
-    shr eax, 1
-    and eax, 7fff7fffh
-    or eax, ebx
     mov [es:di], eax
     add si, 4
     add di, 4
@@ -312,8 +361,8 @@ mix_half:
     movsx esi, word [fs:si+2]
     sar edx, 1
     sar esi, 1
-    imul edx, [sb_pcm_gain]
-    imul esi, [sb_pcm_gain+4]
+    imul edx, [mix_gain]
+    imul esi, [mix_gain+4]
     sar edx, 15
     sar esi, 15
 .fast_pcm_ready:
@@ -406,8 +455,12 @@ mix_half:
     jne .phase_step
     imul edx, [wss_gain]
     sar edx, 16
+    imul edx, [game_boost]
+    sar edx, 15
     imul esi, [wss_gain+4]
     sar esi, 16
+    imul esi, [game_boost]
+    sar esi, 15
 .phase_step:
 %endif
     add ebp, [game_step]
@@ -433,9 +486,9 @@ mix_half:
     jne .pcm_gain
     call sb_filter
 .pcm_gain:
-    imul edx, [sb_pcm_gain]
+    imul edx, [mix_gain]
     sar edx, 15
-    imul esi, [sb_pcm_gain+4]
+    imul esi, [mix_gain+4]
     sar esi, 15
 .filtered:
 %ifdef CD_IMAGE_TEST

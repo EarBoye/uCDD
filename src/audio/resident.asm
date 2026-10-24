@@ -27,9 +27,10 @@ fault db 0
 ; UCDD -status reads this block with control 10 and 11 (driver.asm). Counters
 ; are words that wrap. diag_host and the abort record are the part that the
 ; protected host writes (CDF5); the host uses the offsets DIAG_HOST_*.
-DIAG_BYTES equ 96
+DIAG_BYTES equ 112
 DIAG_HOST_REFUSED equ 0
 DIAG_HOST_ABORT equ 20
+DIAG_HOST_GATES equ 40
 diag_block:
 dw 1
 dw DIAG_BYTES
@@ -80,8 +81,12 @@ diag_abort_cr2 dd 0
 diag_abort_cs dw 0
 diag_abort_exit db 0, 0
 diag_abort_count dw 0
+; Host gates at the IRQ path: hardware room refused (refill busy, stack depth),
+; SB IRQ blocked (in service, higher request), take refused (undelivered, no
+; request), stale delivery, room refused at the IRQ callback.
+diag_gates times 8 dw 0
 diag_end:
-%if diag_end-diag_block != DIAG_BYTES || diag_abort_status-diag_host != DIAG_HOST_ABORT
+%if diag_end-diag_block != DIAG_BYTES || diag_abort_status-diag_host != DIAG_HOST_ABORT || diag_gates-diag_host != DIAG_HOST_GATES
 %error The diagnostic block layout is wrong.
 %endif
 

@@ -6,9 +6,16 @@ sb_mixer_gain:
     push ebx
     push edx
     mov al, [virtual_mixer+bx+si]
+    ; Curve bits: 1 voice, 2 master, 4 CD.
+    mov ah, 1
+    cmp bx, 32h
+    je .source
+    mov ah, 4
+.source:
     call sb_mixer_level
     mov edx, eax
     mov al, [virtual_mixer+30h+si]
+    mov ah, 2
     call sb_mixer_level
     imul eax, edx
     shr eax, 15
@@ -20,6 +27,9 @@ sb_mixer_level:
     movzx ebx, al
     cmp byte [virtual_dsp_version], 4
     jb .pro
+    ; The game last wrote the SB Pro register of this channel (AH is its bit).
+    test [sb_pro_curve], ah
+    jnz .pro
     shr bl, 3
     mov eax, [sb16_levels+ebx*4]
     ret

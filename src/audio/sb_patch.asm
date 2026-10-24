@@ -104,7 +104,7 @@ sb_filter_seed:
     movsx eax, word [es:si+%1/4]
     shl eax, 15
     cdq
-    mov ecx, [sb_pcm_gain+%1/2]
+    mov ecx, [mix_gain+%1/2]
     test ecx, ecx
     jz %%zero
     idiv ecx
@@ -507,7 +507,7 @@ sb_host_ports dw trap_ports
     dw cd_deferred_refill, cd_refill_pending, virtual_pic_request, last_clock
     dw host_info, host_jemm_version
 %ifdef UCDD_DIAG
-    dw diag_host
+    dw diag_host, cd_bios_busy
 %endif
 sb_old_dos dd 0
 %endif

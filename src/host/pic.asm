@@ -3,6 +3,7 @@
 
 HOST_PROTECTED
 dpmi_pic_reset:
+    mov byte [ebp+dpmi_pic_open], 0
     mov word [ebp+dpmi_pic_service], 0
     mov byte [ebp+dpmi_real_eoi], 0
     mov byte [ebp+dpmi_real_priority], 0ffh
@@ -52,13 +53,23 @@ dpmi_pic_next:
     and bl, [ebp+dpmi_real_priority]
     movzx ecx, word [ebp+dpmi_pic_mask]
     not ecx
+%ifdef RESIDENT_HOST
+    ; While an INT 13h call runs through the driver's hook (cd_bios_busy), the
+    ; disk IRQs and the cascade pass the mask (Zyclunt masks them for its IRQ
+    ; probe).
+    call dpmi_pic_disk_busy
+    jz .open
+    or ecx, 0c044h
+.open:
+%endif
+    mov edi, ecx
     and ecx, [ebp+dpmi_pending_irqs]
     and ecx, 0fffbh
     mov esi, ecx
     shr esi, 8
     jz .master
-    test byte [ebp+dpmi_pic_mask], 4
-    jnz .master
+    test edi, 4
+    jz .master
     mov dx, 0a0h
     call dpmi_pic_read_isr
     or al, [ebp+dpmi_pic_service+1]
@@ -127,10 +138,41 @@ dpmi_pic_next:
 
 ; The real-mode handler will own its EOI after a default-vector chain.
 dpmi_pic_reflect:
-    pushad
+    push eax
     movzx eax, byte [ebp+dpmi_reflect_vector]
+    call dpmi_pic_handoff
+    pop eax
+    ret
+
+; EAX=vector simulated with 0300h. CF=1: the IRQ went to the real handler. Only the IRQs whose IVT stub always chains
+; to the real handler (6, 8-11, 14, 15) hand over the EOI. The stub of the
+; others can defer, and a deferred IRQ would never clear the real EOI.
+dpmi_pic_simulated:
+    pushad
+    call dpmi_vector_irq
+    jnc .skip
+    cmp al, 6
+    je .chain
+    cmp al, 8
+    jb .skip
+    cmp al, 12
+    je .skip
+    cmp al, 13
+    je .skip
+.chain:
+    popad
+    jmp dpmi_pic_handoff
+.skip:
+    popad
+    clc
+    ret
+
+; EAX=vector of an IRQ whose real-mode handler owns its EOI from here. CF=1.
+dpmi_pic_handoff:
+    pushad
     call dpmi_vector_irq
     jnc .done
+    movzx eax, al
     bt [ebp+dpmi_pic_service], eax
     jnc .done
     btr [ebp+dpmi_pic_service], eax
@@ -147,6 +189,7 @@ dpmi_pic_reflect:
 %endif
 .done:
     popad
+    stc
     ret
 
 ; An IRET call to a real IRQ vector transfers ownership of its EOI.
@@ -213,7 +256,7 @@ dpmi_pic_audio_allowed:
     and al, [ebp+dpmi_real_priority]
     test al, cl
     pop eax
-    jnz .blocked
+    jnz .in_service
     push eax
     movzx eax, word [ebp+dpmi_pic_mask]
     not eax
@@ -228,14 +271,76 @@ dpmi_pic_audio_allowed:
 .master:
     test al, ch
     pop eax
-    jnz .blocked
+    jnz .request
     pop ecx
     clc
     ret
+.in_service:
+    HOST_DIAG 22
+    jmp .blocked
+.request:
+    HOST_DIAG 23
 .blocked:
     pop ecx
     stc
     ret
+
+%ifdef RESIDENT_HOST
+; ZF=0 while an INT 13h call runs through the driver's hook.
+dpmi_pic_disk_busy:
+    push eax
+    mov eax, [ebp+resident_bios_busy]
+    test eax, eax
+    jz .done
+    cmp byte [eax], 0
+.done:
+    pop eax
+    ret
+
+; EBX=controller. AL=bits of the disk IRQs and the cascade to clear.
+dpmi_pic_open_mask:
+    mov al, 0bbh
+    test ebx, ebx
+    jz .done
+    mov al, 3fh
+.done:
+    ret
+
+; Called at every physical IRQ. Open the disk IRQs on the real controller for
+; the length of an INT 13h call and restore the game's mask afterwards.
+dpmi_pic_sync:
+    pushad
+    call dpmi_pic_disk_busy
+    setnz cl
+    cmp cl, [ebp+dpmi_pic_open]
+    je .done
+    mov [ebp+dpmi_pic_open], cl
+    xor ebx, ebx
+    mov edx, 21h
+.port:
+    in al, dx
+    mov ah, al
+    call dpmi_pic_open_mask
+    mov ch, al
+    and al, ah
+    test cl, cl
+    jnz .write
+    ; Closing: only the disk bits go back to the game's mask.
+    mov ah, [ebp+dpmi_pic_mask+ebx]
+    not ch
+    and ah, ch
+    or al, ah
+.write:
+    out dx, al
+    mov dl, 0a1h
+    inc ebx
+    cmp ebx, 2
+    jb .port
+.done:
+    popad
+    ret
+
+%endif
 
 ; Same byte-I/O ABI as mon_callback. Non-PIC ports use that callback.
 dpmi_pic_io:
@@ -313,6 +418,13 @@ dpmi_pic_io:
 .mask:
     mov [ebp+dpmi_pic_mask+ebx], al
     call dpmi_pic_priority
+%ifdef RESIDENT_HOST
+    ; The same IRQs stay open on the real controller.
+    call dpmi_pic_disk_busy
+    jz .forward
+    call dpmi_pic_open_mask
+    and [esp+28], al
+%endif
     jmp .forward
 .special_mode:
     mov ah, al
@@ -511,6 +623,7 @@ dpmi_pic_backend:
     ret
 
 dpmi_pic_mask dw 0ffffh
+dpmi_pic_open db 0
 dpmi_pic_read_mode dw 0a0ah
 dpmi_pic_special dw 0
 ; Level with the highest priority: one above the lowest (C0h-C7h).

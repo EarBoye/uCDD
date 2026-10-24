@@ -22,6 +22,9 @@ sb_finished db 0
 sb_paused db 0
 sb_speaker db 1
 sb_pcm_gain dd 32768,32768
+sb_pro_curve db 0
+mix_gain dd 32768,32768
+game_boost dd 65536
 sb_filter_legacy db 0
 sb_filter_bypass db 0
 sb_filter_state times 4 dd 0
