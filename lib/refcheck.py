@@ -76,7 +76,7 @@ def problems(message):
         return [f'the reference library worktree is missing ({WORKTREE or "[references].worktree unset"}): '
                 'add it (git worktree add) before a code commit cites a data sheet']
     for citation in sheet_citations(message):
-        first = re.split(r'[\s,;]', citation, 1)[0]
+        first = re.split(r'[\s,;:]', citation, maxsplit=1)[0]
         if first.lower() == 'silent':
             if len(citation.split()) < 3:
                 out.append(f'"data sheet: {citation}": silent needs what decided instead (rule 1)')

@@ -239,16 +239,15 @@ def ledger_problems(target, evidence):
             if methodlib.plan_tag(plan['runs']) != tag:
                 problems.append(f'plan {tag}: the saved plan no longer matches its tag (edited?)')
                 continue
-            newest = methodlib.latest(tag)
+            newest = methodlib.latest(tag, evidence_only=True)
+            anything = methodlib.latest(tag)
             missing, failed, comparison, unknown, other = [], [], [], [], []
             for run in plan['runs']:
                 entry = newest.get(run['id'])
                 if not entry:
-                    missing.append(run['id'])
+                    (comparison if anything.get(run['id']) else missing).append(run['id'])
                 elif entry['verdict'] != 'pass':
                     failed.append(run['id'])
-                elif not methodlib.is_evidence(entry):
-                    comparison.append(run['id'])
                 elif run['config']['mode'] != 'base':
                     options = run.get('build_options', '')
                     if options not in built:

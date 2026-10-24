@@ -308,15 +308,30 @@ class HookTests(unittest.TestCase):
         self.assertEqual(result.returncode, 1, result.stderr)
         self.assertIn('name the plan', result.stderr)
 
+    def other_plan(self, *options):
+        """A saved plan other than the class's, with no entry yet: its tag and run ids."""
+        result = self.tool(PACKAGE / 'matrix/plan.py', *options, '--save', '--format', 'json')
+        saved = json.loads(result.stdout)
+        self.assertTrue(saved['runs'], f'plan.py {" ".join(options)} planned no runs here')
+        return saved['tag'], [run['id'] for run in saved['runs']]
+
+    def record_all(self, tag, runs, verdict, *extra):
+        for run in runs:
+            out = self.tool(PACKAGE / 'tools/ledger.py', 'record', tag, run, verdict,
+                            '--build-dir', self.build0, *extra)
+            self.assertEqual(out.returncode, 0, out.stderr)
+            last = out
+        return last
+
     def test_dynarec_on_is_a_comparison(self):
-        # A run recorded with the recompiler on is a comparison, never evidence.
+        # A run recorded with the recompiler on is a comparison, never evidence: a plan
+        # with only such entries cannot be cited.
         self.add_row('test-row-x2')
         self.append('src/audio/irq.asm', '; x\n')
-        message = self.good('test-row-x2')
-        record = self.tool(PACKAGE / 'tools/ledger.py', 'record', self.tag, self.run0, 'pass',
-                           '--build-dir', self.build0, '--dynarec', '1')
+        tag, runs = self.other_plan('--test', 'SBPROBE')
+        record = self.record_all(tag, runs, 'pass', '--dynarec', '1')
         self.assertIn('comparison', record.stdout)
-        result = self.commit(message)
+        result = self.commit(GOOD.format(row='test-row-x2', plan=tag))
         self.assertEqual(result.returncode, 1, result.stderr)
         self.assertIn('recompiler', result.stderr)
         self.assertIn('not evidence', result.stderr)
@@ -324,15 +339,14 @@ class HookTests(unittest.TestCase):
     def test_dynarec_unknown_is_a_comparison(self):
         self.add_row('test-row-x3')
         self.append('src/audio/irq.asm', '; x\n')
-        message = self.good('test-row-x3')
+        tag, runs = self.other_plan('--test', 'SBT16-legacy')
         saved = os.environ.pop('RIG_DYNAREC', None)
         try:
-            self.tool(PACKAGE / 'tools/ledger.py', 'record', self.tag, self.run0, 'pass',
-                      '--build-dir', self.build0)
+            self.record_all(tag, runs, 'pass')
         finally:
             if saved is not None:
                 os.environ['RIG_DYNAREC'] = saved
-        result = self.commit(message)
+        result = self.commit(GOOD.format(row='test-row-x3', plan=tag))
         self.assertEqual(result.returncode, 1, result.stderr)
         self.assertIn('recompiler', result.stderr)
 
@@ -340,17 +354,46 @@ class HookTests(unittest.TestCase):
         # The runners pass the run's 86box.cfg; cpu_use_dynarec decides.
         self.add_row('test-row-x4')
         self.append('src/audio/irq.asm', '; x\n')
-        message = self.good('test-row-x4')
+        tag, runs = self.other_plan('--test', 'SBT16', '--baseline')
+        message = GOOD.format(row='test-row-x4', plan=tag)
         config = Path(self.tmp.name) / '86box.cfg'
         config.write_text('[Machine]\ncpu_family = pentium_p55c\ncpu_use_dynarec = 1\n')
-        self.tool(PACKAGE / 'tools/ledger.py', 'record', self.tag, self.run0, 'pass',
-                  '--build-dir', self.build0, '--config', config)
+        self.record_all(tag, runs, 'pass', '--config', config)
         self.assertEqual(self.commit(message).returncode, 1)
         config.write_text('[Machine]\ncpu_family = pentium_p55c\ncpu_use_dynarec = 0\n')
-        record = self.tool(PACKAGE / 'tools/ledger.py', 'record', self.tag, self.run0, 'pass',
-                          '--build-dir', self.build0, '--config', config)
+        record = self.record_all(tag, runs, 'pass', '--config', config)
         self.assertNotIn('comparison', record.stdout)
         result = self.commit(message)
+        self.assertEqual(result.returncode, 0, result.stderr)
+
+    def test_later_comparison_does_not_shadow_evidence(self):
+        # r3.3: T3's recompiler-on runs were recorded after list a's evidence and the plan
+        # read as a comparison. The hook judges on the newest evidence entry per run.
+        self.add_row('test-row-x7')
+        self.append('src/audio/irq.asm', '; x\n')
+        message = self.good('test-row-x7')
+        self.tool(PACKAGE / 'tools/ledger.py', 'record', self.tag, self.run0, 'fail',
+                  '--build-dir', self.build0, '--dynarec', '1')
+        shown = self.tool(PACKAGE / 'tools/ledger.py', 'show', self.tag)
+        self.assertIn('a later comparison', shown.stdout)
+        result = self.commit(message)
+        self.assertEqual(result.returncode, 0, result.stderr)
+
+    def test_reference_key_colon_form(self):
+        # KEY:line is a citation form the rows use.
+        self.add_row('test-row-x8')
+        self.append('src/audio/irq.asm', '; x\n')
+        message = self.good('test-row-x8').replace('data sheet: SBG 6-12', 'data sheet: SBG:6-12, the busy bit')
+        local = self.reference_local({'SBG': 'sbg.txt'})
+        saved = os.environ.get('UCDD_METHOD_LOCAL')
+        os.environ['UCDD_METHOD_LOCAL'] = str(local)
+        try:
+            result = self.commit(message)
+        finally:
+            if saved is None:
+                del os.environ['UCDD_METHOD_LOCAL']
+            else:
+                os.environ['UCDD_METHOD_LOCAL'] = saved
         self.assertEqual(result.returncode, 0, result.stderr)
 
     def reference_local(self, keys):

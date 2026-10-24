@@ -72,12 +72,17 @@ def is_evidence(entry):
     return entry.get('dynarec') is False
 
 
-def latest(tag, spot=False):
-    """The newest entry for each run of a plan, the originals or the spot checks."""
+def latest(tag, spot=False, evidence_only=False):
+    """The newest entry for each run of a plan, the originals or the spot checks.
+    With evidence_only, only entries that count as evidence (recompiler off): a
+    comparison recorded later never shadows the evidence recorded before it."""
     newest = {}
     for entry in entries(tag):
-        if entry.get('spot', False) == spot:
-            newest[entry['run']] = entry
+        if entry.get('spot', False) != spot:
+            continue
+        if evidence_only and not is_evidence(entry):
+            continue
+        newest[entry['run']] = entry
     return newest
 
 

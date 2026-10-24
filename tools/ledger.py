@@ -79,20 +79,26 @@ def record(args):
 
 def show(args):
     plan = plan_or_exit(args.plan)
-    newest = methodlib.latest(args.plan)
+    evidence = methodlib.latest(args.plan, evidence_only=True)
+    anything = methodlib.latest(args.plan)
     counts = {}
     for run in plan['runs']:
-        entry = newest.get(run['id'])
-        verdict = entry['verdict'] if entry else 'not run'
-        if entry and not methodlib.is_evidence(entry):
-            verdict += '*'
+        entry = evidence.get(run['id'])
+        other = anything.get(run['id'])
+        if entry:
+            verdict, when, dyn = entry['verdict'], entry['time'], 'dynarec off'
+        elif other:
+            verdict, when, dyn = other['verdict'] + '*', other['time'], 'dynarec ON' if other.get('dynarec') else 'dynarec ?'
+        else:
+            verdict, when, dyn = 'not run', '', ''
         counts[verdict] = counts.get(verdict, 0) + 1
-        when = entry['time'] if entry else ''
-        dyn = '' if not entry else {False: 'dynarec off', True: 'dynarec ON', None: 'dynarec ?'}[entry.get('dynarec')]
-        print(f'{run["id"]}  {run["test"]:14} {verdict:9} {when}  {dyn}')
+        extra = ''
+        if entry and other and other is not entry:
+            extra = f'  (a later comparison: {other["verdict"]}, {other["time"]}, dynarec {"ON" if other.get("dynarec") else "?"})'
+        print(f'{run["id"]}  {run["test"]:14} {verdict:9} {when}  {dyn}{extra}')
     print('; '.join(f'{verdict}: {count}' for verdict, count in sorted(counts.items())))
     if any(v.endswith('*') for v in counts):
-        print('* comparison: the recompiler was on or not recorded; not evidence (record with --config)')
+        print('* comparison only: the recompiler was on or not recorded; not evidence (record with --config)')
     return 0 if counts.get('pass', 0) == len(plan['runs']) else 1
 
 
@@ -108,7 +114,8 @@ def spot(args):
 
 def audit(args):
     plan_or_exit(args.plan)
-    original, again = methodlib.latest(args.plan), methodlib.latest(args.plan, spot=True)
+    original = methodlib.latest(args.plan, evidence_only=True)
+    again = methodlib.latest(args.plan, spot=True, evidence_only=True)
     if not again:
         print(f'ledger: plan {args.plan} has no spot check')
         return 1
