@@ -756,6 +756,56 @@ changed volumes.
 - Next: its own change loop after F8; rsum's M case to judge the third
   interrupt's time and count.
 
+### DYNAREC: the sound check fails with 86Box's recompiler off (found 24 Oct 2026, open)
+
+- Symptom [86Box]: count-position (7994cd1, build_32_t2), the SB16 sound
+  check (plan cdee6f75, 10 games), 3 runs with the recompiler off
+  (t3soff1-3) and 3 with it on (t3son1-3), the same binaries. On time:
+
+  | game | off 1, 2, 3 | on 1, 2, 3 | control |
+  |---|---|---|---|
+  | MKTRIL | 0.31 0.31 0.32 FAIL x3 | 1.00 1.00 1.00 PASS x3 | 1.00 |
+  | THEMHOSP | 1.00 1.00 1.00 PASS x3 | 1.00 1.00 1.00 PASS x3 | 1.00 |
+  | DESCENT | 0.34 F, 0.62 P, 0.66 P | 0.67 P, 0.51 F, 0.76 P | 0.82 |
+  | HEXENBEY | 0.54 0.78 0.73 FAIL x3 | 1.00 1.00 1.00 PASS x3 | 1.00 |
+  | DUKE3D | 0.18 0.27 0.23 FAIL x3 (speed 1.18-1.24) | 0.98 0.97 0.97 PASS x3 | 0.99 |
+  | XCOMUF | 0.64 F, 0.68 P, 0.67 P | 0.67 0.65 0.83 PASS x3 | 0.85 |
+  | GK1 | 0.25 0.20 0.32 FAIL x3 (speed 1.28-1.36) | 0.90 0.90 0.94 PASS x3 | 0.82 |
+  | JILLJUNG | 0.04 0.16 0.35 FAIL x3 | 0.14 0.03 0.43 FAIL x3 | 0.98 |
+  | SWDFORC | 0.06 0.09 0.21 FAIL x3 (speed 1.08-1.11) | 0.61 0.63 0.65 FAIL x3 (speed 1.05) | 1.00 |
+  | SSTRDUST | 0.07 0.05 0.06 FAIL x3 (speed 1.47-1.54) | 1.00 1.00 1.00 PASS x3 | 1.00 |
+
+  Verdicts disagree on 6 games (MKTRIL, HEXENBEY, DUKE3D, GK1, SSTRDUST,
+  XCOMUF in one run); SWDFORC fails in both sets with on time apart
+  (0.06-0.21 off, 0.61-0.65 on); JILLJUNG fails in both with overlapping
+  numbers; DESCENT is mixed in both.
+- Measured [86Box]: 86Box's own speed readout in the screenshots at 20, 50
+  and 80 s. Recompiler on: 100% in every shot read. Off: GK1 59-79%,
+  SSTRDUST 62-73% after its first shot, SWDFORC 75-90%, MKTRIL 87-100%,
+  JILLJUNG 83-101%, XCOMUF 90-101%, HEXENBEY 95-102%, THEMHOSP 91-104%,
+  DESCENT 100%; DUKE3D not read (its window crops wrong). With the
+  recompiler off the interpreter does not hold a Pentium MMX 233 at real
+  time on this host in several games, and the recording is in host time.
+  This does not account for every row: MKTRIL reads 87-100% and plays at
+  0.31.
+- Not measured: the control (the bare card, no uCDD) with the recompiler
+  off. The stored references and controls (sndref/sb16) predate the rule
+  and do not record the recompiler, so the off set compares uCDD with the
+  recompiler off against a bare card that was most likely recorded with it
+  on. Until a recompiler-off
+  control is recorded, the difference is "the recompiler", nothing more
+  (tightening r3, T3).
+- List a in the same runs (t3aoff1-3, t3aon1-3): 50 counters, none apart
+  beyond the run-to-run spread; one verdict differs, 004 virtual SB 2.0 L2
+  (130 interrupts in all six runs) DIFF in off 1 and 2, because the bare
+  card read 139 there and 138 elsewhere (rsum's 6% edge; the T2 finding).
+- Pictures: runs/sr_cdee6f75-NNN_sb16_GAME_off1..3 and _on1..3 (audiocmp/
+  map_wave.png, map_band.png, mix.png; shot_*.png).
+- Rule: evidence runs stay recompiler-off whatever this row finds
+  (rig86/CLAUDE.md). Consequence: the sound check cannot judge uCDD with
+  the recompiler off until the references and controls are re-recorded
+  with it off, or the bench runs the guest at real time.
+
 ## The feature branches offered to the author (rows reconstructed 24 Oct 2026)
 
 These four issues were ported from the fork's line onto the author's
