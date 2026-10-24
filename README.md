@@ -64,8 +64,8 @@ depend on each other:
 | Branch | Holds |
 | --- | --- |
 | `main` | The author's releases, unchanged. |
-| `feature/*` | The feature branches above, each on 0.9.4-a6. |
-| `merge-a6` | The fork's line with 0.9.4-a6 merged in. |
+| `feature/*` | The feature branches above, each on 0.9.4-a6; built, not run. |
+| `merge-a6` | The fork's line with 0.9.4-a6 merged in; built, not run. |
 | `count-position` | The fork's line before the merge. |
 | `fixes` | This README; the fork's combined line up to 20 Oct 2026, kept for its history. |
 | `sound-engine-library`, `reference-library`, `spec-first` | Notes, references and design. |
