@@ -808,6 +808,49 @@ changed volumes.
   (rig86/CLAUDE.md). Consequence: the sound check cannot judge uCDD with
   the recompiler off until the references and controls are re-recorded
   with it off, or the bench runs the guest at real time.
+- The bare card's own jitter (Michael, 25 Oct 2026): 86Box's bare SB 2.0
+  gives 137 to 139 interrupts in SBT16 L2 from run to run, recompiler on
+  or off, so one bare-card run against rsum's 6% decides a verdict by its
+  jitter (HSPEED). Controls are taken as the mean of three runs: the sound
+  check's references since 25 Oct (sndreg: three controls, judged on their
+  mean); list a's bare-card rows by the mean of three runs where three
+  exist (HANDOFF, T3).
+
+### HSPEED: the virtual SB 2.0's high-speed single-cycle 91h at E9h gives 6% fewer interrupts (candidate, found 24 Oct 2026, open)
+
+- Symptom [86Box]: SBT16-legacy case L2 (`SBT16 91 00 44100`: 91h, 8-bit
+  high-speed single-cycle, time constant E9h), count-position 7994cd1 at 32
+  frames, plan 45bc14ec. Virtual SB 2.0 (row 004): 130 interrupts in all
+  six T3 runs (off 130 130 130, on 131 131 130). 86Box's bare SB 2.0 (row
+  006): off 139 139 138, on 138 138 138; mean of the three off runs 138.7.
+  130 is 6.3% short of the mean: FAIL by rsum's 6%, which stays (Michael,
+  25 Oct 2026). The virtual SB Pro in the same case: 130 131 131 / 131 130
+  130 against the bare Pro's 138 138 138 / 137 138 138 (5.3%, inside the
+  tolerance; T2's repeat had it at 130 against 139). The auto-init form at
+  the same rate (L3, 90h): virtual 135-136 against 138-139 (about 2%).
+- Reference: the CT2290 (sound-engine-library docs/sound-engines/ct2290.md,
+  measured 19 Oct 2026 [hw]). Rate: E9h plays at 43383 Hz, 0.2% under
+  1000000/(256-E9h) = 43478 Hz, which 86Box's bare card plays exactly; so
+  the real card would give about 0.2% fewer interrupts than the bare card
+  here, not 6%. Block end: 91h with 64 bytes at E9h reaches the handler in
+  1.52 ms on the card and 3.55 ms on the virtual card (D7, 128 frames).
+- Already in the notes (findings.md, sound-engine-library): F7 (the virtual
+  card plays E9h as 44100, 1.6% fast) and F11 (short transfers end at the
+  virtual card's next output period, not within a sample). Neither has a
+  row here or a fix.
+- Citation: SBG:1345-1351 (high-speed single-cycle: the DSP takes no
+  commands during the transfer and leaves high-speed mode at its end) and
+  SBG:1714 (the 8-bit mono high-speed single-cycle steps). The documents
+  say nothing of how soon the block ends after its last byte: silent; the
+  CT2290's measurements decide (mantra rule 1).
+- Hypothesis (not tested): each single-cycle block ends at the next 32-frame
+  output period (F11) and the restart waits for another, about 1.4 ms lost
+  per block, which at L2's block length is the 6%; the auto-init form loses
+  only the first.
+- Evidence: emulator (plan 45bc14ec, rows 004 and 006; T3 runs t3aoff1-3,
+  dynarec off). Hardware: UNCONFIRMED at 32 frames (the 19 Oct numbers are
+  D7 at 128 frames). Next: the same case on the CT2290 through the pinned
+  build; F11's own row.
 
 ## The feature branches offered to the author (rows reconstructed 24 Oct 2026)
 
