@@ -756,6 +756,88 @@ changed volumes.
 - Next: its own change loop after F8; rsum's M case to judge the third
   interrupt's time and count.
 
+## The feature branches offered to the author (rows reconstructed 24 Oct 2026)
+
+These four issues were ported from the fork's line onto the author's
+0.9.4-a6 on 23 Oct 2026, one `feature/*` branch each, and committed with
+Issue trailers but no row. The rows below are reconstructed 24 Oct 2026
+from each commit's own message and HANDOFF ("four feature branches for the
+author"), for the fixes index (tightening r3, T1). Each change is built,
+not run, on that base: built at 128 and 32 frames and without resident
+audio, and no test of any kind has run on it there.
+
+### DISKIRQ: disk controller IRQs go straight to DOS (reconstructed 24 Oct 2026; built, not run)
+- Fault: a PCI disk controller holds its level-triggered request until its
+  real-mode handler runs. A protected-mode program waiting in a real-mode
+  call for the disk never took the IRQ the DPMI host queued for it, so
+  DOS/4GW games froze at their banner on a PC whose only IDE controller is
+  a PCI card (Michael's Promise Ultra133 TX2, on IRQ 9, 14 or 3 by BIOS
+  settings).
+- Change: `UCDD -install` scans the PCI BIOS for mass storage controllers
+  and builds a mask (IRQ 14 and 15, the IRQs found, one set by hand in
+  UCDDSET's Disk row); the host's real-mode IRQ stubs and its
+  protected-mode IRQ path send those IRQs to the real-mode handler. CDF5
+  carries the mask at +24; UCDD.CFG version 5 holds the hand-set IRQ at
+  offset 42. `SET UCDDPCI=OFF` skips the scan. Details: docs/disk-irq.md
+  on feature/disk-irq.
+- Commit: fd2d564 on feature/disk-irq (also under feature/fast-dma).
+- Evidence: data sheet (PCI BIOS 2.1, INT 1Ah B101h, B10Ah, B108h; class
+  01h; PCI interrupts level-triggered and held until serviced); reading.
+  Built, not run on 0.9.4-a6.
+
+### STEPASIDE: the driver steps aside while it has nothing to add (reconstructed 24 Oct 2026; built, not run)
+- Behaviour: while no mounted image is bound for CD audio and the
+  physical card can be the virtual one at the same port, IRQ and DMA, the
+  driver stops its output, gives back the trapped ports but the
+  keyboard's, and the host offers no DPMI and hides no VCPI: a game talks
+  to the real card as without the driver. A mount of an audio disc (or an
+  MDM list with one) brings it back; the state changes only at a mount, an
+  eject and the end of the install.
+- Change: UCDDSET's "uCDD driver always on" keeps the driver on (greyed
+  while the cards cannot pair); UCDD.CFG version 5 offset 43; the host's
+  dormant byte is offset 10 of its resident state. Details:
+  docs/step-aside.md on feature/step-aside.
+- Commit: d6c2008 on feature/step-aside (also under feature/fast-dma).
+- Evidence: data sheet silent (the driver's own policy: a game on the real
+  card, as without the driver); reading. Built, not run on 0.9.4-a6.
+
+### FASTDMA: the chipset's own fast DMA timing on the output channel (reconstructed 24 Oct 2026; built, not run)
+- Cost addressed: in the default ISA DMA timing each byte holds the bus
+  for about a microsecond; on a PIIX3 with an ES1868 the output stream cost
+  9 percent of memory copy speed at the half rate and 18 at the full rate.
+- Change: UCDDSET's "Enable platform fast DMA" sets the chipset's
+  documented fast timing on the output channel while the output runs and
+  puts the old value back when it stops. The install's PCI scan finds the
+  ISA bridge in a table (Intel PIIX family, 82378 SIO and EISA, ALi, OPTi,
+  VIA and AMD-756, SiS); 386 and 486 chipsets are left alone. UCDD.CFG
+  version 5 offset 44. Details: docs/fast-dma.md and docs/platform-dma.md
+  on feature/fast-dma.
+- Commit: 2729c80 on feature/fast-dma.
+- Evidence: data sheet (each chipset's, cited in docs/platform-dma.md:
+  Intel 82371FB/SB/AB MBDMA, 82378 and EISA 40Bh/4D6h, ALi, OPTi, VIA 45h,
+  SiS 70h/71h); reading. Built, not run on 0.9.4-a6. STATE question 2
+  (ALi and OPTi bits 3:2) is Michael's to overrule.
+
+### ESSOUT: native ESS AudioDrive output (reconstructed 24 Oct 2026; built, not run)
+- Limit addressed: an ESS AudioDrive could only be the physical card as a
+  Sound Blaster Pro (8-bit stereo at 22 kHz).
+- Change: UCDDSET's "ESS AudioDrive" model plays 44.1 kHz 16-bit stereo
+  through the chip's extended mode, on the 8-bit DMA channel in demand
+  mode, with the WSS codec's ring. The ES1868 and ES1878 (identified by
+  mixer register 40h) get their clock trimmed to 44,100 Hz (BAh bit 6);
+  any other ESS runs at its data sheet rate, 44194 Hz, and the mixer is
+  told so. The stop resets the chip to Sound Blaster mode and puts its
+  mixer registers back. Details: docs/ess.md on feature/ess.
+- Commits: 17c78fc on feature/ess; 9e10a45 on feature/ess (wss_stop read
+  sb_irq after LDS had changed DS, so it restored the old handler on the
+  wrong vector and left the card's vector in the driver; on the fork's
+  line this fix is 8c0b805, found when a UCDDSET Test froze the PC).
+- Evidence: data sheet (ES1868 and ES1878 sheets: extended mode registers
+  A1h-B9h, the rate divider, BAh bit 6, identification by mixer 40h; for
+  9e10a45 silent, INT 21h AX=25xxh takes the vector in AL and the handler
+  in DS:DX); reading. Built, not run on 0.9.4-a6 (17c78fc built at 128 and
+  32 frames and without resident audio; 9e10a45 at 128 frames).
+
 ## Performance
 
 ### IRQCOST: the fixed cost of each card interrupt (23 Oct 2026)
