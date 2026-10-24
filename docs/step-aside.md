@@ -1,6 +1,6 @@
 # STEPASIDE: the driver steps aside when it has nothing to add
 
-A change from the EarBoye/uCDD fork, on top of Beta 0.9.4-a6, offered for
+A change from the EarBoye/uCDD fork, on top of Beta 0.9.4-a6 (built, not run), offered for
 the author to take if he wants it. This file says what it does, why, and
 what was tested.
 
