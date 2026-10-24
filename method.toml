@@ -91,9 +91,11 @@ fork = "EarBoye/uCDD"
 # emulator line must name a plan; leave it off until the runners record.
 # The path is relative to this directory unless absolute; UCDD_LEDGER
 # overrides it.
+# Required since 24 Oct 2026 (tightening r3): it was off from the 22 Oct rebuild, leaving every
+# code commit after it with unverified evidence trailers.
 [ledger]
 path = "ledger"
-require = false
+require = true
 
 # Lesson L2: code on a shared path keeps what every path into it carries.
 # A label whose comment names its incoming paths (the data-flow pass wrote
@@ -137,3 +139,45 @@ skip_branches = ["archive/*"]
 # must leave the host's overlay alone, the host fits a segment, UCDDPLAY's
 # image keeps its stack word, UCDDSET's payload fits a segment.
 limits = { "UCDD.EXE" = 65536, "UCDDHOST.BIN" = 65535, "UCDDPLAY.BIN" = 65534, "UCDDSET.EXE" = 65568 }
+
+# ---- Added 24 Oct 2026 (tightening r3; Michael) ----
+
+
+# Recall at the moment of change (guard/recall.py, a PreToolUse hook on
+# Edit/Write/MultiEdit): what the notes already say about the file, ports,
+# commands, labels and issue IDs being edited, shown once per file per
+# session before the edit lands. Refs here are searched beside [rows].refs.
+[recall]
+refs = ["notes", "origin/notes"]
+paths = ["ISSUES.md", "docs/*.md"]
+lessons_tags = ["code", "fix"]
+max_lines = 80
+
+# Rule 1 at the hook (lib/refcheck.py, called from lib/checks.py): a
+# data-sheet citation starts with one of these keys, or with "silent" and
+# what decided instead. Each key names a file in the reference library
+# worktree (reference-library branch, checked out beside the others). The
+# key table is filled from the files that branch actually holds; a key with
+# no file is refused. Examples below are placeholders until then.
+[references]
+worktree = "../refs"
+[references.keys]
+# SBG = "creative/sb_hw_programming_guide.txt"
+# SB16 = "creative/ct1741_dsp_notes.txt"
+# ESS = "ess/es1868_datasheet.txt"
+# "8237" = "intel/8237a.txt"
+# "8259" = "intel/8259a.txt"
+# "8254" = "intel/8254.txt"
+# DPMI = "dpmi/dpmi09.txt"
+# SDM = "intel/sdm_vol3.txt"
+# MSCDEX = "microsoft/mscdex_ddk.txt"
+# JEMM = "jemm/readme.txt"
+
+# tools/fixed.py, the fixes index: commits reachable from these refs are the
+# author's releases (the fork's main carries his commits only) and are never
+# listed as untagged.
+[fixed]
+upstream_refs = ["main", "origin/main"]
+# Code commits after check_after with no Issue trailer that Michael accepts as pushed history,
+# by sha, each with its reason. Empty until he adds one.
+untagged_allow = []

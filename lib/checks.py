@@ -364,6 +364,8 @@ def code_problems(message, target, code, ledger):
                             f'at {", ".join(CONFIG["rows"]["refs"])}): commit the row first (step 5)')
     if not evidence:
         problems.append('no Evidence: trailer')
+    import refcheck
+    problems += refcheck.problems(message)
     grades = set()
     for value in evidence:
         grade, text = grade_of(value)
