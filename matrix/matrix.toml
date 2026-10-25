@@ -166,6 +166,12 @@ optional_groups = ["pc", "t0", "t1", "t2x", "sweep", "pinned", "t0l4", "t1l4"]
 kind = "probe"
 command = "{env} python3 runs/probe_test.py {build_dir} {id} {vmodel} {mode_word}"
 base_command = "{env} python3 runs/probe_test.py $UCDD_TREE/build_32$UCDD_SUFFIX {id} {vmodel} jemm"
+[runner.probewav]
+# probe_test.py recording sound.wav (PROBE_WAV=1): a recording, so one at a
+# time (lesson L6). Project A's Tier 1 audio cases (A2), judged by
+# plan_run.py with T1.EXE's line and runs/rec/tonecheck.py's.
+kind = "recording"
+command = "{env} python3 runs/probe_test.py {build_dir} {id} {vmodel} {mode_word}"
 [runner.perf]
 # the standard regression's SBT16 and verify rows: fixtest.py perf, steps
 # "OUT:PROGRAM ARGS,..." in {args}; rsum.py compares them with a base run
@@ -802,80 +808,73 @@ note = "disc T1A: Audio Track Info (IOCTL input 11) for each track: starts by th
 
 [[test]]
 name = "T1-PLAY2"
-runner = "probe"
-env = "PROBE_WAV=1 PROBE_RUN='T1:T1.EXE PLAY2'"
+runner = "probewav"
+env = "PROBE_WAV=1 PROBE_EXTRA='fixtures/synth/out/T1A.BIN|T1\\T1A.BIN;fixtures/synth/out/T1A.CUE|T1\\T1A.CUE' PROBE_RUN='CD:!C:\\SHSUCDX.COM /D:UCDD0001 /L:G > C:\\OUT\\CD.TXT,M:!C:\\UCDD\\UCDD.EXE -mount C:\\T1\\T1A.CUE > C:\\OUT\\M.TXT,T1:T1.EXE PLAY2'"
 groups = ["t1"]
 fixed = { build = "pinC2", vmodel = "sb16" }
 repeat = 10
 secs = 120
 note = "disc T1A: Play Audio (132) track 2 for 10 s, then Stop Audio (133): 1000 Hz within 1.5 %, SNR at least 30 dB in 90 % of 1 s windows, first audio within 0.5 s of the request tick, silence after the stop (A2; MSCDEX:377-378)"
-todo = "T1.EXE (bench dos/src/t1) not written; the disc copied and mounted (PROBE_EXTRA, UCDD -mount) and plan_run.py's T1 judge come with it; runs/rec/tonecheck.py and thresholds.toml not written"
 
 [[test]]
 name = "T1-PLAY23"
-runner = "probe"
-env = "PROBE_WAV=1 PROBE_RUN='T1:T1.EXE PLAY23'"
+runner = "probewav"
+env = "PROBE_WAV=1 PROBE_EXTRA='fixtures/synth/out/T1A.BIN|T1\\T1A.BIN;fixtures/synth/out/T1A.CUE|T1\\T1A.CUE' PROBE_RUN='CD:!C:\\SHSUCDX.COM /D:UCDD0001 /L:G > C:\\OUT\\CD.TXT,M:!C:\\UCDD\\UCDD.EXE -mount C:\\T1\\T1A.CUE > C:\\OUT\\M.TXT,T1:T1.EXE PLAY23'"
 groups = ["t1"]
 fixed = { build = "pinC2", vmodel = "sb16" }
 repeat = 10
 secs = 120
 note = "disc T1A: play from 5 s before the track 2/3 boundary for 10 s: 1000 Hz, then 440 Hz from the boundary (A2)"
-todo = "T1.EXE (bench dos/src/t1) not written; the disc copied and mounted (PROBE_EXTRA, UCDD -mount) and plan_run.py's T1 judge come with it; runs/rec/tonecheck.py and thresholds.toml not written"
 
 [[test]]
 name = "T1-PLAY4"
-runner = "probe"
-env = "PROBE_WAV=1 PROBE_RUN='T1:T1.EXE PLAY4'"
+runner = "probewav"
+env = "PROBE_WAV=1 PROBE_EXTRA='fixtures/synth/out/T1A.BIN|T1\\T1A.BIN;fixtures/synth/out/T1A.CUE|T1\\T1A.CUE' PROBE_RUN='CD:!C:\\SHSUCDX.COM /D:UCDD0001 /L:G > C:\\OUT\\CD.TXT,M:!C:\\UCDD\\UCDD.EXE -mount C:\\T1\\T1A.CUE > C:\\OUT\\M.TXT,T1:T1.EXE PLAY4'"
 groups = ["t1"]
 fixed = { build = "pinC2", vmodel = "sb16" }
 repeat = 10
 secs = 120
 note = "disc T1A: play track 4: digital silence, RMS below -60 dBFS (A2)"
-todo = "T1.EXE (bench dos/src/t1) not written; the disc copied and mounted (PROBE_EXTRA, UCDD -mount) and plan_run.py's T1 judge come with it; runs/rec/tonecheck.py and thresholds.toml not written"
 
 [[test]]
 name = "T1-PLAY5"
-runner = "probe"
-env = "PROBE_WAV=1 PROBE_RUN='T1:T1.EXE PLAY5'"
+runner = "probewav"
+env = "PROBE_WAV=1 PROBE_EXTRA='fixtures/synth/out/T1A.BIN|T1\\T1A.BIN;fixtures/synth/out/T1A.CUE|T1\\T1A.CUE' PROBE_RUN='CD:!C:\\SHSUCDX.COM /D:UCDD0001 /L:G > C:\\OUT\\CD.TXT,M:!C:\\UCDD\\UCDD.EXE -mount C:\\T1\\T1A.CUE > C:\\OUT\\M.TXT,T1:T1.EXE PLAY5'"
 groups = ["t1"]
 fixed = { build = "pinC2", vmodel = "sb16" }
 repeat = 10
 secs = 120
 note = "disc T1A: play track 5 (FLAGS PRE): de-emphasised; its 10 kHz to 1 kHz level ratio against track 2's within 2 dB of the analytic 50/15 us value (A2; README Images: FLAGS PRE)"
-todo = "T1.EXE (bench dos/src/t1) not written; the disc copied and mounted (PROBE_EXTRA, UCDD -mount) and plan_run.py's T1 judge come with it; runs/rec/tonecheck.py and thresholds.toml not written"
 
 [[test]]
 name = "T1-PLAY6"
-runner = "probe"
-env = "PROBE_WAV=1 PROBE_RUN='T1:T1.EXE PLAY6'"
+runner = "probewav"
+env = "PROBE_WAV=1 PROBE_EXTRA='fixtures/synth/out/T1A.BIN|T1\\T1A.BIN;fixtures/synth/out/T1A.CUE|T1\\T1A.CUE' PROBE_RUN='CD:!C:\\SHSUCDX.COM /D:UCDD0001 /L:G > C:\\OUT\\CD.TXT,M:!C:\\UCDD\\UCDD.EXE -mount C:\\T1\\T1A.CUE > C:\\OUT\\M.TXT,T1:T1.EXE PLAY6'"
 groups = ["t1"]
 fixed = { build = "pinC2", vmodel = "sb16" }
 repeat = 10
 secs = 120
 note = "disc T1A: play track 6 from its PREGAP: 2 s of silence with Q-channel index 0 (IOCTL input 12), then 440 Hz with index 1 (A2; README Images: PREGAP; MSCDEX:697-770)"
-todo = "T1.EXE (bench dos/src/t1) not written; the disc copied and mounted (PROBE_EXTRA, UCDD -mount) and plan_run.py's T1 judge come with it; runs/rec/tonecheck.py and thresholds.toml not written"
 
 [[test]]
 name = "T1-STATUS"
-runner = "probe"
-env = "PROBE_WAV=1 PROBE_RUN='T1:T1.EXE STATUS'"
+runner = "probewav"
+env = "PROBE_WAV=1 PROBE_EXTRA='fixtures/synth/out/T1A.BIN|T1\\T1A.BIN;fixtures/synth/out/T1A.CUE|T1\\T1A.CUE' PROBE_RUN='CD:!C:\\SHSUCDX.COM /D:UCDD0001 /L:G > C:\\OUT\\CD.TXT,M:!C:\\UCDD\\UCDD.EXE -mount C:\\T1\\T1A.CUE > C:\\OUT\\M.TXT,T1:T1.EXE STATUS'"
 groups = ["t1"]
 fixed = { build = "pinC2", vmodel = "sb16" }
 repeat = 10
 secs = 120
 note = "disc T1A: Audio Status Info (IOCTL input 15) and the busy bit during a play and after it ends (MSCDEX:325-330, 772-806)"
-todo = "T1.EXE (bench dos/src/t1) not written; the disc copied and mounted (PROBE_EXTRA, UCDD -mount) and plan_run.py's T1 judge come with it; runs/rec/tonecheck.py and thresholds.toml not written"
 
 [[test]]
 name = "T1-RESUME"
-runner = "probe"
-env = "PROBE_WAV=1 PROBE_RUN='T1:T1.EXE RESUME'"
+runner = "probewav"
+env = "PROBE_WAV=1 PROBE_EXTRA='fixtures/synth/out/T1A.BIN|T1\\T1A.BIN;fixtures/synth/out/T1A.CUE|T1\\T1A.CUE' PROBE_RUN='CD:!C:\\SHSUCDX.COM /D:UCDD0001 /L:G > C:\\OUT\\CD.TXT,M:!C:\\UCDD\\UCDD.EXE -mount C:\\T1\\T1A.CUE > C:\\OUT\\M.TXT,T1:T1.EXE RESUME'"
 groups = ["t1"]
 fixed = { build = "pinC2", vmodel = "sb16" }
 repeat = 10
 secs = 120
 note = "disc T1A: Stop Audio, then Resume Audio (136): the tone goes on from where it stopped (MSCDEX:381)"
-todo = "T1.EXE (bench dos/src/t1) not written; the disc copied and mounted (PROBE_EXTRA, UCDD -mount) and plan_run.py's T1 judge come with it; runs/rec/tonecheck.py and thresholds.toml not written"
 
 [[test]]
 name = "T1-SEEK"
@@ -930,14 +929,13 @@ note = "disc T1F.MDM: UCDD -mount T1F.MDM over a mounted T1A: refused, T1A stays
 
 [[test]]
 name = "T1-LOAD"
-runner = "probe"
-env = "PROBE_WAV=1 PROBE_RUN='T1:T1.EXE LOAD'"
+runner = "probewav"
+env = "PROBE_WAV=1 PROBE_EXTRA='fixtures/synth/out/T1A.BIN|T1\\T1A.BIN;fixtures/synth/out/T1A.CUE|T1\\T1A.CUE' PROBE_RUN='CD:!C:\\SHSUCDX.COM /D:UCDD0001 /L:G > C:\\OUT\\CD.TXT,M:!C:\\UCDD\\UCDD.EXE -mount C:\\T1\\T1A.CUE > C:\\OUT\\M.TXT,T1:T1.EXE LOAD'"
 groups = ["t1"]
 fixed = { build = "pinC2", vmodel = "sb16" }
 repeat = 10
 secs = 120
 note = "disc T1A: play track 2 while reading 4 MB (CHECK.TXT four times) in 2 KB requests: every read CRC32 A3A46D5C (fixtures/synth/MANIFEST.txt), the tone as PLAY2 measures it throughout (A2)"
-todo = "T1.EXE (bench dos/src/t1) not written; the disc copied and mounted (PROBE_EXTRA, UCDD -mount) and plan_run.py's T1 judge come with it; runs/rec/tonecheck.py and thresholds.toml not written"
 
 [[test]]
 name = "T1-RAW"
@@ -951,14 +949,13 @@ note = "disc T1B: T1B, the data track MODE1/2352: Read Long of CHECK.TXT (cooked
 
 [[test]]
 name = "T1-AONLY"
-runner = "probe"
-env = "PROBE_WAV=1 PROBE_RUN='T1:T1.EXE AONLY'"
+runner = "probewav"
+env = "PROBE_WAV=1 PROBE_EXTRA='fixtures/synth/out/T1C.BIN|T1\\T1C.BIN;fixtures/synth/out/T1C.CUE|T1\\T1C.CUE' PROBE_RUN='CD:!C:\\SHSUCDX.COM /D:UCDD0001 /L:G > C:\\OUT\\CD.TXT,M:!C:\\UCDD\\UCDD.EXE -mount C:\\T1\\T1C.CUE > C:\\OUT\\M.TXT,T1:T1.EXE AONLY'"
 groups = ["t1"]
 fixed = { build = "pinC2", vmodel = "sb16" }
 repeat = 10
 secs = 120
 note = "disc T1C: T1C, audio only: mounts; Audio Disk Info tracks 1 to 3; play track 1: 1000 Hz (README Images, as Michael read it 25 Oct 2026, question 6)"
-todo = "T1.EXE (bench dos/src/t1) not written; the disc copied and mounted (PROBE_EXTRA, UCDD -mount) and plan_run.py's T1 judge come with it; runs/rec/tonecheck.py and thresholds.toml not written"
 
 [[test]]
 name = "T1-ISO"
@@ -1197,23 +1194,21 @@ note = "planted: b0 and b1 swapped in a scratch copy of deemphasis.asm; the four
 
 [[test]]
 name = "T1L4-PITCH"
-runner = "probe"
-env = "PROBE_WAV=1 PROBE_RUN='T1:T1.EXE PLAY2'"
+runner = "probewav"
+env = "PROBE_WAV=1 PROBE_EXTRA='fixtures/synth/out/T1AP.BIN|T1\\T1AP.BIN;fixtures/synth/out/T1AP.CUE|T1\\T1AP.CUE' PROBE_RUN='CD:!C:\\SHSUCDX.COM /D:UCDD0001 /L:G > C:\\OUT\\CD.TXT,M:!C:\\UCDD\\UCDD.EXE -mount C:\\T1\\T1AP.CUE > C:\\OUT\\M.TXT,T1:T1.EXE PLAY2'"
 groups = ["t1l4"]
 fixed = { build = "pinC2", vmodel = "sb16" }
 secs = 120
 note = "disc T1AP: planted: T1A with tracks 2 and 3's audio swapped; PLAY2's pitch check must FAIL (440 Hz where 1000 is due)"
-todo = "T1.EXE (bench dos/src/t1) not written; the disc copied and mounted (PROBE_EXTRA, UCDD -mount) and plan_run.py's T1 judge come with it; runs/rec/tonecheck.py and thresholds.toml not written"
 
 [[test]]
 name = "T1L4-SILENCE"
-runner = "probe"
-env = "PROBE_WAV=1 PROBE_RUN='T1:T1.EXE PLAY4'"
+runner = "probewav"
+env = "PROBE_WAV=1 PROBE_EXTRA='fixtures/synth/out/T1AQ.BIN|T1\\T1AQ.BIN;fixtures/synth/out/T1AQ.CUE|T1\\T1AQ.CUE' PROBE_RUN='CD:!C:\\SHSUCDX.COM /D:UCDD0001 /L:G > C:\\OUT\\CD.TXT,M:!C:\\UCDD\\UCDD.EXE -mount C:\\T1\\T1AQ.CUE > C:\\OUT\\M.TXT,T1:T1.EXE PLAY4'"
 groups = ["t1l4"]
 fixed = { build = "pinC2", vmodel = "sb16" }
 secs = 120
 note = "disc T1AQ: planted: T1A with track 4 a 1000 Hz tone at -40 dBFS; PLAY4's silence check must FAIL"
-todo = "T1.EXE (bench dos/src/t1) not written; the disc copied and mounted (PROBE_EXTRA, UCDD -mount) and plan_run.py's T1 judge come with it; runs/rec/tonecheck.py and thresholds.toml not written"
 
 # Probes (regress.sh list a), checked against the bench 20 Oct. PROBE_RUN
 # is "TAG:PROGRAM ARGS,..."; the perf and verify runners take the same steps
