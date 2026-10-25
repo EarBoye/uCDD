@@ -39,6 +39,14 @@ else
   echo "--- FIXED.md is missing: run python3 METHOD/tools/fixed.py --out $top/context/FIXED.md in a uCDD worktree ---"
 fi
 
+refsidx="$top/context/REFS.md"
+if [ -f "$refsidx" ]; then
+  echo "--- Which document decides what (context/REFS.md, first 20 keys; regenerate with tools/refindex.py) ---"
+  grep -E '^\| `' "$refsidx" | head -20
+else
+  echo "--- context/REFS.md is missing: python3 METHOD/tools/refindex.py --out $top/context/REFS.md ---"
+fi
+
 state="$top/context/STATE.md"
 if [ -f "$state" ]; then
   echo "--- STATE.md: open faults ---"
@@ -62,5 +70,6 @@ cat <<'EOF'
 - Rule 1 first: the citation is written in the row before the fix, and it names a key in method.toml [references].
 - One ISSUES.md, on the notes branch; rows go there, never into a feature branch's copy.
 - "Built, not run" is not done. Say it in every place the change is mentioned.
+- Before writing a test case, a row or a fix: name the key that decides its expected result (context/REFS.md), quote its line; no key means `silent` and what decides instead. The recall hook shows the document lines before the edit; read them.
 EOF
 exit 0

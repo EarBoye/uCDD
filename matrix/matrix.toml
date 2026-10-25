@@ -231,6 +231,7 @@ command = "on the PC with the kit of {build}: RUN {game}"
 
 [[test]]
 name = "BOOT-C0"
+decides = "silent: the bench's boot check (the set-up boots; the drive answers; the probe ends)"
 runner = "boot"
 game = "DUKE3D"
 library = "DOS_ACT"
@@ -240,6 +241,7 @@ note = "C0, the control: 86Box's own card and drive, OAKCDROM and MSCDEX on G:, 
 
 [[test]]
 name = "BOOT-C1"
+decides = "silent: the bench's boot check (the set-up boots; the drive answers; the probe ends)"
 runner = "boot"
 game = "DUKE3D"
 library = "DOS_ACT"
@@ -249,6 +251,7 @@ note = "C1, the CD-only build on G: through SHSUCDX"
 
 [[test]]
 name = "BOOT-C2"
+decides = "silent: the bench's boot check (the set-up boots; the drive answers; the probe ends)"
 runner = "boot"
 game = "DUKE3D"
 library = "DOS_ACT"
@@ -258,6 +261,7 @@ note = "C2, the audio build, both SB16s at 220/5/1/5, held on (L7)"
 
 [[test]]
 name = "BOOT-L4"
+decides = "silent: a planted fault (L4): the check it is planted for must fail"
 runner = "boot"
 game = "DUKE3D"
 library = "DOS_ACT"
@@ -274,6 +278,7 @@ note = "the planted fault: must FAIL the driver check before a BOOT pass means a
 
 [[test]]
 name = "T0-CUE-ISO"
+decides = "README"
 runner = "probe"
 env = "PROBE_RUN='T0:T0CUE.COM ISO'"
 groups = ["t0"]
@@ -284,6 +289,7 @@ note = "an .ISO path: 2048-byte sectors (README, Images: .ISO)"
 
 [[test]]
 name = "T0-CUE-BIN"
+decides = "README"
 runner = "probe"
 env = "PROBE_RUN='T0:T0CUE.COM BIN'"
 groups = ["t0"]
@@ -294,6 +300,7 @@ note = "a .BIN path alone: MODE1/2352 data, stride 2352, payload at 16, no audio
 
 [[test]]
 name = "T0-CUE-M1A"
+decides = "README"
 runner = "probe"
 env = "PROBE_RUN='T0:T0CUE.COM M1A'"
 groups = ["t0"]
@@ -304,6 +311,7 @@ note = "MODE1/2048 data and AUDIO tracks: accepted, the track table as the CUE a
 
 [[test]]
 name = "T0-CUE-M1R"
+decides = "README"
 runner = "probe"
 env = "PROBE_RUN='T0:T0CUE.COM M1R'"
 groups = ["t0"]
@@ -314,6 +322,7 @@ note = "MODE1/2352 data track: accepted, user data at 16 (README, Images: .CUE /
 
 [[test]]
 name = "T0-CUE-M2F1"
+decides = "README"
 runner = "probe"
 env = "PROBE_RUN='T0:T0CUE.COM M2F1'"
 groups = ["t0"]
@@ -324,6 +333,7 @@ note = "MODE2/2352 with Form 1 sectors: accepted, user data at 24 (README, Image
 
 [[test]]
 name = "T0-CUE-M2X"
+decides = "README"
 runner = "probe"
 env = "PROBE_RUN='T0:T0CUE.COM M2X'"
 groups = ["t0"]
@@ -334,6 +344,7 @@ note = "MODE2/2336, another MODE2 form: rejected (README: other MODE2 sector for
 
 [[test]]
 name = "T0-CUE-MULTI"
+decides = "README"
 runner = "probe"
 env = "PROBE_RUN='T0:T0CUE.COM MULTI'"
 groups = ["t0"]
@@ -344,6 +355,7 @@ note = "two FILE lines: rejected (README: multi-file CUE sheets are not supporte
 
 [[test]]
 name = "T0-CUE-SEQ"
+decides = "README"
 runner = "probe"
 env = "PROBE_RUN='T0:T0CUE.COM SEQ'"
 groups = ["t0"]
@@ -354,6 +366,7 @@ note = "tracks out of sequence: rejected (README: sequential tracks)"
 
 [[test]]
 name = "T0-CUE-NOI01"
+decides = "README"
 runner = "probe"
 env = "PROBE_RUN='T0:T0CUE.COM NOI01'"
 groups = ["t0"]
@@ -364,6 +377,7 @@ note = "a track without INDEX 01: rejected (README: INDEX 01 on each track)"
 
 [[test]]
 name = "T0-CUE-I00"
+decides = "README"
 runner = "probe"
 env = "PROBE_RUN='T0:T0CUE.COM I00'"
 groups = ["t0"]
@@ -374,6 +388,7 @@ note = "INDEX 00: accepted, the track starts at its INDEX 01 (README: INDEX 00 a
 
 [[test]]
 name = "T0-CUE-GAPB"
+decides = "README"
 runner = "probe"
 env = "PROBE_RUN='T0:T0CUE.COM GAPB'"
 groups = ["t0"]
@@ -384,6 +399,7 @@ note = "PREGAP before INDEX: accepted, silence not read from the BIN, positions 
 
 [[test]]
 name = "T0-CUE-PRE"
+decides = "README"
 runner = "probe"
 env = "PROBE_RUN='T0:T0CUE.COM PRE'"
 groups = ["t0"]
@@ -394,6 +410,7 @@ note = "FLAGS PRE: de-emphasis on for that track (README: FLAGS PRE applies CD d
 
 [[test]]
 name = "T0-CUE-DCP"
+decides = "README"
 runner = "probe"
 env = "PROBE_RUN='T0:T0CUE.COM DCP'"
 groups = ["t0"]
@@ -404,6 +421,7 @@ note = "FLAGS DCP: accepted, no restriction (README: DCP, 4CH and SCMS are also 
 
 [[test]]
 name = "T0-CUE-4CH"
+decides = "README"
 runner = "probe"
 env = "PROBE_RUN='T0:T0CUE.COM 4CH'"
 groups = ["t0"]
@@ -414,6 +432,7 @@ note = "FLAGS 4CH: accepted, played as stereo (README)"
 
 [[test]]
 name = "T0-CUE-SCMS"
+decides = "README"
 runner = "probe"
 env = "PROBE_RUN='T0:T0CUE.COM SCMS'"
 groups = ["t0"]
@@ -424,6 +443,7 @@ note = "FLAGS SCMS: accepted, no restriction (README)"
 
 [[test]]
 name = "T0-CUE-AONLY"
+decides = "README"
 runner = "probe"
 env = "PROBE_RUN='T0:T0CUE.COM AONLY'"
 groups = ["t0"]
@@ -434,6 +454,7 @@ note = "audio tracks only: mounts (Michael, 25 Oct 2026, question 6: README Imag
 
 [[test]]
 name = "T0-CUE-I02"
+decides = "silent: Michael's answer to question 6 (25 Oct 2026) after the author's 0.9.4-a1 note; the README says nothing of it"
 runner = "probe"
 env = "PROBE_RUN='T0:T0CUE.COM I02'"
 groups = ["t0"]
@@ -444,6 +465,7 @@ note = "INDEX 02 and higher: mounts, index 2 ignored for positioning (Michael, 2
 
 [[test]]
 name = "T0-CUE-GAPA"
+decides = "README, silent: Michael's answer to question 6 (25 Oct 2026): the README puts PREGAP before INDEX; a sheet with it after has no real-disc meaning and either outcome passes"
 runner = "probe"
 env = "PROBE_RUN='T0:T0CUE.COM GAPA'"
 groups = ["t0"]
@@ -454,6 +476,7 @@ note = "PREGAP after INDEX, which has no real-disc meaning: rejected, or accepte
 
 [[test]]
 name = "T0-CUE-BOM"
+decides = "silent: Michael's answer to question 6 (25 Oct 2026) after the author's 0.9.4-a1 note; the README says nothing of it"
 runner = "probe"
 env = "PROBE_RUN='T0:T0CUE.COM BOM'"
 groups = ["t0"]
@@ -464,6 +487,7 @@ note = "a UTF-8 byte order mark before the first line: mounts (Michael, 25 Oct 2
 
 [[test]]
 name = "T0-MDM-ABS"
+decides = "README"
 runner = "probe"
 env = "PROBE_RUN='T0:T0MDM.COM ABS'"
 groups = ["t0"]
@@ -474,6 +498,7 @@ note = "absolute paths: every image opened (README, Multiple discs: paths may be
 
 [[test]]
 name = "T0-MDM-REL"
+decides = "README"
 runner = "probe"
 env = "PROBE_RUN='T0:T0MDM.COM REL'"
 groups = ["t0"]
@@ -484,6 +509,7 @@ note = "paths relative to the MDM file (README: or relative to the MDM file)"
 
 [[test]]
 name = "T0-MDM-BLANK"
+decides = "README"
 runner = "probe"
 env = "PROBE_RUN='T0:T0MDM.COM BLANK'"
 groups = ["t0"]
@@ -494,6 +520,7 @@ note = "blank lines ignored (README)"
 
 [[test]]
 name = "T0-MDM-SPACE"
+decides = "README"
 runner = "probe"
 env = "PROBE_RUN='T0:T0MDM.COM SPACE'"
 groups = ["t0"]
@@ -504,6 +531,7 @@ note = "spaces at the start or end of a line ignored (README)"
 
 [[test]]
 name = "T0-MDM-TEN"
+decides = "README"
 runner = "probe"
 env = "PROBE_RUN='T0:T0MDM.COM TEN'"
 groups = ["t0"]
@@ -514,6 +542,7 @@ note = "only the first ten non-empty lines count (README)"
 
 [[test]]
 name = "T0-MDM-NEST"
+decides = "README"
 runner = "probe"
 env = "PROBE_RUN='T0:T0MDM.COM NEST'"
 groups = ["t0"]
@@ -524,6 +553,7 @@ note = "an MDM file listed in an MDM file: rejected (README: nested MDM files ar
 
 [[test]]
 name = "T0-MDM-MISS"
+decides = "README"
 runner = "probe"
 env = "PROBE_RUN='T0:T0MDM.COM MISS'"
 groups = ["t0"]
@@ -534,6 +564,7 @@ note = "a listed image missing: the mount is refused and the current image stays
 
 [[test]]
 name = "T0-MDM-BAD"
+decides = "README"
 runner = "probe"
 env = "PROBE_RUN='T0:T0MDM.COM BAD'"
 groups = ["t0"]
@@ -544,6 +575,7 @@ note = "a listed image invalid: the mount is refused and the current image stays
 
 [[test]]
 name = "T0-RES-44100"
+decides = "silent: the tone's own pitch within A1's 0.5 %"
 runner = "probe"
 env = "PROBE_RUN='T0:T0RES.COM 44100'"
 groups = ["t0"]
@@ -555,6 +587,7 @@ todo = "NOT-UNIT-TESTABLE (A1): the pitch is set in the mixer, mix_half's loop (
 
 [[test]]
 name = "T0-RES-43478"
+decides = "silent: the tone's own pitch within A1's 0.5 %"
 runner = "probe"
 env = "PROBE_RUN='T0:T0RES.COM 43478'"
 groups = ["t0"]
@@ -566,6 +599,7 @@ todo = "NOT-UNIT-TESTABLE (A1): the pitch is set in the mixer, mix_half's loop (
 
 [[test]]
 name = "T0-RES-44444"
+decides = "silent: the tone's own pitch within A1's 0.5 %"
 runner = "probe"
 env = "PROBE_RUN='T0:T0RES.COM 44444'"
 groups = ["t0"]
@@ -577,6 +611,7 @@ todo = "NOT-UNIT-TESTABLE (A1): the pitch is set in the mixer, mix_half's loop (
 
 [[test]]
 name = "T0-RES-44192"
+decides = "silent: the tone's own pitch within A1's 0.5 %"
 runner = "probe"
 env = "PROBE_RUN='T0:T0RES.COM 44192'"
 groups = ["t0"]
@@ -588,6 +623,7 @@ todo = "NOT-UNIT-TESTABLE (A1): the pitch is set in the mixer, mix_half's loop (
 
 [[test]]
 name = "T0-RES-22050"
+decides = "silent: the tone's own pitch within A1's 0.5 %"
 runner = "probe"
 env = "PROBE_RUN='T0:T0RES.COM 22050'"
 groups = ["t0"]
@@ -599,6 +635,7 @@ todo = "NOT-UNIT-TESTABLE (A1): the pitch is set in the mixer, mix_half's loop (
 
 [[test]]
 name = "T0-ADPCM-4"
+decides = "EMUSRC"
 runner = "probe"
 env = "PROBE_RUN='T0:T0ADPCM.COM 4'"
 groups = ["t0"]
@@ -609,6 +646,7 @@ note = "4-bit ADPCM, block with its reference byte, against a reference decoder 
 
 [[test]]
 name = "T0-ADPCM-3"
+decides = "EMUSRC"
 runner = "probe"
 env = "PROBE_RUN='T0:T0ADPCM.COM 3'"
 groups = ["t0"]
@@ -619,6 +657,7 @@ note = "2.6-bit ADPCM, as T0-ADPCM-4, against a reference decoder written from D
 
 [[test]]
 name = "T0-ADPCM-2"
+decides = "EMUSRC"
 runner = "probe"
 env = "PROBE_RUN='T0:T0ADPCM.COM 2'"
 groups = ["t0"]
@@ -629,6 +668,7 @@ note = "2-bit ADPCM, as T0-ADPCM-4, against a reference decoder written from DOS
 
 [[test]]
 name = "T0-DEEM-1K"
+decides = "silent: analytic 50/15 us curve"
 runner = "probe"
 env = "PROBE_RUN='T0:T0DEEM.COM 1000'"
 groups = ["t0"]
@@ -639,6 +679,7 @@ note = "de-emphasis gain at 1 kHz within 0.5 dB of the analytic 50/15 us curve (
 
 [[test]]
 name = "T0-DEEM-3K5"
+decides = "silent: analytic 50/15 us curve"
 runner = "probe"
 env = "PROBE_RUN='T0:T0DEEM.COM 3500'"
 groups = ["t0"]
@@ -649,6 +690,7 @@ note = "at 3.5 kHz, within 0.5 dB"
 
 [[test]]
 name = "T0-DEEM-10K"
+decides = "silent: analytic 50/15 us curve"
 runner = "probe"
 env = "PROBE_RUN='T0:T0DEEM.COM 10000'"
 groups = ["t0"]
@@ -659,6 +701,7 @@ note = "at 10 kHz, within 0.5 dB"
 
 [[test]]
 name = "T0-DEEM-16K"
+decides = "silent: analytic 50/15 us curve"
 runner = "probe"
 env = "PROBE_RUN='T0:T0DEEM.COM 16000'"
 groups = ["t0"]
@@ -678,6 +721,7 @@ note = "at 16 kHz, within 0.5 dB"
 
 [[test]]
 name = "T1-INST"
+decides = "MSCDEX"
 runner = "probe"
 env = "PROBE_EXTRA='fixtures/synth/out/T1A.BIN|T1\\T1A.BIN;fixtures/synth/out/T1A.CUE|T1\\T1A.CUE' PROBE_RUN='CD:!C:\\SHSUCDX.COM /D:UCDD0001 /L:G > C:\\OUT\\CD.TXT,M:!C:\\UCDD\\UCDD.EXE -mount C:\\T1\\T1A.CUE > C:\\OUT\\M.TXT,T1:T1.EXE INST'"
 groups = ["t1"]
@@ -688,6 +732,7 @@ note = "disc T1A: installation check: INT 2Fh 1500h one CD-ROM letter (G:), 150B
 
 [[test]]
 name = "T1-READL-1"
+decides = "MSCDEX"
 runner = "probe"
 env = "PROBE_EXTRA='fixtures/synth/out/T1A.BIN|T1\\T1A.BIN;fixtures/synth/out/T1A.CUE|T1\\T1A.CUE' PROBE_RUN='CD:!C:\\SHSUCDX.COM /D:UCDD0001 /L:G > C:\\OUT\\CD.TXT,M:!C:\\UCDD\\UCDD.EXE -mount C:\\T1\\T1A.CUE > C:\\OUT\\M.TXT,T1:T1.EXE READL 1'"
 groups = ["t1"]
@@ -698,6 +743,7 @@ note = "disc T1A: Read Long (device command 128 through INT 2Fh 1510h) of CHECK.
 
 [[test]]
 name = "T1-READL-6"
+decides = "MSCDEX"
 runner = "probe"
 env = "PROBE_EXTRA='fixtures/synth/out/T1A.BIN|T1\\T1A.BIN;fixtures/synth/out/T1A.CUE|T1\\T1A.CUE' PROBE_RUN='CD:!C:\\SHSUCDX.COM /D:UCDD0001 /L:G > C:\\OUT\\CD.TXT,M:!C:\\UCDD\\UCDD.EXE -mount C:\\T1\\T1A.CUE > C:\\OUT\\M.TXT,T1:T1.EXE READL 6'"
 groups = ["t1"]
@@ -708,6 +754,7 @@ note = "disc T1A: Read Long of CHECK.TXT in 6-sector requests: CRC32 A3A46D5C (f
 
 [[test]]
 name = "T1-READL-64"
+decides = "MSCDEX"
 runner = "probe"
 env = "PROBE_EXTRA='fixtures/synth/out/T1A.BIN|T1\\T1A.BIN;fixtures/synth/out/T1A.CUE|T1\\T1A.CUE' PROBE_RUN='CD:!C:\\SHSUCDX.COM /D:UCDD0001 /L:G > C:\\OUT\\CD.TXT,M:!C:\\UCDD\\UCDD.EXE -mount C:\\T1\\T1A.CUE > C:\\OUT\\M.TXT,T1:T1.EXE READL 64'"
 groups = ["t1"]
@@ -718,6 +765,7 @@ note = "disc T1A: Read Long of CHECK.TXT in 64-sector requests: CRC32 A3A46D5C (
 
 [[test]]
 name = "T1-ABS-1"
+decides = "MSCDEX"
 runner = "probe"
 env = "PROBE_EXTRA='fixtures/synth/out/T1A.BIN|T1\\T1A.BIN;fixtures/synth/out/T1A.CUE|T1\\T1A.CUE' PROBE_RUN='CD:!C:\\SHSUCDX.COM /D:UCDD0001 /L:G > C:\\OUT\\CD.TXT,M:!C:\\UCDD\\UCDD.EXE -mount C:\\T1\\T1A.CUE > C:\\OUT\\M.TXT,T1:T1.EXE ABS 1'"
 groups = ["t1"]
@@ -728,6 +776,7 @@ note = "disc T1A: absolute read (INT 2Fh 1508h) of CHECK.TXT in 1-sector request
 
 [[test]]
 name = "T1-ABS-6"
+decides = "MSCDEX"
 runner = "probe"
 env = "PROBE_EXTRA='fixtures/synth/out/T1A.BIN|T1\\T1A.BIN;fixtures/synth/out/T1A.CUE|T1\\T1A.CUE' PROBE_RUN='CD:!C:\\SHSUCDX.COM /D:UCDD0001 /L:G > C:\\OUT\\CD.TXT,M:!C:\\UCDD\\UCDD.EXE -mount C:\\T1\\T1A.CUE > C:\\OUT\\M.TXT,T1:T1.EXE ABS 6'"
 groups = ["t1"]
@@ -738,6 +787,7 @@ note = "disc T1A: absolute read of CHECK.TXT in 6-sector requests: CRC32 A3A46D5
 
 [[test]]
 name = "T1-ABS-64"
+decides = "MSCDEX"
 runner = "probe"
 env = "PROBE_EXTRA='fixtures/synth/out/T1A.BIN|T1\\T1A.BIN;fixtures/synth/out/T1A.CUE|T1\\T1A.CUE' PROBE_RUN='CD:!C:\\SHSUCDX.COM /D:UCDD0001 /L:G > C:\\OUT\\CD.TXT,M:!C:\\UCDD\\UCDD.EXE -mount C:\\T1\\T1A.CUE > C:\\OUT\\M.TXT,T1:T1.EXE ABS 64'"
 groups = ["t1"]
@@ -748,6 +798,7 @@ note = "disc T1A: absolute read of CHECK.TXT in 64-sector requests: CRC32 A3A46D
 
 [[test]]
 name = "T1-READEND"
+decides = "MSCDEX"
 runner = "probe"
 env = "PROBE_EXTRA='fixtures/synth/out/T1A.BIN|T1\\T1A.BIN;fixtures/synth/out/T1A.CUE|T1\\T1A.CUE' PROBE_RUN='CD:!C:\\SHSUCDX.COM /D:UCDD0001 /L:G > C:\\OUT\\CD.TXT,M:!C:\\UCDD\\UCDD.EXE -mount C:\\T1\\T1A.CUE > C:\\OUT\\M.TXT,T1:T1.EXE READEND'"
 groups = ["t1"]
@@ -758,6 +809,7 @@ note = "disc T1A: a read across the end of the data track: an error from the fir
 
 [[test]]
 name = "T1-VOLSIZE"
+decides = "MSCDEX, ECMA119"
 runner = "probe"
 env = "PROBE_EXTRA='fixtures/synth/out/T1A.BIN|T1\\T1A.BIN;fixtures/synth/out/T1A.CUE|T1\\T1A.CUE' PROBE_RUN='CD:!C:\\SHSUCDX.COM /D:UCDD0001 /L:G > C:\\OUT\\CD.TXT,M:!C:\\UCDD\\UCDD.EXE -mount C:\\T1\\T1A.CUE > C:\\OUT\\M.TXT,T1:T1.EXE VOLSIZE'"
 groups = ["t1"]
@@ -768,6 +820,7 @@ note = "disc T1A: Return Volume Size (IOCTL input 8): 9688 on T1A, the data sect
 
 [[test]]
 name = "T1-SECSIZE"
+decides = "MSCDEX"
 runner = "probe"
 env = "PROBE_EXTRA='fixtures/synth/out/T1A.BIN|T1\\T1A.BIN;fixtures/synth/out/T1A.CUE|T1\\T1A.CUE' PROBE_RUN='CD:!C:\\SHSUCDX.COM /D:UCDD0001 /L:G > C:\\OUT\\CD.TXT,M:!C:\\UCDD\\UCDD.EXE -mount C:\\T1\\T1A.CUE > C:\\OUT\\M.TXT,T1:T1.EXE SECSIZE'"
 groups = ["t1"]
@@ -778,6 +831,7 @@ note = "disc T1A: Return Sector Size (IOCTL input 7): 2048 cooked, 2352 raw (MSC
 
 [[test]]
 name = "T1-MEDIA"
+decides = "MSCDEX"
 runner = "probe"
 env = "PROBE_EXTRA='fixtures/synth/out/T1A.BIN|T1\\T1A.BIN;fixtures/synth/out/T1A.CUE|T1\\T1A.CUE' PROBE_RUN='CD:!C:\\SHSUCDX.COM /D:UCDD0001 /L:G > C:\\OUT\\CD.TXT,M:!C:\\UCDD\\UCDD.EXE -mount C:\\T1\\T1A.CUE > C:\\OUT\\M.TXT,T1:T1.EXE MEDIA 1,M2:!C:\\UCDD\\UCDD.EXE -mount C:\\T1\\T1A.CUE -drive G > C:\\OUT\\M2.TXT,T12:T1.EXE MEDIA 2'"
 groups = ["t1"]
@@ -788,6 +842,7 @@ note = "disc T1A: Media Changed (IOCTL input 9): not changed within a run; chang
 
 [[test]]
 name = "T1-DISKINFO"
+decides = "MSCDEX, README"
 runner = "probe"
 env = "PROBE_EXTRA='fixtures/synth/out/T1A.BIN|T1\\T1A.BIN;fixtures/synth/out/T1A.CUE|T1\\T1A.CUE' PROBE_RUN='CD:!C:\\SHSUCDX.COM /D:UCDD0001 /L:G > C:\\OUT\\CD.TXT,M:!C:\\UCDD\\UCDD.EXE -mount C:\\T1\\T1A.CUE > C:\\OUT\\M.TXT,T1:T1.EXE DISKINFO'"
 groups = ["t1"]
@@ -798,6 +853,7 @@ note = "disc T1A: Audio Disk Info (IOCTL input 10): tracks 1 to 6, the lead-out 
 
 [[test]]
 name = "T1-TRKINFO"
+decides = "MSCDEX, README"
 runner = "probe"
 env = "PROBE_EXTRA='fixtures/synth/out/T1A.BIN|T1\\T1A.BIN;fixtures/synth/out/T1A.CUE|T1\\T1A.CUE' PROBE_RUN='CD:!C:\\SHSUCDX.COM /D:UCDD0001 /L:G > C:\\OUT\\CD.TXT,M:!C:\\UCDD\\UCDD.EXE -mount C:\\T1\\T1A.CUE > C:\\OUT\\M.TXT,T1:T1.EXE TRKINFO'"
 groups = ["t1"]
@@ -808,6 +864,7 @@ note = "disc T1A: Audio Track Info (IOCTL input 11) for each track: starts by th
 
 [[test]]
 name = "T1-PLAY2"
+decides = "MSCDEX"
 runner = "probewav"
 env = "PROBE_WAV=1 PROBE_EXTRA='fixtures/synth/out/T1A.BIN|T1\\T1A.BIN;fixtures/synth/out/T1A.CUE|T1\\T1A.CUE' PROBE_RUN='CD:!C:\\SHSUCDX.COM /D:UCDD0001 /L:G > C:\\OUT\\CD.TXT,M:!C:\\UCDD\\UCDD.EXE -mount C:\\T1\\T1A.CUE > C:\\OUT\\M.TXT,T1:T1.EXE PLAY2'"
 groups = ["t1"]
@@ -818,6 +875,7 @@ note = "disc T1A: Play Audio (132) track 2 for 10 s, then Stop Audio (133): 1000
 
 [[test]]
 name = "T1-PLAY23"
+decides = "MSCDEX"
 runner = "probewav"
 env = "PROBE_WAV=1 PROBE_EXTRA='fixtures/synth/out/T1A.BIN|T1\\T1A.BIN;fixtures/synth/out/T1A.CUE|T1\\T1A.CUE' PROBE_RUN='CD:!C:\\SHSUCDX.COM /D:UCDD0001 /L:G > C:\\OUT\\CD.TXT,M:!C:\\UCDD\\UCDD.EXE -mount C:\\T1\\T1A.CUE > C:\\OUT\\M.TXT,T1:T1.EXE PLAY23'"
 groups = ["t1"]
@@ -828,6 +886,7 @@ note = "disc T1A: play from 5 s before the track 2/3 boundary for 10 s: 1000 Hz,
 
 [[test]]
 name = "T1-PLAY4"
+decides = "MSCDEX"
 runner = "probewav"
 env = "PROBE_WAV=1 PROBE_EXTRA='fixtures/synth/out/T1A.BIN|T1\\T1A.BIN;fixtures/synth/out/T1A.CUE|T1\\T1A.CUE' PROBE_RUN='CD:!C:\\SHSUCDX.COM /D:UCDD0001 /L:G > C:\\OUT\\CD.TXT,M:!C:\\UCDD\\UCDD.EXE -mount C:\\T1\\T1A.CUE > C:\\OUT\\M.TXT,T1:T1.EXE PLAY4'"
 groups = ["t1"]
@@ -838,6 +897,7 @@ note = "disc T1A: play track 4: digital silence, RMS below -60 dBFS (A2)"
 
 [[test]]
 name = "T1-PLAY5"
+decides = "MSCDEX, README, silent: analytic 50/15 us curve"
 runner = "probewav"
 env = "PROBE_WAV=1 PROBE_EXTRA='fixtures/synth/out/T1A.BIN|T1\\T1A.BIN;fixtures/synth/out/T1A.CUE|T1\\T1A.CUE' PROBE_RUN='CD:!C:\\SHSUCDX.COM /D:UCDD0001 /L:G > C:\\OUT\\CD.TXT,M:!C:\\UCDD\\UCDD.EXE -mount C:\\T1\\T1A.CUE > C:\\OUT\\M.TXT,T1:T1.EXE PLAY5'"
 groups = ["t1"]
@@ -848,6 +908,7 @@ note = "disc T1A: play track 5 (FLAGS PRE): de-emphasised; its 10 kHz to 1 kHz l
 
 [[test]]
 name = "T1-PLAY6"
+decides = "MSCDEX, README"
 runner = "probewav"
 env = "PROBE_WAV=1 PROBE_EXTRA='fixtures/synth/out/T1A.BIN|T1\\T1A.BIN;fixtures/synth/out/T1A.CUE|T1\\T1A.CUE' PROBE_RUN='CD:!C:\\SHSUCDX.COM /D:UCDD0001 /L:G > C:\\OUT\\CD.TXT,M:!C:\\UCDD\\UCDD.EXE -mount C:\\T1\\T1A.CUE > C:\\OUT\\M.TXT,T1:T1.EXE PLAY6'"
 groups = ["t1"]
@@ -858,6 +919,7 @@ note = "disc T1A: play track 6 from its PREGAP: 2 s of silence with Q-channel in
 
 [[test]]
 name = "T1-STATUS"
+decides = "MSCDEX"
 runner = "probewav"
 env = "PROBE_WAV=1 PROBE_EXTRA='fixtures/synth/out/T1A.BIN|T1\\T1A.BIN;fixtures/synth/out/T1A.CUE|T1\\T1A.CUE' PROBE_RUN='CD:!C:\\SHSUCDX.COM /D:UCDD0001 /L:G > C:\\OUT\\CD.TXT,M:!C:\\UCDD\\UCDD.EXE -mount C:\\T1\\T1A.CUE > C:\\OUT\\M.TXT,T1:T1.EXE STATUS'"
 groups = ["t1"]
@@ -868,6 +930,7 @@ note = "disc T1A: Audio Status Info (IOCTL input 15) and the busy bit during a p
 
 [[test]]
 name = "T1-RESUME"
+decides = "MSCDEX"
 runner = "probewav"
 env = "PROBE_WAV=1 PROBE_EXTRA='fixtures/synth/out/T1A.BIN|T1\\T1A.BIN;fixtures/synth/out/T1A.CUE|T1\\T1A.CUE' PROBE_RUN='CD:!C:\\SHSUCDX.COM /D:UCDD0001 /L:G > C:\\OUT\\CD.TXT,M:!C:\\UCDD\\UCDD.EXE -mount C:\\T1\\T1A.CUE > C:\\OUT\\M.TXT,T1:T1.EXE RESUME'"
 groups = ["t1"]
@@ -878,6 +941,7 @@ note = "disc T1A: Stop Audio, then Resume Audio (136): the tone goes on from whe
 
 [[test]]
 name = "T1-SEEK"
+decides = "MSCDEX"
 runner = "probe"
 env = "PROBE_EXTRA='fixtures/synth/out/T1A.BIN|T1\\T1A.BIN;fixtures/synth/out/T1A.CUE|T1\\T1A.CUE' PROBE_RUN='CD:!C:\\SHSUCDX.COM /D:UCDD0001 /L:G > C:\\OUT\\CD.TXT,M:!C:\\UCDD\\UCDD.EXE -mount C:\\T1\\T1A.CUE > C:\\OUT\\M.TXT,T1:T1.EXE SEEK'"
 groups = ["t1"]
@@ -888,6 +952,7 @@ note = "disc T1A: Seek (131), then Read Long: CHECK.TXT's sectors, CRC32 A3A46D5
 
 [[test]]
 name = "T1-EJECT"
+decides = "MSCDEX"
 runner = "probe"
 env = "PROBE_EXTRA='fixtures/synth/out/T1A.BIN|T1\\T1A.BIN;fixtures/synth/out/T1A.CUE|T1\\T1A.CUE' PROBE_RUN='CD:!C:\\SHSUCDX.COM /D:UCDD0001 /L:G > C:\\OUT\\CD.TXT,M:!C:\\UCDD\\UCDD.EXE -mount C:\\T1\\T1A.CUE > C:\\OUT\\M.TXT,T1:T1.EXE EJECT'"
 groups = ["t1"]
@@ -898,6 +963,7 @@ note = "disc T1A: IOCTL output Eject Disk, Lock and Unlock Door: no disc after t
 
 [[test]]
 name = "T1-PREFETCH"
+decides = "MSCDEX"
 runner = "probe"
 env = "PROBE_EXTRA='fixtures/synth/out/T1A.BIN|T1\\T1A.BIN;fixtures/synth/out/T1A.CUE|T1\\T1A.CUE' PROBE_RUN='CD:!C:\\SHSUCDX.COM /D:UCDD0001 /L:G > C:\\OUT\\CD.TXT,M:!C:\\UCDD\\UCDD.EXE -mount C:\\T1\\T1A.CUE > C:\\OUT\\M.TXT,T1:T1.EXE PREFETCH'"
 groups = ["t1"]
@@ -908,6 +974,7 @@ note = "disc T1A: Read Long Prefetch (130), then Read Long of the same sectors: 
 
 [[test]]
 name = "T1-MDM"
+decides = "README, MSCDEX"
 runner = "probe"
 env = "PROBE_TIMEOUT=150 PROBE_KEYS='40:ctrl+alt+2;45:ctrl+alt+2;50:ctrl+alt+2;55:ctrl+alt+2;60:ctrl+alt+2' PROBE_EXTRA='fixtures/synth/out/T1D.ISO|T1\\T1D.ISO;fixtures/synth/out/T1A.BIN|T1\\T1A.BIN;fixtures/synth/out/T1A.CUE|T1\\T1A.CUE;fixtures/synth/out/T1C.BIN|T1\\T1C.BIN;fixtures/synth/out/T1C.CUE|T1\\T1C.CUE;fixtures/synth/out/T1E.MDM|T1\\T1E.MDM' PROBE_RUN='CD:!C:\\SHSUCDX.COM /D:UCDD0001 /L:G > C:\\OUT\\CD.TXT,M:!C:\\UCDD\\UCDD.EXE -mount C:\\T1\\T1E.MDM > C:\\OUT\\M.TXT,T1:T1.EXE MDM'"
 groups = ["t1"]
@@ -918,6 +985,7 @@ note = "disc T1E.MDM (T1D.ISO, T1A.CUE, T1C.CUE): UCDD -mount T1E.MDM: disc 1 (T
 
 [[test]]
 name = "T1-MDMMISS"
+decides = "README"
 runner = "probe"
 env = "PROBE_EXTRA='fixtures/synth/out/T1A.BIN|T1\\T1A.BIN;fixtures/synth/out/T1A.CUE|T1\\T1A.CUE;fixtures/synth/out/T1D.ISO|T1\\T1D.ISO;fixtures/synth/out/T1F.MDM|T1\\T1F.MDM' PROBE_RUN='CD:!C:\\SHSUCDX.COM /D:UCDD0001 /L:G > C:\\OUT\\CD.TXT,M:!C:\\UCDD\\UCDD.EXE -mount C:\\T1\\T1A.CUE > C:\\OUT\\M.TXT,M2:!C:\\UCDD\\UCDD.EXE -mount C:\\T1\\T1F.MDM -drive G > C:\\OUT\\M2.TXT,T1:T1.EXE MDMMISS'"
 groups = ["t1"]
@@ -928,6 +996,7 @@ note = "disc T1F.MDM: UCDD -mount T1F.MDM over a mounted T1A: refused, T1A stays
 
 [[test]]
 name = "T1-LOAD"
+decides = "MSCDEX"
 runner = "probewav"
 env = "PROBE_WAV=1 PROBE_EXTRA='fixtures/synth/out/T1A.BIN|T1\\T1A.BIN;fixtures/synth/out/T1A.CUE|T1\\T1A.CUE' PROBE_RUN='CD:!C:\\SHSUCDX.COM /D:UCDD0001 /L:G > C:\\OUT\\CD.TXT,M:!C:\\UCDD\\UCDD.EXE -mount C:\\T1\\T1A.CUE > C:\\OUT\\M.TXT,T1:T1.EXE LOAD'"
 groups = ["t1"]
@@ -938,6 +1007,7 @@ note = "disc T1A: play track 2 while reading 4 MB (CHECK.TXT four times) in 2 KB
 
 [[test]]
 name = "T1-RAW"
+decides = "README, MSCDEX"
 runner = "probe"
 env = "PROBE_EXTRA='fixtures/synth/out/T1B.BIN|T1\\T1B.BIN;fixtures/synth/out/T1B.CUE|T1\\T1B.CUE' PROBE_RUN='CD:!C:\\SHSUCDX.COM /D:UCDD0001 /L:G > C:\\OUT\\CD.TXT,M:!C:\\UCDD\\UCDD.EXE -mount C:\\T1\\T1B.CUE > C:\\OUT\\M.TXT,T1:T1.EXE RAW'"
 groups = ["t1"]
@@ -948,6 +1018,7 @@ note = "disc T1B: T1B, the data track MODE1/2352: Read Long of CHECK.TXT (cooked
 
 [[test]]
 name = "T1-AONLY"
+decides = "README, MSCDEX"
 runner = "probewav"
 env = "PROBE_WAV=1 PROBE_EXTRA='fixtures/synth/out/T1C.BIN|T1\\T1C.BIN;fixtures/synth/out/T1C.CUE|T1\\T1C.CUE' PROBE_RUN='CD:!C:\\SHSUCDX.COM /D:UCDD0001 /L:G > C:\\OUT\\CD.TXT,M:!C:\\UCDD\\UCDD.EXE -mount C:\\T1\\T1C.CUE > C:\\OUT\\M.TXT,T1:T1.EXE AONLY'"
 groups = ["t1"]
@@ -958,6 +1029,7 @@ note = "disc T1C: T1C, audio only: mounts; Audio Disk Info tracks 1 to 3; play t
 
 [[test]]
 name = "T1-ISO"
+decides = "README, MSCDEX"
 runner = "probe"
 env = "PROBE_EXTRA='fixtures/synth/out/T1D.ISO|T1\\T1D.ISO' PROBE_RUN='CD:!C:\\SHSUCDX.COM /D:UCDD0001 /L:G > C:\\OUT\\CD.TXT,M:!C:\\UCDD\\UCDD.EXE -mount C:\\T1\\T1D.ISO > C:\\OUT\\M.TXT,T1:T1.EXE ISO'"
 groups = ["t1"]
@@ -968,6 +1040,7 @@ note = "disc T1D.ISO: T1D.ISO: Read Long of CHECK.TXT CRC32 A3A46D5C (fixtures/s
 
 [[test]]
 name = "T1-NMULT"
+decides = "README"
 runner = "probe"
 env = "PROBE_EXTRA='fixtures/synth/out/T1A.BIN|T1\\T1A.BIN;fixtures/synth/out/T1C.BIN|T1\\T1C.BIN;fixtures/synth/out/T1NMULT.CUE|T1\\T1NMULT.CUE' PROBE_RUN='CD:!C:\\SHSUCDX.COM /D:UCDD0001 /L:G > C:\\OUT\\CD.TXT,M:!C:\\UCDD\\UCDD.EXE -mount C:\\T1\\T1NMULT.CUE > C:\\OUT\\M.TXT,T1:T1.EXE NMULT'"
 groups = ["t1"]
@@ -978,6 +1051,7 @@ note = "disc T1NMULT.CUE: a sheet with two FILE lines: the mount refused (README
 
 [[test]]
 name = "T1-NM2336"
+decides = "README"
 runner = "probe"
 env = "PROBE_EXTRA='fixtures/synth/out/T1A.BIN|T1\\T1A.BIN;fixtures/synth/out/T1NM2336.CUE|T1\\T1NM2336.CUE' PROBE_RUN='CD:!C:\\SHSUCDX.COM /D:UCDD0001 /L:G > C:\\OUT\\CD.TXT,M:!C:\\UCDD\\UCDD.EXE -mount C:\\T1\\T1NM2336.CUE > C:\\OUT\\M.TXT,T1:T1.EXE NM2336'"
 groups = ["t1"]
@@ -988,6 +1062,7 @@ note = "disc T1NM2336.CUE: a MODE2/2336 track: the mount refused (README Images:
 
 [[test]]
 name = "T1-NNOI01"
+decides = "README"
 runner = "probe"
 env = "PROBE_EXTRA='fixtures/synth/out/T1C.BIN|T1\\T1C.BIN;fixtures/synth/out/T1NNOI01.CUE|T1\\T1NNOI01.CUE' PROBE_RUN='CD:!C:\\SHSUCDX.COM /D:UCDD0001 /L:G > C:\\OUT\\CD.TXT,M:!C:\\UCDD\\UCDD.EXE -mount C:\\T1\\T1NNOI01.CUE > C:\\OUT\\M.TXT,T1:T1.EXE NNOI01'"
 groups = ["t1"]
@@ -998,6 +1073,7 @@ note = "disc T1NNOI01.CUE: a track with INDEX 00 and no INDEX 01: the mount refu
 
 [[test]]
 name = "T1-C1-INST"
+decides = "MSCDEX"
 runner = "probe"
 env = "PROBE_EXTRA='fixtures/synth/out/T1A.BIN|T1\\T1A.BIN;fixtures/synth/out/T1A.CUE|T1\\T1A.CUE' PROBE_RUN='CD:!C:\\SHSUCDX.COM /D:UCDD0001 /L:G > C:\\OUT\\CD.TXT,M:!C:\\UCDD\\UCDD.EXE -mount C:\\T1\\T1A.CUE > C:\\OUT\\M.TXT,T1:T1.EXE INST'"
 groups = ["t1"]
@@ -1008,6 +1084,7 @@ note = "disc T1A: C1, the CD-only build: installation check: INT 2Fh 1500h one C
 
 [[test]]
 name = "T1-C1-READL-1"
+decides = "MSCDEX"
 runner = "probe"
 env = "PROBE_EXTRA='fixtures/synth/out/T1A.BIN|T1\\T1A.BIN;fixtures/synth/out/T1A.CUE|T1\\T1A.CUE' PROBE_RUN='CD:!C:\\SHSUCDX.COM /D:UCDD0001 /L:G > C:\\OUT\\CD.TXT,M:!C:\\UCDD\\UCDD.EXE -mount C:\\T1\\T1A.CUE > C:\\OUT\\M.TXT,T1:T1.EXE READL 1'"
 groups = ["t1"]
@@ -1018,6 +1095,7 @@ note = "disc T1A: C1, the CD-only build: Read Long (device command 128 through I
 
 [[test]]
 name = "T1-C1-READL-6"
+decides = "MSCDEX"
 runner = "probe"
 env = "PROBE_EXTRA='fixtures/synth/out/T1A.BIN|T1\\T1A.BIN;fixtures/synth/out/T1A.CUE|T1\\T1A.CUE' PROBE_RUN='CD:!C:\\SHSUCDX.COM /D:UCDD0001 /L:G > C:\\OUT\\CD.TXT,M:!C:\\UCDD\\UCDD.EXE -mount C:\\T1\\T1A.CUE > C:\\OUT\\M.TXT,T1:T1.EXE READL 6'"
 groups = ["t1"]
@@ -1028,6 +1106,7 @@ note = "disc T1A: C1, the CD-only build: Read Long of CHECK.TXT in 6-sector requ
 
 [[test]]
 name = "T1-C1-READL-64"
+decides = "MSCDEX"
 runner = "probe"
 env = "PROBE_EXTRA='fixtures/synth/out/T1A.BIN|T1\\T1A.BIN;fixtures/synth/out/T1A.CUE|T1\\T1A.CUE' PROBE_RUN='CD:!C:\\SHSUCDX.COM /D:UCDD0001 /L:G > C:\\OUT\\CD.TXT,M:!C:\\UCDD\\UCDD.EXE -mount C:\\T1\\T1A.CUE > C:\\OUT\\M.TXT,T1:T1.EXE READL 64'"
 groups = ["t1"]
@@ -1038,6 +1117,7 @@ note = "disc T1A: C1, the CD-only build: Read Long of CHECK.TXT in 64-sector req
 
 [[test]]
 name = "T1-C1-ABS-1"
+decides = "MSCDEX"
 runner = "probe"
 env = "PROBE_EXTRA='fixtures/synth/out/T1A.BIN|T1\\T1A.BIN;fixtures/synth/out/T1A.CUE|T1\\T1A.CUE' PROBE_RUN='CD:!C:\\SHSUCDX.COM /D:UCDD0001 /L:G > C:\\OUT\\CD.TXT,M:!C:\\UCDD\\UCDD.EXE -mount C:\\T1\\T1A.CUE > C:\\OUT\\M.TXT,T1:T1.EXE ABS 1'"
 groups = ["t1"]
@@ -1048,6 +1128,7 @@ note = "disc T1A: C1, the CD-only build: absolute read (INT 2Fh 1508h) of CHECK.
 
 [[test]]
 name = "T1-C1-ABS-6"
+decides = "MSCDEX"
 runner = "probe"
 env = "PROBE_EXTRA='fixtures/synth/out/T1A.BIN|T1\\T1A.BIN;fixtures/synth/out/T1A.CUE|T1\\T1A.CUE' PROBE_RUN='CD:!C:\\SHSUCDX.COM /D:UCDD0001 /L:G > C:\\OUT\\CD.TXT,M:!C:\\UCDD\\UCDD.EXE -mount C:\\T1\\T1A.CUE > C:\\OUT\\M.TXT,T1:T1.EXE ABS 6'"
 groups = ["t1"]
@@ -1058,6 +1139,7 @@ note = "disc T1A: C1, the CD-only build: absolute read of CHECK.TXT in 6-sector 
 
 [[test]]
 name = "T1-C1-ABS-64"
+decides = "MSCDEX"
 runner = "probe"
 env = "PROBE_EXTRA='fixtures/synth/out/T1A.BIN|T1\\T1A.BIN;fixtures/synth/out/T1A.CUE|T1\\T1A.CUE' PROBE_RUN='CD:!C:\\SHSUCDX.COM /D:UCDD0001 /L:G > C:\\OUT\\CD.TXT,M:!C:\\UCDD\\UCDD.EXE -mount C:\\T1\\T1A.CUE > C:\\OUT\\M.TXT,T1:T1.EXE ABS 64'"
 groups = ["t1"]
@@ -1068,6 +1150,7 @@ note = "disc T1A: C1, the CD-only build: absolute read of CHECK.TXT in 64-sector
 
 [[test]]
 name = "T1-C1-READEND"
+decides = "MSCDEX"
 runner = "probe"
 env = "PROBE_EXTRA='fixtures/synth/out/T1A.BIN|T1\\T1A.BIN;fixtures/synth/out/T1A.CUE|T1\\T1A.CUE' PROBE_RUN='CD:!C:\\SHSUCDX.COM /D:UCDD0001 /L:G > C:\\OUT\\CD.TXT,M:!C:\\UCDD\\UCDD.EXE -mount C:\\T1\\T1A.CUE > C:\\OUT\\M.TXT,T1:T1.EXE READEND'"
 groups = ["t1"]
@@ -1078,6 +1161,7 @@ note = "disc T1A: C1, the CD-only build: a read across the end of the data track
 
 [[test]]
 name = "T1-C1-VOLSIZE"
+decides = "MSCDEX, ECMA119"
 runner = "probe"
 env = "PROBE_EXTRA='fixtures/synth/out/T1A.BIN|T1\\T1A.BIN;fixtures/synth/out/T1A.CUE|T1\\T1A.CUE' PROBE_RUN='CD:!C:\\SHSUCDX.COM /D:UCDD0001 /L:G > C:\\OUT\\CD.TXT,M:!C:\\UCDD\\UCDD.EXE -mount C:\\T1\\T1A.CUE > C:\\OUT\\M.TXT,T1:T1.EXE VOLSIZE'"
 groups = ["t1"]
@@ -1088,6 +1172,7 @@ note = "disc T1A: C1, the CD-only build: Return Volume Size (IOCTL input 8): 968
 
 [[test]]
 name = "T1-C1-SECSIZE"
+decides = "MSCDEX"
 runner = "probe"
 env = "PROBE_EXTRA='fixtures/synth/out/T1A.BIN|T1\\T1A.BIN;fixtures/synth/out/T1A.CUE|T1\\T1A.CUE' PROBE_RUN='CD:!C:\\SHSUCDX.COM /D:UCDD0001 /L:G > C:\\OUT\\CD.TXT,M:!C:\\UCDD\\UCDD.EXE -mount C:\\T1\\T1A.CUE > C:\\OUT\\M.TXT,T1:T1.EXE SECSIZE'"
 groups = ["t1"]
@@ -1098,6 +1183,7 @@ note = "disc T1A: C1, the CD-only build: Return Sector Size (IOCTL input 7): 204
 
 [[test]]
 name = "T1-C1-MEDIA"
+decides = "MSCDEX"
 runner = "probe"
 env = "PROBE_EXTRA='fixtures/synth/out/T1A.BIN|T1\\T1A.BIN;fixtures/synth/out/T1A.CUE|T1\\T1A.CUE' PROBE_RUN='CD:!C:\\SHSUCDX.COM /D:UCDD0001 /L:G > C:\\OUT\\CD.TXT,M:!C:\\UCDD\\UCDD.EXE -mount C:\\T1\\T1A.CUE > C:\\OUT\\M.TXT,T1:T1.EXE MEDIA 1,M2:!C:\\UCDD\\UCDD.EXE -mount C:\\T1\\T1A.CUE -drive G > C:\\OUT\\M2.TXT,T12:T1.EXE MEDIA 2'"
 groups = ["t1"]
@@ -1108,6 +1194,7 @@ note = "disc T1A: C1, the CD-only build: Media Changed (IOCTL input 9): not chan
 
 [[test]]
 name = "T1-C1-SEEK"
+decides = "MSCDEX"
 runner = "probe"
 env = "PROBE_EXTRA='fixtures/synth/out/T1A.BIN|T1\\T1A.BIN;fixtures/synth/out/T1A.CUE|T1\\T1A.CUE' PROBE_RUN='CD:!C:\\SHSUCDX.COM /D:UCDD0001 /L:G > C:\\OUT\\CD.TXT,M:!C:\\UCDD\\UCDD.EXE -mount C:\\T1\\T1A.CUE > C:\\OUT\\M.TXT,T1:T1.EXE SEEK'"
 groups = ["t1"]
@@ -1118,6 +1205,7 @@ note = "disc T1A: C1, the CD-only build: Seek (131), then Read Long: CHECK.TXT's
 
 [[test]]
 name = "T1-C1-EJECT"
+decides = "MSCDEX"
 runner = "probe"
 env = "PROBE_EXTRA='fixtures/synth/out/T1A.BIN|T1\\T1A.BIN;fixtures/synth/out/T1A.CUE|T1\\T1A.CUE' PROBE_RUN='CD:!C:\\SHSUCDX.COM /D:UCDD0001 /L:G > C:\\OUT\\CD.TXT,M:!C:\\UCDD\\UCDD.EXE -mount C:\\T1\\T1A.CUE > C:\\OUT\\M.TXT,T1:T1.EXE EJECT'"
 groups = ["t1"]
@@ -1128,6 +1216,7 @@ note = "disc T1A: C1, the CD-only build: IOCTL output Eject Disk, Lock and Unloc
 
 [[test]]
 name = "T1-C1-PREFETCH"
+decides = "MSCDEX"
 runner = "probe"
 env = "PROBE_EXTRA='fixtures/synth/out/T1A.BIN|T1\\T1A.BIN;fixtures/synth/out/T1A.CUE|T1\\T1A.CUE' PROBE_RUN='CD:!C:\\SHSUCDX.COM /D:UCDD0001 /L:G > C:\\OUT\\CD.TXT,M:!C:\\UCDD\\UCDD.EXE -mount C:\\T1\\T1A.CUE > C:\\OUT\\M.TXT,T1:T1.EXE PREFETCH'"
 groups = ["t1"]
@@ -1138,6 +1227,7 @@ note = "disc T1A: C1, the CD-only build: Read Long Prefetch (130), then Read Lon
 
 [[test]]
 name = "T1-C1-RAW"
+decides = "README, MSCDEX"
 runner = "probe"
 env = "PROBE_EXTRA='fixtures/synth/out/T1B.BIN|T1\\T1B.BIN;fixtures/synth/out/T1B.CUE|T1\\T1B.CUE' PROBE_RUN='CD:!C:\\SHSUCDX.COM /D:UCDD0001 /L:G > C:\\OUT\\CD.TXT,M:!C:\\UCDD\\UCDD.EXE -mount C:\\T1\\T1B.CUE > C:\\OUT\\M.TXT,T1:T1.EXE RAW'"
 groups = ["t1"]
@@ -1148,6 +1238,7 @@ note = "disc T1B: C1, the CD-only build: T1B, the data track MODE1/2352: Read Lo
 
 [[test]]
 name = "T1-C1-ISO"
+decides = "README, MSCDEX"
 runner = "probe"
 env = "PROBE_EXTRA='fixtures/synth/out/T1D.ISO|T1\\T1D.ISO' PROBE_RUN='CD:!C:\\SHSUCDX.COM /D:UCDD0001 /L:G > C:\\OUT\\CD.TXT,M:!C:\\UCDD\\UCDD.EXE -mount C:\\T1\\T1D.ISO > C:\\OUT\\M.TXT,T1:T1.EXE ISO'"
 groups = ["t1"]
@@ -1161,6 +1252,7 @@ note = "disc T1D.ISO: C1, the CD-only build: T1D.ISO: Read Long of CHECK.TXT CRC
 
 [[test]]
 name = "T2X-13"
+decides = "silent: the tone's own pitch within 0.5 % (question 7)"
 runner = "probe"
 groups = ["t2x"]
 fixed = { build = "pinC2" }
@@ -1173,6 +1265,7 @@ todo = "A3: not written; the physical axis has no SB Pro or SB 2.0 value yet"
 
 [[test]]
 name = "T0L4-CUE-GAP"
+decides = "silent: a planted fault (L4): the check it is planted for must fail"
 runner = "probe"
 env = "PROBE_RUN='T0:T0CUEL4.COM GAPB'"
 groups = ["t0l4"]
@@ -1182,6 +1275,7 @@ note = "planted: cue.asm's PREGAP arithmetic off by one frame in a scratch copy;
 
 [[test]]
 name = "T0L4-DEEM"
+decides = "silent: a planted fault (L4): the check it is planted for must fail"
 runner = "probe"
 env = "PROBE_RUN='T0:T0DEEML4.COM ALL'"
 groups = ["t0l4"]
@@ -1194,6 +1288,7 @@ note = "planted: b0 and b1 swapped in a scratch copy of deemphasis.asm; the four
 
 [[test]]
 name = "T1-C0-LOAD"
+decides = "MSCDEX"
 runner = "probewav"
 env = "PROBE_WAV=1 PROBE_CDROM=fixtures/synth/out/T1B.CUE PROBE_RUN='CD:!C:\\MSCDEX.EXE /D:OAKCD001 /L:G > C:\\OUT\\CD.TXT,T1:T1.EXE LOAD'"
 groups = ["t1c0"]
@@ -1206,6 +1301,7 @@ note = "C0 under T1-LOAD's load (Michael, 25 Oct 2026, question 9: three runs be
 
 [[test]]
 name = "T1L4-PITCH"
+decides = "silent: a planted fault (L4): the check it is planted for must fail"
 runner = "probewav"
 env = "PROBE_WAV=1 PROBE_EXTRA='fixtures/synth/out/T1AP.BIN|T1\\T1AP.BIN;fixtures/synth/out/T1AP.CUE|T1\\T1AP.CUE' PROBE_RUN='CD:!C:\\SHSUCDX.COM /D:UCDD0001 /L:G > C:\\OUT\\CD.TXT,M:!C:\\UCDD\\UCDD.EXE -mount C:\\T1\\T1AP.CUE > C:\\OUT\\M.TXT,T1:T1.EXE PLAY2'"
 groups = ["t1l4"]
@@ -1215,6 +1311,7 @@ note = "disc T1AP: planted: T1A with tracks 2 and 3's audio swapped; PLAY2's pit
 
 [[test]]
 name = "T1L4-SILENCE"
+decides = "silent: a planted fault (L4): the check it is planted for must fail"
 runner = "probewav"
 env = "PROBE_WAV=1 PROBE_EXTRA='fixtures/synth/out/T1AQ.BIN|T1\\T1AQ.BIN;fixtures/synth/out/T1AQ.CUE|T1\\T1AQ.CUE' PROBE_RUN='CD:!C:\\SHSUCDX.COM /D:UCDD0001 /L:G > C:\\OUT\\CD.TXT,M:!C:\\UCDD\\UCDD.EXE -mount C:\\T1\\T1AQ.CUE > C:\\OUT\\M.TXT,T1:T1.EXE PLAY4'"
 groups = ["t1l4"]
@@ -1227,6 +1324,7 @@ note = "disc T1AQ: planted: T1A with track 4 a 1000 Hz tone at -40 dBFS; PLAY4's
 # as {args}. The case lists are regress.sh's.
 [[test]]
 name = "SBT16"
+decides = "SBG"
 runner = "perf"
 args = "S0:SBT16.COM C6 00 22050,S1:SBT16.COM C0 00 22050,S2:SBT16.COM C2 20 22050,S3:SBT16.COM C6 10 22050,S4:SBT16.COM B0 10 22050,S5:SBT16.COM B6 30 44100,S6:SBT16.COM 14 00 22050 Q,S7:SBT16.COM C0 00 22050 Q,S8:SBT16.COM C6 00 22050 M"
 groups = ["core", "probes", "irq"]
@@ -1236,6 +1334,7 @@ note = "SBT16's SB16 transfers (C6h, C0h, C2h, B0h, B6h, 14h, the queue and M): 
 
 [[test]]
 name = "SBT16-legacy"
+decides = "SBG"
 runner = "perf"
 args = "L0:SBT16.COM 14 00 22050,L1:SBT16.COM 1C 00 22050,L2:SBT16.COM 91 00 44100,L3:SBT16.COM 90 00 44100,L4:SBT16.COM 90 20 22050,L5:SBT16.COM 91 20 22050,L6:SBT16.COM 14 00 22050 Q,L7:SBT16.COM 1C 00 11025"
 groups = ["core", "probes", "irq"]
@@ -1245,6 +1344,7 @@ note = "the legacy commands the SB Pro and SB 2.0 know (14h, 1Ch, 90h, 91h, SB P
 
 [[test]]
 name = "SBT16-input"
+decides = "SBG"
 runner = "perf"
 args = "I0:SBT16.COM 24 00 11025,I1:SBT16.COM 2C 00 11025,I2:SBT16.COM 99 00 22050,I3:SBT16.COM 98 00 22050,I5:SBT16.COM C8 00 22050,I6:SBT16.COM CE 10 22050,I7:SBT16.COM B8 10 22050,I8:SBT16.COM BE 30 22050,I9:SBT16.COM CE 20 22050,IA:SBT16.COM B8 00 22050"
 groups = ["probes"]
@@ -1254,6 +1354,7 @@ note = "the input (recording) commands on the virtual SB16, against a bare SB16"
 
 [[test]]
 name = "SBT16-input-pro"
+decides = "SBG"
 runner = "perf"
 args = "I0:SBT16.COM 24 00 11025,I1:SBT16.COM 2C 00 11025,I2:SBT16.COM 99 00 22050,I3:SBT16.COM 98 00 22050,I4:SBT16.COM 98 20 11025"
 groups = ["probes"]
@@ -1263,6 +1364,7 @@ note = "the input commands on the virtual SB Pro, against a bare SB Pro"
 
 [[test]]
 name = "ADPCM"
+decides = "SBG"
 runner = "perf"
 args = 'A:ESSRUN.COM C:\SBADPCM.SCR'
 groups = ["probes"]
@@ -1272,6 +1374,7 @@ note = "the ADPCM commands through a script (ESSRUN), against the bare cards"
 
 [[test]]
 name = "SADUMP"
+decides = "silent: the build before line by line (a comparison between builds with no expected value)"
 runner = "perf"
 args = "D:SADUMP.COM"
 groups = ["probes"]
@@ -1280,6 +1383,7 @@ note = "the driver's state for the step-aside leak test (QPI entry, fault byte, 
 
 [[test]]
 name = "E2TEST"
+decides = "silent: the DSP firmware and the bare card (SBG does not list E2h)"
 runner = "perf"
 args = "T:E2TEST.COM"
 groups = ["probes"]
@@ -1289,6 +1393,7 @@ note = "DSP E2h, the DMA identification: expect 40 30 F3 98 /02 after a reset, 4
 
 [[test]]
 name = "SBPROBE"
+decides = "SBG, silent: the DSP firmware (fw_expect.py) for E0h E3h E8h and F8h; SBG does not list them"
 runner = "probe"
 env = "PROBE_RUN='PROBE:SBPROBE.COM'"
 groups = ["probes"]
@@ -1298,6 +1403,7 @@ note = "the DSP's ports during and after a reset, argument counts, E0h/E8h/F8h/D
 
 [[test]]
 name = "SBQUEUE"
+decides = "SBG, 8237"
 runner = "probe"
 env = "PROBE_RUN='QL:SBQUEUE.COM L,QS:SBQUEUE.COM S,QD:SBQUEUE.COM D'"
 groups = ["probes"]
@@ -1307,6 +1413,7 @@ note = "a single-cycle command sent while a transfer runs (L, S, D): the interru
 
 [[test]]
 name = "SBQUEUE-16"
+decides = "SBG, 8237"
 runner = "probe"
 env = "PROBE_RUN='QC:SBQUEUE.COM C,QB:SBQUEUE.COM B'"
 groups = ["probes"]
@@ -1316,6 +1423,7 @@ note = "the same behind C6h and B6h auto-init (the SB16's commands)"
 
 [[test]]
 name = "MPUTONE"
+decides = "SBG"
 runner = "mpu"
 groups = ["midi"]
 allow = { vmodel = ["sb16"], pirq = [5], virq = [5] }
@@ -1324,6 +1432,7 @@ note = "runs/mpu_test.py: a tone through the SB while MPU-401 acknowledges raise
 
 [[test]]
 name = "DPMIG"
+decides = "DPMI09"
 runner = "probe"
 env = "PROBE_TIMEOUT=150 PROBE_RUN='GA:DPMIG.COM,GZ:DPMIG.COM Z,GV:DPMIG.COM V'"
 groups = ["host"]
@@ -1334,6 +1443,7 @@ note = "the raw DPMI client: its checks (A), a client ended from real mode (Z) a
 
 [[test]]
 name = "verify-mix"
+decides = "silent: the verify build's own comparison of what it mixed (rsum.py's verify rows)"
 runner = "verify"
 args = "S0:SBT16.COM C6 00 22050,S1:SBT16.COM C0 00 22050,S2:SBT16.COM C2 20 22050,S3:SBT16.COM C6 10 22050,S4:SBT16.COM B0 10 22050,S5:SBT16.COM B6 30 44100,S6:SBT16.COM 14 00 22050 Q,S7:SBT16.COM C0 00 22050 Q,S8:SBT16.COM C6 00 22050 M"
 groups = ["core", "mixer"]
@@ -1344,6 +1454,7 @@ note = "the verify-mix build under SBT16's SB16 cases: rsum.py's verify rows rea
 
 [[test]]
 name = "verify-mix-legacy"
+decides = "silent: the verify build's own comparison of what it mixed (rsum.py's verify rows)"
 runner = "verify"
 args = "L0:SBT16.COM 14 00 22050,L1:SBT16.COM 1C 00 22050,L2:SBT16.COM 91 00 44100,L3:SBT16.COM 90 00 44100,L4:SBT16.COM 90 20 22050,L5:SBT16.COM 91 20 22050,L6:SBT16.COM 14 00 22050 Q,L7:SBT16.COM 1C 00 11025"
 groups = ["core", "mixer"]
@@ -1354,6 +1465,7 @@ note = "the same under the legacy cases on the virtual SB Pro"
 
 [[test]]
 name = "F2TEST"
+decides = "CT2290"
 runner = "probe"
 env = "PROBE_RUN='F2:F2TEST.COM'"
 groups = ["irq", "probes"]
@@ -1363,6 +1475,7 @@ todo = "a verdict: compare its table with a run without uCDD (not in rsum.py yet
 
 [[test]]
 name = "E41TEST"
+decides = "SBG, ES1868"
 runner = "probe"
 env = "PROBE_RUN='E41:E41TEST.COM 41 E2'"
 groups = ["probes"]
@@ -1372,6 +1485,7 @@ note = "a rate set by a one-byte time constant (40h, or 41h as the ESS takes it)
 
 [[test]]
 name = "TONE4"
+decides = "silent: a measurement of the output's envelope with no expected value (the fast mode's pair averaging is the driver's design)"
 runner = "probe"
 env = "PROBE_WAV=1 PROBE_RUN='T:TONE4.COM S'"
 groups = ["mixer"]
@@ -1382,6 +1496,7 @@ todo = "a verdict: runs/tonechk.py on the recording"
 
 [[test]]
 name = "DMACNT"
+decides = "8237, CT2290"
 runner = "probe"
 env = "PROBE_RUN='F:DMACNT.COM F,N:DMACNT.COM N'"
 groups = ["probes", "irq"]
@@ -1392,6 +1507,7 @@ todo = "a verdict: compare with the CT2290's numbers (vsb/hw)"
 
 [[test]]
 name = "CDRS"
+decides = "MSCDEX"
 runner = "probe"
 env = "PROBE_WAV=1 PROBE_EXTRA=\"$UCDD_KIT/CDRS|CDRS\" PROBE_RUN='M:MSCDEX.EXE /D:UCDD0001 /L:G,U:!C:\\UCDD\\UCDD.EXE -mount C:\\CDRS\\RESTART.CUE -drive G,R:CDRS.COM G 2,P:CDRS.COM G 2 P'"
 groups = ["cd"]
@@ -1401,6 +1517,7 @@ todo = "a verdict: runs/gaps.py on the recording against kit/CDRS/restart_ref.np
 
 [[test]]
 name = "ESSSTAT"
+decides = "ES1868"
 runner = "probe"
 env = "PROBE_RUN='S:ESSSTAT.COM'"
 groups = ["probes"]
@@ -1413,6 +1530,7 @@ note = "the ESS status sweep, 2xCh through a block"
 # 20 Oct.
 [[test]]
 name = "MKTRIL"
+decides = "silent: the game's recording without uCDD (audiocmp against the control; CONTEXT.md: checking a game)"
 runner = "sndreg"
 game = "MKTRIL"
 family = "Miles MSS 3"
@@ -1424,6 +1542,7 @@ note = "the Miles F14 canary, with its CD music (the restart repeats show here)"
 
 [[test]]
 name = "THEMHOSP"
+decides = "silent: the game's recording without uCDD (audiocmp against the control; CONTEXT.md: checking a game)"
 runner = "sndreg"
 game = "THEMHOSP"
 family = "Miles MSS 3"
@@ -1435,6 +1554,7 @@ note = "data-only disc: held on, or uCDD steps aside onto the bare card (L7); D7
 
 [[test]]
 name = "DESCENT"
+decides = "silent: the game's recording without uCDD (audiocmp against the control; CONTEXT.md: checking a game)"
 runner = "sndreg"
 game = "DESCENT"
 family = "HMI SOS"
@@ -1444,6 +1564,7 @@ secs = 120
 
 [[test]]
 name = "HEXENBEY"
+decides = "silent: the game's recording without uCDD (audiocmp against the control; CONTEXT.md: checking a game)"
 runner = "sndreg"
 game = "HEXENBEY"
 family = "DMX"
@@ -1454,6 +1575,7 @@ note = "a 50 s moment from its CD track's start"
 
 [[test]]
 name = "DUKE3D"
+decides = "silent: the game's recording without uCDD (audiocmp against the control; CONTEXT.md: checking a game)"
 runner = "sndreg"
 game = "DUKE3D"
 family = "Apogee Sound System"
@@ -1464,6 +1586,7 @@ note = "takes its IRQ from DUKE3D.CFG (F16): the bench sets it to the card's"
 
 [[test]]
 name = "XCOMUF"
+decides = "silent: the game's recording without uCDD (audiocmp against the control; CONTEXT.md: checking a game)"
 runner = "sndreg"
 game = "XCOMUF"
 family = "DigPak"
@@ -1476,6 +1599,7 @@ note = "SB16 only: its SB Pro and SB 2.0 drivers are packed in DRIVERS.CAT"
 
 [[test]]
 name = "GK1"
+decides = "silent: the game's recording without uCDD (audiocmp against the control; CONTEXT.md: checking a game)"
 runner = "sndreg"
 game = "GK1"
 family = "Sierra SCI"
@@ -1485,6 +1609,7 @@ secs = 120
 
 [[test]]
 name = "JILLJUNG"
+decides = "silent: the game's recording without uCDD (audiocmp against the control; CONTEXT.md: checking a game)"
 runner = "sndreg"
 game = "JILLJUNG"
 family = "Creative drivers"
@@ -1497,6 +1622,7 @@ note = "no SB 2.0 reference: Jill stops at its logo on 86Box's own SB 2.0"
 
 [[test]]
 name = "SWDFORC"
+decides = "silent: the game's recording without uCDD (audiocmp against the control; CONTEXT.md: checking a game)"
 runner = "sndreg"
 game = "SWDFORC"
 family = "iMUSE (LucasArts)"
@@ -1508,6 +1634,7 @@ note = "SB16 only: on an SB Pro or SB 2.0 its setup file (binary) must be rewrit
 
 [[test]]
 name = "SSTRDUST"
+decides = "silent: the game's recording without uCDD (audiocmp against the control; CONTEXT.md: checking a game)"
 runner = "sndreg"
 game = "SSTRDUST"
 family = "MIDAS"
@@ -1517,6 +1644,7 @@ secs = 120
 
 [[test]]
 name = "KYRA1"
+decides = "silent: the game's recording without uCDD (audiocmp against the control; CONTEXT.md: checking a game)"
 runner = "sndreg"
 game = "KYRA1"
 family = "own code (Westwood)"
@@ -1527,6 +1655,7 @@ secs = 120
 # The findings' own cases (docs/sound-engines/findings.md), through sndreg.
 [[test]]
 name = "F4-highspeed"
+decides = "silent: the game's recording without uCDD (audiocmp against the control; CONTEXT.md: checking a game)"
 runner = "sndreg"
 game = "HEXENBEY"
 family = "DMX"
@@ -1540,6 +1669,7 @@ note = "both cards on IRQ 7: 90h and DMX's stereo priming never start (F4); Hexe
 
 [[test]]
 name = "DUNGKE01"
+decides = "silent: the game's recording without uCDD (audiocmp against the control; CONTEXT.md: checking a game)"
 runner = "sndreg"
 game = "DUNGKEEP"
 library = "DOS_THNK"
@@ -1553,6 +1683,7 @@ todo = "an entry in runs/sndreg/games.py (a moment past the intro) and its refer
 
 [[test]]
 name = "F1-probe"
+decides = "silent: the game's recording without uCDD (audiocmp against the control; CONTEXT.md: checking a game)"
 runner = "sndreg"
 game = "SYSTEMSH"
 library = "DOS_ACT"
@@ -1568,6 +1699,7 @@ todo = "an entry in runs/sndreg/games.py and its references (System Shock; Warcr
 
 [[test]]
 name = "F15-fade"
+decides = "silent: the game's recording without uCDD (audiocmp against the control; CONTEXT.md: checking a game)"
 runner = "sndreg"
 game = "FADETOBL"
 library = "DOS_ACT"
@@ -1581,6 +1713,7 @@ todo = "an entry in runs/sndreg/games.py and its references (Fade to Black carri
 
 [[test]]
 name = "HWPROBE"
+decides = "CT2290"
 runner = "pc"
 game = "HWPROBE"
 groups = ["pc"]

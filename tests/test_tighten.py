@@ -79,7 +79,15 @@ def build_world(root):
     # the reference library, as a sibling worktree
     refs = top / 'rig86' / 'runs' / 'src' / 'refs'
     (refs / 'creative').mkdir(parents=True)
-    (refs / 'creative' / 'sbg.txt').write_text('Sound Blaster Hardware Programming Guide\n')
+    (refs / 'creative' / 'sbg.txt').write_text('Sound Blaster Hardware Programming Guide\n'
+                                                'Write Buffer Status (22Ch): bit 7 clear means the DSP is ready.\n'
+                                                'DSP command 14h: 8-bit single-cycle DMA output.\n')
+    # a bench-style test source (the bench is its own repository, so init one)
+    bench = top / 'rig86'
+    (bench / 'dos' / 'src').mkdir(parents=True, exist_ok=True)
+    git(bench, 'init', '-q', '-b', 'main')
+    (bench / 'dos' / 'src' / 't1.asm').write_text('; T1 test\n    mov dx, 22Ch\n')
+    commit(bench, 'bench: t1')
     return top, wt, refs, untagged
 
 
@@ -92,6 +100,8 @@ def install_method(root, refs):
         (pkg / 'matrix' / 'matrix.toml').write_text('[families]\ncreative = "docs/sound-engines/creative.md"\n')
     toml = (pkg / 'method.toml').read_text()
     toml = toml.replace('worktree = "../refs"', f'worktree = "{refs}"')
+    toml = re.sub(r'\[references\.decides\]\n(?:(?!\[)[^\n]*\n)*',
+                  '[references.decides]\nSBG = "DSP commands, the write buffer status 22Ch"\n', toml, count=1)
     # Replace whatever key table ships with the test's own two keys.
     toml = re.sub(r'\[references\.keys\]\n(?:(?!\[)[^\n]*\n)*',
                   '[references.keys]\nSBG = "creative/sbg.txt"\nMISSING = "creative/none.txt"\n', toml, count=1)
@@ -130,12 +140,60 @@ def main():
         edit_other = dict(edit, session_id='sess-2')
         code3, _, _ = run_hook(pkg, 'recall.py', edit_other, env)
         check(code3 == 2, 'recall: a new session (or compaction) shows the notice again')
-        notes = dict(edit, tool_input={'file_path': str(wt / 'ISSUES.md'), 'old_string': 'a', 'new_string': 'b'})
+        notes = dict(edit, tool_input={'file_path': str(wt / 'HANDOFF-like.txt'), 'old_string': 'a', 'new_string': 'b'})
         code4, _, _ = run_hook(pkg, 'recall.py', notes, env)
-        check(code4 == 0, 'recall: a notes file is never refused')
+        check(code4 == 0, 'recall: a file that is neither code, test nor rows is never refused')
         outside = dict(edit, session_id='sess-3', tool_input={'file_path': str(root / 'elsewhere.asm'), 'old_string': '', 'new_string': 'x'})
         code5, _, _ = run_hook(pkg, 'recall.py', outside, env)
         check(code5 == 0, 'recall: an .asm outside a uCDD worktree is never refused')
+
+        # --- recall.py on a test source and a row file (r3.5) ---
+        bench = top / 'rig86'
+        tedit = {'session_id': 'sess-t', 'tool_name': 'Edit', 'cwd': str(bench),
+                 'tool_input': {'file_path': str(bench / 'dos' / 'src' / 't1.asm'),
+                                'old_string': '    mov dx, 22Ch', 'new_string': '    mov dx, 22Ch ; status'}}
+        code, _, err = run_hook(pkg, 'recall.py', tedit, env)
+        check(code == 2, 'recall: first edit of a test source is refused once')
+        check('SBG:2:' in err and '22Ch' in err, 'recall: the document line naming 22Ch is shown as KEY:line')
+        check('Documents that name these terms' in err and err.index('Documents') < err.index('Checklist'),
+              'recall: for a test, the documents come first')
+        check('Name the key that decides' in err, 'recall: a test edit is told to name the deciding key')
+        check('write buffer status 22Ch' in err, 'recall: the decides subject matching 22Ch is listed')
+        redit = dict(tedit, session_id='sess-r', tool_input={'file_path': str(wt / 'ISSUES.md'), 'old_string': 'F13', 'new_string': 'F13 22Ch'})
+        code, _, err = run_hook(pkg, 'recall.py', redit, env)
+        check(code == 2 and 'rows' in err.splitlines()[0], 'recall: a row file gets recall too, as rows')
+        # a code edit still puts rows first
+        cedit = dict(edit, session_id='sess-c')
+        code, _, err = run_hook(pkg, 'recall.py', cedit, env)
+        check(code == 2 and err.index('Rows already') < err.index('Documents that name'),
+              'recall: for driver code, the rows come before the documents')
+
+        # --- refindex.py ---
+        idx = root / 'INDEX.md'
+        done = subprocess.run([PY, str(pkg / 'tools' / 'refindex.py'), '--out', str(idx), '--check'],
+                              capture_output=True, text=True, env={**os.environ, **env})
+        text = idx.read_text() if idx.exists() else ''
+        check('| `SBG` |' in text and '22Ch' in text, 'refindex: the key, its subject and file are in the table')
+        check('MISSING' in text and 'MISSING' in done.stdout.replace('missing', 'MISSING'),
+              'refindex: a key whose file is absent is marked MISSING')
+        check(done.returncode == 1, 'refindex: --check fails while a key is missing a file or a subject')
+
+        # --- plan.py check: decides ---
+        mtoml = pkg / 'matrix' / 'matrix.toml'
+        base = mtoml.read_text()
+        with_tests = base + ('\n[[test]]\nname = "T-NODEC"\nrunner = "perf"\nargs = "x"\ngroups = ["core"]\n'
+                             '\n[[test]]\nname = "T-BADKEY"\nrunner = "perf"\nargs = "x"\ngroups = ["core"]\ndecides = "BOGUS 1-2"\n'
+                             '\n[[test]]\nname = "T-SILENT"\nrunner = "perf"\nargs = "x"\ngroups = ["core"]\ndecides = "silent"\n'
+                             '\n[[test]]\nname = "T-GOOD"\nrunner = "perf"\nargs = "x"\ngroups = ["core"]\ndecides = "SBG:6-12, silent: the CT2290 decides"\n')
+        mtoml.write_text(with_tests)
+        done = subprocess.run([PY, str(pkg / 'matrix' / 'plan.py'), 'check'], cwd=str(wt),
+                              capture_output=True, text=True, env={**os.environ, **env})
+        out = done.stdout + done.stderr
+        check('T-NODEC: no "decides"' in out, 'plan check: a test without decides is reported')
+        check('T-BADKEY: decides "BOGUS" is not a key' in out, 'plan check: an unknown decides key is a problem')
+        check('T-SILENT: decides "silent" needs what decides' in out, 'plan check: a bare silent is a problem')
+        check('T-GOOD' not in out, 'plan check: a good decides line (key and silent-with-reason) passes')
+        mtoml.write_text(base)
 
         # --- fixed.py ---
         out_md = root / 'FIXED.md'

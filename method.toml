@@ -157,6 +157,11 @@ refs = ["notes", "origin/notes"]
 paths = ["ISSUES.md", "docs/*.md"]
 lessons_tags = ["code", "fix"]
 max_lines = 80
+# r3.5: test sources and runners get recall too, with the reference documents searched
+# for the edited region's ports, commands and terms. Globs relative to the repository
+# that holds the file (the bench's own repository for its runs/ and dos/ trees).
+test_paths = ["tests/*", "dos/src/*", "runs/*.py", "runs/sndreg/*.py", "runs/rec/*.py", "runs/src/method/tests/*"]
+doc_hits = 16
 
 # Rule 1 at the hook (lib/refcheck.py, called from lib/checks.py): a
 # data-sheet citation starts with one of these keys, or with "silent" and
@@ -308,9 +313,116 @@ PDMA = "docs/platform-dma.md"
 # 25 Oct 2026, Project A A1); for Project A, as at the pinned build
 # (count-position 7994cd1). No CUE sheet specification exists to fetch.
 README = "README.md"
-SPECFIRST = "docs/spec-first.md"
+# SPECFIRST = "docs/spec-first.md"
+# Out at r3.5 (26 Oct 2026): the file is only on the spec-first branch, which r3.3 T1
+# took out of the refs refcheck reads, so the key has resolved to nothing since then
+# and refindex.py --check flags it MISSING. No row cites it. The mantra's text in force
+# is the top folder's CONTEXT.md. Back in when the document has a home refcheck reads.
 SNDLIB = "docs/sound-engines/findings.md"
 CT2290 = "docs/sound-engines/ct2290.md"
+
+# What each hand-named key decides, for refs/INDEX.md (tools/refindex.py) and
+# the recall's document search. A few words each; a key with no line here is
+# flagged by refindex.py --check.
+[references.decides]
+README = "image formats and mounting (ISO, CUE/BIN, MDM), virtual card models and BLASTER, hotkeys, the driver's documented limits (the pinned upstream README)"
+SBG = "DSP commands, time constants, mixer registers, DMA programming, the detection sequence (Creative's Hardware Programming Guide)"
+SBDK = "the same as SBG in the Developer Kit's wording; use when SBG is silent"
+ES1868 = "the ES1868's registers, SB compatibility mode, clock trim, FM mute"
+ES1869 = "the ES1869 (first revision)"
+ES1869B = "the ES1869 (second revision)"
+ES1878 = "the ES1878"
+ES1887 = "the ES1887, part 1"
+ES1887B = "the ES1887, part 2"
+ES1888 = "the ES1888 design guide"
+CS4231A = "the WSS codec registers (CS4231A)"
+CS4232 = "the WSS codec with PnP (CS4232)"
+YMF262 = "OPL3 FM registers and timers"
+YM3812 = "OPL2 FM registers and timers"
+AWE = "AWE32/64 programming"
+EMU8K = "the EMU8000 synthesizer"
+EMUSRC = "what emulators and drivers do where the documents are silent (behaviour only; DOSBox's ADPCM decoder among them)"
+"8237" = "the DMA controller: registers, modes, the count and address, master clear, demand mode"
+"8259" = "the interrupt controller: ICWs, OCWs, EOI forms, priority, special mask"
+"82C206" = "the integrated peripheral controller (DMA, PIC, timer, RTC in one part)"
+UM82C206 = "the UMC 82C206"
+EISA = "EISA DMA extended modes (Type A/B/C)"
+I386 = "the 386 reference: protected mode, V86, IOPL, TF and NT flags"
+INTEL94 = "Intel peripheral data book 1994"
+INTEL96 = "Intel peripheral data book 1996"
+DPMI09 = "DPMI 0.9: INT 31h services, real-mode callbacks, the 1687h entry"
+DPMI10 = "DPMI 1.0 clarifications"
+VCPI = "VCPI: the DE00h detection and the server interface"
+XMS = "XMS 3.5 (the 75-line summary; not the full 3.0 text)"
+EMS = "EMS (LIM 4.0)"
+JEMM = "JemmEx: options, the port-trap interface, VCPI behaviour"
+QPI = "Jemm's QPI interface"
+ECMA119 = "ISO 9660: volume descriptors, directory records, path tables"
+MSCDEX = "the CD-ROM device driver interface: request headers, IOCTL subfunctions, INT 2Fh 15xxh"
+SHSUCDX = "SHSUCDX's options and behaviour"
+RBIL = "Ralf Brown's list: interrupts (INT 2Fh 15xxh, INT 1Ah PCI BIOS, INT 31h) when the primary document is silent"
+PORTS = "Ralf Brown's port list: every I/O port's documented behaviour"
+PIIX = "PIIX/PIIX3 data sheet (final): ISA DMA timing, Type F"
+PIIX3 = "PIIX/PIIX3 (82371FB/SB) 1996"
+PIIX4 = "PIIX4 (82371AB)"
+SIO = "Intel 82378 System I/O: DMA extended mode"
+SIOZB = "82378ZB/82379ZB"
+VSB = "the fork's virtual Sound Blaster specification (what the virtual card does, item by item)"
+VESS = "the fork's virtual ESS specification"
+HOSTCD = "the fork's DPMI host and CD-ROM driver specification (D-, M-, P, DMA, Q, V, X items)"
+PDMA = "the fork's platform fast DMA table and sources"
+# SPECFIRST = "the fork's spec-first plan and the mantra"  (key out at r3.5, see [references.keys])
+SNDLIB = "the sound engine library's findings (F1 to F18)"
+CT2290 = "the CT2290 measurements: what the real card does"
+
+# The keys renamed at T4 (r3) and the aliases added at r3.3, subjects written when
+# r3.5 was installed (26 Oct 2026), from each document's title and the key it aliases.
+"1487" = "the ALi M1487/M1489 486 PCI chipset (1997): what it documents of DMA, interrupts and the ISA bus on that chipset (PDMA)"
+"1523" = "the ALi M1523B PCI-to-ISA bridge (1997): what it documents of DMA, interrupts and the ISA bus on that chipset (PDMA)"
+"1533" = "the ALi M1533 PCI-to-ISA bridge, v1.56 (1998): what it documents of DMA, interrupts and the ISA bus on that chipset (PDMA)"
+"1535" = "the ALi M1535 south bridge (product brief only): what it documents of DMA, interrupts and the ISA bus on that chipset (PDMA)"
+"1535D" = "the ALi M1535D+ south bridge (product brief only): what it documents of DMA, interrupts and the ISA bus on that chipset (PDMA)"
+"1543" = "the ALi M1543C desktop south bridge: what it documents of DMA, interrupts and the ISA bus on that chipset (PDMA)"
+"206" = "the same document as 82C206, under the name the rows cite"
+"4031" = "the CS4031 chipset (F84031, F84035; 1993): what it documents of DMA, interrupts and the ISA bus on that chipset (PDMA)"
+"460" = "the SiS 85C460 486 chipset: what it documents of DMA, interrupts and the ISA bus on that chipset (PDMA)"
+"471" = "the SiS 85C471, v6.0 (1994): what it documents of DMA, interrupts and the ISA bus on that chipset (PDMA)"
+"496" = "the SiS 85C496/497 486 PCI chipset (1995): what it documents of DMA, interrupts and the ISA bus on that chipset (PDMA)"
+"496G" = "the VIA VT82C496G with the VT82C406MV (1995): what it documents of DMA, interrupts and the ISA bus on that chipset (PDMA)"
+"5582" = "the SiS 5582 (1997): what it documents of DMA, interrupts and the ISA bus on that chipset (PDMA)"
+"5595" = "the SiS 5595 PCI system I/O (1998): what it documents of DMA, interrupts and the ISA bus on that chipset (PDMA)"
+"5597" = "the SiS 5597/5598 (1997): what it documents of DMA, interrupts and the ISA bus on that chipset (PDMA)"
+"586A" = "the VIA VT82C586A PCI integrated peripheral controller (1996): what it documents of DMA, interrupts and the ISA bus on that chipset (PDMA)"
+"586B" = "the VIA VT82C586B PCI integrated peripheral controller (1997): what it documents of DMA, interrupts and the ISA bus on that chipset (PDMA)"
+"596B" = "the VIA VT82C596B south bridge (1999): what it documents of DMA, interrupts and the ISA bus on that chipset (PDMA)"
+"630" = "the SiS 630 (1999): what it documents of DMA, interrupts and the ISA bus on that chipset (PDMA)"
+"686A" = "the VIA VT82C686A super south bridge, v1.1 (1999): what it documents of DMA, interrupts and the ISA bus on that chipset (PDMA)"
+"686B" = "the VIA VT82C686B south bridge: what it documents of DMA, interrupts and the ISA bus on that chipset (PDMA)"
+"756" = "the AMD-756 peripheral bus controller (Athlon, 1999): what it documents of DMA, interrupts and the ISA bus on that chipset (PDMA)"
+"766" = "the AMD-766 peripheral bus controller (Athlon, 2001): what it documents of DMA, interrupts and the ISA bus on that chipset (PDMA)"
+"768" = "the AMD-768 peripheral bus controller (Athlon, 2001): what it documents of DMA, interrupts and the ISA bus on that chipset (PDMA)"
+"8231" = "the VIA VT8231 PC99 south bridge (1999): what it documents of DMA, interrupts and the ISA bus on that chipset (PDMA)"
+ESC = "the Intel 82374EB EISA System Component: EISA DMA and interrupts"
+FIRE = "the 82C700 FireStar single-chip notebook chipset (1997): what it documents of DMA, interrupts and the ISA bus on that chipset (PDMA)"
+JR = "the same document as JEMM (Jemm's readme), under the name the rows cite"
+MISA = "the Intel 82380AB mobile PCI-to-ISA bridge (1997): what it documents of DMA, interrupts and the ISA bus on that chipset (PDMA)"
+PBOOK = "Intel's 1996 Pentium and Pentium Pro processors and related products book (241732-003): the processors and their chipsets"
+PCIBIOS = "the PCI BIOS specification 2.1 (1994): the INT 1Ah B1xxh services"
+PEAK = "the 82C351/355/356 PEAK DM 386 chipset (preliminary, 1991): what it documents of DMA, interrupts and the ISA bus on that chipset (PDMA)"
+PIIXp = "the same document as PIIX3, under the name the rows cite"
+SIO93 = "the same document as SIO (Intel 82378 System I/O, 1993), under the name the rows cite"
+UMC = "the UMC UM8881/UM8886 (HB4) 486 PCI chipset, reverse-engineered notes (2026): what it documents of DMA, interrupts and the ISA bus on that chipset (PDMA)"
+VIPER = "the Viper Express+ BIOS programming guide (1997): what it documents of DMA, interrupts and the ISA bus on that chipset (PDMA)"
+VIPM = "the 82C556M/557M/558M Viper-M chipset (preliminary data book, 1995): what it documents of DMA, interrupts and the ISA bus on that chipset (PDMA)"
+VP = "the VIA VT82C580VP Apollo VP (1996): what it documents of DMA, interrupts and the ISA bus on that chipset (PDMA)"
+XMS30 = "XMS 3.0, the full text (January 1991); XMS is the 3.5 summary"
+vsb-spec = "the same document as VSB, under the name the rows cite"
+
+# matrix/plan.py check (r3.5): every test names the key that decides its expected
+# result, or "silent: <what decides instead>"; a test without one is a problem.
+# Set 26 Oct 2026, once all 133 rows had one (Michael).
+[matrix]
+decides_required = true
 
 # tools/fixed.py, the fixes index: commits reachable from these refs are the
 # author's releases (the fork's main carries his commits only) and are never

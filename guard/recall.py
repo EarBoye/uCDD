@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
 """A Claude Code PreToolUse hook: recall at the moment of change.
 
-Before the first edit of a driver source file in a session (Edit, Write,
-MultiEdit on src/*.asm, src/*.inc or scripts/build.py inside a uCDD
-worktree), the hook refuses the edit once (exit 2) and prints what the notes
+Before the first edit in a session of a driver source file (src/*.asm,
+src/*.inc, scripts/build.py in a uCDD worktree), a test source
+([recall].test_paths: the bench's DOS test programs and the method's own
+tests), or a notes file that holds rows (ISSUES.md, docs/*.md), the hook
+refuses the edit once (exit 2) and prints what the notes and the documents
 already say about that file and about the ports, DSP commands, labels and
 issue IDs in the edited region:
 
@@ -11,7 +13,11 @@ issue IDs in the edited region:
   and [recall].refs in method.toml), and in the worktree's own files;
 - FIXED.md, the generated index of every fix already made (tools/fixed.py);
 - the lessons register and the handoff log in the top folder (found by
-  walking up from the worktree to the directory that holds context/LESSONS.md).
+  walking up from the worktree to the directory that holds context/LESSONS.md);
+- the reference documents ([references].keys, in the reference worktree):
+  the lines that name the same ports, commands and terms, by key and line,
+  so the document that decides the expected result is open before the
+  test or the row is written (r3.5).
 
 The second edit of the same file in the same session goes through. A new
 session, or a compaction that changes the session id, shows the notice
@@ -39,6 +45,14 @@ ROW_REFS = list(methodlib.CONFIG.get('rows', {}).get('refs', [])) + list(RECALL.
 ROW_PATHS = list(RECALL.get('paths', methodlib.CONFIG.get('rows', {}).get('paths', ['ISSUES.md', 'docs/*.md'])))
 LESSON_TAGS = list(RECALL.get('lessons_tags', ['code', 'fix']))
 MAX_LINES = int(RECALL.get('max_lines', 80))
+# Test sources and row files that get recall too (globs on the path relative to the
+# repository's top level, or absolute paths for the bench, which is its own repository).
+TEST_PATHS = tuple(RECALL.get('test_paths', ['tests/*', 'dos/src/*', 'runs/*.py', 'runs/sndreg/*.py', 'runs/rec/*.py']))
+ROW_FILES = tuple(RECALL.get('paths', ['ISSUES.md', 'docs/*.md']))
+DOC_HITS = int(RECALL.get('doc_hits', 16))
+REFS = methodlib.CONFIG.get('references', {})
+REF_KEYS = {str(k): str(v) for k, v in REFS.get('keys', {}).items()}
+DECIDES = {str(k): str(v) for k, v in REFS.get('decides', {}).items()}
 CODE_GLOBS = tuple(methodlib.CONFIG.get('commit', {}).get('code', ['src/*', 'scripts/build.py']))
 SOURCE_SUFFIXES = ('.asm', '.inc')
 
@@ -58,10 +72,17 @@ def toplevel(path):
     return Path(top) if top else None
 
 
-def is_code(top, path):
+def kind_of(top, path):
+    """code (driver source), test (a test program or runner), rows (a notes file), or None."""
     import fnmatch
     rel = str(path.resolve().relative_to(top))
-    return any(fnmatch.fnmatchcase(rel, glob) for glob in CODE_GLOBS)
+    if any(fnmatch.fnmatchcase(rel, glob) for glob in CODE_GLOBS):
+        return 'code'
+    if any(fnmatch.fnmatchcase(rel, glob) for glob in TEST_PATHS):
+        return 'test'
+    if any(fnmatch.fnmatchcase(rel, glob) for glob in ROW_FILES):
+        return 'rows'
+    return None
 
 
 def top_folder(start):
@@ -176,6 +197,57 @@ def dedupe_plain(lines):
     return kept
 
 
+def ref_worktree():
+    name = REFS.get('worktree', '')
+    if not name:
+        return None
+    path = Path(name).expanduser()
+    return path if path.is_absolute() else (methodlib.PACKAGE / path).resolve()
+
+
+def doc_hits(terms, top):
+    """Lines in the reference documents that name a term, as KEY:line: text.
+    Searches the hand-named keys first (they are the ones the rows cite), the
+    generated ones after; at most DOC_HITS lines, spread across keys."""
+    tree = ref_worktree()
+    if not tree or not tree.is_dir():
+        return [], 'the reference worktree is missing ([references].worktree)'
+    words = [term for term in terms if len(term) >= 3 and not term.lower().endswith(('.asm', '.inc', '.py', '.md'))]
+    if not words:
+        return [], ''
+    pattern = '|'.join(re.escape(w) for w in words)
+    ordered = sorted(REF_KEYS, key=lambda k: (k.startswith('DOC_'), k))
+    found, per_key = [], max(2, DOC_HITS // 4)
+    for key in ordered:
+        name = REF_KEYS[key]
+        path = tree / name
+        if not path.exists():
+            path = top / name
+            if not path.exists():
+                continue
+        try:
+            done = subprocess.run(['grep', '-n', '-i', '-I', '-m', str(per_key), '-E', pattern, str(path)],
+                                  capture_output=True, text=True)
+        except OSError:
+            continue
+        for line in done.stdout.splitlines():
+            number, _, text = line.partition(':')
+            found.append(f'{key}:{number}: {text.strip()[:120]}')
+        if len(found) >= DOC_HITS:
+            break
+    return found[:DOC_HITS], ''
+
+
+def decides_hint(terms):
+    """The keys whose subject names one of the terms, from [references.decides]."""
+    hits = []
+    for key, subject in DECIDES.items():
+        low = subject.lower()
+        if any(term.lower() in low for term in terms if len(term) >= 3):
+            hits.append(f'{key}: {subject}')
+    return hits[:6]
+
+
 def fixed_rows(top, top_dir, terms):
     candidates = [top / 'FIXED.md']
     if top_dir:
@@ -198,33 +270,46 @@ def section(title, lines, budget, hint=''):
     return out, budget - len(out)
 
 
-def notice(path, top, top_dir, terms, session):
+def notice(path, top, top_dir, terms, session, kind='code'):
     refs = existing_refs(top)
     rows = grep_rows(top, terms, refs)
     fixed = fixed_rows(top, top_dir, terms)
     handoff = grep_file(top_dir / 'context' / 'HANDOFF.md', terms, headers_only=True) if top_dir else []
     register = grep_file(top_dir / 'context' / 'LESSONS.md', terms) if top_dir else []
     checklist = lessons(top_dir) if top_dir else []
+    docs, doc_note = doc_hits(terms, top)
+    subjects = decides_hint(terms)
 
     budget = MAX_LINES
-    out = [f'Recall before editing {path.name} (once per file per session; make the same edit again to proceed).',
+    what = {'code': 'driver code', 'test': 'a test', 'rows': 'rows'}[kind]
+    out = [f'Recall before editing {path.name} ({what}; once per file per session; make the same edit again to proceed).',
            'Terms: ' + ', '.join(terms),
-           f'Refs searched: {", ".join(refs) or "none found"}; worktree files too.']
+           f'Refs searched: {", ".join(refs) or "none found"}; worktree files; the reference documents.']
     budget -= len(out)
-    for title, lines, hint in (
-            ('Rows already written (ISSUES.md, docs):', rows, 'git grep the terms on the refs above'),
-            ('Fixes already made (FIXED.md):', fixed, 'read FIXED.md'),
-            ('Handoff entries that name these terms:', handoff, 'context/HANDOFF.md'),
-            ('Lessons that name these terms:', register, 'context/LESSONS.md'),
-            (f'Checklist (lessons.py {" ".join(LESSON_TAGS)}):', checklist, 'run it')):
+    # For a test or a row, the document that decides the expected result comes first.
+    order = [
+        ('Documents that name these terms (KEY:line; the expected result comes from here):', docs, doc_note or 'grep the reference worktree'),
+        ('Keys whose subject matches (method.toml [references.decides]):', subjects, 'refs/INDEX.md'),
+        ('Rows already written (ISSUES.md, docs):', rows, 'git grep the terms on the refs above'),
+        ('Fixes already made (FIXED.md):', fixed, 'read FIXED.md'),
+        ('Handoff entries that name these terms:', handoff, 'context/HANDOFF.md'),
+        ('Lessons that name these terms:', register, 'context/LESSONS.md'),
+        (f'Checklist (lessons.py {" ".join(LESSON_TAGS)}):', checklist, 'run it')]
+    if kind == 'code':
+        order = order[2:4] + order[:2] + order[4:]
+    for title, lines, hint in order:
         block, budget = section(title, lines, budget, hint)
         out += block
         if budget <= 2:
             break
-    if not (rows or fixed or handoff or register):
+    if kind == 'code' and not (rows or fixed or handoff or register):
         out.append('Nothing in the notes names these terms. Write the row first (change loop step 5), then edit.')
-    out.append('If a row or fix above covers this change: cite it and work from it. If the fix exists on another '
-               'branch: cherry-pick it; a rewrite of an existing fix is a lesson hit.')
+    if kind in ('test', 'rows'):
+        out.append('Name the key that decides this expected result (matrix row `decides`, or the row\'s citation), '
+                   'and quote its line. No key: write `silent` and what decides instead.')
+    else:
+        out.append('If a row or fix above covers this change: cite it and work from it. If the fix exists on another '
+                   'branch: cherry-pick it; a rewrite of an existing fix is a lesson hit.')
     return '\n'.join(out)
 
 
@@ -237,17 +322,20 @@ def main():
     if not raw:
         return 0
     path = Path(raw).expanduser()
-    if path.suffix.lower() not in SOURCE_SUFFIXES and path.name != 'build.py':
-        return 0
     top = toplevel(path)
-    if not top or not (top / 'src').is_dir() or not is_code(top, path):
+    if not top:
+        return 0
+    kind = kind_of(top, path)
+    if kind is None:
+        return 0
+    if kind == 'code' and not (top / 'src').is_dir():
         return 0
     mark = marker(call.get('session_id', ''), path)
     if mark.exists():
         return 0
     old, new = edited_text(tool, given)
     terms = terms_for(path, old, new)
-    text = notice(path, top, top_folder(top), terms, call.get('session_id', ''))
+    text = notice(path, top, top_folder(top), terms, call.get('session_id', ''), kind)
     mark.write_text(json.dumps({'terms': terms}))
     print(text, file=sys.stderr)
     return 2
