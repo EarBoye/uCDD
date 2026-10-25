@@ -44,6 +44,8 @@ sb_patch:
     cmp eax, [sb_patch_limit]
     jae .restore
     call sb_remix
+    cmp dword [sb_hold_until], 0
+    jne .restore
     call virtual_irq_tick
 .restore:
     popf
@@ -508,6 +510,11 @@ sb_host_ports dw trap_ports
     dw host_info, host_jemm_version
 %ifdef UCDD_DIAG
     dw diag_host, cd_bios_busy
+%else
+    dw 0, 0
+%endif
+%ifdef OWN_HOST
+    dw virtual_irq_due_far
 %endif
 sb_old_dos dd 0
 %endif

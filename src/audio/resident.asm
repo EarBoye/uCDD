@@ -27,7 +27,8 @@ fault db 0
 ; UCDD -status reads this block with control 10 and 11 (driver.asm). Counters
 ; are words that wrap. diag_host and the abort record are the part that the
 ; protected host writes (CDF5); the host uses the offsets DIAG_HOST_*.
-DIAG_BYTES equ 128
+DIAG_BYTES equ 140
+DIAG_HOST_DUE_PM equ 82
 DIAG_HOST_REFUSED equ 0
 DIAG_HOST_ABORT equ 20
 DIAG_HOST_GATES equ 40
@@ -93,7 +94,19 @@ diag_hold_refused times 5 dw 0
 diag_hold_idle dw 0
 ; Refills run from the INT 28h idle call.
 diag_run_idle dw 0
+; Delayed interrupts (F2h and short blocks) by the site that fired them:
+; next access, guest steps, output tick, mask write. Then the arms: JEMMEX
+; V86 and protected host (the host writes the last word).
+diag_due_access dw 0
+diag_due_step dw 0
+diag_due_tick dw 0
+diag_due_mask dw 0
+diag_due_arm_v86 dw 0
+diag_due_arm_pm dw 0
 diag_end:
+%if diag_due_arm_pm-diag_host != DIAG_HOST_DUE_PM
+%error The host counter offset is wrong.
+%endif
 %if diag_end-diag_block != DIAG_BYTES || diag_abort_status-diag_host != DIAG_HOST_ABORT || diag_gates-diag_host != DIAG_HOST_GATES
 %error The diagnostic block layout is wrong.
 %endif

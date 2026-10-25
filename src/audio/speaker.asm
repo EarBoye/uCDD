@@ -11,6 +11,8 @@ speaker_test:
     push ds
     push es
     mov byte [fault], 1
+    mov al, [sound_card]
+    mov [speaker_model], al
     mov byte [speaker_policy], 0
     mov word [output_allocation], 0
     mov ax, 5800h
@@ -33,14 +35,19 @@ speaker_test:
     mov ax, 5801h
     int 21h
     jc .restore
+    call sb_model
     mov bx, RING_PARAS*2
     cmp byte [sound_card], 3
     jne .pro_size
     shr bx, 1
 .pro_size:
     test byte [sound_card], 1
-    jz .allocate_dma
+    jz .half_size
     shr bx, 2
+.half_size:
+    cmp byte [ess_half], 0
+    je .allocate_dma
+    shr bx, 1
 .allocate_dma:
     mov ah, 48h
     int 21h
@@ -90,6 +97,11 @@ speaker_test:
     jnc .done
     mov byte [fault], 1
 .done:
+    ; The setup program saves the selected model.
+    mov al, [speaker_model]
+    mov [sound_card], al
+    mov byte [ess_native], 0
+    mov byte [ess_half], 0
     cmp byte [fault], 1
     cmc
     pop es
@@ -133,6 +145,11 @@ mix_half:
 .store:
     test byte [sound_card], 1
     jnz .pro
+    cmp byte [ess_half], 0
+    je .word
+    test cl, 1
+    jz .skip
+.word:
     stosw
     ret
 .pro:
@@ -145,6 +162,7 @@ mix_half:
     ret
 
 speaker_policy db 0
+speaker_model db 0
 speaker_strategy dw 0
 speaker_umb db 0
 speaker_half dw 0

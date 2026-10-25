@@ -23,9 +23,17 @@ virtual_irq_init:
     ret
 
 virtual_irq_reset:
-    mov byte [force_pending], 0
-    mov byte [virtual_dsp_irq], 0
+    call virtual_mpu_refresh
+    mov byte [irq_due], 0
+    mov byte [irq_due_calls], 0
+    push ax
+    call virtual_pic_late_mask
+    pop ax
+    ; The MPU-401's request (bit 2) is not the DSP's to clear.
+    and byte [virtual_dsp_irq], 4
+    jnz .mpu_held
     mov byte [virtual_pic_request], 0
+.mpu_held:
     mov byte [virtual_pic_taken], 0
     mov dword [virtual_block_seen], 0
     ret
@@ -33,6 +41,7 @@ virtual_irq_reset:
 ; AH: DSP interrupt bits to keep. A request without a DSP interrupt is stale,
 ; unless the host took it. The output IRQ must not run in between.
 virtual_dsp_ack:
+    call virtual_mpu_refresh
     pushf
     cli
     and [virtual_dsp_irq], ah
@@ -40,25 +49,84 @@ virtual_dsp_ack:
     cmp byte [virtual_pic_taken], 0
     jne .done
     mov byte [virtual_pic_request], 0
+    push ax
+    call virtual_pic_late_mask
+    pop ax
 .done:
     popf
     ret
 
+; A delayed interrupt of a command: bit 0 the F2h interrupt, bit 1 the end of
+; a short single-cycle block. The registers stay.
+virtual_irq_due_fire:
+    pushad
+    push es
+    mov al, [irq_due]
+    mov byte [irq_due], 0
+    mov byte [irq_due_calls], 0
+    test al, 1
+    jz .block
+    push ax
+    call virtual_force_raise
+    pop ax
+.block:
+%ifdef RESIDENT_AUDIO
+    test al, 2
+    jz .done
+    cmp dword [sb_hold_until], 0
+    je .done
+    mov dword [sb_hold_until], 0
+    call virtual_irq_tick
+.done:
+%endif
+    pop es
+    popad
+    ret
+
+%ifdef RESIDENT_AUDIO
+%ifdef OWN_HOST
+; From the protected host, which has counted the steps.
+virtual_irq_due_far:
+    push ds
+    push cs
+    pop ds
+    cmp byte [audio_irq_busy], 0
+    jne .leave
+    cmp byte [callback_depth], 0
+    jne .leave
+    mov [callback_ss], ss
+    mov [callback_sp], sp
+    push cs
+    pop ss
+    mov sp, callback_stack_top
+    inc byte [callback_depth]
+    DIAG_INC diag_due_step
+    call virtual_irq_due_fire
+    dec byte [callback_depth]
+    mov ss, [callback_ss]
+    mov sp, [callback_sp]
+.leave:
+    pop ds
+    retf
+%endif
+%endif
+
 ; The F2h interrupt of the DSP.
 virtual_force_raise:
-    mov byte [virtual_dsp_irq], 1
+    or byte [virtual_dsp_irq], 1
+virtual_request_raise:
     DIAG_INC diag_raised
     mov al, [guest_irq_bit]
     mov [virtual_pic_request], al
     ret
 
 virtual_irq_tick:
-    ; A game that polls an untrapped port gets the IRQ at the next tick.
-    cmp byte [force_pending], 0
+    call virtual_mpu_refresh
+    ; A delayed interrupt that no access and no step has fired yet.
+    cmp byte [irq_due_calls], 0
     je .force_done
-    dec byte [force_pending]
-    jnz .force_done
-    call virtual_force_raise
+    DIAG_INC diag_due_tick
+    call virtual_irq_due_fire
 .force_done:
     cmp byte [silence_active], 0
     je .silence_done
@@ -67,9 +135,7 @@ virtual_irq_tick:
     js .silence_done
     mov byte [silence_active], 0
     or byte [virtual_dsp_irq], 1
-    DIAG_INC diag_raised
-    mov al, [guest_irq_bit]
-    mov [virtual_pic_request], al
+    call virtual_request_raise
 .silence_done:
     cmp byte [game_active], 0
     je .done
@@ -174,18 +240,60 @@ virtual_irq_tick:
 %endif
     cmp byte [sb_starved], 0
     jne .done
-    cmp byte [virtual_dsp_irq], 0
-    jne .overrun
+    test byte [virtual_dsp_irq], 3
+    jnz .overrun
+    ; The block's bit joins the MPU-401's bit 2 at 82h. A request that is
+    ; pending already stays one; one the game has ended is raised again.
     mov al, [game_irq_bit]
-    mov [virtual_dsp_irq], al
-    DIAG_INC diag_raised
-    mov al, [guest_irq_bit]
-    mov [virtual_pic_request], al
+    or [virtual_dsp_irq], al
+    jmp virtual_request_raise
 .done:
     ret
 ; A block ended and the game had not acknowledged the last interrupt.
 .overrun:
     DIAG_INC diag_overrun
+    ret
+
+; From audio_irq: the card's MPU-401 requested an interrupt. The virtual SB16
+; shows it at 82h bit 2 on its line. The other models have no MPU-401 there.
+; An interrupt at the 8259 is a new edge, so the game has read 330h since.
+virtual_mpu_raise:
+    cmp byte [virtual_model], 0
+    jne .done
+    ; One request per MPU-401 interrupt: virtual_mpu_refresh clears the bit
+    ; when the card's request ends.
+    test byte [virtual_dsp_irq], 4
+    jnz .done
+    test byte [virtual_dsp_irq], 3
+    jnz .held
+    mov byte [virtual_dsp_irq], 4
+    jmp virtual_request_raise
+.done:
+    ret
+.held:
+    or byte [virtual_dsp_irq], 4
+    ret
+
+; Bit 2 of virtual_dsp_irq follows the card's 82h bit 2. The game ends the
+; request with a read of 330h, which the driver does not see. Every register
+; is kept.
+virtual_mpu_refresh:
+    test byte [virtual_dsp_irq], 4
+    jnz .look
+    ret
+.look:
+    push ax
+    push dx
+    pushf
+    cli
+    call card_irq_status
+    test al, 4
+    jnz .done
+    and byte [virtual_dsp_irq], 0fbh
+.done:
+    popf
+    pop dx
+    pop ax
     ret
 
 virtual_irq_take:
@@ -214,6 +322,7 @@ virtual_irq_take:
     ; The IRQ stays a request until the host or the real chain delivers it.
     mov al, [guest_irq_bit]
     mov [virtual_pic_taken], al
+    call virtual_pic_late_mask
     DIAG_INC diag_taken
 %ifndef OWN_HOST
     call virtual_irq_deliver
@@ -236,6 +345,14 @@ virtual_irq_deliver:
     mov byte [virtual_pic_request], 0
     mov [virtual_pic_service], al
 .done:
+    ret
+
+; The handler of an F2h interrupt is on its way: the mask write that came
+; after the interrupt takes effect now.
+virtual_pic_late_mask:
+    mov al, [pic_mask_late]
+    or [virtual_pic_mask], al
+    mov byte [pic_mask_late], 0
     ret
 
 physical_pic_isr:
@@ -271,10 +388,20 @@ virtual_pic_read:
     ret
 .mask:
     and al, [pic_visible_bits]
+%ifdef RESIDENT_AUDIO
+    cmp byte [cd_refill_masked], 0
+    je .mask_shown
+    and al, 0fdh
+    mov ah, [cd_refill_old_mask]
+    and ah, 2
+    or al, ah
+.mask_shown:
+%endif
     mov ah, [pic_visible_bits]
     not ah
     and ah, [virtual_pic_mask]
     or al, ah
+    or al, [pic_mask_late]
     ret
 
 virtual_pic_write:
@@ -368,6 +495,40 @@ virtual_pic_write:
     mov al, 20h
     jmp .physical
 .mask:
+    ; A real DSP sends the F2h interrupt some microseconds after the command.
+    ; A game that masks the IRQ again before its next DSP access gets the
+    ; interrupt before the mask (Earth 2140).
+    mov ah, [guest_irq_bit]
+    test al, ah
+    jz .mask_open
+    ; A second mask write before the take keeps the delivery due.
+    cmp [pic_mask_late], ah
+    je .mask_held
+    cmp byte [irq_due], 0
+    je .mask_clear
+    test [virtual_pic_mask], ah
+    jnz .mask_clear
+    mov [pic_mask_late], ah
+    DIAG_INC diag_due_mask
+    push ax
+    call virtual_irq_due_fire
+    pop ax
+    ; Nothing came of it: no delivery is late.
+    cmp byte [virtual_pic_request], 0
+    jne .mask_held
+    mov byte [pic_mask_late], 0
+    jmp .mask_ready
+.mask_held:
+    mov ah, [guest_irq_bit]
+    not ah
+    and al, ah
+    jmp .mask_ready
+.mask_open:
+    mov byte [pic_mask_late], 0
+    jmp .mask_ready
+.mask_clear:
+    mov byte [pic_mask_late], 0
+.mask_ready:
     mov [virtual_pic_mask], al
     mov ah, [guest_irq_bit]
     not ah
@@ -380,6 +541,15 @@ virtual_pic_write:
     and al, ah
     or al, [audio_irq_mask_bit]
 %ifdef RESIDENT_AUDIO
+    cmp byte [cd_refill_masked], 0
+    je .refill_free
+    ; The keyboard bit takes effect when the refill ends.
+    mov ah, al
+    and ah, 2
+    and byte [cd_refill_old_mask], 0fdh
+    or [cd_refill_old_mask], ah
+    or al, 2
+.refill_free:
     mov [emm_pic_mask_shadow], al
 %endif
     jmp .physical
@@ -493,13 +663,29 @@ pic_visible_bits db 0dfh
 physical_pic_read db 0ah
 pic_init_words db 0
 virtual_pic_taken db 0
+pic_mask_late db 0
 
 %ifdef RESIDENT_AUDIO
 emm_pic_mask_shadow db 0ffh
 %endif
+irq_due db 0
+%ifdef RESIDENT_AUDIO
+irq_due_steps db 0
+irq_step_left db 0
+irq_step_swapped db 0
+irq_step_guest dd 0
+%endif
+irq_due_calls db 0
 
 ; CDF2 exposes these offsets to the protected host.
 cdf2_service_check equ 1 / ((virtual_pic_service-virtual_pic_request) = 1)
 cdf2_visible_check equ 1 / ((pic_visible_bits-virtual_pic_request) = 8)
 cdf2_mode_check equ 1 / ((physical_pic_read-virtual_pic_request) = 9)
 cdf2_taken_check equ 1 / ((virtual_pic_taken-virtual_pic_request) = 11)
+%ifdef RESIDENT_AUDIO
+cdf2_due_check equ 1 / ((irq_due-virtual_pic_request) = 14)
+cdf2_steps_check equ 1 / ((irq_due_steps-virtual_pic_request) = 15)
+cdf2_left_check equ 1 / ((irq_step_left-virtual_pic_request) = 16)
+cdf2_swap_check equ 1 / ((irq_step_swapped-virtual_pic_request) = 17)
+cdf2_guest_check equ 1 / ((irq_step_guest-virtual_pic_request) = 18)
+%endif

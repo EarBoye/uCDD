@@ -1,6 +1,8 @@
 ; SPDX-FileCopyrightText: 2026 vorvek
 ; SPDX-License-Identifier: GPL-3.0-only
 
+%include "audio/diag.inc"
+
 bits 16
 host_old_mux dd 0
 host_api_entry dd 0
@@ -161,6 +163,26 @@ host_io:
     jne .find
     cmp dword [ebx+host_callback], 0
     je .chain
+    ; Stepping ends without its last INT 1 when the guest loads flags without
+    ; TF (POPF, IRET). Put the guest INT 1 vector back. An interrupt handler
+    ; also runs without TF, so not while the event is still due.
+    lea esi, [ebx+virtual_pic_request]
+    cmp byte [esi+16], 0
+    je .unstepped
+    cmp byte [esi+14], 0
+    jne .unstepped
+    test byte [ebp+49], 1
+    jnz .unstepped
+    mov byte [esi+16], 0
+    cmp byte [esi+17], 0
+    je .unstepped
+    mov byte [esi+17], 0
+    call host_step_ours
+    cmp [4], eax
+    jne .unstepped
+    mov eax, [esi+18]
+    mov [4], eax
+.unstepped:
     push ecx
     push edx
     push dword [ebp+48]
@@ -184,6 +206,34 @@ host_io:
     pop dword [ebp+48]
     pop edx
     pop ecx
+    ; Step the guest after a command that left an interrupt due: the INT 1
+    ; handler counts the instructions. Not when the guest traces. A guest
+    ; INT 1 vector is replaced while the steps run and put back at the end.
+    push eax
+    lea esi, [ebx+virtual_pic_request]
+    cmp byte [esi+15], 0
+    je .armed
+    cmp byte [esi+14], 0
+    je .armed
+    test byte [ebp+49], 1
+    jnz .armed
+    call host_step_ours
+    cmp [4], eax
+    je .vector_ready
+    push dword [4]
+    pop dword [esi+18]
+    mov [4], eax
+    mov byte [esi+17], 1
+.vector_ready:
+    mov al, [esi+15]
+    mov [esi+16], al
+    mov byte [esi+15], 0
+    or byte [ebp+49], 1
+%ifdef UCDD_DIAG
+    inc word [ebx+diag_due_arm_v86]
+%endif
+.armed:
+    pop eax
     call host_io_irq
     pop esi
     pop ebx
@@ -193,6 +243,13 @@ host_io:
     push dword [ebx+host_old_io]
     mov ebx, [esp+4]
     ret 4
+
+host_step_ours:
+    mov eax, ebx
+    shr eax, 4
+    shl eax, 16
+    mov ax, irq_step
+    ret
 
 host_io_irq:
     pushad
@@ -245,6 +302,9 @@ host_io_irq:
     mov byte [ebx+virtual_pic_request], 0
     mov al, [ebx+guest_irq_bit]
     mov [ebx+virtual_pic_service], al
+    mov al, [ebx+pic_mask_late]
+    or [ebx+virtual_pic_mask], al
+    mov byte [ebx+pic_mask_late], 0
 %ifdef UCDD_DIAG
     inc word [ebx+diag_taken]
 %endif
@@ -368,6 +428,130 @@ host_irq_remove:
 
 bits 16
 host_gate_slot dd 0
+irq_step_old dd 0
+
+; INT 1 while the guest runs the instructions of a due interrupt.
+irq_step:
+    cmp byte [cs:irq_step_left], 0
+    jne .counting
+.foreign:
+    ; Steps that ended early with the guest vector still replaced.
+    cmp byte [cs:irq_step_swapped], 0
+    je .foreign_old
+    push bp
+    mov bp, sp
+    and byte [bp+7], 0feh
+    call irq_step_restore
+    pop bp
+    iret
+.foreign_old:
+    ; A TF image that the guest saved while we stepped: no one owns it now.
+    push ax
+    mov ax, [cs:irq_step_old+2]
+    cmp ax, 100h
+    jbe .stale
+    cmp ax, 0f000h
+    jb .chain
+.stale:
+    push bp
+    mov bp, sp
+    and byte [bp+9], 0feh
+    pop bp
+    pop ax
+    iret
+.chain:
+    pop ax
+    jmp far [cs:irq_step_old]
+.counting:
+    push bp
+    mov bp, sp
+    cmp byte [cs:irq_due], 0
+    je .stop
+    dec byte [cs:irq_step_left]
+    jz .due
+    pop bp
+    iret
+.stop:
+    mov byte [cs:irq_step_left], 0
+    and byte [bp+7], 0feh
+    call irq_step_restore
+    pop bp
+    iret
+.due:
+    and byte [bp+7], 0feh
+    call irq_step_restore
+    cmp byte [cs:audio_irq_busy], 0
+    jne .leave
+    cmp byte [cs:callback_depth], 0
+    jne .leave
+    push ds
+    push es
+    pushad
+    mov bl, [bp+7]
+    push cs
+    pop ds
+    cld
+    mov [callback_ss], ss
+    mov [callback_sp], sp
+    mov ax, cs
+    mov ss, ax
+    mov sp, callback_stack_top
+    inc byte [callback_depth]
+    DIAG_INC diag_due_step
+    call virtual_irq_due_fire
+%ifdef OWN_HOST
+    test bl, 2
+    jz .fired
+    cmp word [own_host_active+2], 0
+    je .fired
+    les di, [own_host_active]
+    cmp byte [es:di], 0
+    je .deliver
+    cmp byte [es:di+1], 0
+    jne .fired
+.deliver:
+    call sb_real_irq
+%endif
+.fired:
+    dec byte [callback_depth]
+    mov ss, [callback_ss]
+    mov sp, [callback_sp]
+    popad
+    pop es
+    pop ds
+    cmp byte [cs:sb_real_pending], 0
+    je .leave
+    mov byte [cs:sb_real_pending], 0
+    pop bp
+    jmp far [cs:sb_real_vector]
+.leave:
+    pop bp
+    iret
+
+; Put back the guest INT 1 vector that the steps replaced. All registers stay.
+irq_step_restore:
+    cmp byte [cs:irq_step_swapped], 0
+    je .done
+    mov byte [cs:irq_step_swapped], 0
+    push ds
+    push ax
+    xor ax, ax
+    mov ds, ax
+    cmp word [4], irq_step
+    jne .kept
+    mov ax, cs
+    cmp [6], ax
+    jne .kept
+    push word [cs:irq_step_guest]
+    pop word [4]
+    push word [cs:irq_step_guest+2]
+    pop word [6]
+.kept:
+    pop ax
+    pop ds
+.done:
+    ret
+
 host_remove:
     cmp byte [host_installed], 0
     je .ok
@@ -376,6 +560,17 @@ host_remove:
     mov ax, 1a0bh
     call far [host_api_entry]
     jc .failed
+    call irq_step_restore
+    xor ax, ax
+    mov es, ax
+    cmp word [es:4], irq_step
+    jne .step_kept
+    mov ax, cs
+    cmp [es:6], ax
+    jne .step_kept
+    mov eax, [irq_step_old]
+    mov [es:4], eax
+.step_kept:
     push ds
     lds dx, [host_old_mux]
     mov ax, 252fh

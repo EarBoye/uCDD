@@ -173,7 +173,7 @@ config_valid:
 
 ; Check the physical card. A card without a high DMA channel keeps H5.
 physical_valid:
-    cmp byte [sound_card], 3
+    cmp byte [sound_card], 5
     ja .bad
     cmp byte [sound_card], 0
     je .port
@@ -236,7 +236,10 @@ config_derive:
     je .wss
     mov cx, 31
     cmp bl, 1
-    jne .scale
+    je .pro_scale
+    cmp bl, 4
+    jb .scale
+.pro_scale:
     mov cx, 15
 .scale:
     push cx
@@ -331,13 +334,20 @@ config_save:
 port_list:
     mov si, sb_port_values
     cmp byte [sound_card], 2
-    jne .done
+    je .wss
+    cmp byte [sound_card], 4
+    jb .done
+    mov si, ess_port_values
+    ret
+.wss:
     mov si, wss_port_values
 .done:
     ret
 
 sb_port_values db 4
     dw 220h,240h,260h,280h
+ess_port_values db 6
+    dw 220h,230h,240h,250h,260h,280h
 wss_port_values db 4
     dw 530h,604h,0e80h,0f40h
 irq_values db 2

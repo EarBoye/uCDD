@@ -6,6 +6,8 @@
 ; Offsets in the driver's diagnostic block part that this host writes.
 DIAG_HOST_REFUSED equ 0
 DIAG_HOST_ABORT equ 20
+; The word index of the arm counter for the audio steps.
+DIAG_INDEX_ARM_PM equ 41
 ; The IRQ gate counters follow the abort record: counter indices 20 to 27.
 
 %define SPLIT_HOST 1
@@ -108,6 +110,9 @@ resident_host_init:
     movzx edx, word [ds:bp+26]
     add edx, ecx
     mov [cs:resident_bios_busy], edx
+    mov dx, [ds:bp+28]
+    mov [cs:resident_due], dx
+    mov [cs:resident_due+2], ds
     jmp .version3
 .version4:
     cmp dword [ds:bp+8], 34464443h
@@ -230,6 +235,7 @@ resident_irq_slot db 0
 resident_mixer_vector dd 0
 resident_port dd 0
 resident_take dd 0
+resident_due dd 0
 resident_wss_event dd 0
 resident_traps dd 0
 resident_game_vector dd 0
@@ -883,13 +889,8 @@ resident_audio_take:
     HOST_DIAG 20
     jmp .none
 .room:
-    lea edi, [ebp+mon_rm_regs]
-    mov dword [edi+46], 0
-    mov word [edi+32], 2
     mov eax, [ebp+resident_take]
-    mov [edi+42], eax
-    mov al, 1
-    call mon_real_far
+    call resident_audio_far
     movzx eax, word [edi+28]
     ret
 .held:
@@ -897,6 +898,28 @@ resident_audio_take:
 .none:
     xor eax, eax
     ret
+; The driver fires its due IRQ event after the client ran enough steps.
+; CF=1: the real-mode call has no room, the event stays due.
+resident_audio_due:
+    cmp dword [ebp+resident_due], 0
+    je .none
+    call dpmi_hardware_room
+    jc .none
+    mov eax, [ebp+resident_due]
+    call resident_audio_far
+    clc
+    ret
+.none:
+    stc
+    ret
+; EAX=far address in the driver. EDI points to the real-mode registers.
+resident_audio_far:
+    lea edi, [ebp+mon_rm_regs]
+    mov dword [edi+46], 0
+    mov word [edi+32], 2
+    mov [edi+42], eax
+    mov al, 1
+    jmp mon_real_far
 resident_vga_pending db 0
 resident_pit_reads db 0
 resident_vga_previous db 0

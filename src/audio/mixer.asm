@@ -75,7 +75,10 @@ fm_init:
 fm_update:
     pushad
     cmp byte [sound_card], 1
-    ja .done
+    jbe .level
+    cmp byte [ess_native], 0
+    je .done
+.level:
     mov al, [virtual_mixer+34h]
     call fm_scale
     mov bl, al
@@ -148,7 +151,11 @@ master_update:
     cmp bl, 3
     je .done
     cmp bl, 2
+    jne .not_wss
+    cmp byte [ess_native], 0
     je .wss
+    mov bl, 1
+.not_wss:
     mov cx, 31
     test bl, bl
     jz .scale

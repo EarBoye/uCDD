@@ -2008,6 +2008,8 @@ dpmi_tf_loaded:
     jne .no
     cmp byte [ebp+dpmi_sti_shadow], 0
     jne .no
+    cmp byte [ebp+dpmi_audio_steps], 0
+    jne .no
     stc
     ret
 .no:
@@ -2237,6 +2239,15 @@ HOST_PROTECTED
 dpmi_quiet db 0
 dpmi_quiet_nt db 0
 dpmi_quiet_leak db 0
+; Steps left before a long CLI section runs at full speed, then host exits
+; before the next stepping.
+DPMI_STEP_BUDGET equ 32
+DPMI_STEP_HOLDOFF equ 16
+dpmi_step_budget db 0
+dpmi_step_holdoff db 0
+; Guest instructions left before the driver fires its due IRQ event. The
+; step budget is separate: a long CLI section does not end this count.
+dpmi_audio_steps db 0
 dpmi_step_address_size db 0
 dpmi_step_segment dw 0
 dpmi_step_ea_segment dw 0

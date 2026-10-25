@@ -184,28 +184,11 @@ pro_dma:
 pro_stop:
     cmp byte [sb_running], 0
     je .done
-    ; Mask the IRQ before the reset, so that no block end runs the handler.
-    pushf
-    cli
-    mov dx, 21h
-    call physical_read
-    mov cl, [sb_irq]
-    mov ah, 1
-    shl ah, cl
-    or al, ah
-    call physical_write
-    popf
+    call output_irq_mask
     call physical_reset
     mov al, 0d3h
     call dsp_write
-    mov dx, 0ah
-    mov al, [dma_channel]
-    or al, 4
-    call physical_write
-    mov dx, [sb_base]
-    add dx, 0eh
-    call physical_read
-    call output_unhook
+    call output_halt
     cmp byte [sound_card], 3
     je .stopped
     xor bx, bx

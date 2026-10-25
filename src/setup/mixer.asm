@@ -64,8 +64,11 @@ format_fader:
 fader_unused:
     cmp si, config_fm_volume
     jne .master
-    cmp byte [sound_card], 2
-    jae .unused
+    ; Models 2 and 3 have no FM level.
+    mov al, [sound_card]
+    sub al, 2
+    cmp al, 2
+    jb .unused
     clc
     ret
 .master:

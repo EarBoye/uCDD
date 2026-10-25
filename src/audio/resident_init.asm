@@ -25,8 +25,12 @@ audio_activate:
     shr bx, 1
 .pro_size:
     test byte [sound_card], 1
-    jz .allocate_dma
+    jz .half_size
     shr bx, 2
+.half_size:
+    cmp byte [ess_half], 0
+    je .allocate_dma
+    shr bx, 1
 .allocate_dma:
     mov word [audio_error_text], dma_memory_message
     mov ah, 48h
@@ -38,6 +42,8 @@ audio_activate:
     mov [output_spare], dx
     test byte [sound_card], 1
     jnz .dma_ready
+    cmp byte [ess_half], 0
+    jne .dma_ready
     ; The spare ring keeps the game part of each output word.
     mov [sb_record_segment], dx
 .dma_ready:

@@ -68,7 +68,13 @@ def main():
                         default=128, help='Set the resident audio output period for testing.')
     parser.add_argument('--audio-ring-periods', type=int, choices=(2, 3, 4),
                         default=3, help='Set the number of output periods in the DMA ring for testing.')
+    parser.add_argument('--ess-test-id', action='store_true',
+                        help='Test build: treat the ESS card as an ES1868. Use with --resident-audio.')
+    parser.add_argument('--define', action='append', default=[], metavar='NAME=VALUE',
+                        help='Test build: define a NASM symbol for the resident driver.')
     args = parser.parse_args()
+    if args.ess_test_id and not args.resident_audio:
+        parser.error('--ess-test-id requires --resident-audio.')
     if (args.audio_period_frames != 128 or args.audio_ring_periods != 3) and not args.resident_audio:
         parser.error('--audio-period-frames and --audio-ring-periods require --resident-audio.')
     if args.profile_host:
@@ -80,7 +86,9 @@ def main():
                          ('src/setup.asm', 'UCDDSET.EXE')]:
         if args.resident_audio and name == 'UCDD.EXE':
             assemble_resident_host((f'OUTPUT_SHIFT={args.audio_period_frames.bit_length()-1}',
-                                    f'RING_PERIODS={args.audio_ring_periods}'),
+                                    f'RING_PERIODS={args.audio_ring_periods}',
+                                    *(('TEST_ESS_ID=1',) if args.ess_test_id else ()),
+                                    *args.define),
                                    profile=args.profile_host)
         else:
             assemble(source, name, exe=True)

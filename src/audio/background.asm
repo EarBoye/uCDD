@@ -161,11 +161,7 @@ cd_timer_refill:
     DIAG_INC diag_hold_idle
     jmp .done
 .low:
-    xor si, si
-    les bx, [own_host_active]
-    cmp byte [es:bx+10], 0
-    je .refuse
-    add si, 2
+    mov si, 2
     les di, [cd_indos]
     cmp word [es:di-1], 0
     jne .refuse
@@ -174,9 +170,12 @@ cd_timer_refill:
     test byte [ss:bp+45], 2
     jz .refuse
     add si, 2
+    ; No real-mode call (0) still runs client code here when the host
+    ; reflects a software interrupt (DOS/16M, Judge Dredd briefing). The
+    ; block owner test below refuses the host, DOS and driver code.
     les bx, [own_host_active]
-    cmp byte [es:bx+10], 1
-    jne .refuse
+    cmp byte [es:bx+10], 2
+    je .refuse
     mov di, [es:bx+8]
     test di, di
     jz .refuse
@@ -415,6 +414,15 @@ cd_bios:
 %endif
     pushf
     dec byte [cs:cd_bios_busy]
+    ; The chain ran with IF clear. Return the caller's IF with the result.
+    push bp
+    mov bp, sp
+    and byte [bp+3], 0fdh
+    test byte [bp+9], 2
+    jz .if_ready
+    or byte [bp+3], 2
+.if_ready:
+    pop bp
     popf
     retf 2
 
@@ -451,10 +459,12 @@ cd_refill_mask:
     mov dx, 21h
     call physical_read
     mov [cd_refill_old_mask], al
+    mov byte [cd_refill_masked], 1
     or al, 2
     jmp physical_write
 
 cd_refill_unmask:
+    mov byte [cd_refill_masked], 0
     mov dx, 21h
     call physical_read
     mov ah, [cd_refill_old_mask]
@@ -462,7 +472,10 @@ cd_refill_unmask:
     and al, ah
     jmp physical_write
 
+; The guest's own keyboard bit while the refill holds the IRQ. A game handler
+; that runs during the refill must not save the held bit (TEMIM).
 cd_refill_old_mask db 0
+cd_refill_masked db 0
 
 ; CF set: wait until the game sends the rest of a DSP command, for a few calls.
 cd_dsp_wait:

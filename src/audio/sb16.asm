@@ -177,6 +177,17 @@ sb_start:
     call physical_write
 .next:
     loop .mixer
+    ; Nothing is pending now. A card without 82h (or with bit 2 stuck) must not
+    ; show an MPU-401 request.
+    call card_irq_status
+    mov bl, 0fbh
+    cmp al, 0ffh
+    je .mpu_off
+    test al, 4
+    jnz .mpu_off
+    mov bl, 0ffh
+.mpu_off:
+    mov [card_irq_mask], bl
 %ifdef RESIDENT_AUDIO
     mov al, [mixer_saved]
     mov ah, [mixer_saved+1]
@@ -274,6 +285,29 @@ output_hook:
     not ah
     and al, ah
     jmp physical_write
+; Mask the IRQ, so that no block end runs the handler during a reset.
+output_irq_mask:
+    pushf
+    cli
+    mov dx, 21h
+    call physical_read
+    mov cl, [sb_irq]
+    mov ah, 1
+    shl ah, cl
+    or al, ah
+    call physical_write
+    popf
+    ret
+; Mask the DMA channel and clear a pending request, then unhook.
+output_halt:
+    mov dx, 0ah
+    mov al, [dma_channel]
+    or al, 4
+    call physical_write
+    mov dx, [sb_base]
+    add dx, 0eh
+    call physical_read
+    jmp output_unhook
 ; Put back the IRQ vector and the PIC mask.
 output_unhook:
     mov al, [sb_irq]
@@ -340,15 +374,39 @@ audio_irq:
     je .wss
     test byte [sound_card], 1
     jnz .pro
-    ; A reflected game IRQ must not advance the physical output buffer.
-    mov dx, [sb_base]
-    add dx, 4
-    mov al, 82h
-    call physical_write
-    inc dx
-    call physical_read
+    ; Mixer 82h names the sources on the card's line: bit 1 the 16-bit DMA
+    ; that plays the output, bit 2 the MPU-401, bit 0 the 8-bit DMA and
+    ; SB-MIDI. A reflected game IRQ shows none and must not advance the
+    ; physical output buffer.
+    call card_irq_status
+    and al, [card_irq_mask]
+%ifdef VIRTUAL_IRQ
+    test al, 4
+    jz .no_mpu
+    push ax
+    call virtual_mpu_raise
+    pop ax
+.no_mpu:
+%endif
     test al, 2
+    jnz .output16
+    test al, 5
     jz .unowned
+    ; The MPU-401 alone: the game reads its byte at 330h and ends the request.
+    test al, 1
+    jz .other_owner
+    ; A stray 8-bit request: the 2xEh read acknowledges it.
+    mov dx, [sb_base]
+    add dx, 0eh
+    call physical_read
+.other_owner:
+    ; A handler in RAM may own the interrupt: pass it on. The vector from
+    ; before the driver is the BIOS one on most machines, and its handler
+    ; masks the IRQ, so the interrupt ends here.
+    cmp word [old_irq+2], 0c000h
+    jb .unowned
+    jmp .eoi
+.output16:
     mov dx, [sb_base]
     add dx, 0fh
     call physical_read
@@ -366,7 +424,25 @@ audio_irq:
 %endif
     call mix_catch_up
 %ifdef VIRTUAL_IRQ
+%ifdef RESIDENT_AUDIO
+    mov eax, [sb_hold_until]
+    test eax, eax
+    jz .tick
+    ; An interrupt inside the start write, or pending when it returned, comes
+    ; before the deadline. A later one can signal.
+    cmp eax, 1
+    je .ticked
+    mov ecx, [periods]
+    shl ecx, OUTPUT_SHIFT
+    sub eax, ecx
+    jg .ticked
+    mov dword [sb_hold_until], 0
+.tick:
+%endif
     call virtual_irq_tick
+%ifdef RESIDENT_AUDIO
+.ticked:
+%endif
 %ifdef OWN_HOST
     mov byte [cd_refill_pending], 0
     cmp byte [cd_started], 1
@@ -427,6 +503,17 @@ audio_irq:
 %endif
 %endif
 .eoi:
+%ifdef VIRTUAL_IRQ
+    ; A request that came after the status read shows now.
+    cmp byte [sound_card], 0
+    jne .eoi_status
+    call card_irq_status
+    and al, [card_irq_mask]
+    test al, 4
+    jz .eoi_status
+    call virtual_mpu_raise
+.eoi_status:
+%endif
     mov al, [sb_irq]
     or al, 60h
     mov dx, 20h
@@ -474,20 +561,25 @@ audio_irq:
     call physical_read
     jmp .eoi
 .pro_audio:
+    ; The chip sends no more IRQs until 2xEh is read. Read it also when the
+    ; clock does not claim the IRQ: one that is late by RING_PERIODS-1 or
+    ; more periods finds the DMA in the slot of [periods].
+    mov dx, [sb_base]
+    add dx, 0eh
+    call physical_read
 %ifdef MOUNTED_AUDIO
     call output_clock
     shr eax, OUTPUT_SHIFT
     cmp eax, [periods]
     je .unowned
 %endif
-    mov dx, [sb_base]
-    add dx, 0eh
-    call physical_read
     cmp byte [sound_card], 3
     jne .acknowledged
     call sb_mono_next
     jmp .acknowledged
 .wss:
+    cmp byte [ess_native], 0
+    jne .ess
     mov dx, [sb_base]
     add dx, 6
     call physical_read
@@ -495,6 +587,19 @@ audio_irq:
     jz .unowned
     xor al, al
     call physical_write
+    jmp .acknowledged
+.ess:
+    ; Bit 0 of 2xCh: the DMA counter overflowed. The 2xEh read clears it.
+    ; An IRQ that comes before the DMA position passes the period boundary
+    ; must still be acknowledged, or the chip sends no more IRQs.
+    mov dx, [sb_base]
+    add dx, 0ch
+    call physical_read
+    test al, 1
+    jz .pro_audio
+    mov dx, [sb_base]
+    add dx, 0eh
+    call physical_read
     jmp .acknowledged
 .unowned:
     DIAG_INC diag_spurious
@@ -611,6 +716,13 @@ ring_offset:
     div ecx
     mov eax, edx
     shl ax, 2
+    cmp byte [ess_half], 0
+    je .full
+    ; Half rate: a stored frame is two mixed frames.
+    shr ax, 1
+    and ax, 0fffch
+    jmp .done
+.full:
     test byte [sound_card], 1
     jz .done
     shr ax, 2
@@ -632,8 +744,12 @@ ring_place:
     shr cx, 1
 .pro:
     test byte [sound_card], 1
-    jz .size_ready
+    jz .half
     shr cx, 2
+.half:
+    cmp byte [ess_half], 0
+    je .size_ready
+    shr cx, 1
 .size_ready:
     mov dx, ax
     add dx, cx
@@ -646,6 +762,16 @@ ring_place:
 .done:
     ret
 
+; Mixer 82h: the sources on the SB16 line.
+card_irq_status:
+    mov dx, [sb_base]
+    add dx, 4
+    mov al, 82h
+    call physical_write
+    inc dx
+    jmp physical_read
+
+card_irq_mask db 0ffh
 audio_irq_old_mask db 0
 old_irq dd 0
 dma_pages db 8bh,89h,8ah
@@ -664,6 +790,12 @@ mixer_registers db 34h,35h,30h,31h,32h,33h
 mixer_saved times 6 db 0
 
 %include "audio/wss_output.asm"
+%include "audio/ess_output.asm"
+%ifndef RESIDENT_AUDIO
+%include "audio/ess_install.asm"
+%endif
 %include "audio/pro_output.asm"
+; Word pushes on an odd stack are misaligned: keep the IRQ stack aligned.
+    align 4
 times 1024 db 0
 irq_stack_top:

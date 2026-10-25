@@ -1756,6 +1756,14 @@ cd_work_memory_message db 'uCDD cannot allocate DOS memory for the CD work buffe
 dma_memory_message db 'uCDD cannot allocate DOS memory for the DMA buffer.',13,10,'$'
 sound_card_message db 'The selected sound card did not start.',13,10
     db 'Check the settings with UCDDSET.',13,10,'$'
+ess_answer_message db 'uCDD cannot find an ESS AudioDrive at the selected port.',13,10
+    db 'Check the settings with UCDDSET.',13,10,'$'
+ess_interrupt_message db 'The sound card does not send interrupts.',13,10
+    db 'Check the IRQ setting with UCDDSET.',13,10,'$'
+ess_resource_message db 'The IRQ or DMA channel of the ESS card is different from the UCDDSET setting.',13,10
+    db 'Check the settings with UCDDSET.',13,10,'$'
+ess_rate_message db 'The output rate of the sound card is not correct.',13,10
+    db 'Check the settings with UCDDSET.',13,10,'$'
 internal_host_message db 'The internal DPMI host did not start.',13,10,'$'
 install_audio_error:
     mov dx, [audio_error_text]
@@ -1786,12 +1794,14 @@ install_audio_error:
 %include "audio/configure.asm"
 %include "audio/guest_config.asm"
 %include "config_path.asm"
+%include "audio/ess_install.asm"
 audio_prepare:
     mov word [audio_error_text], audio_unit_message
     cmp byte [unit_count], 1
     jne .bad
     call audio_configure
     jc .bad
+    call sb_model
     call guest_configure
     cmp byte [sound_card], 3
     jne .pro_rate

@@ -56,7 +56,11 @@ detect_sb:
     mov ax, [hint_port]
     mov si, sb_port_values
     call value_listed
+    jnc .hint
+    mov si, ess_port_values
+    call value_listed
     jc .scan
+.hint:
     call .probe
     jnc .done
 .scan:
@@ -67,6 +71,14 @@ detect_sb:
     call .probe
     jnc .done
     loop .port
+    ; An ESS AudioDrive can also use these ports.
+    mov si, ess_extra_ports
+    mov cx, 2
+.extra:
+    lodsw
+    call .probe
+    jnc .done
+    loop .extra
     stc
 .done:
     ret
@@ -84,6 +96,15 @@ detect_sb:
     mov ah, al
     call det_read
     jc .absent
+    ; Only an ESS AudioDrive is accepted at 230h and 250h.
+    cmp dx, 230h
+    je .ess_only
+    cmp dx, 250h
+    jne .store
+.ess_only:
+    call ess_present
+    jc .absent
+.store:
     mov [dsp_major], ah
     mov [dsp_port], dx
     mov [sb_base], dx
@@ -150,8 +171,11 @@ detect_sb_legacy:
     mov [sb_base], dx
     mov byte [sound_card], 1
     cmp byte [dsp_major], 3
-    je .model
+    je .ess
     mov byte [sound_card], 3
+    jmp .model
+.ess:
+    call detect_ess
 .model:
     mov ax, [sb_base]
     add ax, 0eh
@@ -185,6 +209,40 @@ detect_sb_legacy:
     call det_unhook
     mov dx, [sb_base]
     jmp det_reset
+
+; An ESS AudioDrive answers E7h with 68h and then 8xh.
+detect_ess:
+    mov dx, [sb_base]
+    call ess_present
+    jc .done
+    mov byte [sound_card], 4
+.done:
+    ret
+
+; DX: the DSP port. Return CF clear for an ESS AudioDrive. AX is kept.
+ess_present:
+    push ax
+    mov al, 0e7h
+    call det_write
+    jc .no
+    call det_read
+    jc .no
+    cmp al, 68h
+    jne .no
+    call det_read
+    jc .no
+    and al, 0f0h
+    cmp al, 80h
+    jne .no
+    pop ax
+    clc
+    ret
+.no:
+    pop ax
+    stc
+    ret
+
+ess_extra_ports dw 230h,250h
 
 hint_irq_value:
     movzx ax, byte [hint_irq]

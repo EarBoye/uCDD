@@ -4,6 +4,8 @@
 %include "audio/wss_codec.asm"
 
 wss_start:
+    cmp byte [ess_native], 0
+    jne ess_start
     call wss_ready
     jc .fail
     mov al, 9
@@ -86,6 +88,8 @@ wss_start:
 wss_stop:
     cmp byte [sb_running], 0
     je .done
+    cmp byte [ess_native], 0
+    jne ess_stop
     mov ax, 0c09h
     call indexed_write
     mov dx, 0ah

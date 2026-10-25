@@ -8,7 +8,7 @@
 
 - 386 or later, DOS 5 or later, and a CD redirector: [SHSUCDX](http://adoxa.altervista.org/shsucdx/) or MSCDEX.
 - For CD-Audio: XMS, VCPI, and an I/O port-trap interface. HIMEM alone does not provide these. μCDD is designed for [JEMMEX](https://github.com/Baron-von-Riedesel/Jemm) 5.86 and 5.87, including the port-trap callback interface changed in 5.87pre1. The published 0.9.0 binary rejects that interface. HIMEM.SYS with EMM386 is best effort; see [Microsoft EMM386 and shared DMA](#microsoft-emm386-and-shared-dma).
-- A Sound Blaster (1.5/2.0, Pro, or 16) or a Windows Sound System codec. **Initialize the card before `UCDD -install`.** μCDD does not configure it. Set the jumpers, or run the card's Plug and Play or setup utility (CTCM, UNISOUND, and so on) first.
+- A Sound Blaster (1.5/2.0, Pro, or 16), a Windows Sound System codec, or an ESS AudioDrive (experimental). **Initialize the card before `UCDD -install`.** μCDD does not configure it. Set the jumpers, or run the card's Plug and Play or setup utility (CTCM, UNISOUND, and so on) first.
 
 **Protected-mode game support is incomplete.**
 
@@ -39,6 +39,7 @@ Copy `UCDD.EXE` and `UCDDSET.EXE` into one directory and run `UCDDSET`.
 </table>
 
 - **Physical** is the card in the machine. μCDD plays the mix on it. For a Plug and Play WSS codec, enter the WSS base address, four ports below the codec index port.
+- **ESS AudioDrive (experimental)**: two physical models use the extended mode of an ESS AudioDrive chip. **ESS AudioDrive** plays 16-bit stereo at about 44.1 kHz. **ESS AudioDrive 22 kHz** plays 16-bit stereo at about 22.05 kHz and uses a smaller audio buffer. The ESS port can be 220h, 230h, 240h, 250h, 260h, or 280h. At installation, μCDD measures the output rate. It stops if the rate is not correct, or if the IRQ or DMA channel of the card is different from the UCDDSET setting. For a Plug and Play ESS chip, the Plug and Play BIOS or tool must set the resources before `UCDD -install`. The ESS code was backported from the [EarBoye/uCDD](https://github.com/EarBoye/uCDD) fork. It was tested only in 86Box. In games, select Sound Blaster Pro or Sound Blaster 16, not ESS.
 - **Virtual** is what games see: a Sound Blaster (SB16, SB Pro, or SB 1.5/2.0, which report DSP 4.05, 3.02, or 2.01) and a WSS codec. The WSS codec uses the DMA Low channel of the virtual Sound Blaster, and a game can move its IRQ through the WSS board register. Where possible, match the virtual model to the physical card. For example, a virtual SB Pro on an SB Pro-compatible card keeps the game sound in 8-bit stereo and avoids a 16-bit conversion.
 - **Detect** reads the physical card from the hardware. `BLASTER` only fills in values that the tests cannot find. **Test** plays a tone on each speaker. Both need DOS without the μCDD audio driver.
 - **Mixer** sets the CD-Audio, wave, FM, and master levels. The wave level applies to the game's PCM sound. The FM level scales the FM volume that the game sets through the Sound Blaster mixer. At 100 percent, the FM level that the card had before installation stays. On an SB16, the same level also applies to a MIDI daughterboard.

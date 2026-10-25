@@ -1,3 +1,44 @@
+# Beta 0.9.5-a1
+
+## Changes in 0.9.5-a1
+
+- Add native output for ESS AudioDrive cards (experimental). UCDDSET has two new physical models: ESS AudioDrive, 16-bit stereo at about 44.1 kHz, and ESS AudioDrive 22 kHz, 16-bit stereo at about 22.05 kHz. The ESS port can be 220h, 230h, 240h, 250h, 260h, or 280h. Detect identifies an ESS AudioDrive with DSP command E7h. At installation, μCDD measures the output rate and makes sure that the IRQ and DMA channel of the card agree with the UCDDSET settings. In games, select Sound Blaster Pro or Sound Blaster 16, not ESS. Backported from the EarBoye/uCDD fork.
+- Add `UCDD -status`. It shows the sound interrupts, CD-Audio reads, and refused reads that μCDD counted since installation, the first sound fault, and the last program that the DPMI host stopped. `UCDD -status -reset` sets the counts to 0. Add this output to a bug report. The interrupt counters come from the EarBoye/uCDD fork.
+- The CD-ROM device status now reports that the drive can read XA discs. From the EarBoye/uCDD fork.
+- Read CD-Audio for a DPMI program that waits in a long real-mode call. This fixes the late CD-Audio start and the silent mission briefing in Judge Dredd, and the CD-Audio stall in Dominus.
+- While μCDD reads CD-Audio, a game that reads the PIC mask gets its own keyboard bit, not the bit that μCDD holds. This fixes the keyboard in The Even More Incredible Machine.
+- Play CD-Audio at the DOS prompt. μCDD reads CD-Audio from the DOS idle interrupt while COMMAND.COM waits for a key.
+- Ignore Ctrl+C during CD reads, so that Ctrl+C does not stop the driver. From the EarBoye/uCDD fork.
+- Fill the CD-Audio queue from the audio interrupt only when the timer stops or the queue is almost empty.
+- Use the rate of DSP command 41h for the older play commands. This fixes the pitch of the voices in The Incredible Machine 2 and The Even More Incredible Machine.
+- Raise the interrupt of DSP command F2h, and of a single-cycle block of one or two bytes, a few program instructions after the command write, not during the write. μCDD counts the instructions with single steps. If the program masks its IRQ or touches a sound port first, μCDD raises the interrupt at that time. Remove an old test interrupt when the game reads the DSP status. Lemmings 3D now finds its sound card.
+- Start a single-cycle block that is longer than the DMA count, as a real card does.
+- Send the interrupt of a single-cycle block that starts a stream after one output period, not during the start command. From the EarBoye/uCDD fork.
+- At the exact start of a new lap of an auto-initialize transfer, report the DMA count of the end of the previous lap. A game that writes its buffer up to the reported position no longer erases sound that μCDD did not mix yet. From the EarBoye/uCDD fork.
+- Accept DSP command E7h without a reply. A game that looks for an ESS chip finds a Sound Blaster, and μCDD records no sound fault.
+- On an SB16, the driver now ends MPU-401 interrupts on the card's IRQ and gives them to the virtual SB16 through mixer register 82h. Before, they went to the BIOS. From the EarBoye/uCDD fork.
+- Use the SB Pro volume curve for each channel that a game sets through the SB Pro mixer registers. This makes the sound effects in Battle Chess audible.
+- Halve the game sound only while CD-Audio plays. At other times, the game sound has its full level.
+- Keep a virtual Sound Blaster interrupt as a request until the game gets it. Before, a BIOS end of interrupt in that time removed it, and the game sound in Mortal Kombat Trilogy stopped.
+- Restore the interrupt vector before the PIC mask when the output stops. The WSS output reads the IRQ number before it restores the vector, and the SB Pro output masks the IRQ before the DSP reset. This prevents a hang after the UCDDSET sound test with a WSS card on IRQ 7. From the EarBoye/uCDD fork.
+- On SB Pro and ESS output, read port 2xEh also for a late card interrupt. The card sends no more interrupts until this read, so a late interrupt could stop the output.
+- Align the audio interrupt stack on 4 bytes. A stack at an odd address makes the audio interrupt slower.
+- Wait for the DSP after command D1h on SB Pro and SB 2.0 cards. Before, a slow card stopped the output. Add a note to the README: do not use the JEMMEX option `VME`. From the EarBoye/uCDD fork.
+- Put the DPMI host stack in its gateway block. When no UMB is free, allocate it at the top of conventional memory, so that free conventional memory stays in one block. The EarBoye/uCDD fork found this fault.
+- Install when DOS has no UMB support (`DOS=LOW`).
+- Give the caller its interrupt flag back after a BIOS disk call (INT 13h) through μCDD. This fixes the keyboard in the Pinball Wizard 2000 installer.
+- DPMI host: clear the direction flag at each entry from a program. This fixes the stop at the loading screen of MadSpace.
+- DPMI host: accept code and data descriptors of all privilege levels in functions 0009h and 000Ch. This fixes the start of Dominus.
+- DPMI host: return from a reflected INT 16h with interrupts on at the program's top level. This fixes the freeze in Mortal Kombat Trilogy. From the EarBoye/uCDD fork.
+- DPMI host: reflect a flat data segment with base 0 to real mode as segment A000h, answer INT 2Fh function 1686h in protected mode, and support nested exceptions in programs. From the EarBoye/uCDD fork.
+- DPMI host: give the end of interrupt to the BIOS for a disk IRQ that a program calls through DPMI function 0300h. This fixes GT Racing 97.
+- DPMI host: check only the stack selector when an interrupt returns. This fixes Time Warriors.
+- DPMI host: let the disk IRQs through while μCDD reads a disc image through the BIOS. This fixes Zyclunt.
+- DPMI host: limit the single steps through a program that keeps interrupts off while an interrupt waits. After 32 steps, the program runs at full speed until it turns interrupts on. This fixes the lost sound interrupts and the slow game in Iron Man and X-O Manowar in Heavy Metal.
+- DPMI host: run INT 0, 1, 2, 5, 6, and 7 from a protected-mode program as software interrupts, not as processor exceptions. This fixes the exit on the ice level of WHAM!.
+- UCDDSET shows the SB Pro rate as an approximate rate.
+- Add Dominus, Eojjeonji Joheun Il-i Saenggil Geot Gateun Jeonyeok (Night), Firo & Klawd, GT Racing 97, Johnny Bazookatone, Judge Dredd, Lemmings 3D, MadSpace: To Hell and Beyond, Mortal Kombat Trilogy, Pete Sampras Tennis 97, Quake, Scorcher, Time Warriors, WHAM!, and Zyclunt to the [compatibility list](https://github.com/vorvek/uCDD/wiki/Compatibility).
+
 # Beta 0.9.4-a6
 
 ## Changes in 0.9.4-a6

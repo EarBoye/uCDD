@@ -92,6 +92,14 @@ host_jemm_install:
     mov dx, host_mux
     mov ax, 252fh
     int 21h
+    xor ax, ax
+    mov es, ax
+    cli
+    mov eax, [es:4]
+    mov [irq_step_old], eax
+    mov word [es:4], irq_step
+    mov [es:6], cs
+    sti
     mov byte [host_installed], 1
     mov byte [host_backend], 1
     clc

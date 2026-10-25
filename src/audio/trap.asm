@@ -139,6 +139,9 @@ output_clock:
 %ifdef RESIDENT_AUDIO
     cmp byte [sound_card], 2
     jne .pro_count
+    ; Half rate: one ring byte is one mixed word.
+    cmp byte [ess_half], 0
+    jne .count_ready
     shr ax, 1
     jmp .count_ready
 .pro_count:
@@ -203,9 +206,12 @@ mixer_read:
     cmp bx, 0fh
     je .done
 %ifdef VIRTUAL_IRQ
-    mov al, [virtual_dsp_irq]
     cmp bx, 82h
-    je .done
+    jne .virtual_plain
+    call virtual_mpu_refresh
+    mov al, [virtual_dsp_irq]
+    ret
+.virtual_plain:
 %endif
     mov al, [virtual_mixer+bx]
 .done:
@@ -803,6 +809,9 @@ port_callback:
     ; Ignition sends 00h after a start. The DSP ignores it.
     test al, al
     jz .done
+    ; E7h is an ESS command. A DSP that does not know it takes it and stays silent.
+    cmp al, 0e7h
+    je .done
     cmp al, 0e1h
     jne .unsupported
     mov ax, [virtual_dsp_version]
@@ -850,8 +859,12 @@ port_callback:
     jmp .done
 .force_irq:
 %ifdef VIRTUAL_IRQ
-    ; The IRQ comes after the next port access, not on return from this OUT.
-    mov byte [force_pending], 2
+    ; The IRQ comes some guest instructions after this OUT, not during it.
+    or byte [irq_due], 1
+    mov byte [irq_due_calls], 2
+%ifdef RESIDENT_AUDIO
+    mov byte [irq_due_steps], IRQ_DUE_STEPS
+%endif
 %endif
     jmp .done
 .resume8:
@@ -1551,6 +1564,22 @@ port_callback:
     mov byte [game_active], 1
     inc word [virtual_starts]
 %ifdef RESIDENT_AUDIO
+    ; The game must run before a block that starts a stream can end.
+    mov dword [sb_hold_until], 0
+    cmp byte [sb_single], 0
+    je .hold_ready
+    cmp byte [sb_patch_available], 1
+    je .hold_ready
+    mov dword [sb_hold_until], 1
+%ifdef VIRTUAL_IRQ
+    ; A block of one or two bytes ends some instructions after this write.
+    cmp dword [game_block_bytes], 2
+    ja .hold_ready
+    or byte [irq_due], 2
+    mov byte [irq_due_calls], 2
+    mov byte [irq_due_steps], IRQ_DUE_STEPS
+%endif
+.hold_ready:
     cmp dword [ss:ebp+12], 1
     je .patch_deferred
     test bl, bl
@@ -1772,6 +1801,26 @@ port_callback:
     inc ecx
     xor edx, edx
     div ecx
+    ; The position moves one period at a time, so after each lap it rests on
+    ; the first unit of the buffer until the next period is mixed. A mixer
+    ; that follows the position takes what lies behind it as played and
+    ; clears frames that are not mixed yet. Report the last unit of the lap
+    ; before.
+    test dx, dx
+    jnz .lap_ready
+    test eax, eax
+    jz .lap_ready
+    cmp byte [sb_single], 0
+    jne .lap_ready
+%ifdef VIRTUAL_IRQ
+    ; Not while the block-end interrupt is pending: the game's handler reads
+    ; the count to find the half that ended (Assault Rigs).
+    test byte [virtual_dsp_irq], 3
+    jnz .lap_ready
+%endif
+    mov dx, cx
+    dec dx
+.lap_ready:
     mov bx, [si+DMA_COUNT]
     sub bx, dx
     jmp .snapshot
@@ -1832,11 +1881,18 @@ port_callback:
     mov [ss:bp+28], al
 .done:
 %ifdef VIRTUAL_IRQ
-    cmp byte [force_pending], 0
+    cmp byte [irq_due_calls], 0
     je .force_ready
-    dec byte [force_pending]
+    ; While the steps run, an access does not fire the event early. The
+    ; steps or the next tick fire it.
+%ifdef RESIDENT_AUDIO
+    cmp byte [irq_step_left], 0
+    jne .force_ready
+%endif
+    dec byte [irq_due_calls]
     jnz .force_ready
-    call virtual_force_raise
+    DIAG_INC diag_due_access
+    call virtual_irq_due_fire
 .force_ready:
 %endif
     cmp byte [dma_pending_command], 0
@@ -1863,6 +1919,20 @@ port_callback:
     jmp .validate_start
 .pending_done:
 %ifdef RESIDENT_AUDIO
+    ; Time the hold from the end of the write that started the block, on
+    ; both entries.
+    cmp dword [sb_hold_until], 1
+    jne .hold_timed
+    call output_clock
+    ; A block of one or two bytes ends the hold at its own end.
+    mov ecx, SB_HOLD_FRAMES
+    cmp dword [game_block_bytes], 2
+    ja .hold_short
+    mov ecx, [game_exit_frame]
+.hold_short:
+    add eax, ecx
+    mov [sb_hold_until], eax
+.hold_timed:
     cmp dword [ss:ebp+12], 1
     jne .restore
     dec byte [emm_in_callback]
@@ -1881,6 +1951,9 @@ port_callback:
 %endif
     clc
     retf
+%ifdef LAYOUT_PAD
+    times LAYOUT_PAD nop
+%endif
 
 sb_identify:
     movzx bx, byte [sb_id_phase]
@@ -2288,7 +2361,6 @@ arguments db 0
 block_low db 0
 legacy_block dw 0
 legacy_rate dw 22050
-force_pending db 0
 curve_bits db 2, 1, 0, 4
 legacy_per_channel db 0
 sb_starved db 0
@@ -2303,7 +2375,7 @@ callback_value db 0
 callback_ss dw 0
 callback_sp dw 0
 callback_depth db 0
-    align 2
+    align 4
 times 512 db 0
 callback_stack_top:
 %endif

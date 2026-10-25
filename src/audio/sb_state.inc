@@ -50,6 +50,16 @@ sb_patch_available db 0
 sb_patch_clock dd 0
 sb_patch_limit dd 0
 sb_remix_end dd 0
+; Set when a single-cycle block starts a stream: the block does not signal
+; until the game has run. 0: no hold. 1: the start write has not returned.
+; Else the output position (frames) from which the block can signal: the
+; position at the end of the start write plus SB_HOLD_FRAMES.
+sb_hold_until dd 0
+SB_HOLD_FRAMES equ 128
+; Guest instructions from an F2h or short-block start to its interrupt.
+%ifndef IRQ_DUE_STEPS
+IRQ_DUE_STEPS equ 32
+%endif
 sb_record_segment dw 0
 sb_record_halves db 0
 %endif

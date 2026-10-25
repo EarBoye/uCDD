@@ -355,6 +355,45 @@ mon_iret:
     sub ebp, .irq_base
     test byte [esp+44], 3
     jz .no_irq
+%ifdef RESIDENT_HOST
+    ; A command left an IRQ due: step the client so that the driver fires it
+    ; some instructions later. Not with the virtual IF off or a TF in use.
+    ; Steps that ended without the last INT 1 (the client loaded flags
+    ; without TF) leave no count behind.
+    cmp byte [ebp+dpmi_audio_steps], 0
+    je .audio_idle
+    cmp byte [ebp+dpmi_step_active], 0
+    jne .audio_idle
+    test word [esp+48], 100h
+    jnz .audio_idle
+    mov byte [ebp+dpmi_audio_steps], 0
+.audio_idle:
+    mov esi, [ebp+resident_audio_request]
+    test esi, esi
+    jz .audio_armed
+    cmp dword [ebp+resident_due], 0
+    je .audio_armed
+    cmp byte [esi+15], 0
+    je .audio_armed
+    cmp byte [esi+14], 0
+    je .audio_armed
+    cmp byte [ebp+dpmi_audio_steps], 0
+    jne .audio_armed
+    cmp byte [ebp+dpmi_vif], 1
+    jne .audio_armed
+    cmp byte [ebp+dpmi_step_active], 0
+    jne .audio_armed
+    cmp byte [ebp+dpmi_sti_shadow], 0
+    jne .audio_armed
+    test dword [esp+48], 20100h
+    jnz .audio_armed
+    mov al, [esi+15]
+    mov [ebp+dpmi_audio_steps], al
+    mov byte [esi+15], 0
+    or word [esp+48], 100h
+    HOST_DIAG DIAG_INDEX_ARM_PM
+.audio_armed:
+%endif
     cmp byte [ebp+dpmi_step_active], 1
     jne .check_irq
     or word [esp+48], 300h
@@ -390,6 +429,7 @@ mon_iret:
 .shadow_done:
     cmp byte [ebp+dpmi_vif], 1
     jne .armed_wait
+    mov byte [ebp+dpmi_step_holdoff], 0
     test byte [esp+44], 3
     jz .no_irq
     call dpmi_hardware_room
@@ -502,6 +542,14 @@ mon_iret:
 .armed_step:
     call dpmi_hardware_room
     jc .no_irq
+    ; A POPF without stepping turns the virtual IF on at the next host entry
+    ; (NT, see dpmi_quiet_entry). Stepping only shortens that wait.
+    cmp byte [ebp+dpmi_step_holdoff], 0
+    je .arm
+    dec byte [ebp+dpmi_step_holdoff]
+    jmp .no_irq
+.arm:
+    mov byte [ebp+dpmi_step_budget], DPMI_STEP_BUDGET
     mov byte [ebp+dpmi_step_active], 1
     ; Decode the instruction at the resume point: it can be the POPF.
     or word [esp+48], 300h
@@ -590,6 +638,7 @@ dpmi_client_init:
 .descriptors_ready:
     mov byte [ebp+dpmi_vif], 1
     mov byte [ebp+dpmi_step_active], 0
+    mov byte [ebp+dpmi_audio_steps], 0
     mov byte [ebp+dpmi_first_exception], 0ffh
     call dpmi_ivt_snapshot_protected
     call dpmi_pic_reset

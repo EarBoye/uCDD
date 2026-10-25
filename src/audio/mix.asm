@@ -551,6 +551,16 @@ mix_half:
     stosb
     jmp .left_stored
 .left_word:
+    cmp byte [ess_half], 0
+    je .left_full
+    test cl, 1
+    jnz .left_half
+    mov [pro_pair_left], eax
+    jmp .left_stored
+.left_half:
+    add eax, [pro_pair_left]
+    sar eax, 1
+.left_full:
     push edx
     cmp byte [sb_patch_active], 0
     je .left_record
@@ -657,6 +667,16 @@ mix_half:
     stosb
     jmp .right_stored
 .right_word:
+    cmp byte [ess_half], 0
+    je .right_full
+    test cl, 1
+    jnz .right_half
+    mov [pro_pair_right], eax
+    jmp .right_stored
+.right_half:
+    add eax, [pro_pair_right]
+    sar eax, 1
+.right_full:
     cmp byte [sb_patch_active], 0
     je .right_record
     call sb_record_word

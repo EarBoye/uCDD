@@ -263,6 +263,15 @@ monitor_init:
     call mon_gate
     loop .exception
 %ifdef HOST_DPMI
+    ; A ring-3 INT 0-2 or INT 5-7 is a software interrupt, not an exception:
+    ; DPL 0 makes it fault into the INT n path. INT 3 and INTO stay DPL 3.
+%assign vector 0
+%rep 8
+%if vector != 3 && vector != 4
+    and byte [es:mon_idt+vector*8+5], 9fh
+%endif
+%assign vector vector+1
+%endrep
     mov di, mon_idt+21h*8
     mov eax, [mon_base]
     add eax, dpmi_dos
@@ -1069,6 +1078,41 @@ mon_exception:
     call dpmi_sti_arrival
     cmp dword [esp+40], 1
     jne .ordinary_exception
+%ifdef RESIDENT_HOST
+    cmp byte [ebp+dpmi_audio_steps], 0
+    je .audio_done
+    test byte [esp+52], 3
+    jz .audio_done
+    mov esi, [ebp+resident_audio_request]
+    test esi, esi
+    jz .audio_stop
+    cmp byte [esi+14], 0
+    je .audio_stop
+    dec byte [ebp+dpmi_audio_steps]
+    jz .audio_due
+    cmp byte [ebp+dpmi_step_active], 1
+    je .audio_done
+    xor edi, edi
+    jmp .advance
+.audio_stop:
+    mov byte [ebp+dpmi_audio_steps], 0
+    cmp byte [ebp+dpmi_step_active], 1
+    je .audio_done
+    and word [esp+56], 0feffh
+    xor edi, edi
+    jmp .advance
+.audio_due:
+    cmp byte [ebp+dpmi_step_active], 1
+    je .audio_fire
+    and word [esp+56], 0feffh
+.audio_fire:
+    call resident_audio_due
+    cmp byte [ebp+dpmi_step_active], 1
+    je .audio_done
+    xor edi, edi
+    jmp .advance
+.audio_done:
+%endif
     cmp byte [ebp+dpmi_step_active], 1
     jne .tf_image
     test byte [esp+52], 3
@@ -1077,6 +1121,20 @@ mon_exception:
     cld
     HOST_SAMPLE_STEP
     call dpmi_step_check
+    cmp byte [ebp+dpmi_step_active], 0
+    je .budget_ready
+    dec byte [ebp+dpmi_step_budget]
+    jnz .budget_ready
+    ; A long CLI section (a blit with ESP as the pointer) runs at full speed.
+    mov byte [ebp+dpmi_step_active], 0
+%ifdef RESIDENT_HOST
+    cmp byte [ebp+dpmi_audio_steps], 0
+    jne .budget_audio
+%endif
+    and word [esp+56], 0feffh
+.budget_audio:
+    mov byte [ebp+dpmi_step_holdoff], DPMI_STEP_HOLDOFF
+.budget_ready:
     ; VIF stays clear: skip IRQ/refill checks, but retain stack repair.
     cmp word [ebp+dpmi_vif], 0100h
     jne .step_full
