@@ -2122,7 +2122,7 @@ todo = "A3: T2.EXE not written yet (the row before the program, r3.5)"
 
 [[test]]
 name = "T2X-PICSMM"
-decides = "8259:588-599"
+decides = "8259:615-617, 8259:669-681, 8259:589-599"
 runner = "probe"
 env = "PROBE_RUN='T2:T2.EXE PICSMM'"
 groups = ["t2x"]
@@ -2130,19 +2130,19 @@ fixed = { build = "pinC2", vmodel = "sb16" }
 repeat = 10
 secs = 90
 note = "special mask mode (OCW3) with the card's line in service (A3, C2)"
-todo = "A3: T2.EXE not written yet (the row before the program, r3.5)"
+todo = "A3: T2.EXE PICSMM written; held on STATE question 12: 86Box's 8259 has no special mask mode outside the IBM 5140 (ISSUES 86SMM), so C0 cannot validate it nor C2 be judged on this bench"
 
 [[test]]
 name = "T2C0-PICSMM"
-decides = "8259:588-599"
+decides = "8259:615-617, 8259:669-681, 8259:589-599"
 runner = "probe"
-env = "PROBE_RUN='T2:T2.EXE PICSMM'"
+env = "PROBE_RUN='T2:T2.EXE PICSMM C0'"
 groups = ["t2xc0"]
 fixed = { mode = "base", vmodel = "sb16" }
 repeat = 10
 secs = 90
 note = "special mask mode (OCW3) with the card's line in service (A3, C0: the client validated on 86Box's own card before C2)"
-todo = "A3: T2.EXE not written yet (the row before the program, r3.5)"
+todo = "A3: T2.EXE PICSMM written; held on STATE question 12: 86Box's 8259 has no special mask mode outside the IBM 5140 (ISSUES 86SMM), so C0 cannot validate it nor C2 be judged on this bench"
 
 [[test]]
 name = "T2X-PICSMM-M"
@@ -2216,7 +2216,7 @@ todo = "A3: T2.EXE not written yet (the row before the program, r3.5)"
 
 [[test]]
 name = "T2X-PICROT"
-decides = "8259:615-700"
+decides = "8259:615-617, 8259:621-626, 8259:673-691"
 runner = "probe"
 env = "PROBE_RUN='T2:T2.EXE PICROT'"
 groups = ["t2x"]
@@ -2224,19 +2224,17 @@ fixed = { build = "pinC2", vmodel = "sb16" }
 repeat = 10
 secs = 90
 note = "rotating priority, automatic and specific (OCW2), with the card's line in use (A3, C2)"
-todo = "A3: T2.EXE not written yet (the row before the program, r3.5)"
 
 [[test]]
 name = "T2C0-PICROT"
-decides = "8259:615-700"
+decides = "8259:615-617, 8259:621-626, 8259:673-691"
 runner = "probe"
-env = "PROBE_RUN='T2:T2.EXE PICROT'"
+env = "PROBE_RUN='T2:T2.EXE PICROT C0'"
 groups = ["t2xc0"]
 fixed = { mode = "base", vmodel = "sb16" }
 repeat = 10
 secs = 90
 note = "rotating priority, automatic and specific (OCW2), with the card's line in use (A3, C0: the client validated on 86Box's own card before C2)"
-todo = "A3: T2.EXE not written yet (the row before the program, r3.5)"
 
 [[test]]
 name = "T2X-PICROT-M"
