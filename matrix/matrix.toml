@@ -150,7 +150,7 @@ l4boot = "$UCDD_TREE/l4_boot_32$UCDD_SUFFIX"
 probe_parallel = 7
 # Groups only --group brings in: runs on the PC are Michael's evenings; the
 # Project A lists (below, before the tests) run when their gate asks.
-optional_groups = ["pc", "t0", "t1", "t2x", "sweep", "pinned", "t0l4", "t1l4"]
+optional_groups = ["pc", "t0", "t1", "t2x", "sweep", "pinned", "t0l4", "t1l4", "t1c0"]
 
 # How each runner is started, from the bench directory. $UCDD_FIXTEST is the
 # bench's fixtest.py and $UCDD_KIT its kit folder (the caller sets both, as it
@@ -1188,6 +1188,19 @@ groups = ["t0l4"]
 fixed = { build = "pinC2", vmodel = "sb16" }
 secs = 60
 note = "planted: b0 and b1 swapped in a scratch copy of deemphasis.asm; the four T0-DEEM frequencies run as one suite (ALL), which must FAIL"
+
+# The controls of list t1 (C0: 86Box's own drive and card, no uCDD), a list
+# of their own: they decide a candidate row's bin, not a case's verdict.
+
+[[test]]
+name = "T1-C0-LOAD"
+runner = "probewav"
+env = "PROBE_WAV=1 PROBE_CDROM=fixtures/synth/out/T1B.CUE PROBE_RUN='CD:!C:\\MSCDEX.EXE /D:OAKCD001 /L:G > C:\\OUT\\CD.TXT,T1:T1.EXE LOAD'"
+groups = ["t1c0"]
+fixed = { mode = "base", vmodel = "sb16" }
+repeat = 3
+secs = 120
+note = "C0 under T1-LOAD's load (Michael, 25 Oct 2026, question 9: three runs before CAND-6 is binned): disc T1B in 86Box's own drive (the C0 disc: 86Box misreads 2048-byte sheets, row 86CUE2048), OAKCDROM and MSCDEX on G:, 86Box's own SB16; play track 2 while reading CHECK.TXT four times in 2 KB requests. If the CD audio drops here too, CAND-6's bin is the emulator's"
 
 # The planted faults of list t1 (L4, A2), a list of their own.
 
