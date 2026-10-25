@@ -889,6 +889,56 @@ changed volumes.
   D7 at 128 frames). Next: the same case on the CT2290 through the pinned
   build; F11's own row.
 
+### ESSRATE: an untrimmed ESS's output rate is 44194 Hz in the README and 44192 Hz in the code (found 25 Oct 2026, open)
+
+- Found [reading], 25 Oct 2026, while writing Project A's Tier 0
+  resampler cases (A1), at the pinned build count-position 7994cd1:
+  README.md, ESS AudioDrive paragraph ("other ESS chips run at the rate
+  their data sheets give, 44194 Hz"; RELEASE-NOTES, fork section: "every
+  ESS ran at 44194 Hz") against src/audio/wss_output.asm, `ESS_RATE equ
+  44192`, which sets output_rate, cd_step and cd_step_remainder for the ESS
+  path.
+- Which is the chip's: not settled here. The ESS data sheets in the library
+  (ES1888 and the others under Sound Cards/ESS AudioDrive) give the rate
+  formula; they are to be read when the ESS is unparked.
+- Effect: the resampler's step is set against 44192; if the chip takes
+  44194 samples a second, the disc audio plays 45 ppm fast (0.0045 %, the
+  pitch high), far below any audible or 0.5 % pitch threshold. The README
+  and the code should still say one number.
+- Hypothesis (labelled, not tested): the same clock rounded two ways.
+- Not tested: the ESS is parked (Michael, 25 Oct 2026, Project A question
+  7: it stays parked); the resampler's pitch is NOT-UNIT-TESTABLE (A1), and
+  A3's pitch case (t2x-13) covers the SB Pro and SB 2.0 only.
+- Evidence: reading. Hardware: UNCONFIRMED. Under Project A's freeze: a
+  row, never a fix.
+
+### CAND-1 Tier 0, T0-CUE-I02: a CUE sheet with INDEX 02 or higher is refused (found 25 Oct 2026, open)
+
+Pinned: count-position 7994cd1 (C2 hash UCDD.EXE 03d92066, UCDDHOST.BIN 447ace33; C1 hash UCDD.EXE f8d8ec5e; rig86/fixtures/pinned/MANIFEST.txt). Bin: CANDIDATE_UCDD_CDROM, FAIL 10/10 (Tier 0; the template's 3/3 is the sweep's).
+Cell: none (Tier 0: cue.asm's prepare_image included unchanged, no game), scope not applicable until A4's image audit counts the library's sheets with INDEX 02.
+Affected: not known (A4). Controls: C0, C1 not applicable (Tier 0 runs the module, not the driver).
+Observed: T0.TXT `FAIL I02 +carry got 00000001 want 00000000` (prepare_image returns carry: the sheet is refused) in all ten runs (bdae96f1-161 to -170, folders t0c-161 to t0c-170); plan bdae96f1. Expected: the sheet mounts and index 2 is ignored for positioning (README Images, the specification uCDD implements, as Michael read it, 25 Oct 2026, Project A question 6).
+Trace: by reading, src/cue.asm:360-361 at the pinned SHA (`cmp ax, 1` / `ja cue_bad`): any INDEX number above 1 refuses the whole sheet. Minimal reproduction: `T0CUE.COM I02` (matrix T0-CUE-I02; bench dos/src/t0/t0cue.asm).
+Hypothesis (labelled, not tested): the fix exists and is the author's: Beta 0.9.4-a1 (his a8b57d4, 19 Oct 2026; RELEASE-NOTES "CUE files with a UTF-8 byte-order mark or with INDEX 02 and higher now mount"), on merge-a6 src/cue.asm:385-390 ("Check and ignore an index after INDEX 01"), built, not run; by the merging rule his version is the one kept. Evidence: emulator (plan bdae96f1), dynarec off. Hardware: UNCONFIRMED.
+
+### CAND-2 Tier 0, T0-CUE-BOM: a CUE sheet that starts with a UTF-8 byte order mark is refused (found 25 Oct 2026, open)
+
+Pinned: count-position 7994cd1 (C2 hash UCDD.EXE 03d92066, UCDDHOST.BIN 447ace33; C1 hash UCDD.EXE f8d8ec5e; rig86/fixtures/pinned/MANIFEST.txt). Bin: CANDIDATE_UCDD_CDROM, FAIL 10/10 (Tier 0; the template's 3/3 is the sweep's).
+Cell: none (Tier 0: cue.asm's prepare_image included unchanged, no game), scope not applicable until A4's image audit counts the library's sheets with a byte order mark.
+Affected: not known (A4). Controls: C0, C1 not applicable (Tier 0 runs the module, not the driver).
+Observed: T0.TXT `FAIL BOM +carry got 00000001 want 00000000` (refused) in all ten runs (bdae96f1-181 to -190, folders t0c-181 to t0c-190); plan bdae96f1; the same sheet without the mark (T0-CUE-M1R) mounts in every run. Expected: the sheet mounts (README Images, as Michael read it, 25 Oct 2026, Project A question 6).
+Trace: by reading, src/cue.asm:162-197 at the pinned SHA: the first token of each line is matched against the keywords; with EF BB BF before FILE it matches none and the parser takes `jmp cue_bad` (line 197). Minimal reproduction: `T0CUE.COM BOM` (matrix T0-CUE-BOM).
+Hypothesis (labelled, not tested): the fix exists and is the author's: Beta 0.9.4-a1 (his a8b57d4, 19 Oct 2026), on merge-a6 src/cue.asm:79-85 (the far form, the driver's mount helper, helper.asm) and 103-109 (the near form, UCDDPLAY), skipping the three bytes before the first line; built, not run; by the merging rule his version is kept. Evidence: emulator (plan bdae96f1), dynarec off. Hardware: UNCONFIRMED.
+
+### CAND-3 Tier 0, T0-ADPCM-3: the virtual Sound Blaster's 2.6-bit ADPCM decodes differently from DOSBox-X (found 25 Oct 2026, open)
+
+Pinned: count-position 7994cd1 (C2 hash UCDD.EXE 03d92066, UCDDHOST.BIN 447ace33; C1 hash UCDD.EXE f8d8ec5e; rig86/fixtures/pinned/MANIFEST.txt). Bin: CANDIDATE_UCDD_SFX, FAIL 10/10 (Tier 0; the template's 3/3 is the sweep's).
+Cell: none (Tier 0: audio/sb_adpcm.asm included unchanged, no game), scope not applicable; which games use 2.6-bit ADPCM is A4's engine census to say.
+Affected: not known (A4). Controls: C0, C1 not applicable (Tier 0 runs the module, not the driver).
+Observed: T0.TXT `FAIL 3 code 3 (byte 1) got 144 want 148; 1475 of 1920 differ` in all ten runs (bdae96f1-281 to -290, folders t0c-281 to t0c-290); plan bdae96f1. The 4-bit and 2-bit cases match DOSBox-X in every code (1280 and 2560; T0-ADPCM-4 and -2 pass). Checked outside the emulator: a Python transcription of both decoders over the same block gives the same counts and the same first difference (bench dos/src/t0/adpcm_model.py). Expected: DOSBox-X's decoder (EMUSRC: src/hardware/sblaster.cpp at f6b476e9, decode_ADPCM_3_sample and the DSP_DMA_3 split), A1's reference, graded emulator (Michael, 25 Oct 2026, question 6).
+Trace: by reading, two differences. (1) The third code of a byte: DOSBox-X takes `(b & 3) << 1`, the sign from bit 1 and a magnitude of 0 or 2; sb_adpcm.asm (.two_six with the count at 1) takes the sign from bit 1 and a magnitude of 0 or 1 (`and al, 1`). (2) The largest step: DOSBox-X's fifth row moves 5, 15, 25, 35 (a step of 10); sb_adpcm.asm doubles the step up to 16 (8, 24, 40, 56). The first difference is (1): byte 1 (6Dh) from the reference 128 gives 131 and 138 in both, then 148 in DOSBox-X (magnitude 2 at step 4) and 144 in uCDD (magnitude 1). Minimal reproduction: `T0ADPCM.COM 3` (matrix T0-ADPCM-3; bench dos/src/t0/t0adpcm.asm).
+Hypothesis (labelled, not tested): sb_adpcm.asm follows the CT1741 4.05 firmware's 2.6-bit decoder as read from S95Sedan's disassembly (its header); DOSBox-X's tables are an emulator's reconstruction. The fork's own order (vsb-spec.md 0: Creative's documents, then the firmware, then the emulators) ranks the firmware above DOSBox-X; A1 takes DOSBox-X because it forbids the firmware as the reference. Which the card does is the CT2290's to say: AKIT plays one 2.6-bit block (Michael, 25 Oct 2026). Also by reading: the author's decoder, which replaced sb_adpcm.asm on merge-a6 (UPA6, the trap.asm ADPCM line; built, not run), takes three bits a code and the fifth row 5, 15, 25, 35 (merge-a6 src/audio/mix.asm adpcm_decode; trap.asm adpcm_params, adpcm_map3): DOSBox-X's decoding. T0ADPCM cannot run there (it includes sb_adpcm.asm, which merge-a6 no longer has); the card decides between the two decoders. Evidence: emulator (plan bdae96f1), dynarec off; the decoder comparison, reading. Hardware: UNCONFIRMED.
+
 ## The feature branches offered to the author (rows reconstructed 24 Oct 2026)
 
 These four issues were ported from the fork's line onto the author's
