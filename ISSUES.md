@@ -939,6 +939,31 @@ Observed: T0.TXT `FAIL 3 code 3 (byte 1) got 144 want 148; 1475 of 1920 differ` 
 Trace: by reading, two differences. (1) The third code of a byte: DOSBox-X takes `(b & 3) << 1`, the sign from bit 1 and a magnitude of 0 or 2; sb_adpcm.asm (.two_six with the count at 1) takes the sign from bit 1 and a magnitude of 0 or 1 (`and al, 1`). (2) The largest step: DOSBox-X's fifth row moves 5, 15, 25, 35 (a step of 10); sb_adpcm.asm doubles the step up to 16 (8, 24, 40, 56). The first difference is (1): byte 1 (6Dh) from the reference 128 gives 131 and 138 in both, then 148 in DOSBox-X (magnitude 2 at step 4) and 144 in uCDD (magnitude 1). Minimal reproduction: `T0ADPCM.COM 3` (matrix T0-ADPCM-3; bench dos/src/t0/t0adpcm.asm).
 Hypothesis (labelled, not tested): sb_adpcm.asm follows the CT1741 4.05 firmware's 2.6-bit decoder as read from S95Sedan's disassembly (its header); DOSBox-X's tables are an emulator's reconstruction. The fork's own order (vsb-spec.md 0: Creative's documents, then the firmware, then the emulators) ranks the firmware above DOSBox-X; A1 takes DOSBox-X because it forbids the firmware as the reference. Which the card does is the CT2290's to say: AKIT plays one 2.6-bit block (Michael, 25 Oct 2026). Also by reading: the author's decoder, which replaced sb_adpcm.asm on merge-a6 (UPA6, the trap.asm ADPCM line; built, not run), takes three bits a code and the fifth row 5, 15, 25, 35 (merge-a6 src/audio/mix.asm adpcm_decode; trap.asm adpcm_params, adpcm_map3): DOSBox-X's decoding. T0ADPCM cannot run there (it includes sb_adpcm.asm, which merge-a6 no longer has); the card decides between the two decoders. Evidence: emulator (plan bdae96f1), dynarec off; the decoder comparison, reading. Hardware: UNCONFIRMED.
 
+### 86CUE2048: 86Box misreads a CUE sheet whose data track has 2048-byte sectors (an emulator limitation; found 25 Oct 2026)
+
+- Seen [86Box] while setting Project A's C0 control for gate A2 (OAKCDROM
+  and MSCDEX 2.25 on 86Box's own ATAPI drive, development run t1dev-c0,
+  not recorded; 86Box 6.0 build 9001, dynarec off). On T1A
+  (fixtures/synth: TRACK 01 MODE1/2048, 538 sectors, then five AUDIO
+  tracks, track 6 behind PREGAP 00:02:00) the lead-out comes out at
+  02:10:18 (Audio Disk Info) and the volume size 9618, where the sheet
+  gives 02:11:13 and 9688: the BIN's 22269824 bytes taken as 2352-byte
+  sectors (9468) plus the 150-sector gap. The track starts (Audio Track
+  Info) are right. On T1B, the same disc with the data track MODE1/2352,
+  86Box reads 02:11:13 and 9688.
+- Also, on both discs: a cooked READ LONG across the end of the data track
+  into the first audio sector returns no error (status 0100h), where the
+  pinned build answers 8108h with nothing written past the end. A real
+  drive refuses a cooked read of an audio sector; 86Box's drive is no
+  reference for it.
+- Rule (Michael, 25 Oct 2026): T1A stays the C2 disc (uCDD reads the sheet
+  as written); T1B is the C0 control disc; any C0 result on a CUE with a
+  2048-byte data track is not a control until the second emulator agrees
+  (tightening r3, T6).
+- Not ours to fix (86Box's CUE loader); nothing in uCDD changes. Evidence:
+  emulator (development runs t1dev-c0 and t1dev-c0b, 25 Oct). Hardware:
+  not applicable.
+
 ## The feature branches offered to the author (rows reconstructed 24 Oct 2026)
 
 These four issues were ported from the fork's line onto the author's
