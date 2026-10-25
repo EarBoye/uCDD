@@ -915,7 +915,7 @@ fixed = { build = "pinC2", vmodel = "sb16" }
 repeat = 10
 secs = 90
 note = "disc T1E.MDM: UCDD -mount T1E.MDM: disc 1 (T1D) mounted, volume T1D; switched to disc 2 (T1A) by its hotkey: Media Changed once, volume T1A (README Multiple discs, Hotkeys)"
-todo = "T1.EXE (bench dos/src/t1) not written; the disc copied and mounted (PROBE_EXTRA, UCDD -mount) and plan_run.py's T1 judge come with it; the switch needs a hotkey from the host or the keyboard controller, to settle"
+todo = "the switch is not yet proven to work on a good list: T1.EXE MDM presses Ctrl+Alt+2 through the keyboard controller (8042 D2h, keys held 3 ticks), which reaches the BIOS (scratch KBTEST: 1E61h), but neither pinned build switched a list of T1D and T1A (t1dev-mdmC2_32, t1dev-mdmC1_32, 25 Oct); next, the keys from the host (86Box's keyboard) to tell the instrument from the driver. On the pinned build T1E.MDM is refused at the mount anyway: T1C is not mounted there (AONLY)"
 
 [[test]]
 name = "T1-MDMMISS"
