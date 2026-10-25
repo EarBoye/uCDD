@@ -150,7 +150,7 @@ l4boot = "$UCDD_TREE/l4_boot_32$UCDD_SUFFIX"
 probe_parallel = 7
 # Groups only --group brings in: runs on the PC are Michael's evenings; the
 # Project A lists (below, before the tests) run when their gate asks.
-optional_groups = ["pc", "t0", "t1", "t2x", "sweep", "pinned"]
+optional_groups = ["pc", "t0", "t1", "t2x", "sweep", "pinned", "t0l4"]
 
 # How each runner is started, from the bench directory. $UCDD_FIXTEST is the
 # bench's fixtest.py and $UCDD_KIT its kit folder (the caller sets both, as it
@@ -258,6 +258,465 @@ library = "DOS_ACT"
 groups = ["pinned"]
 fixed = { build = "l4boot", vmodel = "sb16" }
 note = "the planted fault: must FAIL the driver check before a BOOT pass means anything (L4)"
+
+# Project A, list t0 (A1): Tier 0, the driver's pure logic, one case a
+# test, ten runs each on the pinned build (A1: 10/10). Each NASM program
+# (the bench's dos/src/t0/) includes the pinned worktree's modules unchanged
+# and writes "PASS case" or "FAIL case detail" to C:\OUT\T0.TXT. The
+# expected result is the pinned README's or the directive's, never the code's.
+# A todo says what a case lacks before it can run.
+
+[[test]]
+name = "T0-CUE-ISO"
+runner = "probe"
+env = "PROBE_RUN='T0:T0CUE.COM ISO'"
+groups = ["t0"]
+fixed = { build = "pinC2", vmodel = "sb16" }
+repeat = 10
+secs = 60
+note = "an .ISO path: 2048-byte sectors (README, Images: .ISO)"
+todo = "program not written yet (A1)"
+
+[[test]]
+name = "T0-CUE-BIN"
+runner = "probe"
+env = "PROBE_RUN='T0:T0CUE.COM BIN'"
+groups = ["t0"]
+fixed = { build = "pinC2", vmodel = "sb16" }
+repeat = 10
+secs = 60
+note = "a .BIN path alone: MODE1/2352 data, stride 2352, payload at 16, no audio track table (README, Images: .BIN alone)"
+todo = "program not written yet (A1)"
+
+[[test]]
+name = "T0-CUE-M1A"
+runner = "probe"
+env = "PROBE_RUN='T0:T0CUE.COM M1A'"
+groups = ["t0"]
+fixed = { build = "pinC2", vmodel = "sb16" }
+repeat = 10
+secs = 60
+note = "MODE1/2048 data and AUDIO tracks: accepted, the track table as the CUE arithmetic (README, Images: .CUE / .BIN)"
+todo = "program not written yet (A1)"
+
+[[test]]
+name = "T0-CUE-M1R"
+runner = "probe"
+env = "PROBE_RUN='T0:T0CUE.COM M1R'"
+groups = ["t0"]
+fixed = { build = "pinC2", vmodel = "sb16" }
+repeat = 10
+secs = 60
+note = "MODE1/2352 data track: accepted, user data at 16 (README, Images: .CUE / .BIN)"
+todo = "program not written yet (A1)"
+
+[[test]]
+name = "T0-CUE-M2F1"
+runner = "probe"
+env = "PROBE_RUN='T0:T0CUE.COM M2F1'"
+groups = ["t0"]
+fixed = { build = "pinC2", vmodel = "sb16" }
+repeat = 10
+secs = 60
+note = "MODE2/2352 with Form 1 sectors: accepted, user data at 24 (README, Images: .CUE / .BIN)"
+todo = "program not written yet (A1)"
+
+[[test]]
+name = "T0-CUE-M2X"
+runner = "probe"
+env = "PROBE_RUN='T0:T0CUE.COM M2X'"
+groups = ["t0"]
+fixed = { build = "pinC2", vmodel = "sb16" }
+repeat = 10
+secs = 60
+note = "MODE2/2336, another MODE2 form: rejected (README: other MODE2 sector formats are not supported)"
+todo = "program not written yet (A1)"
+
+[[test]]
+name = "T0-CUE-MULTI"
+runner = "probe"
+env = "PROBE_RUN='T0:T0CUE.COM MULTI'"
+groups = ["t0"]
+fixed = { build = "pinC2", vmodel = "sb16" }
+repeat = 10
+secs = 60
+note = "two FILE lines: rejected (README: multi-file CUE sheets are not supported; One BINARY file)"
+todo = "program not written yet (A1)"
+
+[[test]]
+name = "T0-CUE-SEQ"
+runner = "probe"
+env = "PROBE_RUN='T0:T0CUE.COM SEQ'"
+groups = ["t0"]
+fixed = { build = "pinC2", vmodel = "sb16" }
+repeat = 10
+secs = 60
+note = "tracks out of sequence: rejected (README: sequential tracks)"
+todo = "program not written yet (A1)"
+
+[[test]]
+name = "T0-CUE-NOI01"
+runner = "probe"
+env = "PROBE_RUN='T0:T0CUE.COM NOI01'"
+groups = ["t0"]
+fixed = { build = "pinC2", vmodel = "sb16" }
+repeat = 10
+secs = 60
+note = "a track without INDEX 01: rejected (README: INDEX 01 on each track)"
+todo = "program not written yet (A1)"
+
+[[test]]
+name = "T0-CUE-I00"
+runner = "probe"
+env = "PROBE_RUN='T0:T0CUE.COM I00'"
+groups = ["t0"]
+fixed = { build = "pinC2", vmodel = "sb16" }
+repeat = 10
+secs = 60
+note = "INDEX 00: accepted, the track starts at its INDEX 01 (README: INDEX 00 and PREGAP are accepted)"
+todo = "program not written yet (A1)"
+
+[[test]]
+name = "T0-CUE-GAPB"
+runner = "probe"
+env = "PROBE_RUN='T0:T0CUE.COM GAPB'"
+groups = ["t0"]
+fixed = { build = "pinC2", vmodel = "sb16" }
+repeat = 10
+secs = 60
+note = "PREGAP before INDEX: accepted, silence not read from the BIN, positions include the gap (README: PREGAP adds silence ...)"
+todo = "program not written yet (A1)"
+
+[[test]]
+name = "T0-CUE-PRE"
+runner = "probe"
+env = "PROBE_RUN='T0:T0CUE.COM PRE'"
+groups = ["t0"]
+fixed = { build = "pinC2", vmodel = "sb16" }
+repeat = 10
+secs = 60
+note = "FLAGS PRE: de-emphasis on for that track (README: FLAGS PRE applies CD de-emphasis)"
+todo = "program not written yet (A1)"
+
+[[test]]
+name = "T0-CUE-DCP"
+runner = "probe"
+env = "PROBE_RUN='T0:T0CUE.COM DCP'"
+groups = ["t0"]
+fixed = { build = "pinC2", vmodel = "sb16" }
+repeat = 10
+secs = 60
+note = "FLAGS DCP: accepted, no restriction (README: DCP, 4CH and SCMS are also accepted)"
+todo = "program not written yet (A1)"
+
+[[test]]
+name = "T0-CUE-4CH"
+runner = "probe"
+env = "PROBE_RUN='T0:T0CUE.COM 4CH'"
+groups = ["t0"]
+fixed = { build = "pinC2", vmodel = "sb16" }
+repeat = 10
+secs = 60
+note = "FLAGS 4CH: accepted, played as stereo (README)"
+todo = "program not written yet (A1)"
+
+[[test]]
+name = "T0-CUE-SCMS"
+runner = "probe"
+env = "PROBE_RUN='T0:T0CUE.COM SCMS'"
+groups = ["t0"]
+fixed = { build = "pinC2", vmodel = "sb16" }
+repeat = 10
+secs = 60
+note = "FLAGS SCMS: accepted, no restriction (README)"
+todo = "program not written yet (A1)"
+
+[[test]]
+name = "T0-CUE-AONLY"
+runner = "probe"
+env = "PROBE_RUN='T0:T0CUE.COM AONLY'"
+groups = ["t0"]
+fixed = { build = "pinC2", vmodel = "sb16" }
+repeat = 10
+secs = 60
+note = "audio tracks only"
+todo = "program not written yet (A1); expected result not settled: the README neither allows nor forbids an audio-only sheet (\"The data track can be ...\"); no CUE sheet specification in the library"
+
+[[test]]
+name = "T0-CUE-I02"
+runner = "probe"
+env = "PROBE_RUN='T0:T0CUE.COM I02'"
+groups = ["t0"]
+fixed = { build = "pinC2", vmodel = "sb16" }
+repeat = 10
+secs = 60
+note = "INDEX 02 and higher"
+todo = "program not written yet (A1); expected result not settled: the README names INDEX 00 and INDEX 01 only; no CUE sheet specification in the library"
+
+[[test]]
+name = "T0-CUE-GAPA"
+runner = "probe"
+env = "PROBE_RUN='T0:T0CUE.COM GAPA'"
+groups = ["t0"]
+fixed = { build = "pinC2", vmodel = "sb16" }
+repeat = 10
+secs = 60
+note = "PREGAP after INDEX"
+todo = "program not written yet (A1); expected result not settled: the README says to put PREGAP before the INDEX entries, not what happens after; no CUE sheet specification in the library"
+
+[[test]]
+name = "T0-CUE-BOM"
+runner = "probe"
+env = "PROBE_RUN='T0:T0CUE.COM BOM'"
+groups = ["t0"]
+fixed = { build = "pinC2", vmodel = "sb16" }
+repeat = 10
+secs = 60
+note = "a UTF-8 byte order mark before the first line"
+todo = "program not written yet (A1); expected result not settled: the README is silent on a BOM; no CUE sheet specification in the library"
+
+[[test]]
+name = "T0-MDM-ABS"
+runner = "probe"
+env = "PROBE_RUN='T0:T0MDM.COM ABS'"
+groups = ["t0"]
+fixed = { build = "pinC2", vmodel = "sb16" }
+repeat = 10
+secs = 60
+note = "absolute paths: every image opened (README, Multiple discs: paths may be absolute)"
+todo = "program not written yet (A1)"
+
+[[test]]
+name = "T0-MDM-REL"
+runner = "probe"
+env = "PROBE_RUN='T0:T0MDM.COM REL'"
+groups = ["t0"]
+fixed = { build = "pinC2", vmodel = "sb16" }
+repeat = 10
+secs = 60
+note = "paths relative to the MDM file (README: or relative to the MDM file)"
+todo = "program not written yet (A1)"
+
+[[test]]
+name = "T0-MDM-BLANK"
+runner = "probe"
+env = "PROBE_RUN='T0:T0MDM.COM BLANK'"
+groups = ["t0"]
+fixed = { build = "pinC2", vmodel = "sb16" }
+repeat = 10
+secs = 60
+note = "blank lines ignored (README)"
+todo = "program not written yet (A1)"
+
+[[test]]
+name = "T0-MDM-SPACE"
+runner = "probe"
+env = "PROBE_RUN='T0:T0MDM.COM SPACE'"
+groups = ["t0"]
+fixed = { build = "pinC2", vmodel = "sb16" }
+repeat = 10
+secs = 60
+note = "spaces at the start or end of a line ignored (README)"
+todo = "program not written yet (A1)"
+
+[[test]]
+name = "T0-MDM-TEN"
+runner = "probe"
+env = "PROBE_RUN='T0:T0MDM.COM TEN'"
+groups = ["t0"]
+fixed = { build = "pinC2", vmodel = "sb16" }
+repeat = 10
+secs = 60
+note = "only the first ten non-empty lines count (README)"
+todo = "program not written yet (A1)"
+
+[[test]]
+name = "T0-MDM-NEST"
+runner = "probe"
+env = "PROBE_RUN='T0:T0MDM.COM NEST'"
+groups = ["t0"]
+fixed = { build = "pinC2", vmodel = "sb16" }
+repeat = 10
+secs = 60
+note = "an MDM file listed in an MDM file: rejected (README: nested MDM files are not supported)"
+todo = "program not written yet (A1)"
+
+[[test]]
+name = "T0-MDM-MISS"
+runner = "probe"
+env = "PROBE_RUN='T0:T0MDM.COM MISS'"
+groups = ["t0"]
+fixed = { build = "pinC2", vmodel = "sb16" }
+repeat = 10
+secs = 60
+note = "a listed image missing: the mount is refused and the current image stays (README)"
+todo = "program not written yet (A1)"
+
+[[test]]
+name = "T0-MDM-BAD"
+runner = "probe"
+env = "PROBE_RUN='T0:T0MDM.COM BAD'"
+groups = ["t0"]
+fixed = { build = "pinC2", vmodel = "sb16" }
+repeat = 10
+secs = 60
+note = "a listed image invalid: the mount is refused and the current image stays (README)"
+todo = "program not written yet (A1)"
+
+[[test]]
+name = "T0-RES-44100"
+runner = "probe"
+env = "PROBE_RUN='T0:T0RES.COM 44100'"
+groups = ["t0"]
+fixed = { build = "pinC2", vmodel = "sb16" }
+repeat = 10
+secs = 60
+note = "a 1 kHz tone resampled from 44100 to 44100 Hz: pitch within 0.5 % (directive A1)"
+todo = "program not written yet (A1)"
+
+[[test]]
+name = "T0-RES-43478"
+runner = "probe"
+env = "PROBE_RUN='T0:T0RES.COM 43478'"
+groups = ["t0"]
+fixed = { build = "pinC2", vmodel = "sb16" }
+repeat = 10
+secs = 60
+note = "to 43478 Hz (the SB Pro output, driver.asm): pitch within 0.5 %"
+todo = "program not written yet (A1)"
+
+[[test]]
+name = "T0-RES-44444"
+runner = "probe"
+env = "PROBE_RUN='T0:T0RES.COM 44444'"
+groups = ["t0"]
+fixed = { build = "pinC2", vmodel = "sb16" }
+repeat = 10
+secs = 60
+note = "to 44444 Hz (the SB 2.0 output, driver.asm): pitch within 0.5 %"
+todo = "program not written yet (A1)"
+
+[[test]]
+name = "T0-RES-44192"
+runner = "probe"
+env = "PROBE_RUN='T0:T0RES.COM 44192'"
+groups = ["t0"]
+fixed = { build = "pinC2", vmodel = "sb16" }
+repeat = 10
+secs = 60
+note = "to 44192 Hz (ESS_RATE, wss_output.asm; the README says 44194): pitch within 0.5 %"
+todo = "program not written yet (A1)"
+
+[[test]]
+name = "T0-RES-22050"
+runner = "probe"
+env = "PROBE_RUN='T0:T0RES.COM 22050'"
+groups = ["t0"]
+fixed = { build = "pinC2", vmodel = "sb16" }
+repeat = 10
+secs = 60
+note = "to 22050 Hz (the ESS fast output, README): pitch within 0.5 %"
+todo = "program not written yet (A1); to confirm first that the ESS fast path runs through cd_resample.asm"
+
+[[test]]
+name = "T0-ADPCM-4"
+runner = "probe"
+env = "PROBE_RUN='T0:T0ADPCM.COM 4'"
+groups = ["t0"]
+fixed = { build = "pinC2", vmodel = "sb16" }
+repeat = 10
+secs = 60
+note = "4-bit ADPCM against a reference decoder from the public Creative description (directive A1)"
+todo = "program not written yet (A1); no source for the reference decoder: Creative's guides describe the commands and the reference byte, not the decoding (SBG 1358-1375, B-12; SBDK the same); sb_adpcm.asm follows the firmware, which A1 forbids as the reference"
+
+[[test]]
+name = "T0-ADPCM-3"
+runner = "probe"
+env = "PROBE_RUN='T0:T0ADPCM.COM 3'"
+groups = ["t0"]
+fixed = { build = "pinC2", vmodel = "sb16" }
+repeat = 10
+secs = 60
+note = "2.6-bit (3-bit) ADPCM, as T0-ADPCM-4"
+todo = "program not written yet (A1); as T0-ADPCM-4"
+
+[[test]]
+name = "T0-ADPCM-2"
+runner = "probe"
+env = "PROBE_RUN='T0:T0ADPCM.COM 2'"
+groups = ["t0"]
+fixed = { build = "pinC2", vmodel = "sb16" }
+repeat = 10
+secs = 60
+note = "2-bit ADPCM, as T0-ADPCM-4"
+todo = "program not written yet (A1); as T0-ADPCM-4"
+
+[[test]]
+name = "T0-DEEM-1K"
+runner = "probe"
+env = "PROBE_RUN='T0:T0DEEM.COM 1000'"
+groups = ["t0"]
+fixed = { build = "pinC2", vmodel = "sb16" }
+repeat = 10
+secs = 60
+note = "de-emphasis gain at 1 kHz within 0.5 dB of the analytic 50/15 us curve (directive A1)"
+todo = "program not written yet (A1)"
+
+[[test]]
+name = "T0-DEEM-3K5"
+runner = "probe"
+env = "PROBE_RUN='T0:T0DEEM.COM 3500'"
+groups = ["t0"]
+fixed = { build = "pinC2", vmodel = "sb16" }
+repeat = 10
+secs = 60
+note = "at 3.5 kHz, within 0.5 dB"
+todo = "program not written yet (A1)"
+
+[[test]]
+name = "T0-DEEM-10K"
+runner = "probe"
+env = "PROBE_RUN='T0:T0DEEM.COM 10000'"
+groups = ["t0"]
+fixed = { build = "pinC2", vmodel = "sb16" }
+repeat = 10
+secs = 60
+note = "at 10 kHz, within 0.5 dB"
+todo = "program not written yet (A1)"
+
+[[test]]
+name = "T0-DEEM-16K"
+runner = "probe"
+env = "PROBE_RUN='T0:T0DEEM.COM 16000'"
+groups = ["t0"]
+fixed = { build = "pinC2", vmodel = "sb16" }
+repeat = 10
+secs = 60
+note = "at 16 kHz, within 0.5 dB"
+todo = "program not written yet (A1)"
+
+# Its planted faults (L4, A1), a list of their own so their FAILs never
+# stand as list t0's evidence.
+
+[[test]]
+name = "T0L4-CUE-GAP"
+runner = "probe"
+env = "PROBE_RUN='T0:T0CUEL4.COM GAPB'"
+groups = ["t0l4"]
+fixed = { build = "pinC2", vmodel = "sb16" }
+secs = 60
+note = "planted: cue.asm's PREGAP arithmetic off by one frame in a scratch copy; T0-CUE-GAPB must FAIL"
+todo = "program not written yet (A1)"
+
+[[test]]
+name = "T0L4-DEEM"
+runner = "probe"
+env = "PROBE_RUN='T0:T0DEEML4.COM 1000'"
+groups = ["t0l4"]
+fixed = { build = "pinC2", vmodel = "sb16" }
+secs = 60
+note = "planted: a coefficient swapped in a scratch copy of deemphasis.asm; T0-DEEM must FAIL"
+todo = "program not written yet (A1)"
 
 # Probes (regress.sh list a), checked against the bench 20 Oct. PROBE_RUN
 # is "TAG:PROGRAM ARGS,..."; the perf and verify runners take the same steps
