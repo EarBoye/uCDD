@@ -70,7 +70,7 @@ reprogrammable (D09:353-356, 2082-2104).
 | V-2 | DE0Ch from V86 may be called with IF set after a real-mode call. | VCPI:615 | No change: JemmEx enters its INT 67h handler with interrupts off (review 2). |
 | X-1 | XMS: the CD queue, the cache, the MDM backup and the resident host from the 0-4 GB pool; no A20 calls; UMBs through DOS. | XMS:70-141; JR:357-362 | No change. |
 | X-2 | EMS queue (a build option): 47h/48h around each copy, one context per handle. | EMS:528-541, 1337-1415 | No change: a nested copy fails cleanly with 8Dh. |
-| Q-1 | Word and dword I/O on the Sound Blaster's ports: only a word OUT to base+4 is taken; others are dropped. | RBIL.P:5965-5974 | Open (rare). |
+| Q-1 | Word and dword I/O on the Sound Blaster's ports: only a word OUT to base+4 is taken; others are dropped. | RBIL.P:5965-5974 | Open (rare). The same drop on the 8259's ports, seen 26 Oct 2026: a word OUT to 20h loses its mask byte for 21h and a masked card interrupt never comes (ISSUES.md CAND-7, T2X-PICWORD, C2 0/10; I386:8218-8219). |
 | Q-2 | Jemm's internals are read through an undocumented IOCTL (versions 5605h and 5705h only). | JR:351-353 | No change; a new Jemm may need a look. |
 | Q-3 | VME: with Jemm's VME option a game's CLI leaves IF set in the V86 frame, which the trap exit tests (`host_jemm.asm`, host_io_irq). | JR:194-196 | **Documented.** The README lists `VME` among the JEMMEX options to avoid; `NOVME` is Jemm's default. |
 
