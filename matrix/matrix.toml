@@ -275,7 +275,6 @@ fixed = { build = "pinC2", vmodel = "sb16" }
 repeat = 10
 secs = 60
 note = "an .ISO path: 2048-byte sectors (README, Images: .ISO)"
-todo = "program not written yet (A1)"
 
 [[test]]
 name = "T0-CUE-BIN"
@@ -286,7 +285,6 @@ fixed = { build = "pinC2", vmodel = "sb16" }
 repeat = 10
 secs = 60
 note = "a .BIN path alone: MODE1/2352 data, stride 2352, payload at 16, no audio track table (README, Images: .BIN alone)"
-todo = "program not written yet (A1)"
 
 [[test]]
 name = "T0-CUE-M1A"
@@ -297,7 +295,6 @@ fixed = { build = "pinC2", vmodel = "sb16" }
 repeat = 10
 secs = 60
 note = "MODE1/2048 data and AUDIO tracks: accepted, the track table as the CUE arithmetic (README, Images: .CUE / .BIN)"
-todo = "program not written yet (A1)"
 
 [[test]]
 name = "T0-CUE-M1R"
@@ -308,7 +305,6 @@ fixed = { build = "pinC2", vmodel = "sb16" }
 repeat = 10
 secs = 60
 note = "MODE1/2352 data track: accepted, user data at 16 (README, Images: .CUE / .BIN)"
-todo = "program not written yet (A1)"
 
 [[test]]
 name = "T0-CUE-M2F1"
@@ -319,7 +315,6 @@ fixed = { build = "pinC2", vmodel = "sb16" }
 repeat = 10
 secs = 60
 note = "MODE2/2352 with Form 1 sectors: accepted, user data at 24 (README, Images: .CUE / .BIN)"
-todo = "program not written yet (A1)"
 
 [[test]]
 name = "T0-CUE-M2X"
@@ -330,7 +325,6 @@ fixed = { build = "pinC2", vmodel = "sb16" }
 repeat = 10
 secs = 60
 note = "MODE2/2336, another MODE2 form: rejected (README: other MODE2 sector formats are not supported)"
-todo = "program not written yet (A1)"
 
 [[test]]
 name = "T0-CUE-MULTI"
@@ -341,7 +335,6 @@ fixed = { build = "pinC2", vmodel = "sb16" }
 repeat = 10
 secs = 60
 note = "two FILE lines: rejected (README: multi-file CUE sheets are not supported; One BINARY file)"
-todo = "program not written yet (A1)"
 
 [[test]]
 name = "T0-CUE-SEQ"
@@ -352,7 +345,6 @@ fixed = { build = "pinC2", vmodel = "sb16" }
 repeat = 10
 secs = 60
 note = "tracks out of sequence: rejected (README: sequential tracks)"
-todo = "program not written yet (A1)"
 
 [[test]]
 name = "T0-CUE-NOI01"
@@ -363,7 +355,6 @@ fixed = { build = "pinC2", vmodel = "sb16" }
 repeat = 10
 secs = 60
 note = "a track without INDEX 01: rejected (README: INDEX 01 on each track)"
-todo = "program not written yet (A1)"
 
 [[test]]
 name = "T0-CUE-I00"
@@ -374,7 +365,6 @@ fixed = { build = "pinC2", vmodel = "sb16" }
 repeat = 10
 secs = 60
 note = "INDEX 00: accepted, the track starts at its INDEX 01 (README: INDEX 00 and PREGAP are accepted)"
-todo = "program not written yet (A1)"
 
 [[test]]
 name = "T0-CUE-GAPB"
@@ -385,7 +375,6 @@ fixed = { build = "pinC2", vmodel = "sb16" }
 repeat = 10
 secs = 60
 note = "PREGAP before INDEX: accepted, silence not read from the BIN, positions include the gap (README: PREGAP adds silence ...)"
-todo = "program not written yet (A1)"
 
 [[test]]
 name = "T0-CUE-PRE"
@@ -396,7 +385,6 @@ fixed = { build = "pinC2", vmodel = "sb16" }
 repeat = 10
 secs = 60
 note = "FLAGS PRE: de-emphasis on for that track (README: FLAGS PRE applies CD de-emphasis)"
-todo = "program not written yet (A1)"
 
 [[test]]
 name = "T0-CUE-DCP"
@@ -407,7 +395,6 @@ fixed = { build = "pinC2", vmodel = "sb16" }
 repeat = 10
 secs = 60
 note = "FLAGS DCP: accepted, no restriction (README: DCP, 4CH and SCMS are also accepted)"
-todo = "program not written yet (A1)"
 
 [[test]]
 name = "T0-CUE-4CH"
@@ -418,7 +405,6 @@ fixed = { build = "pinC2", vmodel = "sb16" }
 repeat = 10
 secs = 60
 note = "FLAGS 4CH: accepted, played as stereo (README)"
-todo = "program not written yet (A1)"
 
 [[test]]
 name = "T0-CUE-SCMS"
@@ -429,7 +415,6 @@ fixed = { build = "pinC2", vmodel = "sb16" }
 repeat = 10
 secs = 60
 note = "FLAGS SCMS: accepted, no restriction (README)"
-todo = "program not written yet (A1)"
 
 [[test]]
 name = "T0-CUE-AONLY"
@@ -706,7 +691,6 @@ groups = ["t0l4"]
 fixed = { build = "pinC2", vmodel = "sb16" }
 secs = 60
 note = "planted: cue.asm's PREGAP arithmetic off by one frame in a scratch copy; T0-CUE-GAPB must FAIL"
-todo = "program not written yet (A1)"
 
 [[test]]
 name = "T0L4-DEEM"
