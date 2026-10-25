@@ -1282,19 +1282,17 @@ fixed = { build = "pinC2", vmodel = "sb16" }
 repeat = 10
 secs = 90
 note = "DSP reset: 1 then 0 to 2x6h, 2xEh bit 7, then AAh at 2xAh; again with a command half sent (A3, C2)"
-todo = "A3: T2.EXE not written yet (the row before the program, r3.5)"
 
 [[test]]
 name = "T2C0-RESET"
 decides = "VSB:114-150, SBG:900-921"
 runner = "probe"
-env = "PROBE_RUN='T2:T2.EXE RESET'"
+env = "PROBE_RUN='T2:T2.EXE RESET C0'"
 groups = ["t2xc0"]
 fixed = { mode = "base", vmodel = "sb16" }
 repeat = 10
 secs = 90
 note = "DSP reset: 1 then 0 to 2x6h, 2xEh bit 7, then AAh at 2xAh; again with a command half sent (A3, C0: the client validated on 86Box's own card before C2)"
-todo = "A3: T2.EXE not written yet (the row before the program, r3.5)"
 
 [[test]]
 name = "T2X-VERSION"
@@ -1306,19 +1304,17 @@ fixed = { build = "pinC2", vmodel = "sb16" }
 repeat = 10
 secs = 90
 note = "E1h answers 04h 0Dh, the DSP 4.13 the virtual SB16 presents since 17 Oct 2026 (VSB:273-274; VSB section 1 table still says 4.05, stale) (A3, C2)"
-todo = "A3: T2.EXE not written yet (the row before the program, r3.5)"
 
 [[test]]
 name = "T2C0-VERSION"
 decides = "VSB:270-274, SBG:4051-4062"
 runner = "probe"
-env = "PROBE_RUN='T2:T2.EXE VERSION'"
+env = "PROBE_RUN='T2:T2.EXE VERSION C0'"
 groups = ["t2xc0"]
 fixed = { mode = "base", vmodel = "sb16" }
 repeat = 10
 secs = 90
 note = "E1h answers 04h 0Dh, the DSP 4.13 the virtual SB16 presents since 17 Oct 2026 (VSB:273-274; VSB section 1 table still says 4.05, stale) (A3, C0: the client validated on 86Box's own card before C2)"
-todo = "A3: T2.EXE not written yet (the row before the program, r3.5)"
 
 [[test]]
 name = "T2X-RSTREAD"
@@ -1330,19 +1326,17 @@ fixed = { build = "pinC2", vmodel = "sb16" }
 repeat = 10
 secs = 90
 note = "a read of the reset port 2x6h: FFh, the port is write only (A3, C2)"
-todo = "A3: T2.EXE not written yet (the row before the program, r3.5)"
 
 [[test]]
 name = "T2C0-RSTREAD"
 decides = "VSB:111-113, SBG:870-871"
 runner = "probe"
-env = "PROBE_RUN='T2:T2.EXE RSTREAD'"
+env = "PROBE_RUN='T2:T2.EXE RSTREAD C0'"
 groups = ["t2xc0"]
 fixed = { mode = "base", vmodel = "sb16" }
 repeat = 10
 secs = 90
 note = "a read of the reset port 2x6h: FFh, the port is write only (A3, C0: the client validated on 86Box's own card before C2)"
-todo = "A3: T2.EXE not written yet (the row before the program, r3.5)"
 
 [[test]]
 name = "T2X-BUSY"
@@ -1354,19 +1348,17 @@ fixed = { build = "pinC2", vmodel = "sb16" }
 repeat = 10
 secs = 90
 note = "write-buffer status 2xCh bit 7 around a command and its arguments; read-buffer status 2xEh bit 7 before and after a reply (A3, C2)"
-todo = "A3: T2.EXE not written yet (the row before the program, r3.5)"
 
 [[test]]
 name = "T2C0-BUSY"
 decides = "VSB:151-174, SBG:960-1000"
 runner = "probe"
-env = "PROBE_RUN='T2:T2.EXE BUSY'"
+env = "PROBE_RUN='T2:T2.EXE BUSY C0'"
 groups = ["t2xc0"]
 fixed = { mode = "base", vmodel = "sb16" }
 repeat = 10
 secs = 90
 note = "write-buffer status 2xCh bit 7 around a command and its arguments; read-buffer status 2xEh bit 7 before and after a reply (A3, C0: the client validated on 86Box's own card before C2)"
-todo = "A3: T2.EXE not written yet (the row before the program, r3.5)"
 
 [[test]]
 name = "T2X-UNKNOWN"
@@ -1378,19 +1370,17 @@ fixed = { build = "pinC2", vmodel = "sb16" }
 repeat = 10
 secs = 90
 note = "00h, 38h, E1h and F8h with nothing after them: none hangs the DSP (a reset and E1h answer after each); every reply recorded (A3, C2)"
-todo = "A3: T2.EXE not written yet (the row before the program, r3.5)"
 
 [[test]]
 name = "T2C0-UNKNOWN"
 decides = "VSB:156-158, VSB:229-271"
 runner = "probe"
-env = "PROBE_RUN='T2:T2.EXE UNKNOWN'"
+env = "PROBE_RUN='T2:T2.EXE UNKNOWN C0'"
 groups = ["t2xc0"]
 fixed = { mode = "base", vmodel = "sb16" }
 repeat = 10
 secs = 90
 note = "00h, 38h, E1h and F8h with nothing after them: none hangs the DSP (a reset and E1h answer after each); every reply recorded (A3, C0: the client validated on 86Box's own card before C2)"
-todo = "A3: T2.EXE not written yet (the row before the program, r3.5)"
 
 [[test]]
 name = "T2X-MIXER"
@@ -1402,19 +1392,17 @@ fixed = { build = "pinC2", vmodel = "sb16" }
 repeat = 10
 secs = 90
 note = "mixer byte access (index at 2x4h, data at 2x5h) and word access (one 16-bit OUT to 2x4h, index and data together): the CT1745 registers written and read back as VSB 9.4 gives (A3, C2)"
-todo = "A3: T2.EXE not written yet (the row before the program, r3.5)"
 
 [[test]]
 name = "T2C0-MIXER"
 decides = "VSB:513-587, SBG:2219-2277, I386:8218-8244"
 runner = "probe"
-env = "PROBE_RUN='T2:T2.EXE MIXER'"
+env = "PROBE_RUN='T2:T2.EXE MIXER C0'"
 groups = ["t2xc0"]
 fixed = { mode = "base", vmodel = "sb16" }
 repeat = 10
 secs = 90
 note = "mixer byte access (index at 2x4h, data at 2x5h) and word access (one 16-bit OUT to 2x4h, index and data together): the CT1745 registers written and read back as VSB 9.4 gives (A3, C0: the client validated on 86Box's own card before C2)"
-todo = "A3: T2.EXE not written yet (the row before the program, r3.5)"
 
 [[test]]
 name = "T2X-VOLUME"
@@ -1474,19 +1462,17 @@ fixed = { build = "pinC2", vmodel = "sb16" }
 repeat = 10
 secs = 90
 note = "the IRQ detection sequence: F2h, the interrupt on the configured line only, 82h bit 0, acknowledged at 2xEh (A3, C2)"
-todo = "A3: T2.EXE not written yet (the row before the program, r3.5)"
 
 [[test]]
 name = "T2C0-IRQDET"
 decides = "VSB:474-489, SBG:1030-1076, CT2290"
 runner = "probe"
-env = "PROBE_RUN='T2:T2.EXE IRQDET'"
+env = "PROBE_RUN='T2:T2.EXE IRQDET C0'"
 groups = ["t2xc0"]
 fixed = { mode = "base", vmodel = "sb16" }
 repeat = 10
 secs = 90
 note = "the IRQ detection sequence: F2h, the interrupt on the configured line only, 82h bit 0, acknowledged at 2xEh (A3, C0: the client validated on 86Box's own card before C2)"
-todo = "A3: T2.EXE not written yet (the row before the program, r3.5)"
 
 [[test]]
 name = "T2X-IRQDET-M"
@@ -2098,19 +2084,17 @@ fixed = { build = "pinC2", vmodel = "sb16" }
 repeat = 10
 secs = 90
 note = "word writes to 20h and 21h (one 16-bit OUT: the command at 20h and the mask at 21h) with the card's line in use (A3, C2)"
-todo = "A3: T2.EXE not written yet (the row before the program, r3.5)"
 
 [[test]]
 name = "T2C0-PICWORD"
 decides = "8259:565-587, I386:8218-8244"
 runner = "probe"
-env = "PROBE_RUN='T2:T2.EXE PICWORD'"
+env = "PROBE_RUN='T2:T2.EXE PICWORD C0'"
 groups = ["t2xc0"]
 fixed = { mode = "base", vmodel = "sb16" }
 repeat = 10
 secs = 90
 note = "word writes to 20h and 21h (one 16-bit OUT: the command at 20h and the mask at 21h) with the card's line in use (A3, C0: the client validated on 86Box's own card before C2)"
-todo = "A3: T2.EXE not written yet (the row before the program, r3.5)"
 
 [[test]]
 name = "T2X-PICWORD-M"
@@ -2194,19 +2178,17 @@ fixed = { build = "pinC2", vmodel = "sb16" }
 repeat = 10
 secs = 90
 note = "a specific EOI (OCW2) for the card's line, and one for another line while the card's is in service (A3, C2)"
-todo = "A3: T2.EXE not written yet (the row before the program, r3.5)"
 
 [[test]]
 name = "T2C0-PICSEOI"
 decides = "8259:565-595"
 runner = "probe"
-env = "PROBE_RUN='T2:T2.EXE PICSEOI'"
+env = "PROBE_RUN='T2:T2.EXE PICSEOI C0'"
 groups = ["t2xc0"]
 fixed = { mode = "base", vmodel = "sb16" }
 repeat = 10
 secs = 90
 note = "a specific EOI (OCW2) for the card's line, and one for another line while the card's is in service (A3, C0: the client validated on 86Box's own card before C2)"
-todo = "A3: T2.EXE not written yet (the row before the program, r3.5)"
 
 [[test]]
 name = "T2X-PICSEOI-M"
@@ -2314,19 +2296,17 @@ fixed = { build = "pinC2", vmodel = "sb16" }
 repeat = 10
 secs = 90
 note = "INT 67h DE00h under C2: AH nonzero, VCPI not available while uCDD provides DPMI (A3, C2)"
-todo = "A3: T2.EXE not written yet (the row before the program, r3.5)"
 
 [[test]]
 name = "T2C0-VCPI"
 decides = "VCPI:304-316"
 runner = "probe"
-env = "PROBE_RUN='T2:T2.EXE VCPI'"
+env = "PROBE_RUN='T2:T2.EXE VCPI C0'"
 groups = ["t2xc0"]
 fixed = { mode = "base", vmodel = "sb16" }
 repeat = 10
 secs = 90
 note = "INT 67h DE00h under C0: AH 0, VCPI present (JemmEx alone) (A3, C0: the client validated on 86Box's own card before C2)"
-todo = "A3: T2.EXE not written yet (the row before the program, r3.5)"
 
 [[test]]
 name = "T2X-TIMERSTOP"
