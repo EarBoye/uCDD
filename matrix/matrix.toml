@@ -469,7 +469,6 @@ fixed = { build = "pinC2", vmodel = "sb16" }
 repeat = 10
 secs = 60
 note = "absolute paths: every image opened (README, Multiple discs: paths may be absolute)"
-todo = "program not written yet (A1)"
 
 [[test]]
 name = "T0-MDM-REL"
@@ -480,7 +479,6 @@ fixed = { build = "pinC2", vmodel = "sb16" }
 repeat = 10
 secs = 60
 note = "paths relative to the MDM file (README: or relative to the MDM file)"
-todo = "program not written yet (A1)"
 
 [[test]]
 name = "T0-MDM-BLANK"
@@ -491,7 +489,6 @@ fixed = { build = "pinC2", vmodel = "sb16" }
 repeat = 10
 secs = 60
 note = "blank lines ignored (README)"
-todo = "program not written yet (A1)"
 
 [[test]]
 name = "T0-MDM-SPACE"
@@ -502,7 +499,6 @@ fixed = { build = "pinC2", vmodel = "sb16" }
 repeat = 10
 secs = 60
 note = "spaces at the start or end of a line ignored (README)"
-todo = "program not written yet (A1)"
 
 [[test]]
 name = "T0-MDM-TEN"
@@ -513,7 +509,6 @@ fixed = { build = "pinC2", vmodel = "sb16" }
 repeat = 10
 secs = 60
 note = "only the first ten non-empty lines count (README)"
-todo = "program not written yet (A1)"
 
 [[test]]
 name = "T0-MDM-NEST"
@@ -524,7 +519,6 @@ fixed = { build = "pinC2", vmodel = "sb16" }
 repeat = 10
 secs = 60
 note = "an MDM file listed in an MDM file: rejected (README: nested MDM files are not supported)"
-todo = "program not written yet (A1)"
 
 [[test]]
 name = "T0-MDM-MISS"
@@ -535,7 +529,6 @@ fixed = { build = "pinC2", vmodel = "sb16" }
 repeat = 10
 secs = 60
 note = "a listed image missing: the mount is refused and the current image stays (README)"
-todo = "program not written yet (A1)"
 
 [[test]]
 name = "T0-MDM-BAD"
@@ -546,7 +539,6 @@ fixed = { build = "pinC2", vmodel = "sb16" }
 repeat = 10
 secs = 60
 note = "a listed image invalid: the mount is refused and the current image stays (README)"
-todo = "program not written yet (A1)"
 
 [[test]]
 name = "T0-RES-44100"
@@ -557,7 +549,7 @@ fixed = { build = "pinC2", vmodel = "sb16" }
 repeat = 10
 secs = 60
 note = "a 1 kHz tone resampled from 44100 to 44100 Hz: pitch within 0.5 % (directive A1)"
-todo = "program not written yet (A1)"
+todo = "NOT-UNIT-TESTABLE (A1): the pitch is set in the mixer, mix_half's loop (mix.asm, mix_run.asm MIX_RUN_DISC_RATE), not in cd_resample.asm; it takes the disc audio from the XMS or EMS queue (cd_queue_read, cd_xms) and the resident audio's state (36 to 64 data symbols, routines in five other modules), so it cannot run with no DOS state unless its caller or its queue is stood in for, which A1 forbids"
 
 [[test]]
 name = "T0-RES-43478"
@@ -568,7 +560,7 @@ fixed = { build = "pinC2", vmodel = "sb16" }
 repeat = 10
 secs = 60
 note = "to 43478 Hz (the SB Pro output, driver.asm): pitch within 0.5 %"
-todo = "program not written yet (A1)"
+todo = "NOT-UNIT-TESTABLE (A1): the pitch is set in the mixer, mix_half's loop (mix.asm, mix_run.asm MIX_RUN_DISC_RATE), not in cd_resample.asm; it takes the disc audio from the XMS or EMS queue (cd_queue_read, cd_xms) and the resident audio's state (36 to 64 data symbols, routines in five other modules), so it cannot run with no DOS state unless its caller or its queue is stood in for, which A1 forbids"
 
 [[test]]
 name = "T0-RES-44444"
@@ -579,7 +571,7 @@ fixed = { build = "pinC2", vmodel = "sb16" }
 repeat = 10
 secs = 60
 note = "to 44444 Hz (the SB 2.0 output, driver.asm): pitch within 0.5 %"
-todo = "program not written yet (A1)"
+todo = "NOT-UNIT-TESTABLE (A1): the pitch is set in the mixer, mix_half's loop (mix.asm, mix_run.asm MIX_RUN_DISC_RATE), not in cd_resample.asm; it takes the disc audio from the XMS or EMS queue (cd_queue_read, cd_xms) and the resident audio's state (36 to 64 data symbols, routines in five other modules), so it cannot run with no DOS state unless its caller or its queue is stood in for, which A1 forbids"
 
 [[test]]
 name = "T0-RES-44192"
@@ -590,7 +582,7 @@ fixed = { build = "pinC2", vmodel = "sb16" }
 repeat = 10
 secs = 60
 note = "to 44192 Hz (ESS_RATE, wss_output.asm; the README says 44194): pitch within 0.5 %"
-todo = "program not written yet (A1)"
+todo = "NOT-UNIT-TESTABLE (A1): the pitch is set in the mixer, mix_half's loop (mix.asm, mix_run.asm MIX_RUN_DISC_RATE), not in cd_resample.asm; it takes the disc audio from the XMS or EMS queue (cd_queue_read, cd_xms) and the resident audio's state (36 to 64 data symbols, routines in five other modules), so it cannot run with no DOS state unless its caller or its queue is stood in for, which A1 forbids"
 
 [[test]]
 name = "T0-RES-22050"
@@ -601,7 +593,7 @@ fixed = { build = "pinC2", vmodel = "sb16" }
 repeat = 10
 secs = 60
 note = "to 22050 Hz (the ESS fast output, README): pitch within 0.5 %"
-todo = "program not written yet (A1); to confirm first that the ESS fast path runs through cd_resample.asm"
+todo = "NOT-UNIT-TESTABLE (A1): the pitch is set in the mixer, mix_half's loop (mix.asm, mix_run.asm MIX_RUN_DISC_RATE), not in cd_resample.asm; it takes the disc audio from the XMS or EMS queue (cd_queue_read, cd_xms) and the resident audio's state (36 to 64 data symbols, routines in five other modules), so it cannot run with no DOS state unless its caller or its queue is stood in for, which A1 forbids"
 
 [[test]]
 name = "T0-ADPCM-4"
