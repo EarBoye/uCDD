@@ -136,8 +136,9 @@ ess128 = "$UCDD_TREE/build_128${UCDD_SUFFIX}_ess"
 [run]
 # Probes may share the machine; a recording never does (lesson L6).
 probe_parallel = 7
-# Groups only --group brings in: runs on the PC are Michael's evenings.
-optional_groups = ["pc"]
+# Groups only --group brings in: runs on the PC are Michael's evenings; the
+# Project A lists (below, before the tests) run when their gate asks.
+optional_groups = ["pc", "t0", "t1", "t2x", "sweep"]
 
 # How each runner is started, from the bench directory. $UCDD_FIXTEST is the
 # bench's fixtest.py and $UCDD_KIT its kit folder (the caller sets both, as it
@@ -191,6 +192,15 @@ command = "on the PC with the kit of {build}: RUN {game}"
 # may be varied over (default: every value not parked or opt-in).
 # findings: the rows it checks. repeat: runs per configuration, for faults
 # that come and go. todo: what it lacks before it can run.
+
+# Project A's lists (Michael's directive project_a.md, gate A0, 25 Oct
+# 2026), empty until their gates add tests. A test joins a list through its
+# groups; only --group brings a list in (run.optional_groups). Every run on
+# count-position 7994cd1 at 32 frames, the pinned build.
+#   t0     unit tests of the driver's pure logic (A1)
+#   t1     driver conformance on synthetic discs (A2)
+#   t2x    the Tier 2 cases beyond SBT16, SBPROBE and DMACNT (A3)
+#   sweep  the library, every game (A6)
 
 # Probes (regress.sh list a), checked against the bench 20 Oct. PROBE_RUN
 # is "TAG:PROGRAM ARGS,..."; the perf and verify runners take the same steps
