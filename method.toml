@@ -304,6 +304,10 @@ vsb-spec = "docs/vsb-spec.md"  # the rows' name for VSB ("vsb-spec 7.8")
 VESS = "docs/vess-spec.md"
 HOSTCD = "docs/host-cdrom-spec.md"
 PDMA = "docs/platform-dma.md"
+# The README is the specification uCDD implements for its images (Michael,
+# 25 Oct 2026, Project A A1); for Project A, as at the pinned build
+# (count-position 7994cd1). No CUE sheet specification exists to fetch.
+README = "README.md"
 SPECFIRST = "docs/spec-first.md"
 SNDLIB = "docs/sound-engines/findings.md"
 CT2290 = "docs/sound-engines/ct2290.md"

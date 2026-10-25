@@ -424,8 +424,7 @@ groups = ["t0"]
 fixed = { build = "pinC2", vmodel = "sb16" }
 repeat = 10
 secs = 60
-note = "audio tracks only"
-todo = "program not written yet (A1); expected result not settled: the README neither allows nor forbids an audio-only sheet (\"The data track can be ...\"); no CUE sheet specification in the library"
+note = "audio tracks only: mounts (Michael, 25 Oct 2026, question 6: README Images, the specification uCDD implements; the author's 0.9.4-a3 note says so too)"
 
 [[test]]
 name = "T0-CUE-I02"
@@ -435,8 +434,7 @@ groups = ["t0"]
 fixed = { build = "pinC2", vmodel = "sb16" }
 repeat = 10
 secs = 60
-note = "INDEX 02 and higher"
-todo = "program not written yet (A1); expected result not settled: the README names INDEX 00 and INDEX 01 only; no CUE sheet specification in the library"
+note = "INDEX 02 and higher: mounts, index 2 ignored for positioning (Michael, 25 Oct 2026, question 6; the author's 0.9.4-a1 note)"
 
 [[test]]
 name = "T0-CUE-GAPA"
@@ -446,8 +444,7 @@ groups = ["t0"]
 fixed = { build = "pinC2", vmodel = "sb16" }
 repeat = 10
 secs = 60
-note = "PREGAP after INDEX"
-todo = "program not written yet (A1); expected result not settled: the README says to put PREGAP before the INDEX entries, not what happens after; no CUE sheet specification in the library"
+note = "PREGAP after INDEX, which has no real-disc meaning: rejected, or accepted with the gap ignored; the program records which, either passes (Michael, 25 Oct 2026, question 6)"
 
 [[test]]
 name = "T0-CUE-BOM"
@@ -457,8 +454,7 @@ groups = ["t0"]
 fixed = { build = "pinC2", vmodel = "sb16" }
 repeat = 10
 secs = 60
-note = "a UTF-8 byte order mark before the first line"
-todo = "program not written yet (A1); expected result not settled: the README is silent on a BOM; no CUE sheet specification in the library"
+note = "a UTF-8 byte order mark before the first line: mounts (Michael, 25 Oct 2026, question 6; the author's 0.9.4-a1 note)"
 
 [[test]]
 name = "T0-MDM-ABS"
@@ -603,8 +599,7 @@ groups = ["t0"]
 fixed = { build = "pinC2", vmodel = "sb16" }
 repeat = 10
 secs = 60
-note = "4-bit ADPCM against a reference decoder from the public Creative description (directive A1)"
-todo = "program not written yet (A1); no source for the reference decoder: Creative's guides describe the commands and the reference byte, not the decoding (SBG 1358-1375, B-12; SBDK the same); sb_adpcm.asm follows the firmware, which A1 forbids as the reference"
+note = "4-bit ADPCM, block with its reference byte, against a reference decoder written from DOSBox-X's step-shift tables (EMUSRC: src/hardware/sblaster.cpp at f6b476e9, decode_ADPCM_4_sample); graded emulator, not data sheet (Michael, 25 Oct 2026, question 6; AKIT plays one block on the CT2290 to promote it)"
 
 [[test]]
 name = "T0-ADPCM-3"
@@ -614,8 +609,7 @@ groups = ["t0"]
 fixed = { build = "pinC2", vmodel = "sb16" }
 repeat = 10
 secs = 60
-note = "2.6-bit (3-bit) ADPCM, as T0-ADPCM-4"
-todo = "program not written yet (A1); as T0-ADPCM-4"
+note = "2.6-bit ADPCM, as T0-ADPCM-4, against a reference decoder written from DOSBox-X's step-shift tables (EMUSRC: src/hardware/sblaster.cpp at f6b476e9, decode_ADPCM_3_sample); graded emulator, not data sheet (Michael, 25 Oct 2026, question 6; AKIT plays one block on the CT2290 to promote it)"
 
 [[test]]
 name = "T0-ADPCM-2"
@@ -625,8 +619,7 @@ groups = ["t0"]
 fixed = { build = "pinC2", vmodel = "sb16" }
 repeat = 10
 secs = 60
-note = "2-bit ADPCM, as T0-ADPCM-4"
-todo = "program not written yet (A1); as T0-ADPCM-4"
+note = "2-bit ADPCM, as T0-ADPCM-4, against a reference decoder written from DOSBox-X's step-shift tables (EMUSRC: src/hardware/sblaster.cpp at f6b476e9, decode_ADPCM_2_sample); graded emulator, not data sheet (Michael, 25 Oct 2026, question 6; AKIT plays one block on the CT2290 to promote it)"
 
 [[test]]
 name = "T0-DEEM-1K"
@@ -667,6 +660,18 @@ fixed = { build = "pinC2", vmodel = "sb16" }
 repeat = 10
 secs = 60
 note = "at 16 kHz, within 0.5 dB"
+
+# Project A, list t2x (A3): the cases beyond SBT16, SBPROBE and DMACNT. The
+# rest come with A3.
+
+[[test]]
+name = "T2X-13"
+runner = "probe"
+groups = ["t2x"]
+fixed = { build = "pinC2" }
+repeat = 10
+note = "the pitch of a 1 kHz CD tone under 86Box's SB Pro and SB 2.0 as the physical card (output 43478 and 44444 Hz), within 0.5 % (Michael, 25 Oct 2026, question 7: the resampler's pitch is NOT-UNIT-TESTABLE; the ESS stays parked)"
+todo = "A3: not written; the physical axis has no SB Pro or SB 2.0 value yet"
 
 # Its planted faults (L4, A1), a list of their own so their FAILs never
 # stand as list t0's evidence.
