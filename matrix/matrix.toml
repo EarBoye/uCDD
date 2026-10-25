@@ -758,8 +758,7 @@ groups = ["t1"]
 fixed = { build = "pinC2", vmodel = "sb16" }
 repeat = 10
 secs = 90
-note = "disc T1A: Return Volume Size (IOCTL input 8): the lead-out by the sheet with the PREGAP, counted as MSCDEX counts it (MSCDEX:598-606; README Images: track positions include the gaps)"
-todo = "expected value: STATE question 8 (MSCDEX 2.1 counts the lead-out's Red Book address, 9838 on T1A; OAKCDROM on 86Box and the pinned build answer HSG, 9688)"
+note = "disc T1A: Return Volume Size (IOCTL input 8): 9688 on T1A, the data sector count to the lead-out (HSG); MSCDEX:598's formula counts the same place in absolute frames, 9838, the 150-frame pregap included. Decided by ECMA119:1255-1258 (8.4.8 Volume Space Size) and HOSTCD M-4 (copied from the period drivers: OAKCDROM answers 9688; Michael, 25 Oct 2026, question 8)"
 
 [[test]]
 name = "T1-SECSIZE"
@@ -1089,8 +1088,7 @@ groups = ["t1"]
 fixed = { build = "pinC1", vmodel = "sb16" }
 repeat = 10
 secs = 90
-note = "disc T1A: C1, the CD-only build: Return Volume Size (IOCTL input 8): the lead-out by the sheet with the PREGAP, counted as MSCDEX counts it (MSCDEX:598-606; README Images: track positions include the gaps)"
-todo = "expected value: STATE question 8 (MSCDEX 2.1 counts the lead-out's Red Book address, 9838 on T1A; OAKCDROM on 86Box and the pinned build answer HSG, 9688)"
+note = "disc T1A: C1, the CD-only build: Return Volume Size (IOCTL input 8): 9688 on T1A, the data sector count to the lead-out (HSG); MSCDEX:598's formula counts the same place in absolute frames, 9838, the 150-frame pregap included. Decided by ECMA119:1255-1258 (8.4.8 Volume Space Size) and HOSTCD M-4 (copied from the period drivers: OAKCDROM answers 9688; Michael, 25 Oct 2026, question 8)"
 
 [[test]]
 name = "T1-C1-SECSIZE"
