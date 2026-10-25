@@ -673,145 +673,133 @@ note = "at 16 kHz, within 0.5 dB"
 [[test]]
 name = "T1-INST"
 runner = "probe"
-env = "PROBE_RUN='T1:T1.EXE INST'"
+env = "PROBE_EXTRA='fixtures/synth/out/T1A.BIN|T1\\T1A.BIN;fixtures/synth/out/T1A.CUE|T1\\T1A.CUE' PROBE_RUN='CD:!C:\\SHSUCDX.COM /D:UCDD0001 /L:G > C:\\OUT\\CD.TXT,M:!C:\\UCDD\\UCDD.EXE -mount C:\\T1\\T1A.CUE > C:\\OUT\\M.TXT,T1:T1.EXE INST'"
 groups = ["t1"]
 fixed = { build = "pinC2", vmodel = "sb16" }
 repeat = 10
 secs = 90
 note = "disc T1A: installation check: INT 2Fh 1500h one CD-ROM letter (G:), 150Bh says G: is one, 150Dh lists it (MSCDEX:1249-1281)"
-todo = "T1.EXE (bench dos/src/t1) not written; the disc copied and mounted (PROBE_EXTRA, UCDD -mount) and plan_run.py's T1 judge come with it"
 
 [[test]]
 name = "T1-READL-1"
 runner = "probe"
-env = "PROBE_RUN='T1:T1.EXE READL 1'"
+env = "PROBE_EXTRA='fixtures/synth/out/T1A.BIN|T1\\T1A.BIN;fixtures/synth/out/T1A.CUE|T1\\T1A.CUE' PROBE_RUN='CD:!C:\\SHSUCDX.COM /D:UCDD0001 /L:G > C:\\OUT\\CD.TXT,M:!C:\\UCDD\\UCDD.EXE -mount C:\\T1\\T1A.CUE > C:\\OUT\\M.TXT,T1:T1.EXE READL 1'"
 groups = ["t1"]
 fixed = { build = "pinC2", vmodel = "sb16" }
 repeat = 10
 secs = 90
 note = "disc T1A: Read Long (device command 128 through INT 2Fh 1510h) of CHECK.TXT in 1-sector requests: CRC32 A3A46D5C (fixtures/synth/MANIFEST.txt) (MSCDEX:373, 1593)"
-todo = "T1.EXE (bench dos/src/t1) not written; the disc copied and mounted (PROBE_EXTRA, UCDD -mount) and plan_run.py's T1 judge come with it"
 
 [[test]]
 name = "T1-READL-6"
 runner = "probe"
-env = "PROBE_RUN='T1:T1.EXE READL 6'"
+env = "PROBE_EXTRA='fixtures/synth/out/T1A.BIN|T1\\T1A.BIN;fixtures/synth/out/T1A.CUE|T1\\T1A.CUE' PROBE_RUN='CD:!C:\\SHSUCDX.COM /D:UCDD0001 /L:G > C:\\OUT\\CD.TXT,M:!C:\\UCDD\\UCDD.EXE -mount C:\\T1\\T1A.CUE > C:\\OUT\\M.TXT,T1:T1.EXE READL 6'"
 groups = ["t1"]
 fixed = { build = "pinC2", vmodel = "sb16" }
 repeat = 10
 secs = 90
 note = "disc T1A: Read Long of CHECK.TXT in 6-sector requests: CRC32 A3A46D5C (fixtures/synth/MANIFEST.txt) (MSCDEX:373, 1593)"
-todo = "T1.EXE (bench dos/src/t1) not written; the disc copied and mounted (PROBE_EXTRA, UCDD -mount) and plan_run.py's T1 judge come with it"
 
 [[test]]
 name = "T1-READL-64"
 runner = "probe"
-env = "PROBE_RUN='T1:T1.EXE READL 64'"
+env = "PROBE_EXTRA='fixtures/synth/out/T1A.BIN|T1\\T1A.BIN;fixtures/synth/out/T1A.CUE|T1\\T1A.CUE' PROBE_RUN='CD:!C:\\SHSUCDX.COM /D:UCDD0001 /L:G > C:\\OUT\\CD.TXT,M:!C:\\UCDD\\UCDD.EXE -mount C:\\T1\\T1A.CUE > C:\\OUT\\M.TXT,T1:T1.EXE READL 64'"
 groups = ["t1"]
 fixed = { build = "pinC2", vmodel = "sb16" }
 repeat = 10
 secs = 90
 note = "disc T1A: Read Long of CHECK.TXT in 64-sector requests: CRC32 A3A46D5C (fixtures/synth/MANIFEST.txt) (MSCDEX:373, 1593)"
-todo = "T1.EXE (bench dos/src/t1) not written; the disc copied and mounted (PROBE_EXTRA, UCDD -mount) and plan_run.py's T1 judge come with it"
 
 [[test]]
 name = "T1-ABS-1"
 runner = "probe"
-env = "PROBE_RUN='T1:T1.EXE ABS 1'"
+env = "PROBE_EXTRA='fixtures/synth/out/T1A.BIN|T1\\T1A.BIN;fixtures/synth/out/T1A.CUE|T1\\T1A.CUE' PROBE_RUN='CD:!C:\\SHSUCDX.COM /D:UCDD0001 /L:G > C:\\OUT\\CD.TXT,M:!C:\\UCDD\\UCDD.EXE -mount C:\\T1\\T1A.CUE > C:\\OUT\\M.TXT,T1:T1.EXE ABS 1'"
 groups = ["t1"]
 fixed = { build = "pinC2", vmodel = "sb16" }
 repeat = 10
 secs = 90
 note = "disc T1A: absolute read (INT 2Fh 1508h) of CHECK.TXT in 1-sector requests: CRC32 A3A46D5C (fixtures/synth/MANIFEST.txt) (MSCDEX:1392-1430)"
-todo = "T1.EXE (bench dos/src/t1) not written; the disc copied and mounted (PROBE_EXTRA, UCDD -mount) and plan_run.py's T1 judge come with it"
 
 [[test]]
 name = "T1-ABS-6"
 runner = "probe"
-env = "PROBE_RUN='T1:T1.EXE ABS 6'"
+env = "PROBE_EXTRA='fixtures/synth/out/T1A.BIN|T1\\T1A.BIN;fixtures/synth/out/T1A.CUE|T1\\T1A.CUE' PROBE_RUN='CD:!C:\\SHSUCDX.COM /D:UCDD0001 /L:G > C:\\OUT\\CD.TXT,M:!C:\\UCDD\\UCDD.EXE -mount C:\\T1\\T1A.CUE > C:\\OUT\\M.TXT,T1:T1.EXE ABS 6'"
 groups = ["t1"]
 fixed = { build = "pinC2", vmodel = "sb16" }
 repeat = 10
 secs = 90
 note = "disc T1A: absolute read of CHECK.TXT in 6-sector requests: CRC32 A3A46D5C (fixtures/synth/MANIFEST.txt) (MSCDEX:1392-1430)"
-todo = "T1.EXE (bench dos/src/t1) not written; the disc copied and mounted (PROBE_EXTRA, UCDD -mount) and plan_run.py's T1 judge come with it"
 
 [[test]]
 name = "T1-ABS-64"
 runner = "probe"
-env = "PROBE_RUN='T1:T1.EXE ABS 64'"
+env = "PROBE_EXTRA='fixtures/synth/out/T1A.BIN|T1\\T1A.BIN;fixtures/synth/out/T1A.CUE|T1\\T1A.CUE' PROBE_RUN='CD:!C:\\SHSUCDX.COM /D:UCDD0001 /L:G > C:\\OUT\\CD.TXT,M:!C:\\UCDD\\UCDD.EXE -mount C:\\T1\\T1A.CUE > C:\\OUT\\M.TXT,T1:T1.EXE ABS 64'"
 groups = ["t1"]
 fixed = { build = "pinC2", vmodel = "sb16" }
 repeat = 10
 secs = 90
 note = "disc T1A: absolute read of CHECK.TXT in 64-sector requests: CRC32 A3A46D5C (fixtures/synth/MANIFEST.txt) (MSCDEX:1392-1430)"
-todo = "T1.EXE (bench dos/src/t1) not written; the disc copied and mounted (PROBE_EXTRA, UCDD -mount) and plan_run.py's T1 judge come with it"
 
 [[test]]
 name = "T1-READEND"
 runner = "probe"
-env = "PROBE_RUN='T1:T1.EXE READEND'"
+env = "PROBE_EXTRA='fixtures/synth/out/T1A.BIN|T1\\T1A.BIN;fixtures/synth/out/T1A.CUE|T1\\T1A.CUE' PROBE_RUN='CD:!C:\\SHSUCDX.COM /D:UCDD0001 /L:G > C:\\OUT\\CD.TXT,M:!C:\\UCDD\\UCDD.EXE -mount C:\\T1\\T1A.CUE > C:\\OUT\\M.TXT,T1:T1.EXE READEND'"
 groups = ["t1"]
 fixed = { build = "pinC2", vmodel = "sb16" }
 repeat = 10
 secs = 90
 note = "disc T1A: a read across the end of the data track: an error from the first sector past it, no bytes of an audio sector, no wrap to sector 0, no hang (A2; MSCDEX:500)"
-todo = "T1.EXE (bench dos/src/t1) not written; the disc copied and mounted (PROBE_EXTRA, UCDD -mount) and plan_run.py's T1 judge come with it"
 
 [[test]]
 name = "T1-VOLSIZE"
 runner = "probe"
-env = "PROBE_RUN='T1:T1.EXE VOLSIZE'"
+env = "PROBE_EXTRA='fixtures/synth/out/T1A.BIN|T1\\T1A.BIN;fixtures/synth/out/T1A.CUE|T1\\T1A.CUE' PROBE_RUN='CD:!C:\\SHSUCDX.COM /D:UCDD0001 /L:G > C:\\OUT\\CD.TXT,M:!C:\\UCDD\\UCDD.EXE -mount C:\\T1\\T1A.CUE > C:\\OUT\\M.TXT,T1:T1.EXE VOLSIZE'"
 groups = ["t1"]
 fixed = { build = "pinC2", vmodel = "sb16" }
 repeat = 10
 secs = 90
 note = "disc T1A: Return Volume Size (IOCTL input 8): the lead-out by the sheet with the PREGAP, counted as MSCDEX counts it (MSCDEX:598-606; README Images: track positions include the gaps)"
-todo = "T1.EXE (bench dos/src/t1) not written; the disc copied and mounted (PROBE_EXTRA, UCDD -mount) and plan_run.py's T1 judge come with it"
+todo = "expected value: STATE question 8 (MSCDEX 2.1 counts the lead-out's Red Book address, 9838 on T1A; OAKCDROM on 86Box and the pinned build answer HSG, 9688)"
 
 [[test]]
 name = "T1-SECSIZE"
 runner = "probe"
-env = "PROBE_RUN='T1:T1.EXE SECSIZE'"
+env = "PROBE_EXTRA='fixtures/synth/out/T1A.BIN|T1\\T1A.BIN;fixtures/synth/out/T1A.CUE|T1\\T1A.CUE' PROBE_RUN='CD:!C:\\SHSUCDX.COM /D:UCDD0001 /L:G > C:\\OUT\\CD.TXT,M:!C:\\UCDD\\UCDD.EXE -mount C:\\T1\\T1A.CUE > C:\\OUT\\M.TXT,T1:T1.EXE SECSIZE'"
 groups = ["t1"]
 fixed = { build = "pinC2", vmodel = "sb16" }
 repeat = 10
 secs = 90
 note = "disc T1A: Return Sector Size (IOCTL input 7): 2048 cooked, 2352 raw (MSCDEX:588-596)"
-todo = "T1.EXE (bench dos/src/t1) not written; the disc copied and mounted (PROBE_EXTRA, UCDD -mount) and plan_run.py's T1 judge come with it"
 
 [[test]]
 name = "T1-MEDIA"
 runner = "probe"
-env = "PROBE_RUN='T1:T1.EXE MEDIA'"
+env = "PROBE_EXTRA='fixtures/synth/out/T1A.BIN|T1\\T1A.BIN;fixtures/synth/out/T1A.CUE|T1\\T1A.CUE' PROBE_RUN='CD:!C:\\SHSUCDX.COM /D:UCDD0001 /L:G > C:\\OUT\\CD.TXT,M:!C:\\UCDD\\UCDD.EXE -mount C:\\T1\\T1A.CUE > C:\\OUT\\M.TXT,T1:T1.EXE MEDIA 1,M2:!C:\\UCDD\\UCDD.EXE -mount C:\\T1\\T1A.CUE -drive G > C:\\OUT\\M2.TXT,T12:T1.EXE MEDIA 2'"
 groups = ["t1"]
 fixed = { build = "pinC2", vmodel = "sb16" }
 repeat = 10
 secs = 90
 note = "disc T1A: Media Changed (IOCTL input 9): not changed within a run; changed once after a host-side remount between two T1 steps in one boot (A2; MSCDEX:610-648)"
-todo = "T1.EXE (bench dos/src/t1) not written; the disc copied and mounted (PROBE_EXTRA, UCDD -mount) and plan_run.py's T1 judge come with it; the remount between two T1 steps in one boot"
 
 [[test]]
 name = "T1-DISKINFO"
 runner = "probe"
-env = "PROBE_RUN='T1:T1.EXE DISKINFO'"
+env = "PROBE_EXTRA='fixtures/synth/out/T1A.BIN|T1\\T1A.BIN;fixtures/synth/out/T1A.CUE|T1\\T1A.CUE' PROBE_RUN='CD:!C:\\SHSUCDX.COM /D:UCDD0001 /L:G > C:\\OUT\\CD.TXT,M:!C:\\UCDD\\UCDD.EXE -mount C:\\T1\\T1A.CUE > C:\\OUT\\M.TXT,T1:T1.EXE DISKINFO'"
 groups = ["t1"]
 fixed = { build = "pinC2", vmodel = "sb16" }
 repeat = 10
 secs = 90
 note = "disc T1A: Audio Disk Info (IOCTL input 10): tracks 1 to 6, the lead-out by the sheet with track 6's PREGAP (MSCDEX:651-669; README Images)"
-todo = "T1.EXE (bench dos/src/t1) not written; the disc copied and mounted (PROBE_EXTRA, UCDD -mount) and plan_run.py's T1 judge come with it"
 
 [[test]]
 name = "T1-TRKINFO"
 runner = "probe"
-env = "PROBE_RUN='T1:T1.EXE TRKINFO'"
+env = "PROBE_EXTRA='fixtures/synth/out/T1A.BIN|T1\\T1A.BIN;fixtures/synth/out/T1A.CUE|T1\\T1A.CUE' PROBE_RUN='CD:!C:\\SHSUCDX.COM /D:UCDD0001 /L:G > C:\\OUT\\CD.TXT,M:!C:\\UCDD\\UCDD.EXE -mount C:\\T1\\T1A.CUE > C:\\OUT\\M.TXT,T1:T1.EXE TRKINFO'"
 groups = ["t1"]
 fixed = { build = "pinC2", vmodel = "sb16" }
 repeat = 10
 secs = 90
 note = "disc T1A: Audio Track Info (IOCTL input 11) for each track: starts by the sheet's arithmetic with the PREGAP; track 1 marked data, track 5 marked PRE (MSCDEX:671-695; README Images: FLAGS PRE)"
-todo = "T1.EXE (bench dos/src/t1) not written; the disc copied and mounted (PROBE_EXTRA, UCDD -mount) and plan_run.py's T1 judge come with it"
 
 [[test]]
 name = "T1-PLAY2"
@@ -893,35 +881,32 @@ todo = "T1.EXE (bench dos/src/t1) not written; the disc copied and mounted (PROB
 [[test]]
 name = "T1-SEEK"
 runner = "probe"
-env = "PROBE_RUN='T1:T1.EXE SEEK'"
+env = "PROBE_EXTRA='fixtures/synth/out/T1A.BIN|T1\\T1A.BIN;fixtures/synth/out/T1A.CUE|T1\\T1A.CUE' PROBE_RUN='CD:!C:\\SHSUCDX.COM /D:UCDD0001 /L:G > C:\\OUT\\CD.TXT,M:!C:\\UCDD\\UCDD.EXE -mount C:\\T1\\T1A.CUE > C:\\OUT\\M.TXT,T1:T1.EXE SEEK'"
 groups = ["t1"]
 fixed = { build = "pinC2", vmodel = "sb16" }
 repeat = 10
 secs = 90
 note = "disc T1A: Seek (131), then Read Long: CHECK.TXT's sectors, CRC32 A3A46D5C (fixtures/synth/MANIFEST.txt) (MSCDEX:376)"
-todo = "T1.EXE (bench dos/src/t1) not written; the disc copied and mounted (PROBE_EXTRA, UCDD -mount) and plan_run.py's T1 judge come with it"
 
 [[test]]
 name = "T1-EJECT"
 runner = "probe"
-env = "PROBE_RUN='T1:T1.EXE EJECT'"
+env = "PROBE_EXTRA='fixtures/synth/out/T1A.BIN|T1\\T1A.BIN;fixtures/synth/out/T1A.CUE|T1\\T1A.CUE' PROBE_RUN='CD:!C:\\SHSUCDX.COM /D:UCDD0001 /L:G > C:\\OUT\\CD.TXT,M:!C:\\UCDD\\UCDD.EXE -mount C:\\T1\\T1A.CUE > C:\\OUT\\M.TXT,T1:T1.EXE EJECT'"
 groups = ["t1"]
 fixed = { build = "pinC2", vmodel = "sb16" }
 repeat = 10
 secs = 90
 note = "disc T1A: IOCTL output Eject Disk, Lock and Unlock Door: no disc after the eject, the image kept open; a locked drive is not changed (MSCDEX:808-896; README Usage and Hotkeys)"
-todo = "T1.EXE (bench dos/src/t1) not written; the disc copied and mounted (PROBE_EXTRA, UCDD -mount) and plan_run.py's T1 judge come with it"
 
 [[test]]
 name = "T1-PREFETCH"
 runner = "probe"
-env = "PROBE_RUN='T1:T1.EXE PREFETCH'"
+env = "PROBE_EXTRA='fixtures/synth/out/T1A.BIN|T1\\T1A.BIN;fixtures/synth/out/T1A.CUE|T1\\T1A.CUE' PROBE_RUN='CD:!C:\\SHSUCDX.COM /D:UCDD0001 /L:G > C:\\OUT\\CD.TXT,M:!C:\\UCDD\\UCDD.EXE -mount C:\\T1\\T1A.CUE > C:\\OUT\\M.TXT,T1:T1.EXE PREFETCH'"
 groups = ["t1"]
 fixed = { build = "pinC2", vmodel = "sb16" }
 repeat = 10
 secs = 90
 note = "disc T1A: Read Long Prefetch (130), then Read Long of the same sectors: CRC32 A3A46D5C (fixtures/synth/MANIFEST.txt) (MSCDEX:375)"
-todo = "T1.EXE (bench dos/src/t1) not written; the disc copied and mounted (PROBE_EXTRA, UCDD -mount) and plan_run.py's T1 judge come with it"
 
 [[test]]
 name = "T1-MDM"
@@ -937,13 +922,12 @@ todo = "T1.EXE (bench dos/src/t1) not written; the disc copied and mounted (PROB
 [[test]]
 name = "T1-MDMMISS"
 runner = "probe"
-env = "PROBE_RUN='T1:T1.EXE MDMMISS'"
+env = "PROBE_EXTRA='fixtures/synth/out/T1A.BIN|T1\\T1A.BIN;fixtures/synth/out/T1A.CUE|T1\\T1A.CUE;fixtures/synth/out/T1D.ISO|T1\\T1D.ISO;fixtures/synth/out/T1F.MDM|T1\\T1F.MDM' PROBE_RUN='CD:!C:\\SHSUCDX.COM /D:UCDD0001 /L:G > C:\\OUT\\CD.TXT,M:!C:\\UCDD\\UCDD.EXE -mount C:\\T1\\T1A.CUE > C:\\OUT\\M.TXT,M2:!C:\\UCDD\\UCDD.EXE -mount C:\\T1\\T1F.MDM -drive G > C:\\OUT\\M2.TXT,T1:T1.EXE MDMMISS'"
 groups = ["t1"]
 fixed = { build = "pinC2", vmodel = "sb16" }
 repeat = 10
 secs = 90
 note = "disc T1F.MDM: UCDD -mount T1F.MDM over a mounted T1A: refused, T1A stays mounted (README Multiple discs: a missing listed image leaves the current one mounted)"
-todo = "T1.EXE (bench dos/src/t1) not written; the disc copied and mounted (PROBE_EXTRA, UCDD -mount) and plan_run.py's T1 judge come with it"
 
 [[test]]
 name = "T1-LOAD"
@@ -959,13 +943,12 @@ todo = "T1.EXE (bench dos/src/t1) not written; the disc copied and mounted (PROB
 [[test]]
 name = "T1-RAW"
 runner = "probe"
-env = "PROBE_RUN='T1:T1.EXE RAW'"
+env = "PROBE_EXTRA='fixtures/synth/out/T1B.BIN|T1\\T1B.BIN;fixtures/synth/out/T1B.CUE|T1\\T1B.CUE' PROBE_RUN='CD:!C:\\SHSUCDX.COM /D:UCDD0001 /L:G > C:\\OUT\\CD.TXT,M:!C:\\UCDD\\UCDD.EXE -mount C:\\T1\\T1B.CUE > C:\\OUT\\M.TXT,T1:T1.EXE RAW'"
 groups = ["t1"]
 fixed = { build = "pinC2", vmodel = "sb16" }
 repeat = 10
 secs = 90
 note = "disc T1B: T1B, the data track MODE1/2352: Read Long of CHECK.TXT (cooked, 2048 bytes a sector) CRC32 A3A46D5C (fixtures/synth/MANIFEST.txt); sector and volume size as T1A's (README Images: MODE1/2352)"
-todo = "T1.EXE (bench dos/src/t1) not written; the disc copied and mounted (PROBE_EXTRA, UCDD -mount) and plan_run.py's T1 judge come with it"
 
 [[test]]
 name = "T1-AONLY"
@@ -981,222 +964,203 @@ todo = "T1.EXE (bench dos/src/t1) not written; the disc copied and mounted (PROB
 [[test]]
 name = "T1-ISO"
 runner = "probe"
-env = "PROBE_RUN='T1:T1.EXE ISO'"
+env = "PROBE_EXTRA='fixtures/synth/out/T1D.ISO|T1\\T1D.ISO' PROBE_RUN='CD:!C:\\SHSUCDX.COM /D:UCDD0001 /L:G > C:\\OUT\\CD.TXT,M:!C:\\UCDD\\UCDD.EXE -mount C:\\T1\\T1D.ISO > C:\\OUT\\M.TXT,T1:T1.EXE ISO'"
 groups = ["t1"]
 fixed = { build = "pinC2", vmodel = "sb16" }
 repeat = 10
 secs = 90
 note = "disc T1D.ISO: T1D.ISO: Read Long of CHECK.TXT CRC32 A3A46D5C (fixtures/synth/MANIFEST.txt); volume T1D (README Images: .ISO)"
-todo = "T1.EXE (bench dos/src/t1) not written; the disc copied and mounted (PROBE_EXTRA, UCDD -mount) and plan_run.py's T1 judge come with it"
 
 [[test]]
 name = "T1-NMULT"
 runner = "probe"
-env = "PROBE_RUN='T1:T1.EXE NMULT'"
+env = "PROBE_EXTRA='fixtures/synth/out/T1A.BIN|T1\\T1A.BIN;fixtures/synth/out/T1C.BIN|T1\\T1C.BIN;fixtures/synth/out/T1NMULT.CUE|T1\\T1NMULT.CUE' PROBE_RUN='CD:!C:\\SHSUCDX.COM /D:UCDD0001 /L:G > C:\\OUT\\CD.TXT,M:!C:\\UCDD\\UCDD.EXE -mount C:\\T1\\T1NMULT.CUE > C:\\OUT\\M.TXT,T1:T1.EXE NMULT'"
 groups = ["t1"]
 fixed = { build = "pinC2", vmodel = "sb16" }
 repeat = 10
 secs = 90
 note = "disc T1NMULT.CUE: a sheet with two FILE lines: the mount refused (README Images: multi-file CUE sheets are not supported)"
-todo = "T1.EXE (bench dos/src/t1) not written; the disc copied and mounted (PROBE_EXTRA, UCDD -mount) and plan_run.py's T1 judge come with it"
 
 [[test]]
 name = "T1-NM2336"
 runner = "probe"
-env = "PROBE_RUN='T1:T1.EXE NM2336'"
+env = "PROBE_EXTRA='fixtures/synth/out/T1A.BIN|T1\\T1A.BIN;fixtures/synth/out/T1NM2336.CUE|T1\\T1NM2336.CUE' PROBE_RUN='CD:!C:\\SHSUCDX.COM /D:UCDD0001 /L:G > C:\\OUT\\CD.TXT,M:!C:\\UCDD\\UCDD.EXE -mount C:\\T1\\T1NM2336.CUE > C:\\OUT\\M.TXT,T1:T1.EXE NM2336'"
 groups = ["t1"]
 fixed = { build = "pinC2", vmodel = "sb16" }
 repeat = 10
 secs = 90
 note = "disc T1NM2336.CUE: a MODE2/2336 track: the mount refused (README Images: other MODE2 sector formats are not supported)"
-todo = "T1.EXE (bench dos/src/t1) not written; the disc copied and mounted (PROBE_EXTRA, UCDD -mount) and plan_run.py's T1 judge come with it"
 
 [[test]]
 name = "T1-NNOI01"
 runner = "probe"
-env = "PROBE_RUN='T1:T1.EXE NNOI01'"
+env = "PROBE_EXTRA='fixtures/synth/out/T1C.BIN|T1\\T1C.BIN;fixtures/synth/out/T1NNOI01.CUE|T1\\T1NNOI01.CUE' PROBE_RUN='CD:!C:\\SHSUCDX.COM /D:UCDD0001 /L:G > C:\\OUT\\CD.TXT,M:!C:\\UCDD\\UCDD.EXE -mount C:\\T1\\T1NNOI01.CUE > C:\\OUT\\M.TXT,T1:T1.EXE NNOI01'"
 groups = ["t1"]
 fixed = { build = "pinC2", vmodel = "sb16" }
 repeat = 10
 secs = 90
 note = "disc T1NNOI01.CUE: a track with INDEX 00 and no INDEX 01: the mount refused (README Images: INDEX 01 on each track)"
-todo = "T1.EXE (bench dos/src/t1) not written; the disc copied and mounted (PROBE_EXTRA, UCDD -mount) and plan_run.py's T1 judge come with it"
 
 [[test]]
 name = "T1-C1-INST"
 runner = "probe"
-env = "PROBE_RUN='T1:T1.EXE INST'"
+env = "PROBE_EXTRA='fixtures/synth/out/T1A.BIN|T1\\T1A.BIN;fixtures/synth/out/T1A.CUE|T1\\T1A.CUE' PROBE_RUN='CD:!C:\\SHSUCDX.COM /D:UCDD0001 /L:G > C:\\OUT\\CD.TXT,M:!C:\\UCDD\\UCDD.EXE -mount C:\\T1\\T1A.CUE > C:\\OUT\\M.TXT,T1:T1.EXE INST'"
 groups = ["t1"]
 fixed = { build = "pinC1", vmodel = "sb16" }
 repeat = 10
 secs = 90
 note = "disc T1A: C1, the CD-only build: installation check: INT 2Fh 1500h one CD-ROM letter (G:), 150Bh says G: is one, 150Dh lists it (MSCDEX:1249-1281)"
-todo = "T1.EXE (bench dos/src/t1) not written; the disc copied and mounted (PROBE_EXTRA, UCDD -mount) and plan_run.py's T1 judge come with it"
 
 [[test]]
 name = "T1-C1-READL-1"
 runner = "probe"
-env = "PROBE_RUN='T1:T1.EXE READL 1'"
+env = "PROBE_EXTRA='fixtures/synth/out/T1A.BIN|T1\\T1A.BIN;fixtures/synth/out/T1A.CUE|T1\\T1A.CUE' PROBE_RUN='CD:!C:\\SHSUCDX.COM /D:UCDD0001 /L:G > C:\\OUT\\CD.TXT,M:!C:\\UCDD\\UCDD.EXE -mount C:\\T1\\T1A.CUE > C:\\OUT\\M.TXT,T1:T1.EXE READL 1'"
 groups = ["t1"]
 fixed = { build = "pinC1", vmodel = "sb16" }
 repeat = 10
 secs = 90
 note = "disc T1A: C1, the CD-only build: Read Long (device command 128 through INT 2Fh 1510h) of CHECK.TXT in 1-sector requests: CRC32 A3A46D5C (fixtures/synth/MANIFEST.txt) (MSCDEX:373, 1593)"
-todo = "T1.EXE (bench dos/src/t1) not written; the disc copied and mounted (PROBE_EXTRA, UCDD -mount) and plan_run.py's T1 judge come with it"
 
 [[test]]
 name = "T1-C1-READL-6"
 runner = "probe"
-env = "PROBE_RUN='T1:T1.EXE READL 6'"
+env = "PROBE_EXTRA='fixtures/synth/out/T1A.BIN|T1\\T1A.BIN;fixtures/synth/out/T1A.CUE|T1\\T1A.CUE' PROBE_RUN='CD:!C:\\SHSUCDX.COM /D:UCDD0001 /L:G > C:\\OUT\\CD.TXT,M:!C:\\UCDD\\UCDD.EXE -mount C:\\T1\\T1A.CUE > C:\\OUT\\M.TXT,T1:T1.EXE READL 6'"
 groups = ["t1"]
 fixed = { build = "pinC1", vmodel = "sb16" }
 repeat = 10
 secs = 90
 note = "disc T1A: C1, the CD-only build: Read Long of CHECK.TXT in 6-sector requests: CRC32 A3A46D5C (fixtures/synth/MANIFEST.txt) (MSCDEX:373, 1593)"
-todo = "T1.EXE (bench dos/src/t1) not written; the disc copied and mounted (PROBE_EXTRA, UCDD -mount) and plan_run.py's T1 judge come with it"
 
 [[test]]
 name = "T1-C1-READL-64"
 runner = "probe"
-env = "PROBE_RUN='T1:T1.EXE READL 64'"
+env = "PROBE_EXTRA='fixtures/synth/out/T1A.BIN|T1\\T1A.BIN;fixtures/synth/out/T1A.CUE|T1\\T1A.CUE' PROBE_RUN='CD:!C:\\SHSUCDX.COM /D:UCDD0001 /L:G > C:\\OUT\\CD.TXT,M:!C:\\UCDD\\UCDD.EXE -mount C:\\T1\\T1A.CUE > C:\\OUT\\M.TXT,T1:T1.EXE READL 64'"
 groups = ["t1"]
 fixed = { build = "pinC1", vmodel = "sb16" }
 repeat = 10
 secs = 90
 note = "disc T1A: C1, the CD-only build: Read Long of CHECK.TXT in 64-sector requests: CRC32 A3A46D5C (fixtures/synth/MANIFEST.txt) (MSCDEX:373, 1593)"
-todo = "T1.EXE (bench dos/src/t1) not written; the disc copied and mounted (PROBE_EXTRA, UCDD -mount) and plan_run.py's T1 judge come with it"
 
 [[test]]
 name = "T1-C1-ABS-1"
 runner = "probe"
-env = "PROBE_RUN='T1:T1.EXE ABS 1'"
+env = "PROBE_EXTRA='fixtures/synth/out/T1A.BIN|T1\\T1A.BIN;fixtures/synth/out/T1A.CUE|T1\\T1A.CUE' PROBE_RUN='CD:!C:\\SHSUCDX.COM /D:UCDD0001 /L:G > C:\\OUT\\CD.TXT,M:!C:\\UCDD\\UCDD.EXE -mount C:\\T1\\T1A.CUE > C:\\OUT\\M.TXT,T1:T1.EXE ABS 1'"
 groups = ["t1"]
 fixed = { build = "pinC1", vmodel = "sb16" }
 repeat = 10
 secs = 90
 note = "disc T1A: C1, the CD-only build: absolute read (INT 2Fh 1508h) of CHECK.TXT in 1-sector requests: CRC32 A3A46D5C (fixtures/synth/MANIFEST.txt) (MSCDEX:1392-1430)"
-todo = "T1.EXE (bench dos/src/t1) not written; the disc copied and mounted (PROBE_EXTRA, UCDD -mount) and plan_run.py's T1 judge come with it"
 
 [[test]]
 name = "T1-C1-ABS-6"
 runner = "probe"
-env = "PROBE_RUN='T1:T1.EXE ABS 6'"
+env = "PROBE_EXTRA='fixtures/synth/out/T1A.BIN|T1\\T1A.BIN;fixtures/synth/out/T1A.CUE|T1\\T1A.CUE' PROBE_RUN='CD:!C:\\SHSUCDX.COM /D:UCDD0001 /L:G > C:\\OUT\\CD.TXT,M:!C:\\UCDD\\UCDD.EXE -mount C:\\T1\\T1A.CUE > C:\\OUT\\M.TXT,T1:T1.EXE ABS 6'"
 groups = ["t1"]
 fixed = { build = "pinC1", vmodel = "sb16" }
 repeat = 10
 secs = 90
 note = "disc T1A: C1, the CD-only build: absolute read of CHECK.TXT in 6-sector requests: CRC32 A3A46D5C (fixtures/synth/MANIFEST.txt) (MSCDEX:1392-1430)"
-todo = "T1.EXE (bench dos/src/t1) not written; the disc copied and mounted (PROBE_EXTRA, UCDD -mount) and plan_run.py's T1 judge come with it"
 
 [[test]]
 name = "T1-C1-ABS-64"
 runner = "probe"
-env = "PROBE_RUN='T1:T1.EXE ABS 64'"
+env = "PROBE_EXTRA='fixtures/synth/out/T1A.BIN|T1\\T1A.BIN;fixtures/synth/out/T1A.CUE|T1\\T1A.CUE' PROBE_RUN='CD:!C:\\SHSUCDX.COM /D:UCDD0001 /L:G > C:\\OUT\\CD.TXT,M:!C:\\UCDD\\UCDD.EXE -mount C:\\T1\\T1A.CUE > C:\\OUT\\M.TXT,T1:T1.EXE ABS 64'"
 groups = ["t1"]
 fixed = { build = "pinC1", vmodel = "sb16" }
 repeat = 10
 secs = 90
 note = "disc T1A: C1, the CD-only build: absolute read of CHECK.TXT in 64-sector requests: CRC32 A3A46D5C (fixtures/synth/MANIFEST.txt) (MSCDEX:1392-1430)"
-todo = "T1.EXE (bench dos/src/t1) not written; the disc copied and mounted (PROBE_EXTRA, UCDD -mount) and plan_run.py's T1 judge come with it"
 
 [[test]]
 name = "T1-C1-READEND"
 runner = "probe"
-env = "PROBE_RUN='T1:T1.EXE READEND'"
+env = "PROBE_EXTRA='fixtures/synth/out/T1A.BIN|T1\\T1A.BIN;fixtures/synth/out/T1A.CUE|T1\\T1A.CUE' PROBE_RUN='CD:!C:\\SHSUCDX.COM /D:UCDD0001 /L:G > C:\\OUT\\CD.TXT,M:!C:\\UCDD\\UCDD.EXE -mount C:\\T1\\T1A.CUE > C:\\OUT\\M.TXT,T1:T1.EXE READEND'"
 groups = ["t1"]
 fixed = { build = "pinC1", vmodel = "sb16" }
 repeat = 10
 secs = 90
 note = "disc T1A: C1, the CD-only build: a read across the end of the data track: an error from the first sector past it, no bytes of an audio sector, no wrap to sector 0, no hang (A2; MSCDEX:500)"
-todo = "T1.EXE (bench dos/src/t1) not written; the disc copied and mounted (PROBE_EXTRA, UCDD -mount) and plan_run.py's T1 judge come with it"
 
 [[test]]
 name = "T1-C1-VOLSIZE"
 runner = "probe"
-env = "PROBE_RUN='T1:T1.EXE VOLSIZE'"
+env = "PROBE_EXTRA='fixtures/synth/out/T1A.BIN|T1\\T1A.BIN;fixtures/synth/out/T1A.CUE|T1\\T1A.CUE' PROBE_RUN='CD:!C:\\SHSUCDX.COM /D:UCDD0001 /L:G > C:\\OUT\\CD.TXT,M:!C:\\UCDD\\UCDD.EXE -mount C:\\T1\\T1A.CUE > C:\\OUT\\M.TXT,T1:T1.EXE VOLSIZE'"
 groups = ["t1"]
 fixed = { build = "pinC1", vmodel = "sb16" }
 repeat = 10
 secs = 90
 note = "disc T1A: C1, the CD-only build: Return Volume Size (IOCTL input 8): the lead-out by the sheet with the PREGAP, counted as MSCDEX counts it (MSCDEX:598-606; README Images: track positions include the gaps)"
-todo = "T1.EXE (bench dos/src/t1) not written; the disc copied and mounted (PROBE_EXTRA, UCDD -mount) and plan_run.py's T1 judge come with it"
+todo = "expected value: STATE question 8 (MSCDEX 2.1 counts the lead-out's Red Book address, 9838 on T1A; OAKCDROM on 86Box and the pinned build answer HSG, 9688)"
 
 [[test]]
 name = "T1-C1-SECSIZE"
 runner = "probe"
-env = "PROBE_RUN='T1:T1.EXE SECSIZE'"
+env = "PROBE_EXTRA='fixtures/synth/out/T1A.BIN|T1\\T1A.BIN;fixtures/synth/out/T1A.CUE|T1\\T1A.CUE' PROBE_RUN='CD:!C:\\SHSUCDX.COM /D:UCDD0001 /L:G > C:\\OUT\\CD.TXT,M:!C:\\UCDD\\UCDD.EXE -mount C:\\T1\\T1A.CUE > C:\\OUT\\M.TXT,T1:T1.EXE SECSIZE'"
 groups = ["t1"]
 fixed = { build = "pinC1", vmodel = "sb16" }
 repeat = 10
 secs = 90
 note = "disc T1A: C1, the CD-only build: Return Sector Size (IOCTL input 7): 2048 cooked, 2352 raw (MSCDEX:588-596)"
-todo = "T1.EXE (bench dos/src/t1) not written; the disc copied and mounted (PROBE_EXTRA, UCDD -mount) and plan_run.py's T1 judge come with it"
 
 [[test]]
 name = "T1-C1-MEDIA"
 runner = "probe"
-env = "PROBE_RUN='T1:T1.EXE MEDIA'"
+env = "PROBE_EXTRA='fixtures/synth/out/T1A.BIN|T1\\T1A.BIN;fixtures/synth/out/T1A.CUE|T1\\T1A.CUE' PROBE_RUN='CD:!C:\\SHSUCDX.COM /D:UCDD0001 /L:G > C:\\OUT\\CD.TXT,M:!C:\\UCDD\\UCDD.EXE -mount C:\\T1\\T1A.CUE > C:\\OUT\\M.TXT,T1:T1.EXE MEDIA 1,M2:!C:\\UCDD\\UCDD.EXE -mount C:\\T1\\T1A.CUE -drive G > C:\\OUT\\M2.TXT,T12:T1.EXE MEDIA 2'"
 groups = ["t1"]
 fixed = { build = "pinC1", vmodel = "sb16" }
 repeat = 10
 secs = 90
 note = "disc T1A: C1, the CD-only build: Media Changed (IOCTL input 9): not changed within a run; changed once after a host-side remount between two T1 steps in one boot (A2; MSCDEX:610-648)"
-todo = "T1.EXE (bench dos/src/t1) not written; the disc copied and mounted (PROBE_EXTRA, UCDD -mount) and plan_run.py's T1 judge come with it; the remount between two T1 steps in one boot"
 
 [[test]]
 name = "T1-C1-SEEK"
 runner = "probe"
-env = "PROBE_RUN='T1:T1.EXE SEEK'"
+env = "PROBE_EXTRA='fixtures/synth/out/T1A.BIN|T1\\T1A.BIN;fixtures/synth/out/T1A.CUE|T1\\T1A.CUE' PROBE_RUN='CD:!C:\\SHSUCDX.COM /D:UCDD0001 /L:G > C:\\OUT\\CD.TXT,M:!C:\\UCDD\\UCDD.EXE -mount C:\\T1\\T1A.CUE > C:\\OUT\\M.TXT,T1:T1.EXE SEEK'"
 groups = ["t1"]
 fixed = { build = "pinC1", vmodel = "sb16" }
 repeat = 10
 secs = 90
 note = "disc T1A: C1, the CD-only build: Seek (131), then Read Long: CHECK.TXT's sectors, CRC32 A3A46D5C (fixtures/synth/MANIFEST.txt) (MSCDEX:376)"
-todo = "T1.EXE (bench dos/src/t1) not written; the disc copied and mounted (PROBE_EXTRA, UCDD -mount) and plan_run.py's T1 judge come with it"
 
 [[test]]
 name = "T1-C1-EJECT"
 runner = "probe"
-env = "PROBE_RUN='T1:T1.EXE EJECT'"
+env = "PROBE_EXTRA='fixtures/synth/out/T1A.BIN|T1\\T1A.BIN;fixtures/synth/out/T1A.CUE|T1\\T1A.CUE' PROBE_RUN='CD:!C:\\SHSUCDX.COM /D:UCDD0001 /L:G > C:\\OUT\\CD.TXT,M:!C:\\UCDD\\UCDD.EXE -mount C:\\T1\\T1A.CUE > C:\\OUT\\M.TXT,T1:T1.EXE EJECT'"
 groups = ["t1"]
 fixed = { build = "pinC1", vmodel = "sb16" }
 repeat = 10
 secs = 90
 note = "disc T1A: C1, the CD-only build: IOCTL output Eject Disk, Lock and Unlock Door: no disc after the eject, the image kept open; a locked drive is not changed (MSCDEX:808-896; README Usage and Hotkeys)"
-todo = "T1.EXE (bench dos/src/t1) not written; the disc copied and mounted (PROBE_EXTRA, UCDD -mount) and plan_run.py's T1 judge come with it"
 
 [[test]]
 name = "T1-C1-PREFETCH"
 runner = "probe"
-env = "PROBE_RUN='T1:T1.EXE PREFETCH'"
+env = "PROBE_EXTRA='fixtures/synth/out/T1A.BIN|T1\\T1A.BIN;fixtures/synth/out/T1A.CUE|T1\\T1A.CUE' PROBE_RUN='CD:!C:\\SHSUCDX.COM /D:UCDD0001 /L:G > C:\\OUT\\CD.TXT,M:!C:\\UCDD\\UCDD.EXE -mount C:\\T1\\T1A.CUE > C:\\OUT\\M.TXT,T1:T1.EXE PREFETCH'"
 groups = ["t1"]
 fixed = { build = "pinC1", vmodel = "sb16" }
 repeat = 10
 secs = 90
 note = "disc T1A: C1, the CD-only build: Read Long Prefetch (130), then Read Long of the same sectors: CRC32 A3A46D5C (fixtures/synth/MANIFEST.txt) (MSCDEX:375)"
-todo = "T1.EXE (bench dos/src/t1) not written; the disc copied and mounted (PROBE_EXTRA, UCDD -mount) and plan_run.py's T1 judge come with it"
 
 [[test]]
 name = "T1-C1-RAW"
 runner = "probe"
-env = "PROBE_RUN='T1:T1.EXE RAW'"
+env = "PROBE_EXTRA='fixtures/synth/out/T1B.BIN|T1\\T1B.BIN;fixtures/synth/out/T1B.CUE|T1\\T1B.CUE' PROBE_RUN='CD:!C:\\SHSUCDX.COM /D:UCDD0001 /L:G > C:\\OUT\\CD.TXT,M:!C:\\UCDD\\UCDD.EXE -mount C:\\T1\\T1B.CUE > C:\\OUT\\M.TXT,T1:T1.EXE RAW'"
 groups = ["t1"]
 fixed = { build = "pinC1", vmodel = "sb16" }
 repeat = 10
 secs = 90
 note = "disc T1B: C1, the CD-only build: T1B, the data track MODE1/2352: Read Long of CHECK.TXT (cooked, 2048 bytes a sector) CRC32 A3A46D5C (fixtures/synth/MANIFEST.txt); sector and volume size as T1A's (README Images: MODE1/2352)"
-todo = "T1.EXE (bench dos/src/t1) not written; the disc copied and mounted (PROBE_EXTRA, UCDD -mount) and plan_run.py's T1 judge come with it"
 
 [[test]]
 name = "T1-C1-ISO"
 runner = "probe"
-env = "PROBE_RUN='T1:T1.EXE ISO'"
+env = "PROBE_EXTRA='fixtures/synth/out/T1D.ISO|T1\\T1D.ISO' PROBE_RUN='CD:!C:\\SHSUCDX.COM /D:UCDD0001 /L:G > C:\\OUT\\CD.TXT,M:!C:\\UCDD\\UCDD.EXE -mount C:\\T1\\T1D.ISO > C:\\OUT\\M.TXT,T1:T1.EXE ISO'"
 groups = ["t1"]
 fixed = { build = "pinC1", vmodel = "sb16" }
 repeat = 10
 secs = 90
 note = "disc T1D.ISO: C1, the CD-only build: T1D.ISO: Read Long of CHECK.TXT CRC32 A3A46D5C (fixtures/synth/MANIFEST.txt); volume T1D (README Images: .ISO)"
-todo = "T1.EXE (bench dos/src/t1) not written; the disc copied and mounted (PROBE_EXTRA, UCDD -mount) and plan_run.py's T1 judge come with it"
 
 # Project A, list t2x (A3): the cases beyond SBT16, SBPROBE and DMACNT. The
 # rest come with A3.
