@@ -313,11 +313,9 @@ PDMA = "docs/platform-dma.md"
 # 25 Oct 2026, Project A A1); for Project A, as at the pinned build
 # (count-position 7994cd1). No CUE sheet specification exists to fetch.
 README = "README.md"
-# SPECFIRST = "docs/spec-first.md"
-# Out at r3.5 (26 Oct 2026): the file is only on the spec-first branch, which r3.3 T1
-# took out of the refs refcheck reads, so the key has resolved to nothing since then
-# and refindex.py --check flags it MISSING. No row cites it. The mantra's text in force
-# is the top folder's CONTEXT.md. Back in when the document has a home refcheck reads.
+# On notes since 26 Oct 2026 (Michael: copied from the spec-first branch, f25fa0f,
+# notes 953244a), where refcheck finds it through the rows refs.
+SPECFIRST = "docs/spec-first.md"
 SNDLIB = "docs/sound-engines/findings.md"
 CT2290 = "docs/sound-engines/ct2290.md"
 
@@ -371,7 +369,7 @@ VSB = "the fork's virtual Sound Blaster specification (what the virtual card doe
 VESS = "the fork's virtual ESS specification"
 HOSTCD = "the fork's DPMI host and CD-ROM driver specification (D-, M-, P, DMA, Q, V, X items)"
 PDMA = "the fork's platform fast DMA table and sources"
-# SPECFIRST = "the fork's spec-first plan and the mantra"  (key out at r3.5, see [references.keys])
+SPECFIRST = "the fork's spec-first plan and the mantra"
 SNDLIB = "the sound engine library's findings (F1 to F18)"
 CT2290 = "the CT2290 measurements: what the real card does"
 
