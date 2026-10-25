@@ -909,13 +909,12 @@ note = "disc T1A: Read Long Prefetch (130), then Read Long of the same sectors: 
 [[test]]
 name = "T1-MDM"
 runner = "probe"
-env = "PROBE_RUN='T1:T1.EXE MDM'"
+env = "PROBE_TIMEOUT=150 PROBE_KEYS='40:ctrl+alt+2;45:ctrl+alt+2;50:ctrl+alt+2;55:ctrl+alt+2;60:ctrl+alt+2' PROBE_EXTRA='fixtures/synth/out/T1D.ISO|T1\\T1D.ISO;fixtures/synth/out/T1A.BIN|T1\\T1A.BIN;fixtures/synth/out/T1A.CUE|T1\\T1A.CUE;fixtures/synth/out/T1C.BIN|T1\\T1C.BIN;fixtures/synth/out/T1C.CUE|T1\\T1C.CUE;fixtures/synth/out/T1E.MDM|T1\\T1E.MDM' PROBE_RUN='CD:!C:\\SHSUCDX.COM /D:UCDD0001 /L:G > C:\\OUT\\CD.TXT,M:!C:\\UCDD\\UCDD.EXE -mount C:\\T1\\T1E.MDM > C:\\OUT\\M.TXT,T1:T1.EXE MDM'"
 groups = ["t1"]
 fixed = { build = "pinC2", vmodel = "sb16" }
 repeat = 10
-secs = 90
-note = "disc T1E.MDM: UCDD -mount T1E.MDM: disc 1 (T1D) mounted, volume T1D; switched to disc 2 (T1A) by its hotkey: Media Changed once, volume T1A (README Multiple discs, Hotkeys)"
-todo = "the switch is not yet proven to work on a good list: T1.EXE MDM presses Ctrl+Alt+2 through the keyboard controller (8042 D2h, keys held 3 ticks), which reaches the BIOS (scratch KBTEST: 1E61h), but neither pinned build switched a list of T1D and T1A (t1dev-mdmC2_32, t1dev-mdmC1_32, 25 Oct); next, the keys from the host (86Box's keyboard) to tell the instrument from the driver. On the pinned build T1E.MDM is refused at the mount anyway: T1C is not mounted there (AONLY)"
+secs = 150
+note = "disc T1E.MDM (T1D.ISO, T1A.CUE, T1C.CUE): UCDD -mount T1E.MDM: disc 1 (T1D) mounted, volume T1D; Ctrl+Alt+2 from the host (86Box's keyboard, PROBE_KEYS, from 40 s every 5 s): Media Changed FFh, volume T1A (README Multiple discs, Hotkeys). Keys pressed from inside through the 8042 (D2h) do not reach the driver's hook (t1dev-mdmC2_32); the host's keys switch a list of T1D and T1A (t1dev-mdmkeys)"
 
 [[test]]
 name = "T1-MDMMISS"
