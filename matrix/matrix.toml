@@ -645,7 +645,6 @@ fixed = { build = "pinC2", vmodel = "sb16" }
 repeat = 10
 secs = 60
 note = "de-emphasis gain at 1 kHz within 0.5 dB of the analytic 50/15 us curve (directive A1)"
-todo = "program not written yet (A1)"
 
 [[test]]
 name = "T0-DEEM-3K5"
@@ -656,7 +655,6 @@ fixed = { build = "pinC2", vmodel = "sb16" }
 repeat = 10
 secs = 60
 note = "at 3.5 kHz, within 0.5 dB"
-todo = "program not written yet (A1)"
 
 [[test]]
 name = "T0-DEEM-10K"
@@ -667,7 +665,6 @@ fixed = { build = "pinC2", vmodel = "sb16" }
 repeat = 10
 secs = 60
 note = "at 10 kHz, within 0.5 dB"
-todo = "program not written yet (A1)"
 
 [[test]]
 name = "T0-DEEM-16K"
@@ -678,7 +675,6 @@ fixed = { build = "pinC2", vmodel = "sb16" }
 repeat = 10
 secs = 60
 note = "at 16 kHz, within 0.5 dB"
-todo = "program not written yet (A1)"
 
 # Its planted faults (L4, A1), a list of their own so their FAILs never
 # stand as list t0's evidence.
@@ -695,12 +691,11 @@ note = "planted: cue.asm's PREGAP arithmetic off by one frame in a scratch copy;
 [[test]]
 name = "T0L4-DEEM"
 runner = "probe"
-env = "PROBE_RUN='T0:T0DEEML4.COM 1000'"
+env = "PROBE_RUN='T0:T0DEEML4.COM ALL'"
 groups = ["t0l4"]
 fixed = { build = "pinC2", vmodel = "sb16" }
 secs = 60
-note = "planted: a coefficient swapped in a scratch copy of deemphasis.asm; T0-DEEM must FAIL"
-todo = "program not written yet (A1)"
+note = "planted: b0 and b1 swapped in a scratch copy of deemphasis.asm; the four T0-DEEM frequencies run as one suite (ALL), which must FAIL"
 
 # Probes (regress.sh list a), checked against the bench 20 Oct. PROBE_RUN
 # is "TAG:PROGRAM ARGS,..."; the perf and verify runners take the same steps
