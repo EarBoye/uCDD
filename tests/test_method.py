@@ -379,6 +379,14 @@ class HookTests(unittest.TestCase):
         result = self.commit(message)
         self.assertEqual(result.returncode, 0, result.stderr)
 
+    def test_show_evidence_alone_has_no_comparison(self):
+        # r3.4: with evidence entries only, show must not print a phantom comparison.
+        self.add_row('test-row-x9')
+        self.good('test-row-x9')
+        shown = self.tool(PACKAGE / 'tools/ledger.py', 'show', self.tag)
+        self.assertNotIn('comparison', shown.stdout, shown.stdout)
+        self.assertIn('dynarec off', shown.stdout)
+
     def test_reference_key_colon_form(self):
         # KEY:line is a citation form the rows use.
         self.add_row('test-row-x8')
@@ -798,6 +806,21 @@ class PlannerTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.matrix = plan.load()
+
+    def test_build_dirs_match_their_options(self):
+        # r3.4: p128 pointed at build_32 from 22 Oct to 25 Oct, so every p128 run was a 32-frame
+        # run. The folder a build runs from must name the period its options build.
+        matrix = tomllib.loads((PACKAGE / 'matrix' / 'matrix.toml').read_text())
+        import re
+        for name, options in matrix['builds'].items():
+            folder = matrix['build_dirs'][name]
+            period = re.search(r'--audio-period-frames (\d+)', options).group(1)
+            self.assertIn(f'_{period}', folder.replace('_v', '_'),
+                          f'{name}: options build {period} frames but the folder is {folder}')
+            self.assertEqual('--virtual-ess' in options, folder.endswith('_ess'),
+                             f'{name}: ESS option and _ess folder disagree')
+            self.assertEqual('--verify-mix' in options, '_v' in folder,
+                             f'{name}: verify option and _v folder disagree')
 
     def test_matrix_has_no_problems(self):
         problems, _ = plan.check(self.matrix)

@@ -127,22 +127,23 @@ ess128 = "--resident-audio --no-refill-hint --audio-period-frames 128 --virtual-
 # Project A's pinned build, count-position 7994cd1 (A0; the bench's
 # fixtures/pinned/MANIFEST.txt, $UCDD_TREE = fixtures/pinned): the audio
 # build (C2) and the CD-only build (C1). l4boot is the planted fault for the
-# boot check: pinC2 with UCDD.EXE cut short ($UCDD_TREE = runs/src).
+# boot check: pinC2's build with UCDD.EXE cut to 4096 bytes, never committed
+# ($UCDD_TREE = runs/src).
 pinC2 = "--resident-audio --no-refill-hint --audio-period-frames 32"
 pinC1 = "--no-refill-hint --audio-period-frames 32"
-l4boot = "pinC2, UCDD.EXE cut to 4096 bytes (planted fault, never committed)"
+l4boot = "--resident-audio --no-refill-hint --audio-period-frames 32"
 
 [build_dirs]
 p32 = "$UCDD_TREE/build_32$UCDD_SUFFIX"
-p128 = "$UCDD_TREE/build_32$UCDD_SUFFIX"
+p128 = "$UCDD_TREE/build_128$UCDD_SUFFIX"
 p256 = "$UCDD_TREE/build_256$UCDD_SUFFIX"
 verify32 = "$UCDD_TREE/build_v32$UCDD_SUFFIX"
 verify128 = "$UCDD_TREE/build_v128$UCDD_SUFFIX"
 ess32 = "$UCDD_TREE/build_32${UCDD_SUFFIX}_ess"
 ess128 = "$UCDD_TREE/build_128${UCDD_SUFFIX}_ess"
-pinC2 = "$UCDD_TREE/C2$UCDD_SUFFIX"
-pinC1 = "$UCDD_TREE/C1$UCDD_SUFFIX"
-l4boot = "$UCDD_TREE/l4_boot$UCDD_SUFFIX"
+pinC2 = "$UCDD_TREE/C2_32$UCDD_SUFFIX"
+pinC1 = "$UCDD_TREE/C1_32$UCDD_SUFFIX"
+l4boot = "$UCDD_TREE/l4_boot_32$UCDD_SUFFIX"
 
 [run]
 # Probes may share the machine; a recording never does (lesson L6).

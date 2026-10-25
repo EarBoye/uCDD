@@ -93,7 +93,9 @@ def show(args):
             verdict, when, dyn = 'not run', '', ''
         counts[verdict] = counts.get(verdict, 0) + 1
         extra = ''
-        if entry and other and other is not entry:
+        # The two listings are separate loads of the file, so identity never matches; a later
+        # comparison is one that is itself not evidence (r3.4: the agent found this on A0).
+        if entry and other and not methodlib.is_evidence(other):
             extra = f'  (a later comparison: {other["verdict"]}, {other["time"]}, dynarec {"ON" if other.get("dynarec") else "?"})'
         print(f'{run["id"]}  {run["test"]:14} {verdict:9} {when}  {dyn}{extra}')
     print('; '.join(f'{verdict}: {count}' for verdict, count in sorted(counts.items())))
