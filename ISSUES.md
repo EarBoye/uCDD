@@ -798,6 +798,43 @@ changed volumes.
   on. Until a recompiler-off
   control is recorded, the difference is "the recompiler", nothing more
   (tightening r3, T3).
+- Measured since (25 Oct 2026, Michael's answer to T3) [86Box]: the old
+  references and controls were recorded with the recompiler on (all 20
+  runs' 86box.cfg: `cpu_use_dynarec = 1`; kept as comparisons in
+  sndref/sb16_dynarec_on). New ones recorded with it off, a reference and
+  three controls per game (sndref/sb16; all 40 runs `cpu_use_dynarec =
+  0`). The new reference against the old, on time: THEMHOSP 1.00,
+  HEXENBEY 1.00, DESCENT 0.80, JILLJUNG 0.71 agree; MKTRIL 0.21 and DUKE3D
+  0.59 (speed 0.84, 0.82), XCOMUF 0.44, SWDFORC 0.25 and SSTRDUST 0.11 (the
+  moment 18.6 and 19.8 s apart) and GK1 0.00 do not. With the recompiler
+  off the bare card plays 6 of the 10 moments differently, so the off set
+  above was judged against references of the other mode.
+- T3's recordings judged again against the new references (sndreg's rules
+  on the mean of three controls; an analysis, not in the ledger): off 15
+  PASS, 6 FAIL, 9 WEAK (above: 7 PASS, 23 FAIL); on, now against the other
+  mode, 7 PASS, 14 FAIL, 9 WEAK (above: 23 PASS, 7 FAIL). The reference's
+  mode decides most of the table. Still failing with the recompiler off:
+  MKTRIL 2 of 3 (on time 0.37 and 0.41, speed 0.92 and 0.94; its controls
+  0.80-0.94), XCOMUF 2 of 3 (0.57 and 0.59 against a line at 0.68; uCDD's
+  runs sit about 4 s early in both modes, the controls at 0), DUKE3D 1
+  (0.76 against 0.79), SWDFORC 1 (0.52 at its line; its own third control
+  reads 0.44). Open: the next sound check through the runners against
+  these references decides.
+- WEAK with the recompiler off (the controls' mean on time below 0.6):
+  GK1 0.00 (its 14:28 window is a quiet passage in the reference and all
+  three controls alike, loudness about 30-340 against about 1000 from 33 s
+  on, too quiet for audiocmp to match: the window wants moving for this
+  mode), JILLJUNG 0.37 (0.76, 0.05, 0.30), SSTRDUST 0.46 (0.33, 0.60,
+  0.44). Nothing is judged against them.
+- L4 with the recompiler off: D7 (vcpich build_32) FAILS THEMHOSP (speed
+  3.15, on time 0.01) and PASSES MKTRIL in 3 runs of 3 (on time 0.74,
+  0.69, 0.73, speed 0.98-1.00), where on 22 Oct with the recompiler on it
+  failed MKT at speed 2.38. count-position, with F14 fixed, fails MKTRIL 2
+  of 3 in the same mode. MKTRIL does not separate the known-bad from the
+  fixed build with the recompiler off; THEMHOSP does. Until that is
+  explained, MKTRIL is not a trusted check in this mode (L4); the cause
+  (F14 not showing in MKT's moment under the interpreter, or the check
+  missing it) is not known.
 - List a in the same runs (t3aoff1-3, t3aon1-3): 50 counters, none apart
   beyond the run-to-run spread; one verdict differs, 004 virtual SB 2.0 L2
   (130 interrupts in all six runs) DIFF in off 1 and 2, because the bare
