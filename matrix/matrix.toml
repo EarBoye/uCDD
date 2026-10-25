@@ -2915,7 +2915,7 @@ note = "the driver's state for the step-aside leak test (QPI entry, fault byte, 
 
 [[test]]
 name = "E2TEST"
-decides = "silent: the DSP firmware and the bare card (SBG does not list E2h)"
+decides = "VSB:222, CT2290"
 runner = "perf"
 args = "T:E2TEST.COM"
 groups = ["probes"]
@@ -2925,7 +2925,7 @@ note = "DSP E2h, the DMA identification: expect 40 30 F3 98 /02 after a reset, 4
 
 [[test]]
 name = "SBPROBE"
-decides = "SBG, silent: the DSP firmware (fw_expect.py) for E0h E3h E8h and F8h; SBG does not list them"
+decides = "SBG, VSB:229-271"
 runner = "probe"
 env = "PROBE_RUN='PROBE:SBPROBE.COM'"
 groups = ["probes"]
