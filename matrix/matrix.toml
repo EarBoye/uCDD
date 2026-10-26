@@ -1638,27 +1638,25 @@ todo = "A3: T2.EXE not written yet (the row before the program, r3.5)"
 
 [[test]]
 name = "T2X-S16AI"
-decides = "VSB:285-348, SBG:3837-3872"
+decides = "SBG:3837-3872, SBG:2108-2172, SBG:4020-4030, SBG:1029-1056, SBG:1188-1199, SBG:1229-1236, VSB:290-304, 82C206:1407-1440, 82C206:1660-1720"
 runner = "probewav"
 env = "PROBE_WAV=1 PROBE_RUN='T2:T2.EXE S16AI'"
 groups = ["t2x"]
 fixed = { build = "pinC2", vmodel = "sb16" }
 repeat = 10
 secs = 120
-note = "SB16 auto-init (B6h): 16-bit stereo and mono, signed and unsigned, at 22050, 44100 and 48000 Hz (A3, C2)"
-todo = "A3: T2.EXE not written yet (the row before the program, r3.5)"
+note = "SB16 16-bit auto-init (B6h, the 4.xx procedure) in its four formats, mono and stereo, signed and unsigned (mode 10h, 00h, 30h, 20h), at 22050, 44100 and 48000 Hz (41h), steps MS22 to SU48 on the 16-bit channel (BLASTER H): each buffer 0.2 s at the asked rate (400 whole cycles of a 2 kHz tone, -6 dBFS; stereo the tone left, silence right), blocks of half; each step two interrupts or more, D9h just after one: exactly one more, then none; mixer 82h's low bits 02h at the first interrupt, 00h after 2xFh; tonecheck: the tone (stereo: left, and the right silent), its third harmonic 20 dB down or more (a sign misread makes a square wave), no gap of 20 ms or more; 48000 Hz is past 41h's range (SBG:3576, 1420-1424): the virtual SB16 plays it at 45412 Hz, the DSP 4.13's rate register (VSB:290-304; the pinned trap.asm sb16_rate_register), so the tone is due at 1892.2 Hz, and 22050 and 44100 at 2003.0 (A3, C2)"
 
 [[test]]
 name = "T2C0-S16AI"
-decides = "VSB:285-348, SBG:3837-3872"
+decides = "SBG:3837-3872, SBG:2108-2172, SBG:4020-4030, SBG:1029-1056, SBG:1188-1199, SBG:1229-1236, EMUSRC, 82C206:1407-1440, 82C206:1660-1720"
 runner = "probewav"
-env = "PROBE_WAV=1 PROBE_RUN='T2:T2.EXE S16AI'"
+env = "PROBE_WAV=1 PROBE_RUN='T2:T2.EXE S16AI C0'"
 groups = ["t2xc0"]
 fixed = { mode = "base", vmodel = "sb16" }
 repeat = 10
 secs = 120
-note = "SB16 auto-init (B6h): 16-bit stereo and mono, signed and unsigned, at 22050, 44100 and 48000 Hz (A3, C0: the client validated on 86Box's own card before C2)"
-todo = "A3: T2.EXE not written yet (the row before the program, r3.5)"
+note = "SB16 16-bit auto-init (B6h, the 4.xx procedure) in its four formats, mono and stereo, signed and unsigned (mode 10h, 00h, 30h, 20h), at 22050, 44100 and 48000 Hz (41h), steps MS22 to SU48 on the 16-bit channel (BLASTER H): each buffer 0.2 s at the asked rate (400 whole cycles of a 2 kHz tone, -6 dBFS; stereo the tone left, silence right), blocks of half; each step two interrupts or more, D9h just after one: exactly one more, then none; mixer 82h's low bits 02h at the first interrupt, 00h after 2xFh; tonecheck: the tone (stereo: left, and the right silent), its third harmonic 20 dB down or more (a sign misread makes a square wave), no gap of 20 ms or more; 86Box's own SB16 plays 41h's rate as written, 48000 Hz included (EMUSRC: src/sound/snd_sb_dsp.c at 6311adc, sb_exec_command, case 0x41), so its tone is due at 2000 Hz at every rate (A3, C0: the client validated on 86Box's own card before C2)"
 
 [[test]]
 name = "T2X-S16AI-M"
@@ -2928,6 +2926,16 @@ groups = ["t2l4"]
 fixed = { build = "pinC2", vmodel = "sb16" }
 secs = 120
 note = "planted: T2.EXE SC8 with the tone at 1 kHz (the word L4); every step's 2 kHz tone check must FAIL (A3, L4 for tonecheck's T2 intervals)"
+
+[[test]]
+name = "T2L4-S16AI"
+decides = "silent: a planted fault (L4): the check it is planted for must fail"
+runner = "probewav"
+env = "PROBE_WAV=1 PROBE_RUN='T2:T2.EXE S16AI L4'"
+groups = ["t2l4"]
+fixed = { build = "pinC2", vmodel = "sb16" }
+secs = 120
+note = "planted: T2.EXE S16AI with the mode byte's sign bit the other way and the stereo tone right (the word L4); every step that plays must FAIL tonecheck's third-harmonic check, and the stereo ones its left-tone and right-silence checks (A3, L4 for tonecheck's purity and channel checks)"
 [[test]]
 name = "SBT16"
 decides = "SBG"
