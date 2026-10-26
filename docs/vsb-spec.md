@@ -362,8 +362,41 @@ Stereo output on the SB Pro is the mixer's stereo switch (0Eh bit 1) with
 the high-speed commands. The guide's procedure: set the switch, send one
 silent byte by single-cycle DMA (14h, length 0) and take its interrupt,
 then program the transfer, turn the output filter off (0Eh bit 5), set
-the block size and start with 90h or 91h. [doc] The silent byte makes the
-first data byte go to the left channel [inference from SBG:2394-2396].
+the block size and start with 90h or 91h. [doc]
+
+- **The first data byte's channel** (changed 26 Oct 2026, Michael,
+  Project A question 16; the mantra's rule 7: the old text kept below,
+  the new beside it, with the evidence).
+  - Old text (to 26 Oct 2026): "The silent byte makes the first data byte
+    go to the left channel [inference from SBG:2394-2396]."
+  - New text: the guide read literally. "The first digitized sound data
+    byte will be directed to the left channel" (SBG:2394-2396), and the
+    procedure's silent byte, sent by DMA with the switch on, is that first
+    byte (SBG:1954-1960): it goes left, and the data's first byte, the
+    next, goes right. A program that writes its pairs left first hears
+    them swapped. [emu-86, emu-x; hardware UNCONFIRMED]
+  - Evidence, grade emulator: 86Box's own SB Pro v2 on the bench, Project
+    A plan e555a482 (T2C0-PROST, 10/10, dynarec off): the tone written in
+    each pair's first byte comes out right, the left silent. 86Box resets
+    its byte toggle to the right at every DMA start (src/sound/snd_sb_dsp.c
+    at 6311adc, sbleftright_default 0). DOSBox-X by its source, not run:
+    it pairs the stream's bytes and carries an odd one into the next
+    transfer, cleared only at a DSP reset (src/hardware/sblaster.cpp at
+    97ff66a, SB_INFO::GenerateDMASound, remain_size; DSP_Reset), so the
+    silent byte becomes the first frame's left. Rule 1: the document read
+    two ways, two emulators agreeing, no hardware: emulation decides.
+    Hardware: UNCONFIRMED; there is no SB Pro on the bench or the PC (the
+    CT2290 has no 0Eh, 9.4), and an SB Pro 2 is on Michael's
+    missing-hardware list.
+  - The transfer after the first, with and without a DSP reset between:
+    EMU_DISPUTE until hardware answers. 86Box starts every transfer right
+    (Project A plan c81f7242, T2C0-PROST2: NA, NB and the transfer after a
+    reset all right); DOSBox-X carries an odd byte from one transfer into
+    the next and clears it only at a reset, so by its source the transfer
+    after a reset starts left. The guide says nothing. Project A reports
+    the channel there and does not judge it.
+  - The pinned build (count-position 7994cd1) puts the data's first byte
+    left: ISSUES.md CAND-15 (no fix under Project A's freeze).
 
 ### 7.5 ADPCM (SBG:1360-1377, 3289-3714)
 
