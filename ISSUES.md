@@ -1043,6 +1043,36 @@ Hypothesis (labelled, not tested): a virtual priority (the bottom level, set by 
   run (T6 wires no runner); the CT2290 in AKIT judges, and the case is on
   the AKIT list (STATE).
 
+### 86DMAPAGE: 86Box's own 8-bit DMA crosses the 64 KB page in this build; DOSBox-X wraps (an emulator disagreement; found 26 Oct 2026)
+
+- Seen [86Box] writing Project A's T2.EXE SC8 (gate A3), development runs
+  t2dev-sc8c0 and t2dev-page (not recorded; 86Box 6.0 build 9001, dynarec
+  off), C0 (86Box's own SB16 and 8237, no uCDD): a 4096-byte 14h block
+  programmed at F800h in a page (channel 1, mode 49h, the page register
+  set once) plays its first 2048 bytes and then the bytes beyond the page
+  (silence there: a gap of 186 ms a block at 11025 Hz, 93 at 22050, edges
+  ringing; RMS -19 dBFS in the first half, -37 dBFS in the second, where
+  the page's start held a 1378 Hz square), and its interrupt comes each
+  block. The channel's current address reads back 0000h straight after
+  F800h was written, and 1000h after the block.
+- The 8237A: the current address register is 16 bits and the page lies
+  outside it (8237:331-338); a transfer cannot straddle a page and wraps in
+  it (SBG:1285-1294). 86Box's own source at master (src/dma.c,
+  dma_channel_read_legacy and dma_advance_n, read 26 Oct 2026) masks an
+  8-bit channel's address to 16 bits and keeps the page: it should wrap,
+  so this build and that source disagree; not traced further.
+- The second emulator wraps (read 26 Oct 2026): DOSBox-X 2025.02.01,
+  src/hardware/dma.cpp, DmaChannel::Read masks the current address with
+  `dma_wrapping` (0xffff by default) before and after each advance and
+  never moves the page base; ports 0-7 read the current address back.
+- A verdict 86Box and the second emulator disagree on is a finding, not a
+  choice (rig86/CLAUDE.md): C0 cannot validate T2.EXE SC8PAGE's wrap. The
+  page-crossing steps were taken out of SC8 into SC8PAGE, held on STATE
+  question 13. Under C2 the same block's interrupt never came (0 blocks,
+  the address left at F800h; development run t2dev-sc8c2, not recorded).
+  Nothing in uCDD changes. Evidence: emulator (the development runs) and
+  both emulators' sources. Hardware: not run.
+
 ## The feature branches offered to the author (rows reconstructed 24 Oct 2026)
 
 These four issues were ported from the fork's line onto the author's
