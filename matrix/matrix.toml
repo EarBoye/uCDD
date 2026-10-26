@@ -2489,8 +2489,7 @@ groups = ["t2x"]
 fixed = { build = "pinC2", vmodel = "sb16" }
 repeat = 10
 secs = 120
-note = "an ISR on a line of lower priority than the card's own or on the slave (Michael, 26 Oct 2026): COM1's UART transmit-empty interrupt on IRQ 4 when the BIOS lists COM1 (0040:0000), else the PS/2 mouse on IRQ 12; each interrupt STI, a 6 ms busy wait, then its EOI (both controllers' for IRQ 12), one every 50 ms for 10 s while the 2 kHz tone and T1A track 2 play (C0: T1B's): both tones with no gap of 20 ms or more. In service, the line holds every request of the same or lower priority until its EOI and lets higher ones through (8259:602-620): IRQ 4 holds 4 to 7, the card's IRQ 5 among them; IRQ 12 holds the master's IR2, the cascade, and so 3 to 7 and every slave line (8259:815-830, 632-638); IRQ 0 and 1 unaffected either way. T2.TXT names the line used (A3, C2); related notes (Michael, 26 Oct 2026): the author's 0.9.4-a2, RELEASE-NOTES.md:158, the 128-frame period against a mouse driver holding its interrupt for several milliseconds; 0.9.4-a6, RELEASE-NOTES.md:98, three output periods in the ring against a mouse driver keeping interrupts off longer than one period (the notes' F2 ring row: the sound during a hold is not fixed by the ring); first run on the Logo=0 bench"
-todo = "A3: T2.EXE not written yet (the row before the program, r3.5)"
+note = "an ISR on a line of lower priority than the card's own or on the slave (Michael, 26 Oct 2026): COM1's UART transmit-empty interrupt on IRQ 4 when the BIOS lists COM1 (0040:0000), else the PS/2 mouse on IRQ 12; each interrupt STI, a 6 ms busy wait, then its EOI (both controllers' for IRQ 12), one every 50 ms for 10 s while the 2 kHz tone and T1A track 2 play (C0: T1B's): both tones with no gap of 20 ms or more. In service, the line holds every request of the same or lower priority until its EOI and lets higher ones through (8259:602-620): IRQ 4 holds 4 to 7, the card's IRQ 5 among them; IRQ 12 holds the master's IR2, the cascade, and so 3 to 7 and every slave line (8259:815-830, 632-638); IRQ 0 and 1 unaffected either way. T2.TXT names the line used: IRQ 4 on the bench (86Box's p55t2p4 lists COM1 at 3F8h; it raises a second transmit-empty after each byte, reported as not asked for, not judged); T2.EXE PICHOLD MIX AUX takes IRQ 12, the PC's line with its serial ports off (A3, C2); related notes (Michael, 26 Oct 2026): the author's 0.9.4-a2, RELEASE-NOTES.md:158, the 128-frame period against a mouse driver holding its interrupt for several milliseconds; 0.9.4-a6, RELEASE-NOTES.md:98, three output periods in the ring against a mouse driver keeping interrupts off longer than one period (the notes' F2 ring row: the sound during a hold is not fixed by the ring); first run on the Logo=0 bench"
 
 [[test]]
 name = "T2C0-PICHOLD"
@@ -2501,8 +2500,7 @@ groups = ["t2xc0"]
 fixed = { mode = "base", vmodel = "sb16" }
 repeat = 10
 secs = 120
-note = "an ISR on a line of lower priority than the card's own or on the slave (Michael, 26 Oct 2026): COM1's UART transmit-empty interrupt on IRQ 4 when the BIOS lists COM1 (0040:0000), else the PS/2 mouse on IRQ 12; each interrupt STI, a 6 ms busy wait, then its EOI (both controllers' for IRQ 12), one every 50 ms for 10 s while the 2 kHz tone and T1A track 2 play (C0: T1B's): both tones with no gap of 20 ms or more. In service, the line holds every request of the same or lower priority until its EOI and lets higher ones through (8259:602-620): IRQ 4 holds 4 to 7, the card's IRQ 5 among them; IRQ 12 holds the master's IR2, the cascade, and so 3 to 7 and every slave line (8259:815-830, 632-638); IRQ 0 and 1 unaffected either way. T2.TXT names the line used (A3, C0: the client validated on 86Box's own card before C2); related notes (Michael, 26 Oct 2026): the author's 0.9.4-a2, RELEASE-NOTES.md:158, the 128-frame period against a mouse driver holding its interrupt for several milliseconds; 0.9.4-a6, RELEASE-NOTES.md:98, three output periods in the ring against a mouse driver keeping interrupts off longer than one period (the notes' F2 ring row: the sound during a hold is not fixed by the ring); first run on the Logo=0 bench"
-todo = "A3: T2.EXE not written yet (the row before the program, r3.5)"
+note = "an ISR on a line of lower priority than the card's own or on the slave (Michael, 26 Oct 2026): COM1's UART transmit-empty interrupt on IRQ 4 when the BIOS lists COM1 (0040:0000), else the PS/2 mouse on IRQ 12; each interrupt STI, a 6 ms busy wait, then its EOI (both controllers' for IRQ 12), one every 50 ms for 10 s while the 2 kHz tone and T1A track 2 play (C0: T1B's): both tones with no gap of 20 ms or more. In service, the line holds every request of the same or lower priority until its EOI and lets higher ones through (8259:602-620): IRQ 4 holds 4 to 7, the card's IRQ 5 among them; IRQ 12 holds the master's IR2, the cascade, and so 3 to 7 and every slave line (8259:815-830, 632-638); IRQ 0 and 1 unaffected either way. T2.TXT names the line used: IRQ 4 on the bench (86Box's p55t2p4 lists COM1 at 3F8h; it raises a second transmit-empty after each byte, reported as not asked for, not judged); T2.EXE PICHOLD MIX AUX takes IRQ 12, the PC's line with its serial ports off (A3, C0: the client validated on 86Box's own card before C2); related notes (Michael, 26 Oct 2026): the author's 0.9.4-a2, RELEASE-NOTES.md:158, the 128-frame period against a mouse driver holding its interrupt for several milliseconds; 0.9.4-a6, RELEASE-NOTES.md:98, three output periods in the ring against a mouse driver keeping interrupts off longer than one period (the notes' F2 ring row: the sound during a hold is not fixed by the ring); first run on the Logo=0 bench"
 [[test]]
 name = "T2X-P-IRQDET"
 decides = "DPMI09:351-400, VSB:474-489, CT2290"
@@ -3080,6 +3078,16 @@ groups = ["t2l4"]
 fixed = { build = "pinC2", vmodel = "sb16" }
 secs = 120
 note = "planted: T2.EXE CLIGAP on T1AP (track 2 at 440 Hz) on the pinned C2; the 1000 Hz band check through HOLD must FAIL (A3, L4 for CLIGAP's mixed checks on a run; capbreak's notch plants proved the band-drop check on t2dev-cg0, bench commit)"
+
+[[test]]
+name = "T2L4-PICHOLD"
+decides = "silent: a planted fault (L4): the check it is planted for must fail"
+runner = "probewav"
+env = "PROBE_WAV=1 PROBE_EXTRA='fixtures/synth/out/T1AP.BIN|T1\\T1AP.BIN;fixtures/synth/out/T1AP.CUE|T1\\T1AP.CUE' PROBE_RUN='CD:!C:\\SHSUCDX.COM /D:UCDD0001 /L:G > C:\\OUT\\CD.TXT,M:!C:\\UCDD\\UCDD.EXE -mount C:\\T1\\T1AP.CUE > C:\\OUT\\M.TXT,T2:T2.EXE PICHOLD MIX'"
+groups = ["t2l4"]
+fixed = { build = "pinC2", vmodel = "sb16" }
+secs = 120
+note = "planted: T2.EXE PICHOLD on T1AP (track 2 at 440 Hz) on the pinned C2; the 1000 Hz band check through HOLD must FAIL (A3, L4 for PICHOLD's checks on a run: CLIGAP's, proved by capbreak's notch plants on t2dev-cg0)"
 
 [[test]]
 name = "SBT16-legacy"
