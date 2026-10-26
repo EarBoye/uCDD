@@ -567,9 +567,40 @@ No mixer at the card's base (section 2). [doc]
 | 81h | DMA select: bits 0, 1, 3 channel 0, 1, 3; 5, 6, 7 channel 5, 6, 7 | the card's |
 | 82h | interrupt status (8.2) | |
 
-- 80h and 81h are "Read Only for PnP boards"; programs should not write
-  them (SBG:1047-1052). The virtual card reads them as its own settings.
-  [doc]
+- **80h and 81h: written as on the CT2290** (changed 27 Oct 2026,
+  Michael, Project A question 15; the mantra's rule 7: the old text kept
+  below, the new beside it, with the evidence).
+  - Old text (to 27 Oct 2026): "80h and 81h are "Read Only for PnP
+    boards"; programs should not write them (SBG:1047-1052). The virtual
+    card reads them as its own settings. [doc]"
+  - New text: the virtual SB16 answers as the CT2290 it presents, a
+    software-configured card: a write to 81h takes effect, and with no
+    16-bit channel bit set, only an 8-bit one, the DSP moves 16-bit data
+    on that 8-bit channel ("DSP version 4.xx also supports the transfer
+    of 16-bit digitized sound data through 8-bit DMA channel. To make this
+    possible, set all the 16-bit DMA channel bits to '0' leaving only an
+    8-bit DMA channel set", SBG:1136-1138). 80h's write takes effect the
+    same way on the card. [hw, doc]
+  - Evidence: the CT2290, HWPROBE on 19 Oct 2026, the bare card in the
+    JEMM boot (vsb/hw/ct2290_20261019/hwkit, JHW1.TXT and JHW2.TXT, in the
+    top folder): `X W80 F2 F4 F4 F2 F2` and `X W81 22 20 20 22 22`, each
+    value read, written, read back, restored, read back: 81h written 20h
+    reads 20h. The virtual card in the UCDD boot (UHW1.TXT, UHW2.TXT):
+    `X W81 22 20 22 22 22`, the write ignored. The sound engine library's
+    F12 (docs/sound-engines/findings.md, ct2290.md "The mixer", on the
+    sound-engine-library branch). What the CT2290 does with 16-bit data
+    on the 8-bit channel was not measured: the guide's line decides it,
+    86Box's own non-PnP SB16 does it (snd_sb.c at master, mixer case
+    0x81; snd_sb_dsp.c, sb_16_dmanum 4) [emu-86], and Project A's
+    hardware kit judges it (T2X-S16ON8 on the AKIT list).
+  - Where PnP boards differ: "Registers 80h and 81h are Read Only for PnP
+    boards", and applications should not write them, only system software
+    such as SBCONFIG.EXE (SBG:1140-1148). A PnP SB16 keeps its settings
+    whatever a program writes; the CT2290 is not one, and the virtual card
+    follows it.
+  - The pinned build (count-position 7994cd1) still reads both as its own
+    settings and cannot move 16-bit data on an 8-bit channel: ISSUES.md
+    CAND-14 (no fix under Project A's freeze).
 - Reset values in the emulators are louder than the guide's: 86Box sets
   30h-37h to F8h; DOSBox-X sets master, voice, FM and CD to 31 [emu-x,
   emu-86]. The guide decides, and the CT2290 reads exactly the guide's
