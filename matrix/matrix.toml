@@ -1546,28 +1546,50 @@ todo = "A3: T2.EXE not written yet (the row before the program, r3.5)"
 
 
 [[test]]
-name = "T2X-SC8PAGE"
-decides = "8237:331-338, SBG:1285-1294, SBG:3271-3290"
+name = "T2X-SC8PAGE1"
+decides = "SBG:3271-3290, VSB:319-324"
+runner = "probe"
+env = "PROBE_RUN='T2:T2.EXE SC8PAGE1'"
+groups = ["t2x"]
+fixed = { build = "pinC2", vmodel = "sb16" }
+repeat = 10
+secs = 90
+note = "a 4096-byte 8-bit single-cycle block that crosses the 64 KB page, at 11025 and 22050 Hz, steps P0 and P1, chained for 1.5 s: an interrupt a block (split from SC8PAGE, Michael, 26 Oct 2026, question 13) (A3, C2)"
+
+[[test]]
+name = "T2C0-SC8PAGE1"
+decides = "SBG:3271-3290, VSB:319-324"
+runner = "probe"
+env = "PROBE_RUN='T2:T2.EXE SC8PAGE1 C0'"
+groups = ["t2xc0"]
+fixed = { mode = "base", vmodel = "sb16" }
+repeat = 10
+secs = 90
+note = "a 4096-byte 8-bit single-cycle block that crosses the 64 KB page, at 11025 and 22050 Hz, steps P0 and P1, chained for 1.5 s: an interrupt a block (split from SC8PAGE, Michael, 26 Oct 2026, question 13) (A3, C0: the client validated on 86Box's own card before C2)"
+
+[[test]]
+name = "T2X-SC8PAGE2"
+decides = "8237:331-338, SBG:1285-1294"
 runner = "probewav"
-env = "PROBE_WAV=1 PROBE_RUN='T2:T2.EXE SC8PAGE'"
+env = "PROBE_WAV=1 PROBE_RUN='T2:T2.EXE SC8PAGE2'"
 groups = ["t2x"]
 fixed = { build = "pinC2", vmodel = "sb16" }
 repeat = 10
 secs = 120
-note = "a 4096-byte 8-bit single-cycle block that crosses the 64 KB page, at 11025 and 22050 Hz, steps P0 and P1: its second half from the page's start where the 8237 wraps (silence beyond the page, so a read across it leaves a gap), the address after it 0800h, an interrupt a block (A3, C2)"
-todo = "A3: T2.EXE SC8PAGE written; held on STATE question 13: on C0 86Box's own 8237 reads 0000h back where F800h was written and the crossing block's second half plays the silence beyond the page (its dma.c wraps at 64 KB by reading), so C0 cannot validate the wrap; under C2 the crossing block's interrupt never comes"
+note = "the same block's wrap: its second half from the page's start (silence beyond the page, so a read across it leaves a gap) and the address after it 0800h (split from SC8PAGE, Michael, 26 Oct 2026, question 13) (A3, C2)"
+todo = "A3: judged on the CT2290 in AKIT (Michael, 26 Oct 2026, question 13); grade data sheet (8237:331-338); DOSBox-X 2025.02.01's dma.cpp corroborates (DmaChannel::Read, dma_wrapping); this 86Box build cannot show it (ISSUES 86DMAPAGE, a build-specific regression)"
 
 [[test]]
-name = "T2C0-SC8PAGE"
-decides = "8237:331-338, SBG:1285-1294, SBG:3271-3290"
+name = "T2C0-SC8PAGE2"
+decides = "8237:331-338, SBG:1285-1294"
 runner = "probewav"
-env = "PROBE_WAV=1 PROBE_RUN='T2:T2.EXE SC8PAGE C0'"
+env = "PROBE_WAV=1 PROBE_RUN='T2:T2.EXE SC8PAGE2 C0'"
 groups = ["t2xc0"]
 fixed = { mode = "base", vmodel = "sb16" }
 repeat = 10
 secs = 120
-note = "a 4096-byte 8-bit single-cycle block that crosses the 64 KB page, at 11025 and 22050 Hz, steps P0 and P1: its second half from the page's start where the 8237 wraps (silence beyond the page, so a read across it leaves a gap), the address after it 0800h, an interrupt a block (A3, C0: the client validated on 86Box's own card before C2)"
-todo = "A3: T2.EXE SC8PAGE written; held on STATE question 13: on C0 86Box's own 8237 reads 0000h back where F800h was written and the crossing block's second half plays the silence beyond the page (its dma.c wraps at 64 KB by reading), so C0 cannot validate the wrap; under C2 the crossing block's interrupt never comes"
+note = "the same block's wrap: its second half from the page's start (silence beyond the page, so a read across it leaves a gap) and the address after it 0800h (split from SC8PAGE, Michael, 26 Oct 2026, question 13) (A3, C0: the client validated on 86Box's own card before C2)"
+todo = "A3: judged on the CT2290 in AKIT (Michael, 26 Oct 2026, question 13); grade data sheet (8237:331-338); DOSBox-X 2025.02.01's dma.cpp corroborates (DmaChannel::Read, dma_wrapping); this 86Box build cannot show it (ISSUES 86DMAPAGE, a build-specific regression)"
 [[test]]
 name = "T2X-AI8"
 decides = "VSB:325-348, SBG:3328-3345, SBG:4035-4046"
