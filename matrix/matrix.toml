@@ -1799,27 +1799,25 @@ todo = "A3: T2.EXE not written yet (the row before the program, r3.5)"
 
 [[test]]
 name = "T2X-S16ON8"
-decides = "VSB:317-348, SBG:1100-1148, SBG:3837-3872"
+decides = "VSB:570-603, SBG:1136-1138, SBG:1140-1148, SBG:3837-3872, SBG:2108-2172, SBG:4020-4030, SBG:1029-1056, 8237:485-517"
 runner = "probewav"
 env = "PROBE_WAV=1 PROBE_RUN='T2:T2.EXE S16ON8'"
 groups = ["t2x"]
 fixed = { build = "pinC2", vmodel = "sb16" }
 repeat = 10
 secs = 120
-note = "16-bit samples through the 8-bit DMA channel (mixer 81h with no 16-bit channel set) (A3, C2)"
-todo = "A3: T2.EXE not written yet (the row before the program, r3.5)"
+note = "16-bit samples through the 8-bit DMA channel: mixer 81h written with the 8-bit channel's bit alone (02h for D1), read back, then S16AI's four formats at 22050 Hz (MS22, MU22, SS22, SU22: 0.2 s buffers of a 2 kHz tone, stereo left only, blocks of half) on channel 1 (byte counts, mode 59h), each stopped with D9h, and 81h restored. Expected, the CT2290's (vsb-spec 9.4, VSB:570-603: 81h is written on that card, HWPROBE 19 Oct 2026, F12; 16-bit data on the 8-bit channel, SBG:1136-1138): 81h reads back 02h; each step two interrupts or more, exactly one after D9h, none after that; 82h 02h at the first interrupt, 00h after 2xFh; tonecheck as S16AI. PnP caveat: on a PnP SB16 80h and 81h are read only (SBG:1140-1148): the write is ignored there and the case does not apply; the virtual card presents the CT2290, not a PnP board (A3, C2; the pinned build fails it by reading: CAND-14; the CT2290 in AKIT judges)"
 
 [[test]]
 name = "T2C0-S16ON8"
-decides = "VSB:317-348, SBG:1100-1148, SBG:3837-3872"
+decides = "VSB:570-603, SBG:1136-1138, SBG:1140-1148, SBG:3837-3872, SBG:2108-2172, SBG:4020-4030, SBG:1029-1056, 8237:485-517"
 runner = "probewav"
-env = "PROBE_WAV=1 PROBE_RUN='T2:T2.EXE S16ON8'"
+env = "PROBE_WAV=1 PROBE_RUN='T2:T2.EXE S16ON8 C0'"
 groups = ["t2xc0"]
 fixed = { mode = "base", vmodel = "sb16" }
 repeat = 10
 secs = 120
-note = "16-bit samples through the 8-bit DMA channel (mixer 81h with no 16-bit channel set) (A3, C0: the client validated on 86Box's own card before C2)"
-todo = "A3: T2.EXE not written yet (the row before the program, r3.5)"
+note = "16-bit samples through the 8-bit DMA channel: mixer 81h written with the 8-bit channel's bit alone (02h for D1), read back, then S16AI's four formats at 22050 Hz (MS22, MU22, SS22, SU22: 0.2 s buffers of a 2 kHz tone, stereo left only, blocks of half) on channel 1 (byte counts, mode 59h), each stopped with D9h, and 81h restored. Expected, the CT2290's (vsb-spec 9.4, VSB:570-603: 81h is written on that card, HWPROBE 19 Oct 2026, F12; 16-bit data on the 8-bit channel, SBG:1136-1138): 81h reads back 02h; each step two interrupts or more, exactly one after D9h, none after that; 82h 02h at the first interrupt, 00h after 2xFh; tonecheck as S16AI. PnP caveat: on a PnP SB16 80h and 81h are read only (SBG:1140-1148): the write is ignored there and the case does not apply; the virtual card presents the CT2290, not a PnP board (A3, C0: 86Box's own non-PnP SB16 takes the 81h write, snd_sb.c case 0x81; the client validated before C2)"
 
 [[test]]
 name = "T2X-S16ON8-M"
@@ -2984,6 +2982,16 @@ groups = ["t2l4"]
 fixed = { mode = "base", vmodel = "sb16" }
 secs = 120
 note = "planted: T2.EXE S16ODD1 with the sign bit the other way and the tone right (the word L4), on 86Box's own card (C2 refuses the transfer by reading, so the plant runs where it plays); every step must FAIL tonecheck's third-harmonic, left-tone and right-silence checks (A3, L4 for S16ODD1's intervals)"
+
+[[test]]
+name = "T2L4-S16ON8"
+decides = "silent: a planted fault (L4): the check it is planted for must fail"
+runner = "probewav"
+env = "PROBE_WAV=1 PROBE_RUN='T2:T2.EXE S16ON8 L4'"
+groups = ["t2l4"]
+fixed = { mode = "base", vmodel = "sb16" }
+secs = 120
+note = "planted: T2.EXE S16ON8 with the sign bit the other way and the stereo tone right (the word L4), on 86Box's own card (C2 cannot play it by reading); every mono step must FAIL tonecheck's third-harmonic check and every stereo one its left-tone and right-silence checks (A3, L4 for S16ON8's intervals)"
 
 [[test]]
 name = "SBT16-legacy"
