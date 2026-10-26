@@ -2044,20 +2044,18 @@ groups = ["t2x"]
 fixed = { build = "pinC2", vmodel = "sb16" }
 repeat = 10
 secs = 120
-note = "an 8237 master clear during auto-init playback: the transfer stops with the channel masked, and starts again when set up again (A3, C2)"
-todo = "A3: T2.EXE not written yet (the row before the program, r3.5)"
+note = "an 8237 master clear during auto-init playback (8-bit at 22050 Hz, 8 KB of the 2 kHz tone in 4 KB blocks): MP playing 27 ticks; MC a write to port 0Dh, 'the same effect as the hardware Reset ... the Mask register is set. The 8237A will enter the Idle cycle' (8237:485-491), so nothing is transferred, no block interrupt and no sound (SBG:1590-1591), 27 ticks; MS the channel set up again with the DSP left as it was (SBG:1652-1668): the tone and one interrupt a block again, 27 ticks. Judged in the guest: MP and MS within 2 of 8 interrupts (7.98 due), MC none; tonecheck: the tone in MP and MS, quiet in MC. The single-mask case is DMAMASK (the notes' DMAMASK row: a masked channel does not stall uCDD's virtual transfer); the master clear is its own path in the pinned driver (src/audio/trap.asm 612-631) (A3, C2; dev run t2dev-mc2: PASS, MP 7, MC 0, MS 9)"
 
 [[test]]
 name = "T2C0-DMAMC"
 decides = "8237:485-491, VSB:395-465"
 runner = "probewav"
-env = "PROBE_WAV=1 PROBE_RUN='T2:T2.EXE DMAMC'"
+env = "PROBE_WAV=1 PROBE_RUN='T2:T2.EXE DMAMC C0'"
 groups = ["t2xc0"]
 fixed = { mode = "base", vmodel = "sb16" }
 repeat = 10
 secs = 120
-note = "an 8237 master clear during auto-init playback: the transfer stops with the channel masked, and starts again when set up again (A3, C0: the client validated on 86Box's own card before C2)"
-todo = "A3: T2.EXE not written yet (the row before the program, r3.5)"
+note = "an 8237 master clear during auto-init playback (8-bit at 22050 Hz, 8 KB of the 2 kHz tone in 4 KB blocks): MP playing 27 ticks; MC a write to port 0Dh, 'the same effect as the hardware Reset ... the Mask register is set. The 8237A will enter the Idle cycle' (8237:485-491), so nothing is transferred, no block interrupt and no sound (SBG:1590-1591), 27 ticks; MS the channel set up again with the DSP left as it was (SBG:1652-1668): the tone and one interrupt a block again, 27 ticks. Judged in the guest: MP and MS within 2 of 8 interrupts (7.98 due), MC none; tonecheck: the tone in MP and MS, quiet in MC. The single-mask case is DMAMASK (the notes' DMAMASK row: a masked channel does not stall uCDD's virtual transfer); the master clear is its own path in the pinned driver (src/audio/trap.asm 612-631) (A3, C0: the client validated on 86Box's own card before C2; dev run t2dev-mc0: PASS, MP 7, MC 0, MS 8)"
 
 [[test]]
 name = "T2X-DMAMASK"
@@ -3117,6 +3115,16 @@ groups = ["t2l4"]
 fixed = { build = "pinC2", vmodel = "sb16" }
 secs = 120
 note = "planted: T2.EXE ADPCM4 with the word L4 plays the block at the time constant 4Ah (half the rate), the tone at 1 kHz; tonecheck's AD 2000 Hz check must FAIL (A3, L4 for ADPCM4's sound; T2.EXE's own timing fails with it)"
+
+[[test]]
+name = "T2L4-DMAMC"
+decides = "silent: a planted fault (L4): the check it is planted for must fail"
+runner = "probewav"
+env = "PROBE_WAV=1 PROBE_RUN='T2:T2.EXE DMAMC L4'"
+groups = ["t2l4"]
+fixed = { build = "pinC2", vmodel = "sb16" }
+secs = 120
+note = "planted: T2.EXE DMAMC with the word L4 leaves the master clear out, so MC plays on; tonecheck's MC quiet check must FAIL (A3, L4 for DMAMC's sound; T2.EXE's own MC count fails with it)"
 
 [[test]]
 name = "SBT16-legacy"
