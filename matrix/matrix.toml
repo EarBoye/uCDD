@@ -2121,52 +2121,98 @@ note = "mixed (T1A track 2 playing, both peaks in the capture): word writes to 2
 todo = "A3: T2.EXE not written yet (the row before the program, r3.5)"
 
 [[test]]
-name = "T2X-PICSMM"
-decides = "8259:615-617, 8259:669-681, 8259:589-599"
+name = "T2X-PICSMM1"
+decides = "8259:615-617"
 runner = "probe"
-env = "PROBE_RUN='T2:T2.EXE PICSMM'"
+env = "PROBE_RUN='T2:T2.EXE PICSMM1'"
 groups = ["t2x"]
 fixed = { build = "pinC2", vmodel = "sb16" }
 repeat = 10
 secs = 90
-note = "special mask mode (OCW3) with the card's line in service (A3, C2)"
-todo = "A3: T2.EXE PICSMM written; held on STATE question 12: 86Box's 8259 has no special mask mode outside the IBM 5140 (ISSUES 86SMM), so C0 cannot validate it nor C2 be judged on this bench"
+note = "the fully nested mode: with IRQ 0 in service the card's lower request waits until IRQ 0 is ended (split from PICSMM, Michael, 26 Oct 2026, question 12) (A3, C2)"
 
 [[test]]
-name = "T2C0-PICSMM"
-decides = "8259:615-617, 8259:669-681, 8259:589-599"
+name = "T2C0-PICSMM1"
+decides = "8259:615-617"
 runner = "probe"
-env = "PROBE_RUN='T2:T2.EXE PICSMM C0'"
+env = "PROBE_RUN='T2:T2.EXE PICSMM1 C0'"
 groups = ["t2xc0"]
 fixed = { mode = "base", vmodel = "sb16" }
 repeat = 10
 secs = 90
-note = "special mask mode (OCW3) with the card's line in service (A3, C0: the client validated on 86Box's own card before C2)"
-todo = "A3: T2.EXE PICSMM written; held on STATE question 12: 86Box's 8259 has no special mask mode outside the IBM 5140 (ISSUES 86SMM), so C0 cannot validate it nor C2 be judged on this bench"
+note = "the fully nested mode: with IRQ 0 in service the card's lower request waits until IRQ 0 is ended (split from PICSMM, Michael, 26 Oct 2026, question 12) (A3, C0: the client validated on 86Box's own card before C2)"
 
 [[test]]
-name = "T2X-PICSMM-M"
-decides = "8259:588-599"
+name = "T2X-PICSMM1-M"
+decides = "8259:615-617"
 runner = "probewav"
-env = "PROBE_WAV=1 PROBE_EXTRA='fixtures/synth/out/T1A.BIN|T1\\T1A.BIN;fixtures/synth/out/T1A.CUE|T1\\T1A.CUE' PROBE_RUN='CD:!C:\\SHSUCDX.COM /D:UCDD0001 /L:G > C:\\OUT\\CD.TXT,M:!C:\\UCDD\\UCDD.EXE -mount C:\\T1\\T1A.CUE > C:\\OUT\\M.TXT,T2:T2.EXE PICSMM MIX'"
+env = "PROBE_WAV=1 PROBE_EXTRA='fixtures/synth/out/T1A.BIN|T1\\T1A.BIN;fixtures/synth/out/T1A.CUE|T1\\T1A.CUE' PROBE_RUN='CD:!C:\\SHSUCDX.COM /D:UCDD0001 /L:G > C:\\OUT\\CD.TXT,M:!C:\\UCDD\\UCDD.EXE -mount C:\\T1\\T1A.CUE > C:\\OUT\\M.TXT,T2:T2.EXE PICSMM1 MIX'"
 groups = ["t2x"]
 fixed = { build = "pinC2", vmodel = "sb16" }
 repeat = 10
 secs = 120
-note = "mixed (T1A track 2 playing, both peaks in the capture): special mask mode (OCW3) with the card's line in service (A3, C2)"
+note = "mixed (T1A track 2 playing, both peaks in the capture): the fully nested mode: with IRQ 0 in service the card's lower request waits until IRQ 0 is ended (split from PICSMM, Michael, 26 Oct 2026, question 12) (A3, C2)"
 todo = "A3: T2.EXE not written yet (the row before the program, r3.5)"
 
 [[test]]
-name = "T2C0-PICSMM-M"
-decides = "8259:588-599"
+name = "T2C0-PICSMM1-M"
+decides = "8259:615-617"
 runner = "probewav"
-env = "PROBE_WAV=1 PROBE_CDROM=fixtures/synth/out/T1B.CUE PROBE_RUN='CD:!C:\\MSCDEX.EXE /D:OAKCD001 /L:G > C:\\OUT\\CD.TXT,T2:T2.EXE PICSMM MIX'"
+env = "PROBE_WAV=1 PROBE_CDROM=fixtures/synth/out/T1B.CUE PROBE_RUN='CD:!C:\\MSCDEX.EXE /D:OAKCD001 /L:G > C:\\OUT\\CD.TXT,T2:T2.EXE PICSMM1 MIX'"
 groups = ["t2xc0"]
 fixed = { mode = "base", vmodel = "sb16" }
 repeat = 10
 secs = 120
-note = "mixed (T1A track 2 playing, both peaks in the capture): special mask mode (OCW3) with the card's line in service (A3, C0: the client validated on 86Box's own card before C2)"
+note = "mixed (T1A track 2 playing, both peaks in the capture): the fully nested mode: with IRQ 0 in service the card's lower request waits until IRQ 0 is ended (split from PICSMM, Michael, 26 Oct 2026, question 12) (A3, C0: the client validated on 86Box's own card before C2)"
 todo = "A3: T2.EXE not written yet (the row before the program, r3.5)"
+
+[[test]]
+name = "T2X-PICSMM2"
+decides = "8259:669-681, 8259:589-599"
+runner = "probe"
+env = "PROBE_RUN='T2:T2.EXE PICSMM2'"
+groups = ["t2x"]
+fixed = { build = "pinC2", vmodel = "sb16" }
+repeat = 10
+secs = 90
+note = "special mask mode: with IRQ 0 in service and masked and OCW3 68h written the card's lower request comes at once (split from PICSMM, Michael, 26 Oct 2026, question 12) (A3, C2)"
+todo = "A3: judged on the CT2290 in AKIT (Michael, 26 Oct 2026, question 12): 86Box's 8259 has no special mask mode (ISSUES 86SMM) and the driver drops OCW3 68h, so a C2 run here cannot be told from the emulator"
+
+[[test]]
+name = "T2C0-PICSMM2"
+decides = "EMUSRC: DOSBox-X 2025.02.01 src/hardware/pic.cpp PIC_Controller::check_for_irq and PIC_runIRQs (special?8:active_irq)"
+runner = "probe"
+env = "PROBE_RUN='T2:T2.EXE PICSMM2 C0'"
+groups = ["t2xc0"]
+fixed = { mode = "base", vmodel = "sb16" }
+repeat = 10
+secs = 90
+note = "special mask mode: with IRQ 0 in service and masked and OCW3 68h written the card's lower request comes at once (split from PICSMM, Michael, 26 Oct 2026, question 12) (A3, the control: DOSBox-X, read)"
+todo = "A3: the control is DOSBox-X's special mask path, read (Michael, 26 Oct 2026, question 12; grade emulator); not run: 86Box cannot (86SMM) and DOSBox-X is not wired into the runners (tightening r3, T6). The CT2290 in AKIT judges"
+
+[[test]]
+name = "T2X-PICSMM2-M"
+decides = "8259:669-681, 8259:589-599"
+runner = "probewav"
+env = "PROBE_WAV=1 PROBE_EXTRA='fixtures/synth/out/T1A.BIN|T1\\T1A.BIN;fixtures/synth/out/T1A.CUE|T1\\T1A.CUE' PROBE_RUN='CD:!C:\\SHSUCDX.COM /D:UCDD0001 /L:G > C:\\OUT\\CD.TXT,M:!C:\\UCDD\\UCDD.EXE -mount C:\\T1\\T1A.CUE > C:\\OUT\\M.TXT,T2:T2.EXE PICSMM2 MIX'"
+groups = ["t2x"]
+fixed = { build = "pinC2", vmodel = "sb16" }
+repeat = 10
+secs = 120
+note = "mixed (T1A track 2 playing, both peaks in the capture): special mask mode: with IRQ 0 in service and masked and OCW3 68h written the card's lower request comes at once (split from PICSMM, Michael, 26 Oct 2026, question 12) (A3, C2)"
+todo = "A3: judged on the CT2290 in AKIT (Michael, 26 Oct 2026, question 12): 86Box's 8259 has no special mask mode (ISSUES 86SMM) and the driver drops OCW3 68h, so a C2 run here cannot be told from the emulator; and the sound cases wait on tonecheck"
+
+[[test]]
+name = "T2C0-PICSMM2-M"
+decides = "EMUSRC: DOSBox-X 2025.02.01 src/hardware/pic.cpp PIC_Controller::check_for_irq and PIC_runIRQs (special?8:active_irq)"
+runner = "probewav"
+env = "PROBE_WAV=1 PROBE_CDROM=fixtures/synth/out/T1B.CUE PROBE_RUN='CD:!C:\\MSCDEX.EXE /D:OAKCD001 /L:G > C:\\OUT\\CD.TXT,T2:T2.EXE PICSMM2 MIX'"
+groups = ["t2xc0"]
+fixed = { mode = "base", vmodel = "sb16" }
+repeat = 10
+secs = 120
+note = "mixed (T1A track 2 playing, both peaks in the capture): special mask mode: with IRQ 0 in service and masked and OCW3 68h written the card's lower request comes at once (split from PICSMM, Michael, 26 Oct 2026, question 12) (A3, the control: DOSBox-X, read)"
+todo = "A3: the control is DOSBox-X's special mask path, read (Michael, 26 Oct 2026, question 12; grade emulator); not run: 86Box cannot (86SMM) and DOSBox-X is not wired into the runners (tightening r3, T6). The CT2290 in AKIT judges"
 
 [[test]]
 name = "T2X-PICSEOI"
