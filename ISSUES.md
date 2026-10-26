@@ -1083,8 +1083,9 @@ Hypothesis (labelled, not tested): the author's Beta 0.9.4-a6 (fork main 8252786
   both emulators' sources. Hardware: not run.
 - Michael's ruling (26 Oct 2026, question 13): this 86Box build (6.0, build
   9001) differs from its own master source, which wraps: a build-specific
-  regression of 86Box's, recorded as such; any later 86Box build is checked
-  against T2C0-SC8PAGE2 before its C0 counts for the wrap. SC8PAGE split:
+  regression of 86Box's, recorded as such. (Mine, not the ruling: a later
+  86Box build could be checked with T2C0-SC8PAGE2 before its C0 counts for
+  the wrap.) SC8PAGE split:
   SC8PAGE1 (the crossing block's interrupt) on the bench, C0 10/10 (plan
   5fb0d861), C2 0/10 (plan 49b66842, CAND-9); SC8PAGE2 (the wrap) decides
   8237:331-338, grade data sheet, DOSBox-X's dma.cpp corroborating, judged
