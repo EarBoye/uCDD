@@ -2466,8 +2466,7 @@ groups = ["t2x"]
 fixed = { build = "pinC2", vmodel = "sb16" }
 repeat = 10
 secs = 120
-note = "an IRQ 0 handler that holds interrupts off 6 ms every tick for 10 s while the 2 kHz tone and T1A track 2 play: both tones with no gap of 20 ms or more (A3, C2); charter case 15 (project_a.md); related notes (Michael, 26 Oct 2026): the author's 0.9.4-a2, RELEASE-NOTES.md:158, the 128-frame period against a mouse driver holding its interrupt for several milliseconds; 0.9.4-a6, RELEASE-NOTES.md:98, three output periods in the ring against a mouse driver keeping interrupts off longer than one period (the notes' F2 ring row: the sound during a hold is not fixed by the ring); first run on the Logo=0 bench"
-todo = "A3: T2.EXE not written yet (the row before the program, r3.5)"
+note = "an IRQ 0 handler that holds interrupts off 6 ms every tick for 10 s while the 2 kHz tone and T1A track 2 play: both tones with no gap of 20 ms or more (T2.EXE CLIGAP MIX: the card's 1999.9 Hz, 8-bit auto-init at 22050 Hz in 4 KB blocks, with track 2's 1000 Hz (C0: T1B's); phases MIX 18 ticks, HOLD 182, FREE 18, OFF; each tone in its own band through HOLD and no drop of either of 20 ms or more at half level from MIX to OFF, nor of the whole (thresholds.toml [band], [gaps]); T2.TXT judges 182 or 183 holds and one card interrupt a block within 2) (A3, C2); charter case 15 (project_a.md); related notes (Michael, 26 Oct 2026): the author's 0.9.4-a2, RELEASE-NOTES.md:158, the 128-frame period against a mouse driver holding its interrupt for several milliseconds; 0.9.4-a6, RELEASE-NOTES.md:98, three output periods in the ring against a mouse driver keeping interrupts off longer than one period (the notes' F2 ring row: the sound during a hold is not fixed by the ring); first run on the Logo=0 bench"
 
 [[test]]
 name = "T2C0-CLIGAP"
@@ -2478,8 +2477,7 @@ groups = ["t2xc0"]
 fixed = { mode = "base", vmodel = "sb16" }
 repeat = 10
 secs = 120
-note = "an IRQ 0 handler that holds interrupts off 6 ms every tick for 10 s while the 2 kHz tone and T1A track 2 play: both tones with no gap of 20 ms or more (A3, C0: the client validated on 86Box's own card before C2); charter case 15 (project_a.md); related notes (Michael, 26 Oct 2026): the author's 0.9.4-a2, RELEASE-NOTES.md:158, the 128-frame period against a mouse driver holding its interrupt for several milliseconds; 0.9.4-a6, RELEASE-NOTES.md:98, three output periods in the ring against a mouse driver keeping interrupts off longer than one period (the notes' F2 ring row: the sound during a hold is not fixed by the ring); first run on the Logo=0 bench"
-todo = "A3: T2.EXE not written yet (the row before the program, r3.5)"
+note = "an IRQ 0 handler that holds interrupts off 6 ms every tick for 10 s while the 2 kHz tone and T1A track 2 play: both tones with no gap of 20 ms or more (T2.EXE CLIGAP MIX: the card's 1999.9 Hz, 8-bit auto-init at 22050 Hz in 4 KB blocks, with track 2's 1000 Hz (C0: T1B's); phases MIX 18 ticks, HOLD 182, FREE 18, OFF; each tone in its own band through HOLD and no drop of either of 20 ms or more at half level from MIX to OFF, nor of the whole (thresholds.toml [band], [gaps]); T2.TXT judges 182 or 183 holds and one card interrupt a block within 2) (A3, C0: the client validated on 86Box's own card before C2); charter case 15 (project_a.md); related notes (Michael, 26 Oct 2026): the author's 0.9.4-a2, RELEASE-NOTES.md:158, the 128-frame period against a mouse driver holding its interrupt for several milliseconds; 0.9.4-a6, RELEASE-NOTES.md:98, three output periods in the ring against a mouse driver keeping interrupts off longer than one period (the notes' F2 ring row: the sound during a hold is not fixed by the ring); first run on the Logo=0 bench"
 
 
 [[test]]
@@ -3072,6 +3070,16 @@ groups = ["t2l4"]
 fixed = { build = "pinC2", vmodel = "sb16" }
 secs = 120
 note = "planted: T2.EXE TIMERSTOP on T1AP, the disc with tracks 2 and 3 swapped (track 2 at 440 Hz), on the pinned C2; the 1000 Hz tone check in every phase must FAIL (A3, L4 for TIMERSTOP's intervals)"
+
+[[test]]
+name = "T2L4-CLIGAP"
+decides = "silent: a planted fault (L4): the check it is planted for must fail"
+runner = "probewav"
+env = "PROBE_WAV=1 PROBE_EXTRA='fixtures/synth/out/T1AP.BIN|T1\\T1AP.BIN;fixtures/synth/out/T1AP.CUE|T1\\T1AP.CUE' PROBE_RUN='CD:!C:\\SHSUCDX.COM /D:UCDD0001 /L:G > C:\\OUT\\CD.TXT,M:!C:\\UCDD\\UCDD.EXE -mount C:\\T1\\T1AP.CUE > C:\\OUT\\M.TXT,T2:T2.EXE CLIGAP MIX'"
+groups = ["t2l4"]
+fixed = { build = "pinC2", vmodel = "sb16" }
+secs = 120
+note = "planted: T2.EXE CLIGAP on T1AP (track 2 at 440 Hz) on the pinned C2; the 1000 Hz band check through HOLD must FAIL (A3, L4 for CLIGAP's mixed checks on a run; capbreak's notch plants proved the band-drop check on t2dev-cg0, bench commit)"
 
 [[test]]
 name = "SBT16-legacy"
