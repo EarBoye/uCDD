@@ -230,7 +230,12 @@ both [hw]; the numbers are in [ct2290.md](ct2290.md).
   period (0.7 ms, 0.8 ms, 2.3 ms).
 - **F12.** Mixer 80h and 81h are writable on the card (it is a
   software-configured SB16) and 83h keeps bits 0-3 (0Bh reads FBh); the
-  virtual card reads fixed values for all three.
+  virtual card reads fixed values for all three. The specification now
+  follows the card for 80h and 81h (vsb-spec.md 9.4, on the notes branch,
+  changed 27 Oct 2026, Michael, Project A question 15: an 81h write takes
+  effect, and with no 16-bit channel bit 16-bit data moves on the 8-bit
+  channel, SBG:1136-1138; PnP boards differ, SBG:1140-1148); the pinned
+  build does not yet (ISSUES.md CAND-14, notes branch).
 - **F13.** The card's DSP takes 61 us to reset, shows busy for 26 us after
   each command byte and in 46% of idle reads, and answers E1h in 31 us;
   the virtual DSP answers in 6-12 us and never shows busy.
