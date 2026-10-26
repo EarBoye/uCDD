@@ -214,10 +214,40 @@ animate_palette:
     cmp bx, 16
     jb .rainbow
     pop es
+    cmp byte [tn_flag], 0
+    jne tunnel_palette
+    cmp byte [tn_loaded], 0
+    je .plain
+    mov byte [tn_loaded], 0
+    push ds
+    mov ds, [extra_seg]
+    mov si, A_PALETTE+C_HEAT*3
+    mov al, C_HEAT
+    mov cx, 16
+    call set_palette
+    pop ds
+.plain:
     mov si, dynamic_palette
     mov al, C_COPPER
     mov cx, 3*COPPER_SHADES+16
     jmp set_palette
+
+; The copper tunnel uses the rainbow and heat colors. Load them once.
+tunnel_palette:
+    mov byte [tn_flag], 0
+    mov si, dynamic_palette
+    mov al, C_COPPER
+    mov cx, 3*COPPER_SHADES
+    call set_palette
+    cmp byte [tn_loaded], 0
+    jne .done
+    mov byte [tn_loaded], 1
+    mov si, tn_palette
+    mov al, C_TUNNEL
+    mov cx, 32
+    call set_palette
+.done:
+    ret
 
 ; SI = message. Show it in the bottom window for three seconds.
 show_message:
@@ -320,6 +350,7 @@ set_visual:
     mov word [liss_head], 0
     mov byte [land_head], 0
     mov byte [land_phase], 0
+    mov byte [tn_ready], 0
     push es
     push ds
     pop es

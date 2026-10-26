@@ -37,7 +37,8 @@
 - DPMI host: limit the single steps through a program that keeps interrupts off while an interrupt waits. After 32 steps, the program runs at full speed until it turns interrupts on. This fixes the lost sound interrupts and the slow game in Iron Man and X-O Manowar in Heavy Metal.
 - DPMI host: run INT 0, 1, 2, 5, 6, and 7 from a protected-mode program as software interrupts, not as processor exceptions. This fixes the exit on the ice level of WHAM!.
 - UCDDSET shows the SB Pro rate as an approximate rate.
-- Add Dominus, Eojjeonji Joheun Il-i Saenggil Geot Gateun Jeonyeok (Night), Firo & Klawd, GT Racing 97, Johnny Bazookatone, Judge Dredd, Lemmings 3D, MadSpace: To Hell and Beyond, Mortal Kombat Trilogy, Pete Sampras Tennis 97, Quake, Scorcher, Time Warriors, WHAM!, and Zyclunt to the [compatibility list](https://github.com/vorvek/uCDD/wiki/Compatibility).
+- Add a Copper Tunnel visualization to UCDDPLAY. Copper rings rush out of a dark center. The bass makes the rings faster and brighter and moves the center.
+- Add Dominus, Eojjeonji Joheun Il-i Saenggil Geot Gateun Jeonyeok (Night), Firo & Klawd, GT Racing 97, Johnny Bazookatone, Judge Dredd, Lemmings 3D, MadSpace: To Hell and Beyond, Mortal Kombat Trilogy, Pete Sampras Tennis 97, Quake, Scorcher, The Patrician, Time Warriors, WHAM!, and Zyclunt to the [compatibility list](https://github.com/vorvek/uCDD/wiki/Compatibility).
 
 # Beta 0.9.4-a6
 

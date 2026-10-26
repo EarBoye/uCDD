@@ -24,6 +24,9 @@ org 0
 %if LAND_PIXELS+SCROLL_W*SCROLL_H > ENTRIES
     %error Landscape workspace exceeds the effects buffer
 %endif
+%if TN_FOG+TN_SIZE > ENTRIES
+    %error Tunnel tables exceed the effects buffer
+%endif
 
     jmp strict near start
     ; The build reads this offset. The zero data after it is not in the file.
@@ -269,6 +272,7 @@ error_exit:
 %include "play/balls.asm"
 %include "play/dancers.asm"
 %include "play/fireworks.asm"
+%include "play/coppertunnel.asm"
 %include "play/ui.asm"
 %include "play/input.asm"
 %include "play/text.asm"
@@ -486,6 +490,22 @@ fw_sparks times FW_SPARKS*10 db 0
 fw_bass_avg dw 0
 fw_cool db 0
 fw_next db 0
+tn_ready db 0
+tn_flag db 0
+tn_loaded db 0
+tn_z dw 0
+tn_avg dw 0
+tn_flash dw 0
+tn_kick dw 0
+tn_shift dw 0
+tn_k dw 0
+tn_j dw 0
+tn_ay dw 0
+tn_r dw 0
+tn_depth db 0
+tn_fog db 0
+tn_seg times 256 db 0
+tn_lvl times 32 db 0
 cube_yaw_s dw 0
 cube_yaw_c dw 0
 cube_pitch_s dw 0

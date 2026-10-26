@@ -194,8 +194,8 @@ request_buttons:
     dw REQ_X0+174, 60, browser_close, text_cancel
     dw 0
 
-visual_table dw draw_warp, draw_scope, draw_waterfall, draw_fire, draw_bubbles, draw_plasma, draw_tunnel, draw_lissajous, draw_landscape, draw_cubes, draw_balls, draw_dancers, draw_fireworks
-visual_names dw name_warp, name_spectra, name_firebars, name_lavaflow, name_bubbles, name_plasma, name_tunnel, name_lissajous, name_landscape, name_cubes, name_balls, name_dancers, name_fireworks, name_random
+visual_table dw draw_warp, draw_scope, draw_waterfall, draw_fire, draw_bubbles, draw_plasma, draw_tunnel, draw_lissajous, draw_landscape, draw_cubes, draw_balls, draw_dancers, draw_fireworks, draw_coppertunnel
+visual_names dw name_warp, name_spectra, name_firebars, name_lavaflow, name_bubbles, name_plasma, name_tunnel, name_lissajous, name_landscape, name_cubes, name_balls, name_dancers, name_fireworks, name_coppertunnel, name_random
 name_warp db 'WARP SPEED',0
 name_spectra db 'SPECTRA',0
 name_firebars db 'FIREBARS',0
@@ -209,8 +209,24 @@ name_cubes db 'CUBES',0
 name_balls db 'VECTOR BALLS',0
 name_dancers db 'CHORUS LINE',0
 name_fireworks db 'FIREWORKS',0
+name_coppertunnel db 'COPPER TUNNEL',0
 fw_colors db C_GOLD_HI, C_GOLD, C_GOLD_LO, C_WHITE, C_KNOB+1, C_KNOB+2, C_RED, C_BURG0, C_BURG1
 name_random db 'RANDOM',0
+tn_tri db 0, 1, 2, 3, 4, 3, 2, 1
+tn_atan db 0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7
+    db 7, 8, 8, 9, 9, 10, 10, 11, 11, 11, 12, 12, 13, 13, 13, 14
+    db 14, 15, 15, 15, 16, 16, 16, 17, 17, 17, 18, 18, 18, 19, 19, 19
+    db 20, 20, 20, 21, 21, 21, 21, 22, 22, 22, 22, 23, 23, 23, 24, 24
+    db 24
+tn_palette:
+    db 12, 1, 5, 34, 7, 7, 59, 25, 7, 63, 53, 15
+    db 63, 63, 53, 9, 0, 3, 26, 5, 5, 45, 19, 5
+    db 57, 40, 11, 60, 57, 40, 7, 0, 2, 19, 4, 4
+    db 34, 14, 4, 43, 30, 9, 45, 43, 30, 4, 0, 1
+    db 13, 2, 2, 22, 9, 2, 28, 20, 6, 30, 28, 20
+    db 2, 0, 1, 6, 1, 1, 11, 5, 1, 15, 10, 3
+    db 15, 15, 10, 0, 0, 0, 1, 0, 0, 2, 1, 0
+    db 3, 2, 0, 3, 3, 2, 0, 0, 0, 0, 0, 0
 ball_colors db C_GOLD_LO, C_GOLD, C_GOLD_HI, C_WHITE, 0, 0, 0, 0
     db C_KNOB+3, C_KNOB+2, C_KNOB+1, C_KNOB, 0, 0, 0, 0
 ball_shape_table dw 0, 49, 130
