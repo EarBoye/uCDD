@@ -567,10 +567,10 @@ No mixer at the card's base (section 2). [doc]
 | 81h | DMA select: bits 0, 1, 3 channel 0, 1, 3; 5, 6, 7 channel 5, 6, 7 | the card's |
 | 82h | interrupt status (8.2) | |
 
-- **80h and 81h: written as on the CT2290** (changed 27 Oct 2026,
+- **80h and 81h: written as on the CT2290** (changed 26 Oct 2026,
   Michael, Project A question 15; the mantra's rule 7: the old text kept
   below, the new beside it, with the evidence).
-  - Old text (to 27 Oct 2026): "80h and 81h are "Read Only for PnP
+  - Old text (to 26 Oct 2026): "80h and 81h are "Read Only for PnP
     boards"; programs should not write them (SBG:1047-1052). The virtual
     card reads them as its own settings. [doc]"
   - New text: the virtual SB16 answers as the CT2290 it presents, a
