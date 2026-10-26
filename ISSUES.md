@@ -975,6 +975,15 @@ Observed: T2.TXT `FAIL PICWORD a word OUT to 20h: 21h reads B8h (B8h written); F
 Trace: by reading, at the pinned SHA: src/audio/trap.asm:321 sends every access wider than a byte (`test cl, 18h`) to `.wide` (428-440), which takes only a word OUT to the card's base+4 (the mixer index and data); every other wide access goes to `.unsupported` (444-451), which sets [fault] and drops it, both bytes. The PIC branch (383-386, `virtual_pic_write`) is reached only by byte writes. That the first word OUT landed suggests 20h and 21h are trapped only while the virtual line is in use; when the trap is set was not traced. The same drop on the Sound Blaster's own ports is HOSTCD Q-1 (open, "rare"); this row is that mechanism on the 8259's ports. Minimal reproduction: `T2.EXE PICWORD` under C2 (matrix T2X-PICWORD).
 Hypothesis (labelled, not tested): `.wide` splitting a word OUT to 20h or 21h (and A0h, A1h) into two byte writes through `virtual_pic_write`, low byte first, as the CPU does (I386:8218-8221), would answer the document; Q-1's other ports the same way. Evidence: emulator (plans c04ab538 and 350f51fb), dynarec off. Hardware: UNCONFIRMED.
 
+### CAND-8 Tier 2, T2X-PICROT: OCW2 Set Priority is dropped and the rotating EOI loses its rotation, so the card's interrupt never comes before a waiting timer tick (found 26 Oct 2026, open)
+
+Pinned: count-position 7994cd1 (C2 hash UCDD.EXE 03d92066, UCDDHOST.BIN 447ace33; rig86/fixtures/pinned/MANIFEST.txt). Bin: CANDIDATE_UCDD_SFX (the virtual card's interrupt path), FAIL 10/10 under C2, one identical line (Tier 2; the template's 3/3 is the sweep's).
+Cell: none (Tier 2: T2.EXE, real mode, no game), scope not applicable; which games set the 8259's priorities is not known (A4's census can grep for OCW2 C0h-C7h and A0h, E0h-E7h).
+Affected: not known. Controls: C0 PASS 10/10 (T2C0-PICROT, plan 708fb84f: 86Box's own 8259 gives the timer, then the card, then the timer); C1 not applicable (no virtual card).
+Observed: T2.TXT `FAIL PICROT both requests waiting: first the timer (the BIOS's order, IR0 highest: the timer); after OCW2 Set Priority with the card's line highest, the timer (the card); after its rotating EOI A0h, the timer (the timer: the card's line now lowest)` in all ten C2 runs (plan fd562273, folders t2c2r-001 to -010): with both requests waiting and interrupts then on, the timer is served first whatever the priority. Expected: "if IR5 is programmed as the bottom priority device, then IR6 will have the highest one" (8259:686-687; Set Priority, OCW2 R=1 SL=1, 689-691): with C4h written the card's IR5 is highest and comes first; after its EOI A0h (rotate on non-specific EOI, 673-677) it is the lowest (621-626). The C0 behaviour.
+Trace: by reading, at the pinned SHA: src/audio/irq.asm `virtual_pic_write` takes OCW2 by bits 6:5 (469-483): 01 (20h-3Fh, A0h-BFh) is made a plain non-specific EOI, `mov al, 20h` (479), so A0h's rotation is dropped; 11 is the specific EOI; anything else, Set Priority C0h-C7h among them (bits 10), goes to `.done` (483) and is neither emulated nor passed to the physical controller, though the comment above (471-475) says the physical controller keeps it. The virtual line's interrupt is the driver's own delivery, not the physical chip's, so the physical priorities would not order it anyway. HOSTCD P5, P6 ("kept by the physical controller, not emulated ... harmless") is contradicted by the code and by this row. Minimal reproduction: `T2.EXE PICROT` under C2 (matrix T2X-PICROT).
+Hypothesis (labelled, not tested): a virtual priority (the bottom level, set by C0h-C7h, moved by A0h and E0h-E7h) consulted where the driver chooses between delivering the virtual line and letting a waiting physical one through would answer the document; how the delivery is ordered against the physical timer was not traced. Evidence: emulator (plans 708fb84f and fd562273), dynarec off. Hardware: UNCONFIRMED.
+
 ### 86CUE2048: 86Box misreads a CUE sheet whose data track has 2048-byte sectors (an emulator limitation; found 25 Oct 2026)
 
 - Seen [86Box] while setting Project A's C0 control for gate A2 (OAKCDROM
@@ -999,6 +1008,29 @@ Hypothesis (labelled, not tested): `.wide` splitting a word OUT to 20h or 21h (a
 - Not ours to fix (86Box's CUE loader); nothing in uCDD changes. Evidence:
   emulator (development runs t1dev-c0 and t1dev-c0b, 25 Oct). Hardware:
   not applicable.
+
+### 86SMM: 86Box's 8259 has no special mask mode outside the IBM 5140 (an emulator limitation; found 26 Oct 2026)
+
+- Seen [86Box] writing Project A's T2X-PICSMM (gate A3), development run
+  t2dev-c0p (not recorded; 86Box 6.0 build 9001, dynarec off): on C0, with
+  IRQ 0 in service, IRQ 0 masked and OCW3 68h written (special mask mode),
+  F2h's interrupt on IRQ 5 does not come until IRQ 0 is ended. The 8259A:
+  "In the special Mask Mode, when a mask bit is set in OCW1, it inhibits
+  further interrupts at that level and enables interrupts from all other
+  levels (lower as well as higher) that are not masked" (8259:669-673). The
+  first phase (the fully nested mode, 8259:615-617) behaves.
+- 86Box's source (src/pic.c, master, read 26 Oct 2026): OCW3 bits 6:5 set
+  `special_mask_mode`, and a non-specific EOI skips a masked in-service
+  level; but `find_best_interrupt()` lets a masked in-service level stop
+  blocking lower ones only when the board is the IBM 5140 (`PIC_IBM5140`);
+  on every other board an in-service level blocks every lower request.
+- So on this bench C0 cannot validate T2.EXE PICSMM's second phase, and a
+  C2 result cannot be told from the emulator's: under C2 the case gave the
+  same 0 (the driver also drops OCW3 68h, irq.asm:456-466: its comment,
+  450-454, keeps special mask mode for the physical controller, which
+  serves the mixer). Held on STATE
+  question 12; nothing in uCDD changes. Evidence: emulator (the development
+  run) and 86Box's source. Hardware: not run.
 
 ## The feature branches offered to the author (rows reconstructed 24 Oct 2026)
 
