@@ -1028,9 +1028,20 @@ Hypothesis (labelled, not tested): a virtual priority (the bottom level, set by 
   C2 result cannot be told from the emulator's: under C2 the case gave the
   same 0 (the driver also drops OCW3 68h, irq.asm:456-466: its comment,
   450-454, keeps special mask mode for the physical controller, which
-  serves the mixer). Held on STATE
-  question 12; nothing in uCDD changes. Evidence: emulator (the development
-  run) and 86Box's source. Hardware: not run.
+  serves the mixer). Nothing in uCDD changes. Evidence: emulator (the
+  development run) and 86Box's source. Hardware: not run.
+- The second emulator has it (read 26 Oct 2026): DOSBox-X 2025.02.01, the
+  build T6 installed, src/hardware/pic.cpp: OCW3 bit 6 with bit 5 sets
+  `special` (write_command), and `PIC_Controller::check_for_irq()` and
+  `PIC_runIRQs()` scan to level 8 instead of stopping at the highest level
+  in service when it is set (`special?8:active_irq`), so a lower request
+  comes while a higher level is in service; its rule is wider than the
+  document's (any unmasked level not in service, not only beside a masked
+  one), the same for PICSMM2. Michael's decision (26 Oct 2026, question
+  12): PICSMM split; PICSMM1 (the fully nested mode) runs on the bench;
+  PICSMM2's control is DOSBox-X's path (EMUSRC, grade emulator), read, not
+  run (T6 wires no runner); the CT2290 in AKIT judges, and the case is on
+  the AKIT list (STATE).
 
 ## The feature branches offered to the author (rows reconstructed 24 Oct 2026)
 
