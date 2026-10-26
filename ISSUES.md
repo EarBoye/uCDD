@@ -1232,6 +1232,27 @@ Hypothesis (labelled, not tested; mine): taking the one-byte transfer into the s
   long periods at the same cadence). Evidence: emulator (the development
   runs above), reading (IO.SYS's bytes). Hardware: not run.
 
+### 86FILL: with its recompiler off, 86Box falls behind real time when the guest spins at 233 MHz, and the recorder fills (an emulator and host limitation; found 26 Oct 2026)
+
+- Seen [86Box] chasing Project A's T2X-DAC: T2.EXE DAC with its main
+  loop spinning (`T2.EXE DAC 8000 BUSY`, C0, the bench's p55t2p4 at a
+  Pentium MMX 233, dynarec off) fills the capture with repeated buffers:
+  exact repeats of 960-sample blocks 4 back and more tone cycles than the
+  guest's bytes make. With HLT or a port-read wait in the loop instead,
+  no fill (IOSYS08's holds alone remain). Development runs, not recorded.
+- The table (C0, 8000 Hz, the busy loop; repeats, cycles over the guest's
+  4004, the closing beep by tonecheck):
+  MMX 233, dynarec off (t2dev-dacc0b): 33, +397, outside the 1 s window;
+  MMX 233, dynarec on (t2dev-fillDYN, a comparison): 0, +0, +0.090 s;
+  MMX 200, dynarec off (t2dev-fill200_1 to _3): 21, 24, 9; +789, +937,
+  +335; +0.49, +0.51, +0.24 s;
+  MMX 166, dynarec off (t2dev-fill166_1 to _3): 0, 0, 0; +0; +0.09,
+  +0.08, +0.08 s (IOSYS08's holds, not fill). Zero fill at the MMX 166.
+- Not the guest's and not uCDD's: the host's interpreter cannot keep a
+  233 MHz emulated CPU in real time through a tight loop. No configuration
+  change made: the cells a slower CPU would affect are Michael's to weigh
+  (STATE). Evidence: emulator (the runs above). Hardware: not applicable.
+
 ## The feature branches offered to the author (rows reconstructed 24 Oct 2026)
 
 These four issues were ported from the fork's line onto the author's
