@@ -1,5 +1,7 @@
 # μCDD: fixes/updates/ESS fork
 
+*** This fork and all work in it has 100% developed with Agentic AI ***
+
 This is a fork of [vorvek's μCDD](https://github.com/vorvek/uCDD), a DOS
 CD-ROM driver for disc images that mixes CD audio with the game's own sound
 through a virtual Sound Blaster. All credit for the driver is his. For what
