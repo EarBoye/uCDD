@@ -1192,6 +1192,46 @@ Hypothesis (labelled, not tested; mine): taking the one-byte transfer into the s
   candidate row of its own: CAND-13 (every other block starts on the right
   channel, plan a0c1f221, 10/10).
 
+### IOSYS08: MS-DOS 7.1's IO.SYS holds IRQ 0 in service for up to 8 ms every other BIOS tick (a bench and PC finding, not uCDD's; found 26 Oct 2026)
+
+- Seen [86Box] chasing Project A's T2X-DAC (gate A3): with PIT channel 0
+  reprogrammed (T2.EXE DAC, variant A: 8 kHz, an ISR that counts and
+  passes the BIOS tick on, no sound), the guest's TSC shows 18 gaps over
+  1 ms in 2 s, every 880th interrupt (two BIOS ticks), 3.5 to 8 ms long,
+  and the capture's closing beep comes 70 to 90 ms late: the interrupts
+  in a gap are lost, and the BIOS time counted from them falls behind.
+  86Box 6.0 build 9001, machine p55t2p4 (ASUS P/I-P55T2P4, 430HX, Award
+  4.51PG), Pentium MMX 233, development runs t2dev-csipA1 to -A4,
+  t2dev-bare1 to -3, t2dev-stk0, t2dev-bios8, dynarec off (not recorded).
+- The holder, by its own timing: T2.EXE's ISR calls the IRQ 0 handler it
+  replaced (`pushf` / `call far`) and times it on the TSC: 37 calls, 18 or
+  19 over 1 ms, the longest matching the longest gap (7.9 ms against 8.0
+  ms, t2dev-csipA3). The interrupted CS:IP names nothing: always the test's
+  own HLT (JEMMEX's HLT stub at C800:0016, 16014 of 16015 interrupts; on
+  the bare boot T2.EXE's own loop).
+- The boot bisection: bare (an empty CONFIG.SYS, no JEMMEX): the holds
+  stay (three runs: longest 3.8, 6.0, 6.5 ms, +80, +70, +90 ms); with
+  STACKS=0,0 too: the replaced handler is IO.SYS's own at 0070:02DE, still
+  18 long calls (3.8 ms); chained straight to the BIOS's INT 08h entry
+  (F000:FEA5, past IO.SYS): no gap over 1 ms (the longest interval 116 us),
+  the closing beep -0.000 s. JEMMEX and DOS's STACKS stub only make the
+  holds longer (up to 8 ms under JEMMEX, V86 costs).
+- What it does, by reading its first bytes (0070:02DE, disassembled): it
+  reads the BIOS tick count (0040:006C) and on even ticks re-enables
+  interrupts (STI) and, while a flag of its own (0070:02D8) is set, polls
+  the VGA input status port 3DAh for vertical retrace (bit 3), patching
+  itself out if the wait never ends; all before the BIOS's INT 08h sends
+  the EOI, so IRQ 0 stays in service at the 8259 and faster IRQ 0s are
+  lost. The PC boots the same IO.SYS (Windows 98 SE, MS-DOS 7.1), so it
+  may well do the same there: Project A's hardware kit carries variant A as
+  the discriminator (STATE's AKIT list).
+- What it touches: any program that reprograms channel 0 above 18.2 Hz and
+  counts time by its own interrupts (direct-DAC players, T2X-DAC,
+  T2X-TIMERSTOP) loses up to 8 ms of interrupts every 110 ms under this DOS.
+  Not uCDD's; under C2 the same holds show in the capture (t2dev-d8c2: 18
+  long periods at the same cadence). Evidence: emulator (the development
+  runs above), reading (IO.SYS's bytes). Hardware: not run.
+
 ## The feature branches offered to the author (rows reconstructed 24 Oct 2026)
 
 These four issues were ported from the fork's line onto the author's
