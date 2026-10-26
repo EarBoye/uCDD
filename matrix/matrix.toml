@@ -1915,25 +1915,35 @@ todo = "A3: T2.EXE not written yet (the row before the program, r3.5)"
 name = "T2X-DAC"
 decides = "SBG:3250-3261, SBG:1260-1273, SBG:1188-1199, SBG:983-1000, VSB:182"
 runner = "probewav"
-env = "PROBE_WAV=1 PROBE_RUN='T2:T2.EXE DAC'"
+env = "PROBE_WAV=1 PROBE_RUN='T2:T2.EXE DAC 8000'"
 groups = ["t2x"]
 fixed = { build = "pinC2", vmodel = "sb16" }
 repeat = 10
 secs = 120
-note = "direct DAC: IRQ 0 hooked and the PIT's channel 0 set to divisor 149 (1193182/149 = 8007.9 Hz); each timer interrupt sends 10h and one unsigned byte of a four-sample 2 kHz wave (128, 192, 128, 64: 2002.0 Hz), 16016 bytes, 2.0 s; the BIOS's own tick handler still called every 65536/149 interrupts, else an EOI; the PIT put back. The guide: 10h and one byte, the application controlling the rate (SBG:3250-3261); direct mode mono 8-bit unsigned, paced by the timer interrupt (SBG:1260-1273; SBG:1188-1199). T2.EXE: every 10h and its byte accepted, the write-buffer bit clear in time (SBG:983-1000); tonecheck: the tone at D0 and no gap of 20 ms or more (A3, C2)"
-todo = "A3: BLOCKED on question 17: with dynarec off 86Box falls behind real time under the 8 kHz timer interrupt and the real-time recorder pads the capture (t2dev-dacc0b, t2dev-dacc2b: HARNESS_ERROR)"
+note = "direct DAC: IRQ 0 hooked and the PIT's channel 0 set to divisor 149 (1193182/149 = 8007.9 Hz); each timer interrupt sends 10h and one unsigned byte of a four-sample 2 kHz wave (128, 192, 128, 64: 2002.0 Hz), 16016 bytes, 2.0 s; the BIOS's own tick handler still called every 65536/149 interrupts, else an EOI; the PIT put back. The guide: 10h and one byte, the application controlling the rate (SBG:3250-3261); direct mode mono 8-bit unsigned, paced by the timer interrupt (SBG:1260-1273; SBG:1188-1199). T2.EXE: every 10h and its byte accepted, the write-buffer bit clear in time (SBG:983-1000); tonecheck: the tone at D0 and no gap of 20 ms or more (A3, C2); the rate a bench parameter, the word after DAC (decides stays SBG); ladder (Michael, question 17; development runs, dynarec off, 26 Oct 2026, the host clean after the stray DOSBox-X was stopped): the closing beep's offset from the ticks, C0 / C2, trials 1-3: 8000 Hz +90 +70 +70 / +70 +70 +80 ms; 4000 Hz +90 +80 +90 / +80 +80 +90; 2000 Hz +90 +90 +80 / +90 +80 +90; 1000 Hz +70 +70 +70 / +90 +80 +80; no rate under 25 ms. Not rate-bound: the DAC phase's own sound is 70-90 ms longer than its bytes take in the guest at every rate (2.07 s for 2.00 s); with the main loop spinning instead of hlt +430 to +650 ms at 1000 Hz and over a second at 8000; with a port-read wait the same as hlt (+80 ms); Hypothesis (labelled, not tested): the padding is the bench's, not the guest's: the same 70-90 ms at every rate from 1000 to 8000 Hz, with hlt or a port-read wait, and with 86Box's recompiler on (plan c9eab1aa, T2C0-DAC-DYN, a named comparison recorded dynarec on, not evidence: +80, +90 and +90 ms, BLOCKED after three captures): not the interpreter's cost; something 86Box does while PIT channel 0 runs reprogrammed or IRQ 0 is hooked, not traced. 8 kHz on the AKIT list"
+todo = "A3: BLOCKED on question 17: no rate on the ladder keeps the capture under 25 ms (see the note); 8 kHz on the AKIT list"
 
 [[test]]
 name = "T2C0-DAC"
 decides = "SBG:3250-3261, SBG:1260-1273, SBG:1188-1199, SBG:983-1000, VSB:182"
 runner = "probewav"
-env = "PROBE_WAV=1 PROBE_RUN='T2:T2.EXE DAC C0'"
+env = "PROBE_WAV=1 PROBE_RUN='T2:T2.EXE DAC 8000 C0'"
 groups = ["t2xc0"]
 fixed = { mode = "base", vmodel = "sb16" }
 repeat = 10
 secs = 120
-note = "direct DAC: IRQ 0 hooked and the PIT's channel 0 set to divisor 149 (1193182/149 = 8007.9 Hz); each timer interrupt sends 10h and one unsigned byte of a four-sample 2 kHz wave (128, 192, 128, 64: 2002.0 Hz), 16016 bytes, 2.0 s; the BIOS's own tick handler still called every 65536/149 interrupts, else an EOI; the PIT put back. The guide: 10h and one byte, the application controlling the rate (SBG:3250-3261); direct mode mono 8-bit unsigned, paced by the timer interrupt (SBG:1260-1273; SBG:1188-1199). T2.EXE: every 10h and its byte accepted, the write-buffer bit clear in time (SBG:983-1000); tonecheck: the tone at D0 and no gap of 20 ms or more (A3, C0: the client validated on 86Box's own card before C2)"
-todo = "A3: BLOCKED on question 17: with dynarec off 86Box falls behind real time under the 8 kHz timer interrupt and the real-time recorder pads the capture (t2dev-dacc0b, t2dev-dacc2b: HARNESS_ERROR)"
+note = "direct DAC: IRQ 0 hooked and the PIT's channel 0 set to divisor 149 (1193182/149 = 8007.9 Hz); each timer interrupt sends 10h and one unsigned byte of a four-sample 2 kHz wave (128, 192, 128, 64: 2002.0 Hz), 16016 bytes, 2.0 s; the BIOS's own tick handler still called every 65536/149 interrupts, else an EOI; the PIT put back. The guide: 10h and one byte, the application controlling the rate (SBG:3250-3261); direct mode mono 8-bit unsigned, paced by the timer interrupt (SBG:1260-1273; SBG:1188-1199). T2.EXE: every 10h and its byte accepted, the write-buffer bit clear in time (SBG:983-1000); tonecheck: the tone at D0 and no gap of 20 ms or more (A3, C0: the client validated on 86Box's own card before C2); the rate a bench parameter, the word after DAC (decides stays SBG); ladder (Michael, question 17; development runs, dynarec off, 26 Oct 2026, the host clean after the stray DOSBox-X was stopped): the closing beep's offset from the ticks, C0 / C2, trials 1-3: 8000 Hz +90 +70 +70 / +70 +70 +80 ms; 4000 Hz +90 +80 +90 / +80 +80 +90; 2000 Hz +90 +90 +80 / +90 +80 +90; 1000 Hz +70 +70 +70 / +90 +80 +80; no rate under 25 ms. Not rate-bound: the DAC phase's own sound is 70-90 ms longer than its bytes take in the guest at every rate (2.07 s for 2.00 s); with the main loop spinning instead of hlt +430 to +650 ms at 1000 Hz and over a second at 8000; with a port-read wait the same as hlt (+80 ms); Hypothesis (labelled, not tested): the padding is the bench's, not the guest's: the same 70-90 ms at every rate from 1000 to 8000 Hz, with hlt or a port-read wait, and with 86Box's recompiler on (plan c9eab1aa, T2C0-DAC-DYN, a named comparison recorded dynarec on, not evidence: +80, +90 and +90 ms, BLOCKED after three captures): not the interpreter's cost; something 86Box does while PIT channel 0 runs reprogrammed or IRQ 0 is hooked, not traced. 8 kHz on the AKIT list"
+todo = "A3: BLOCKED on question 17: no rate on the ladder keeps the capture under 25 ms (see the note); 8 kHz on the AKIT list"
+
+[[test]]
+name = "T2C0-DAC-DYN"
+decides = "SBG:3250-3261, SBG:1260-1273, SBG:1188-1199, SBG:983-1000, VSB:182"
+runner = "probewav"
+env = "PROBE_WAV=1 PROBE_RUN='T2:T2.EXE DAC 8000 C0'"
+groups = ["t2xc0"]
+fixed = { mode = "base", vmodel = "sb16" }
+secs = 120
+note = "a named comparison, not evidence (Michael, 26 Oct 2026, question 17): T2C0-DAC at 8000 Hz run once with 86Box's recompiler on (RIG_DYNAREC=1, recorded as dynarec on), to see whether the capture's padding is the interpreter's cost"
 
 [[test]]
 name = "T2X-DAC-M"
