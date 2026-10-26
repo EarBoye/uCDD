@@ -1741,15 +1741,14 @@ note = "SB16 16-bit stereo auto-init (B6h) with an odd sample count, signed and 
 
 [[test]]
 name = "T2X-S16ODD2"
-decides = "SBG:3837-3872, SBG:3864, EMUSRC, SBG:2038-2098, SBG:1280-1283, SBG:1029-1056, SBG:1229-1236, 82C206:1407-1440, 82C206:1660-1720"
+decides = "SBG:1230-1237, SBG:3864, SBG:2161-2164, silent: the guide gives the 16-bit stereo order (left word then right) and the count in 16-bit samples but nothing on where a block of an odd count leaves the next one; the CT2290 decides (AKIT) with DOSBox-X the control at T6 (Michael 26 Oct 2026 question 14)"
 runner = "probewav"
 env = "PROBE_WAV=1 PROBE_RUN='T2:T2.EXE S16ODD2'"
 groups = ["t2x"]
 fixed = { build = "pinC2", vmodel = "sb16" }
 repeat = 10
 secs = 120
-note = "SB16 16-bit stereo single-cycle (B0h) with an odd sample count, the same formats, rates and tone: blocks of 4409 samples from where the last one ended, the channel and B0h sent again at each interrupt for 27 ticks; DOSBox-X interrupts each block and keeps the odd sample for the next (the left and right stay paired); 86Box's own card reads a frame past the channel's count and gets no data: no interrupt (EMUSRC: DOSBox-X src/hardware/sblaster.cpp at 97ff66a, SB_INFO::GenerateDMASound (the odd last sample kept for the next transfer, remain_size); 86Box src/sound/snd_sb_dsp.c at 6311adc, sb_poll_o (two words a frame, the count down by 2: whole frames)). The emulators disagree: held for question 14 (A3, C2)"
-todo = "A3: question 14 (86Box's own card cannot validate it; DOSBox-X the control, the CT2290 the judge?)"
+note = "SB16 16-bit stereo single-cycle (B0h) with an odd sample count, the same formats, rates and tone: blocks of 4409 samples from where the last one ended, the channel and B0h sent again at each interrupt for 27 ticks; DOSBox-X interrupts each block and keeps the odd sample for the next (the left and right stay paired); 86Box's own card reads a frame past the channel's count and gets no data: no interrupt (EMUSRC: DOSBox-X src/hardware/sblaster.cpp at 97ff66a, SB_INFO::GenerateDMASound (the odd last sample kept for the next transfer, remain_size); 86Box src/sound/snd_sb_dsp.c at 6311adc, sb_poll_o (two words a frame, the count down by 2: whole frames)). The emulators disagree: the C0 twin waits for DOSBox-X at T6 (question 14); under C2 the frames' pairing is uCDD's own (CAND-13) (A3, C2)"
 
 [[test]]
 name = "T2C0-S16ODD1"
@@ -1764,15 +1763,15 @@ note = "SB16 16-bit stereo auto-init (B6h) with an odd sample count, signed and 
 
 [[test]]
 name = "T2C0-S16ODD2"
-decides = "SBG:3837-3872, SBG:3864, EMUSRC, SBG:2038-2098, SBG:1280-1283, SBG:1029-1056, SBG:1229-1236, 82C206:1407-1440, 82C206:1660-1720"
+decides = "SBG:1230-1237, SBG:3864, SBG:2161-2164, silent: the guide gives the 16-bit stereo order (left word then right) and the count in 16-bit samples but nothing on where a block of an odd count leaves the next one; the CT2290 decides (AKIT) with DOSBox-X the control at T6 (Michael 26 Oct 2026 question 14)"
 runner = "probewav"
 env = "PROBE_WAV=1 PROBE_RUN='T2:T2.EXE S16ODD2 C0'"
 groups = ["t2xc0"]
 fixed = { mode = "base", vmodel = "sb16" }
 repeat = 10
 secs = 120
-note = "SB16 16-bit stereo single-cycle (B0h) with an odd sample count, the same formats, rates and tone: blocks of 4409 samples from where the last one ended, the channel and B0h sent again at each interrupt for 27 ticks; DOSBox-X interrupts each block and keeps the odd sample for the next (the left and right stay paired); 86Box's own card reads a frame past the channel's count and gets no data: no interrupt (EMUSRC: DOSBox-X src/hardware/sblaster.cpp at 97ff66a, SB_INFO::GenerateDMASound (the odd last sample kept for the next transfer, remain_size); 86Box src/sound/snd_sb_dsp.c at 6311adc, sb_poll_o (two words a frame, the count down by 2: whole frames)). The emulators disagree: held for question 14 (A3, C0: the client validated on 86Box's own card before C2)"
-todo = "A3: question 14 (86Box's own card cannot validate it; DOSBox-X the control, the CT2290 the judge?)"
+note = "SB16 16-bit stereo single-cycle (B0h) with an odd sample count, the same formats, rates and tone: blocks of 4409 samples from where the last one ended, the channel and B0h sent again at each interrupt for 27 ticks; DOSBox-X interrupts each block and keeps the odd sample for the next (the left and right stay paired); 86Box's own card reads a frame past the channel's count and gets no data: no interrupt (EMUSRC: DOSBox-X src/hardware/sblaster.cpp at 97ff66a, SB_INFO::GenerateDMASound (the odd last sample kept for the next transfer, remain_size); 86Box src/sound/snd_sb_dsp.c at 6311adc, sb_poll_o (two words a frame, the count down by 2: whole frames)). The emulators disagree: the C0 twin waits for DOSBox-X at T6 (question 14); under C2 the frames' pairing is uCDD's own (CAND-13) (A3, C0: the client validated on 86Box's own card before C2)"
+todo = "A3: the control is DOSBox-X at T6, not 86Box's own card (86ODDSC); the CT2290 in AKIT the judge (Michael, 26 Oct 2026, question 14)"
 
 [[test]]
 name = "T2X-S16ODD-M"
