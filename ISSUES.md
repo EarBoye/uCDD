@@ -1192,7 +1192,7 @@ Hypothesis (labelled, not tested; mine): taking the one-byte transfer into the s
   candidate row of its own: CAND-13 (every other block starts on the right
   channel, plan a0c1f221, 10/10).
 
-### IOSYS08: MS-DOS 7.1's IO.SYS holds IRQ 0 in service for up to 8 ms every other BIOS tick (a bench and PC finding, not uCDD's; found 26 Oct 2026)
+### IOSYS08: MS-DOS 7.1's IO.SYS holds IRQ 0 in service for up to 8 ms every other BIOS tick (a bench and PC finding, not uCDD's; found 26 Oct 2026; closed the same day: MSDOS.SYS [Options] Logo=0)
 
 - Seen [86Box] chasing Project A's T2X-DAC (gate A3): with PIT channel 0
   reprogrammed (T2.EXE DAC, variant A: 8 kHz, an ISR that counts and
@@ -1231,6 +1231,20 @@ Hypothesis (labelled, not tested; mine): taking the one-byte transfer into the s
   Not uCDD's; under C2 the same holds show in the capture (t2dev-d8c2: 18
   long periods at the same cadence). Evidence: emulator (the development
   runs above), reading (IO.SYS's bytes). Hardware: not run.
+- Michael's ruling (26 Oct 2026): environment shared with the PC, not
+  routed around, measured and separated. The labelled hypothesis, the boot
+  logo's hook, tested first: MSDOS.SYS [Options] Logo=0 and no LOGO.SYS,
+  variant A, three runs (t2dev-logo0_1 to -3): no gap over 1 ms (the
+  longest interval 125 us), the replaced handler's longest call 2 us, the
+  closing beep -0.000 s each. Closed by that setting: the bench adopts it
+  (its boot/MSDOS.SYS, [Options] BootGUI=0 and Logo=0, written onto every
+  run's disk; BootGUI=0 as on the PC, without it the boot waits 30 s), the
+  hardware kit's README tells Michael to set it, and the kit's variant A
+  runs under both settings. Runs before 26 Oct 2026 10:30Z booted with the
+  logo hook in place. The table stands as the capture check's calibration
+  entry for ticks_lost (runs/rec/thresholds.toml), and a program that fails
+  identically in C0 by losing fast PIT ticks cites this row, not a bare
+  GAME_FAULT (Michael).
 
 ### 86FILL: with its recompiler off, 86Box falls behind real time when the guest spins at 233 MHz, and the recorder fills (an emulator and host limitation; found 26 Oct 2026)
 
@@ -1252,6 +1266,17 @@ Hypothesis (labelled, not tested; mine): taking the one-byte transfer into the s
   233 MHz emulated CPU in real time through a tight loop. No configuration
   change made: the cells a slower CPU would affect are Michael's to weigh
   (STATE). Evidence: emulator (the runs above). Hardware: not applicable.
+- Michael's ruling (26 Oct 2026): this 86Box cannot record sound in
+  emulated time (its "Record" and ".wav" are the cassette drive's; the
+  bench's capture is OpenAL Soft's real-time wave writer), so the row stays
+  open. Tiers 0 to 2 stay at the MMX 233: no program spins, and every run's
+  capture check proves it, now that its guest clock is the TSC (fill adds
+  audio the guest never played and moves the closing beep: over 50 ms is
+  HARNESS_ERROR; an exact-repeat scan cannot tell fill from a steady tone,
+  the 86Box SB16's own captures repeating 960-sample blocks). The Tier 3
+  CPU is decided at A5 from the calibration set's fill rate at 233; if
+  games fill, A6 runs at the MMX 166 for the whole sweep, recorded once, no
+  CPU axis.
 
 ## The feature branches offered to the author (rows reconstructed 24 Oct 2026)
 
