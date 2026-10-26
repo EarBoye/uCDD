@@ -1033,6 +1033,16 @@ Trace: by reading, at the pinned SHA: src/audio/trap.asm `.large_block`, after t
 Hypothesis (labelled, not tested): the author's Beta 0.9.4 (fork main, RELEASE-NOTES.md:166): "Accept stereo DMA blocks with an odd number of 16-bit samples. This fixes missing sound effects in Surface Tension." The pinned line predates it; his a6 and a1 test only the buffer for whole frames in that path (a6 trap.asm `.buffer_size`, 1290-1303), not the block. Our merge-a6 (27d51b6, trap.asm:1648-1652) kept our block test beside his sizes (the merge table's "our rule for a block longer than its buffer", line 562 above), so by reading it still refuses these blocks: against the merging rule (his fix kept where both sides touched the behaviour), built, not run. His fix is taken under that rule, not rewritten; the HMI rule stays only where his does not cover it. Evidence: emulator (plans 2224f8c2 and 96dbfaff), dynarec off. Hardware: UNCONFIRMED.
 0.9.5-a1: none new (reading, a1 c5531c8 against a6 8252786: no hunk touches the block test; his fix is 0.9.4, in the Hypothesis).
 
+### CAND-13 Tier 2, T2X-S16ODD2: 16-bit stereo single-cycle blocks of an odd count of samples start every other block on the right channel: the channels swap block by block (found 26 Oct 2026, open)
+
+Pinned: count-position 7994cd1 (C2 hash UCDD.EXE 03d92066, UCDDHOST.BIN 447ace33; the bench's fixtures/pinned/MANIFEST.txt). Bin: CANDIDATE_UCDD_SFX, FAIL 10/10 under C2, the same failing checks in every run (Tier 2; the template's 3/3 is the sweep's).
+Cell: none (Tier 2: T2.EXE, real mode, no game), scope not applicable; games that send single-cycle stereo blocks of an odd count are not known (the census can look for B0h-B3h with a stereo mode byte and an odd sample count).
+Affected: not known. Controls: C0 not available: 86Box's own card gives no interrupt for this block (86ODDSC, an emulator row); the control is DOSBox-X at T6 and the judge the CT2290 in AKIT (Michael, 26 Oct 2026, question 14). C1 not applicable.
+Observed: in all ten C2 runs (plan a0c1f221, folders a0c1f221-001 to -010): B0h with mode 30h or 20h and a length of 1138h (4409 samples), each block from where the last one ended, the channel and B0h sent again at each interrupt; every block's interrupt comes (T2.TXT `SS22: 15 blocks, 15 interrupts, 82h 82h then 80h; ... SS44: 29 blocks, 29 interrupts, ...`, PASS), but the tone, written left only, comes out left and right in turn, block by block (a0c1f221-001, quarter-block windows: `LLL-RRR-LLL-RRR`): tonecheck `SS22+0.1-1.1 s R silence: RMS -27.7 dBFS FAIL` and the same on SU22, SS44 and SU44, 40 readings from -27.4 to -27.9 dBFS, the left channel at about the same level. Expected: the guide gives the 16-bit stereo order, a left word then a right word for each sample (SBG:1230-1237), and the count in 16-bit samples, one word each (SBG:3864; "2K of 16-bit samples" for half of an 8 KB buffer, SBG:2161-2164); it says nothing on where a block of an odd count leaves the next one: silent, and the hardware decides (the CT2290 in AKIT). DOSBox-X keeps the odd last sample and pairs it with the next block's first, so the right channel stays silent there (src/hardware/sblaster.cpp at 97ff66a, SB_INFO::GenerateDMASound, `remain_size`): the control at T6, grade emulator; not yet run.
+Trace: by reading, in part, at the pinned SHA: each block's source is the channel's current address at the command (src/audio/trap.asm 1625, kept as game_offset and game_segment at 1677-1679), and single-cycle blocks skip the frame test that refuses CAND-12's auto-init blocks (`.validate_dma`, 1474-1475); the capture shows each block's first word taken as left, so after an odd block the next starts on a right word. Where the odd last word goes was not traced. Minimal reproduction: `T2.EXE S16ODD2` under C2 (matrix T2X-S16ODD2), any step.
+Hypothesis (labelled, not tested; mine): keeping the odd last word of a stereo block and pairing it with the next block's first, as DOSBox-X does, would keep the channels; whether the CT2290 does that, plays the half frame, or drops it is what AKIT decides. The author's 0.9.4 note on odd blocks (RELEASE-NOTES.md:166) concerns accepting them; his a1 mixer names no carry of an odd word (read for "odd", "leftover" and the like only). Evidence: emulator (plan a0c1f221), dynarec off. Hardware: UNCONFIRMED.
+0.9.5-a1: none (reading, a1 c5531c8 against a6 8252786: no hunk touches the stereo fetch).
+
 ### 86CUE2048: 86Box misreads a CUE sheet whose data track has 2048-byte sectors (an emulator limitation; found 25 Oct 2026)
 
 - Seen [86Box] while setting Project A's C0 control for gate A2 (OAKCDROM
@@ -1131,7 +1141,7 @@ Hypothesis (labelled, not tested): the author's Beta 0.9.4 (fork main, RELEASE-N
   8237:331-338, grade data sheet, DOSBox-X's dma.cpp corroborating, judged
   on the CT2290 in AKIT (STATE's AKIT list).
 
-### 86ODDSC: 86Box's own SB16 gives no interrupt for a 16-bit stereo single-cycle block of an odd count of samples; DOSBox-X carries the odd sample (an emulator disagreement; found 26 Oct 2026)
+### 86ODDSC: 86Box's own SB16 gives no interrupt for a 16-bit stereo single-cycle block of an odd count of samples; DOSBox-X carries the odd sample (an emulator disagreement; found 26 Oct 2026; uCDD's own behaviour is CAND-13)
 
 - Seen [86Box] writing Project A's T2.EXE S16ODD (gate A3), development
   run t2dev-odd2c0 (not recorded; 86Box 6.0 build 9001, dynarec off), C0
@@ -1151,15 +1161,15 @@ Hypothesis (labelled, not tested): the author's Beta 0.9.4 (fork main, RELEASE-N
   last sample for the next transfer, paired with its first (DOSBox-X
   src/hardware/sblaster.cpp at 97ff66a, SB_INFO::GenerateDMASound,
   `remain_size`): an interrupt each block, the frames still paired.
-- The guide is silent (SBG:3864). Under C2 (development run t2dev-odd2c2,
-  not recorded) the interrupts come each block but every other block
-  starts on a right sample as left: the right channel carries the tone at
-  -27.7 dBFS, where DOSBox-X would keep it silent. A verdict 86Box and the
-  second emulator disagree on is a finding, not a choice: C0 cannot
-  validate T2.EXE S16ODD2, held on STATE question 14 (DOSBox-X the control
-  and the CT2290 the judge, as question 12 settled for PICSMM2, is what I
-  would ask for). Nothing in uCDD changes. Evidence: emulator (the
+- The guide is silent (SBG:3864). A verdict 86Box and the second emulator
+  disagree on is a finding, not a choice: C0 cannot validate T2.EXE
+  S16ODD2. Nothing in uCDD changes for this row. Evidence: emulator (the
   development runs) and both emulators' sources. Hardware: not run.
+- Michael's ruling (26 Oct 2026, question 14): DOSBox-X the control at T6,
+  the CT2290 in AKIT the judge, the case on the AKIT list; this row stays
+  the emulator's. What uCDD does under C2 is its own and deterministic, a
+  candidate row of its own: CAND-13 (every other block starts on the right
+  channel, plan a0c1f221, 10/10).
 
 ## The feature branches offered to the author (rows reconstructed 24 Oct 2026)
 
