@@ -1064,6 +1064,16 @@ Trace: by reading, at the pinned SHA: the legacy commands take the mixer's stere
 Hypothesis (labelled, not tested; mine): taking the one-byte transfer into the stereo stream when the switch is on, and keeping its byte's place for the next transfer as DOSBox-X does, would send the data's first byte right; whether a reset between transfers clears that, as DOSBox-X does and 86Box does not need to, is PROST2's open question. None of the author's release notes names the SB Pro's channel order (a1's RELEASE-NOTES.md read for "stereo", "left", "swap"); two older ones concern odd or short stereo transfers: RELEASE-NOTES.md:319 (Beta 0.9.1c), "Support combined SB Pro mixer writes and odd-length stereo transfers" (Battle Chess in SB Pro mode), and :359 (Beta 0.9.1), the "short stereo transfer used by Archimedean Dynasty during sound detection"; what they do with a one-byte transfer was not read. Evidence: emulator (plans e555a482 and 04866e8f), dynarec off. Hardware: UNCONFIRMED.
 0.9.5-a1: none (reading, a1 c5531c8 against a6 8252786: no hunk touches the legacy commands' stereo).
 
+### CAND-16 Tier 2, T2X-TIMERSTOP: with the timer stopped, CD audio drops out for 307 ms 1.73 s later, until IRQ 0 comes back: the CD queue is refilled only from the timer interrupt for a real-mode program (found 26 Oct 2026, open)
+
+Pinned: count-position 7994cd1 (C2 hash UCDD.EXE 03d92066, UCDDHOST.BIN 447ace33; the bench's fixtures/pinned/MANIFEST.txt). Bin: CANDIDATE_UCDD_AUDIO (the CD audio; CAND-6 the same), FAIL 10/10 under C2, the same failing check at the same place in every run (Tier 2; the template's 3/3 is the sweep's).
+Cell: none (Tier 2: T2.EXE, real mode, no game), scope not applicable; every real-mode program that stops or slows PIT channel 0 for more than about 1.7 s while a CD track plays would lose the track's audio until its timer comes back (not surveyed; the author's notes name Future Dimension and Judge Dredd, RELEASE-NOTES.md:132).
+Affected: not known. Controls: C0 PASS 10/10 (T2C0-TIMERSTOP, plan 8c669cc2: 86Box's own drive plays on through the stop, no gap, closing beep -0.000 s in 8, +0.010 and +0.020 s in one each); C1 not applicable.
+Observed: in all ten C2 runs (plan 1279f08e, runs 1279f08e-001 to -010, recorded 26 Oct 11:33Z on the Logo=0 bench): T2.TXT PASS (channel 0 stopped for 36 ticks, 1977608 us on the TSC; 16015 interrupts of 16015 at 8000 Hz), the 1000 Hz tone in every phase's window (SNR 214 dB), but tonecheck `STOP+-0.5-2.5 s gaps of 20 ms or more: +1.73 s 307 ms ringing (the guest) FAIL` (and the same gap seen from RATE, `+-0.25 s` or `+-0.24 s`), all ten; the closing beep -0.000 s in nine, +0.010 s in one. The gap ends about 57 ms after channel 0 runs again. Expected: a drive plays its audio until its sectors are exhausted or a STOP, whatever the caller's interrupts do (MSC:1040-1042; HOSTCD M-12, 94-95, "a drive's audio does not depend on the game's interrupts"); the timer stopped by a control word and no count raises no interrupt (INTEL94:17304-17420). Grade emulator (the CD path under uCDD is uCDD's own, not 86Box's drive).
+Trace: by reading, at the pinned SHA: the refill runs inside the timer interrupt (src/audio/background.asm cd_timer, on INT 08h, 11-88; installed by resident_init.asm 146-159), 16 KB a pass, and only while the queue is under 448 KB of its 512 KB (44); the SB16 period handler marks a refill wanted (src/audio/sb16.asm 486-506, cd_refill_pending) but only the DPMI host acts on that, for its own client (background.asm 46-55, cd_deferred_refill 91 on); a real-mode program gets no refill without IRQ 0. Two seconds into the play the queue holds about 305 KB, 1.73 s of audio at 176400 bytes a second: the gap's place. Minimal reproduction: `T2.EXE TIMERSTOP 8000 MIX` under C2 (matrix T2X-TIMERSTOP).
+Hypothesis (labelled, not tested; the author's): his 0.9.4-a3, RELEASE-NOTES.md:132, "Fill the CD-Audio queue from the Sound Blaster interrupt when a game stops the timer. This fixes the CD-Audio in Future Dimension and Judge Dredd"; merge-a6 keeps his timer refill with its entry from the audio IRQ (ISSUES.md UPA6, the merge table, background.asm row): built, not run, so whether merge-a6 passes TIMERSTOP is the harness's to say once the freeze allows. His 0.9.5-a1 changes it again (RELEASE-NOTES.md:12, "Fill the CD-Audio queue from the audio interrupt only when the timer stops or the queue is almost empty"). The older 0.9.3d note (RELEASE-NOTES.md:229, refills kept while games stop the BIOS timer, SuperKarts) is what the pinned build's deferred refill does for the host's own clients. Evidence: emulator (plans 8c669cc2 and 1279f08e), dynarec off; the planted T2L4-TIMERSTOP (T1AP, track 2 at 440 Hz) 5441bf40 `fail: 1`, `PLAY+0.5-1.5 s 1000 Hz: 0/1 windows (peak 440.0 Hz, SNR 217 dB) FAIL`. Hardware: not run.
+0.9.5-a1: claimed by the note above (RELEASE-NOTES.md:12; not run).
+
 ### 86CUE2048: 86Box misreads a CUE sheet whose data track has 2048-byte sectors (an emulator limitation; found 25 Oct 2026)
 
 - Seen [86Box] while setting Project A's C0 control for gate A2 (OAKCDROM
@@ -1245,6 +1255,23 @@ Hypothesis (labelled, not tested; mine): taking the one-byte transfer into the s
   entry for ticks_lost (runs/rec/thresholds.toml), and a program that fails
   identically in C0 by losing fast PIT ticks cites this row, not a bare
   GAME_FAULT (Michael).
+- Corrected (rule 7 form, 26 Oct 2026): old text "The table stands as the
+  capture check's calibration entry for ticks_lost
+  (runs/rec/thresholds.toml)"; new text: the capture check keeps the BIOS
+  tick; the TSC clock and ticks_lost are withdrawn (Michael), T2.EXE's TSC
+  lines stay as a diagnostic, thresholds.toml has no ticks_lost entry.
+- Closed (Michael, 26 Oct 2026): cause, the boot logo's timer hook; fix,
+  MSDOS.SYS [Options] Logo=0 and no LOGO.SYS; grade emulator, hardware
+  pending the hardware kit's variant A run under Logo=1 and Logo=0, so
+  the PC grades the hold. The bench boots Logo=0 from 26 Oct 2026 (the
+  bench's dc9f970, 10:38Z; its first plan a6ce4cf8, 10:43Z); every ledger
+  entry before it is annotated "Logo=1 boot (IOSYS08 holds present)"
+  (1852 entries in 50 plans; the annotations are kept with the ledger).
+  Passes before it stay evidence. Run again on Logo=0, 10 runs each: T1-LOAD,
+  T1-PLAY23 and every Tier 1 row that failed under CAND-4, 5 or 6; a fail
+  that passes there is filed again as an interrupt-latency candidate citing
+  this row, not dropped. The kit's README: set Logo=0 on the PC, this row
+  the reason.
 
 ### 86FILL: with its recompiler off, 86Box falls behind real time when the guest spins at 233 MHz, and the recorder fills (an emulator and host limitation; found 26 Oct 2026)
 
