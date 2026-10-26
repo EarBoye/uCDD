@@ -1087,6 +1087,23 @@ Trace: by reading, at the pinned SHA: the refill runs inside the timer interrupt
 Hypothesis (labelled, not tested; the author's): his 0.9.4-a3, RELEASE-NOTES.md:132, "Fill the CD-Audio queue from the Sound Blaster interrupt when a game stops the timer. This fixes the CD-Audio in Future Dimension and Judge Dredd"; merge-a6 keeps his timer refill with its entry from the audio IRQ (ISSUES.md UPA6, the merge table, background.asm row): built, not run, so whether merge-a6 passes TIMERSTOP is the harness's to say once the freeze allows. His 0.9.5-a1 changes it again (RELEASE-NOTES.md:12, "Fill the CD-Audio queue from the audio interrupt only when the timer stops or the queue is almost empty"). The older 0.9.3d note (RELEASE-NOTES.md:229, refills kept while games stop the BIOS timer, SuperKarts) is what the pinned build's deferred refill does for the host's own clients. Evidence: emulator (plans 8c669cc2 and 1279f08e), dynarec off; the planted T2L4-TIMERSTOP (T1AP, track 2 at 440 Hz) 5441bf40 `fail: 1`, `PLAY+0.5-1.5 s 1000 Hz: 0/1 windows (peak 440.0 Hz, SNR 217 dB) FAIL`. Hardware: not run.
 0.9.5-a1: claimed by the note above (RELEASE-NOTES.md:12; not run).
 
+### FLAKY-1 Tier 2, T2X-PICHOLD and T2X-PICHOLD12: 2 of 10 and 1 of 10 runs under C2 lose 20 ms of the 2 kHz tone in silence of the recorder stall's shape (filed 27 Oct 2026, open)
+
+Pinned: count-position 7994cd1 (C2 hash UCDD.EXE 03d92066, UCDDHOST.BIN 447ace33). Bin: FLAKY (Michael, 27 Oct 2026; project_a.md has no FLAKY bin: as on 25 Oct, "9/10 is FAIL with the count" carries it), until the host's record can be cited.
+Rule (Michael, 27 Oct 2026): the capture's shape cannot tell a recorder stall from a refill uCDD missed inside one 86Box buffer period, so under C2 a "stall" is a FAIL unless the recorder's host-side record shows a stall at the same instant. Runs before 27 Oct have no such record; the record exists from bench 565a960 (runs/rec/alrec.c, alrec.txt beside each sound.wav).
+Rate: T2X-PICHOLD (IRQ 4) plan 7211c04e reverts to 8 of 10: -006 and -009's first captures FAIL (their retakes' passes do not count); T2X-PICHOLD12 (IRQ 12) plan 7ae43d11: 9 of 10, -003's first take FAIL (the same rule, applied the same way; Michael named 7211c04e). Over PICHOLD's 20 C2 runs, 3 (15 %). C0 (27312daa, 1985f3dc): 0 of 20.
+Observed: each a band drop of the 2 kHz tone read 20 or 21 ms, 896 exact zeros (18.67 ms) on every channel after a straight fade, ending on 86Box's 20 ms buffer edge; the closing beep +0.020 s in each. tonecheck now: `FAIL PICHOLD tonecheck: a band drop holding silence of the recorder stall's shape MIX+11.666 s 2000 Hz 20 ms, and no host record for the run: under C2 a FAIL (Michael, 27 Oct 2026)` (and +11.016 s, +0.916 s).
+The six C2 recorder faults since the Logo=0 bench (runs/stalls.py; case, run, position, hold at that moment):
+- T1-PLAY23, ccb39d17-410 (first capture, kept as .stall1): the capture broken, the closing beep +0.060 s; no silence, so no position in the capture (the break shows only at the closing beep, between PLAY and END); T1.EXE holds no interrupt. Still HARNESS_ERROR: a closing beep out of place is the recorder's clock, not a silence's shape (my reading of the rule; asked in STATE).
+- T1-PLAY23, ccb39d17-403: 18.67 ms at PLAY+6.666 s (1.67 s after the track 2/3 boundary); no hold. Under the gap rule's 20 ms: PASS stands.
+- T1-PLAY23, ccb39d17-405: 18.67 ms at PLAY+5.186 s (0.19 s after the track 2/3 boundary); no hold. PASS stands, as -403.
+- T2X-PICHOLD, 7211c04e-006 (first capture): MIX+11.666 s, FREE+0.681 s: no hold active (the last ended about 725 ms before). FAIL.
+- T2X-PICHOLD, 7211c04e-009 (first capture): MIX+11.016 s, FREE+0.031 s: no hold active (the last ended about 75 ms before). FAIL.
+- T2X-PICHOLD12, 7ae43d11-003 (first take, .stall1): MIX+0.916 s, 73 ms before HOLD: no hold yet. FAIL.
+None fell while a line was held.
+Related (Michael, 26 Oct 2026): the author's 0.9.4-a2, RELEASE-NOTES.md:158, the 128-frame period against a mouse driver holding its interrupt for several milliseconds; 0.9.4-a6, RELEASE-NOTES.md:98, three output periods in the ring against a mouse driver keeping interrupts off longer than one period (the F2 ring row: the sound during a hold is not fixed by the ring).
+Next: PICHOLD and PICHOLD12 under C2 again with alrec.txt (bench 565a960 on), so a stall can be read against the host's record. Evidence: emulator (plans 7211c04e, 7ae43d11), dynarec off. Hardware: UNCONFIRMED.
+
 ### 86CUE2048: 86Box misreads a CUE sheet whose data track has 2048-byte sectors (an emulator limitation; found 25 Oct 2026)
 
 - Seen [86Box] while setting Project A's C0 control for gate A2 (OAKCDROM
@@ -1348,15 +1365,20 @@ Hypothesis (labelled, not tested; the author's): his 0.9.4-a3, RELEASE-NOTES.md:
   games fill, A6 runs at the MMX 166 for the whole sweep, recorded once, no
   CPU axis.
 
-## The feature branches offered to the author (rows reconstructed 24 Oct 2026)
+### TOL2: "within 2" in the interrupt counts of CLIGAP, PICHOLD and DMAMC (a bench tolerance; written 27 Oct 2026)
 
-These four issues were ported from the fork's line onto the author's
-0.9.4-a6 on 23 Oct 2026, one `feature/*` branch each, and committed with
-Issue trailers but no row. The rows below are reconstructed 24 Oct 2026
-from each commit's own message and HANDOFF ("four feature branches for the
-author"), for the fixes index (tightening r3, T1). Each change is built,
-not run, on that base: built at 128 and 32 frames and without resident
-audio, and no test of any kind has run on it there.
+- What: T2.EXE judges the card's interrupts over a span against the blocks
+  due in it (22050/4096 a second over the span's BIOS ticks), within 2:
+  CLIGAP and PICHOLD from MIX to OFF, DMAMC each 27-tick phase.
+- Origin: mine (bench ec21fab, CLIGAP; copied into PICHOLD e7815d4 and
+  DMAMC 8e94c0a), not a document's. The span is measured in BIOS ticks
+  (55 ms) and a block (186 ms) can fall either side of each end: one at
+  the start, one at the end, 2 in all.
+- What it judges: that blocks keep coming at their rate through the span,
+  not when any one block's interrupt comes. That is DMAMCR's (Michael, 27
+  Oct 2026: the first interrupt after a set-up comes after the remainder
+  of the interrupted block, SBG's block counter being the DSP's,
+  8237:485-491 scoping the clear to the DMA controller).
 
 ### STALLCAL: the recorder's stall, calibrated (a bench instrument; Michael, 26 Oct 2026)
 
@@ -1396,6 +1418,26 @@ audio, and no test of any kind has run on it there.
   finds two more inside passing captures (ccb39d17-403 and -405, 18.67 ms,
   under the gap check): 4 of 83 on disk. More on C2: the subject (STATE).
   Evidence: emulator.
+- The C2 rule (Michael, 27 Oct 2026): the shape cannot tell a recorder
+  stall from a refill uCDD missed inside one 86Box buffer, so under C2 the
+  shape is a FAIL unless the recorder's host-side record shows a stall at
+  that instant; C0 keeps HARNESS_ERROR. The record: the bench's
+  runs/rec/alrec.c (bench 565a960), loaded into 86Box with LD_AUDIT for
+  every recording, alrec.txt beside sound.wav: each OpenAL buffer queued
+  and each underrun on the host's clock; thresholds.toml stall.host_window_s
+  0.10 (provisional until a stall is caught with its record) and
+  host_startup_s 1.0. test_rec.py judges each stall plant four ways: 25 of
+  25. PICHOLD's three C2 stalls are FAILs by it (FLAKY-1).
+
+## The feature branches offered to the author (rows reconstructed 24 Oct 2026)
+
+These four issues were ported from the fork's line onto the author's
+0.9.4-a6 on 23 Oct 2026, one `feature/*` branch each, and committed with
+Issue trailers but no row. The rows below are reconstructed 24 Oct 2026
+from each commit's own message and HANDOFF ("four feature branches for the
+author"), for the fixes index (tightening r3, T1). Each change is built,
+not run, on that base: built at 128 and 32 frames and without resident
+audio, and no test of any kind has run on it there.
 
 ### DISKIRQ: disk controller IRQs go straight to DOS (reconstructed 24 Oct 2026; built, not run)
 - Fault: a PCI disk controller holds its level-triggered request until its
