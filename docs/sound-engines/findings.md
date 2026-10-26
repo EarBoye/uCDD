@@ -232,7 +232,7 @@ both [hw]; the numbers are in [ct2290.md](ct2290.md).
   software-configured SB16) and 83h keeps bits 0-3 (0Bh reads FBh); the
   virtual card reads fixed values for all three. The specification now
   follows the card for 80h and 81h (vsb-spec.md 9.4, on the notes branch,
-  changed 27 Oct 2026, Michael, Project A question 15: an 81h write takes
+  changed 26 Oct 2026, Michael, Project A question 15: an 81h write takes
   effect, and with no 16-bit channel bit 16-bit data moves on the 8-bit
   channel, SBG:1136-1138; PnP boards differ, SBG:1140-1148); the pinned
   build does not yet (ISSUES.md CAND-14, notes branch).
