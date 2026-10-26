@@ -2466,7 +2466,7 @@ groups = ["t2x"]
 fixed = { build = "pinC2", vmodel = "sb16" }
 repeat = 10
 secs = 120
-note = "an IRQ 0 handler that holds interrupts off 6 ms every tick for 10 s while the 2 kHz tone and T1A track 2 play: both tones with no gap of 20 ms or more (A3, C2)"
+note = "an IRQ 0 handler that holds interrupts off 6 ms every tick for 10 s while the 2 kHz tone and T1A track 2 play: both tones with no gap of 20 ms or more (A3, C2); charter case 15 (project_a.md); related notes (Michael, 26 Oct 2026): the author's 0.9.4-a2, RELEASE-NOTES.md:158, the 128-frame period against a mouse driver holding its interrupt for several milliseconds; 0.9.4-a6, RELEASE-NOTES.md:98, three output periods in the ring against a mouse driver keeping interrupts off longer than one period (the notes' F2 ring row: the sound during a hold is not fixed by the ring); first run on the Logo=0 bench"
 todo = "A3: T2.EXE not written yet (the row before the program, r3.5)"
 
 [[test]]
@@ -2478,9 +2478,33 @@ groups = ["t2xc0"]
 fixed = { mode = "base", vmodel = "sb16" }
 repeat = 10
 secs = 120
-note = "an IRQ 0 handler that holds interrupts off 6 ms every tick for 10 s while the 2 kHz tone and T1A track 2 play: both tones with no gap of 20 ms or more (A3, C0: the client validated on 86Box's own card before C2)"
+note = "an IRQ 0 handler that holds interrupts off 6 ms every tick for 10 s while the 2 kHz tone and T1A track 2 play: both tones with no gap of 20 ms or more (A3, C0: the client validated on 86Box's own card before C2); charter case 15 (project_a.md); related notes (Michael, 26 Oct 2026): the author's 0.9.4-a2, RELEASE-NOTES.md:158, the 128-frame period against a mouse driver holding its interrupt for several milliseconds; 0.9.4-a6, RELEASE-NOTES.md:98, three output periods in the ring against a mouse driver keeping interrupts off longer than one period (the notes' F2 ring row: the sound during a hold is not fixed by the ring); first run on the Logo=0 bench"
 todo = "A3: T2.EXE not written yet (the row before the program, r3.5)"
 
+
+[[test]]
+name = "T2X-PICHOLD"
+decides = "8259:602-620, 8259:815-830, 8259:630-637, silent: the gap check (thresholds.toml [gaps]; Michael 26 Oct 2026)"
+runner = "probewav"
+env = "PROBE_WAV=1 PROBE_EXTRA='fixtures/synth/out/T1A.BIN|T1\\T1A.BIN;fixtures/synth/out/T1A.CUE|T1\\T1A.CUE' PROBE_RUN='CD:!C:\\SHSUCDX.COM /D:UCDD0001 /L:G > C:\\OUT\\CD.TXT,M:!C:\\UCDD\\UCDD.EXE -mount C:\\T1\\T1A.CUE > C:\\OUT\\M.TXT,T2:T2.EXE PICHOLD MIX'"
+groups = ["t2x"]
+fixed = { build = "pinC2", vmodel = "sb16" }
+repeat = 10
+secs = 120
+note = "an ISR on a line of lower priority than the card's own or on the slave (Michael, 26 Oct 2026): COM1's UART transmit-empty interrupt on IRQ 4 when the BIOS lists COM1 (0040:0000), else the PS/2 mouse on IRQ 12; each interrupt STI, a 6 ms busy wait, then its EOI (both controllers' for IRQ 12), one every 50 ms for 10 s while the 2 kHz tone and T1A track 2 play (C0: T1B's): both tones with no gap of 20 ms or more. In service, the line holds every request of the same or lower priority until its EOI and lets higher ones through (8259:602-620): IRQ 4 holds 4 to 7, the card's IRQ 5 among them; IRQ 12 holds the master's IR2, the cascade, and so 3 to 7 and every slave line (8259:815-830, 632-638); IRQ 0 and 1 unaffected either way. T2.TXT names the line used (A3, C2); related notes (Michael, 26 Oct 2026): the author's 0.9.4-a2, RELEASE-NOTES.md:158, the 128-frame period against a mouse driver holding its interrupt for several milliseconds; 0.9.4-a6, RELEASE-NOTES.md:98, three output periods in the ring against a mouse driver keeping interrupts off longer than one period (the notes' F2 ring row: the sound during a hold is not fixed by the ring); first run on the Logo=0 bench"
+todo = "A3: T2.EXE not written yet (the row before the program, r3.5)"
+
+[[test]]
+name = "T2C0-PICHOLD"
+decides = "8259:602-620, 8259:815-830, 8259:630-637, silent: the gap check (thresholds.toml [gaps]; Michael 26 Oct 2026)"
+runner = "probewav"
+env = "PROBE_WAV=1 PROBE_CDROM=fixtures/synth/out/T1B.CUE PROBE_RUN='CD:!C:\\MSCDEX.EXE /D:OAKCD001 /L:G > C:\\OUT\\CD.TXT,T2:T2.EXE PICHOLD MIX'"
+groups = ["t2xc0"]
+fixed = { mode = "base", vmodel = "sb16" }
+repeat = 10
+secs = 120
+note = "an ISR on a line of lower priority than the card's own or on the slave (Michael, 26 Oct 2026): COM1's UART transmit-empty interrupt on IRQ 4 when the BIOS lists COM1 (0040:0000), else the PS/2 mouse on IRQ 12; each interrupt STI, a 6 ms busy wait, then its EOI (both controllers' for IRQ 12), one every 50 ms for 10 s while the 2 kHz tone and T1A track 2 play (C0: T1B's): both tones with no gap of 20 ms or more. In service, the line holds every request of the same or lower priority until its EOI and lets higher ones through (8259:602-620): IRQ 4 holds 4 to 7, the card's IRQ 5 among them; IRQ 12 holds the master's IR2, the cascade, and so 3 to 7 and every slave line (8259:815-830, 632-638); IRQ 0 and 1 unaffected either way. T2.TXT names the line used (A3, C0: the client validated on 86Box's own card before C2); related notes (Michael, 26 Oct 2026): the author's 0.9.4-a2, RELEASE-NOTES.md:158, the 128-frame period against a mouse driver holding its interrupt for several milliseconds; 0.9.4-a6, RELEASE-NOTES.md:98, three output periods in the ring against a mouse driver keeping interrupts off longer than one period (the notes' F2 ring row: the sound during a hold is not fixed by the ring); first run on the Logo=0 bench"
+todo = "A3: T2.EXE not written yet (the row before the program, r3.5)"
 [[test]]
 name = "T2X-P-IRQDET"
 decides = "DPMI09:351-400, VSB:474-489, CT2290"
