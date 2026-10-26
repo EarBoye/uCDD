@@ -1023,6 +1023,16 @@ Trace: by reading, at the pinned SHA: src/audio/trap.asm `.address` and `.dma_wo
 Hypothesis (labelled, not tested): the fetch taking the channel's address from the virtual 8237 at each block (or at each write to it) instead of once at the command would follow the move; no note of the author's names it (0.9.4-a6 and 0.9.5-a1 read). Evidence: emulator (plans ed15c007 and 0add08f0), dynarec off. Hardware: UNCONFIRMED.
 0.9.5-a1: none (reading, a1 c5531c8 against a6 8252786: no hunk in src/audio/trap.asm touches the 8237 address; RELEASE-NOTES.md:15, "Start a single-cycle block that is longer than the DMA count, as a real card does", is another case).
 
+### CAND-12 Tier 2, T2X-S16ODD1: a 16-bit stereo auto-init block of an odd count of samples, shorter than its buffer, is refused: no sound and no interrupt (found 26 Oct 2026, open)
+
+Pinned: count-position 7994cd1 (C2 hash UCDD.EXE 03d92066, UCDDHOST.BIN 447ace33; the bench's fixtures/pinned/MANIFEST.txt). Bin: CANDIDATE_UCDD_SFX, FAIL 10/10 under C2, one identical line for these steps (Tier 2; the template's 3/3 is the sweep's).
+Cell: none (Tier 2: T2.EXE, real mode, no game), scope not applicable; the author names Surface Tension (below). The census can look for Bxh/Cxh commands with a stereo mode byte and an odd sample count.
+Affected: Surface Tension by the author's note; others not known. Controls: C0 PASS 10/10 (T2C0-S16ODD1, plan 2224f8c2: 86Box's own card plays each step, 15 interrupts at 22050 Hz and 30 at 44100, the tone left and the right silent); C1 not applicable.
+Observed: in all ten C2 runs (plan 96dbfaff, folders 96dbfaff-001 to -010): B6h with mode 30h or 20h and a length of 1138h (4409 samples, an odd count) over a buffer of 4410 whole frames (17640 bytes; channel 5, mode 59h, word count 2273h) gives no sound and no interrupt: T2.TXT `SS22: 0, no, no, 82h FFh then FFh; SU22: 0, no, no, 82h FFh then FFh; SS44: 0, no, no, 82h FFh then FFh; SU44: 0, no, no, 82h FFh then FFh`, tonecheck `SS22+0.1-1.1 s L 2002 Hz: 0/1 windows (peak nan Hz, SNR -inf dB) FAIL` and the same for the other three. Even counts over the same kind of buffer play (T2X-S16AI's SS22 and SU22, plan d085604b). Expected: the guide is silent on an odd stereo count (wLength, "the number of 16-bit samples less 1", SBG:3864; an interrupt at the end of each block, SBG:2164-2165); both emulators play it on, an interrupt a block, the frames still paired (EMUSRC: DOSBox-X src/hardware/sblaster.cpp at 97ff66a, SB_INFO::GenerateDMASound keeps the odd last sample for the next transfer, `remain_size`; 86Box src/sound/snd_sb_dsp.c at 6311adc, sb_poll_o reads two words a frame and plays whole frames, one sample over), so emulation decides (rule 1): it plays. Grade emulator.
+Trace: by reading, at the pinned SHA: src/audio/trap.asm `.large_block`, after the buffer's own checks (1501-1511), refuses a block that is not whole frames unless it is longer than the buffer: `cmp edx, ebx` / `ja .block_aligned` / `test edx, eax` / `jz .block_aligned` / `jmp .command_unsupported` (1516-1520), so the B6h is dropped. The rule beside it is ours (`odd-long-block`, HMI's ESS driver: a block longer than its buffer need not be whole frames). Single-cycle blocks skip the test (`.validate_dma`, 1474-1475): T2.EXE S16ODD2, held on STATE question 14. Minimal reproduction: `T2.EXE S16ODD1` under C2 (matrix T2X-S16ODD1), any step.
+Hypothesis (labelled, not tested): the author's Beta 0.9.4 (fork main, RELEASE-NOTES.md:166): "Accept stereo DMA blocks with an odd number of 16-bit samples. This fixes missing sound effects in Surface Tension." The pinned line predates it; his a6 and a1 test only the buffer for whole frames in that path (a6 trap.asm `.buffer_size`, 1290-1303), not the block. Our merge-a6 (27d51b6, trap.asm:1648-1652) kept our block test beside his sizes (the merge table's "our rule for a block longer than its buffer", line 562 above), so by reading it still refuses these blocks: against the merging rule (his fix kept where both sides touched the behaviour), built, not run. His fix is taken under that rule, not rewritten; the HMI rule stays only where his does not cover it. Evidence: emulator (plans 2224f8c2 and 96dbfaff), dynarec off. Hardware: UNCONFIRMED.
+0.9.5-a1: none new (reading, a1 c5531c8 against a6 8252786: no hunk touches the block test; his fix is 0.9.4, in the Hypothesis).
+
 ### 86CUE2048: 86Box misreads a CUE sheet whose data track has 2048-byte sectors (an emulator limitation; found 25 Oct 2026)
 
 - Seen [86Box] while setting Project A's C0 control for gate A2 (OAKCDROM
@@ -1120,6 +1130,36 @@ Hypothesis (labelled, not tested): the fetch taking the channel's address from t
   5fb0d861), C2 0/10 (plan 49b66842, CAND-9); SC8PAGE2 (the wrap) decides
   8237:331-338, grade data sheet, DOSBox-X's dma.cpp corroborating, judged
   on the CT2290 in AKIT (STATE's AKIT list).
+
+### 86ODDSC: 86Box's own SB16 gives no interrupt for a 16-bit stereo single-cycle block of an odd count of samples; DOSBox-X carries the odd sample (an emulator disagreement; found 26 Oct 2026)
+
+- Seen [86Box] writing Project A's T2.EXE S16ODD (gate A3), development
+  run t2dev-odd2c0 (not recorded; 86Box 6.0 build 9001, dynarec off), C0
+  (86Box's own SB16 and 8237, no uCDD): B0h, mode 30h or 20h, length
+  1138h (4409 samples), the 16-bit channel programmed for exactly the
+  block's 4409 words: no interrupt within the block's length and 200 ms,
+  at 22050 and 44100 Hz (`SS22: 0 blocks, 0 interrupts, a block's
+  interrupt never came`).
+- 86Box's own source at master (src/sound/snd_sb_dsp.c at 6311adc,
+  sb_poll_o, read 26 Oct 2026) reads two words for each stereo frame and
+  counts the length down by 2, interrupting below 0: the block's last
+  frame wants a word past the channel's count, the channel (single mode)
+  has masked itself at its terminal count, the read returns no data and
+  the count never goes below 0. Auto-init plays on (whole frames, one
+  sample over a block): T2C0-S16ODD1 PASS 10/10, plan 2224f8c2.
+- The second emulator reads exactly the programmed count and keeps the odd
+  last sample for the next transfer, paired with its first (DOSBox-X
+  src/hardware/sblaster.cpp at 97ff66a, SB_INFO::GenerateDMASound,
+  `remain_size`): an interrupt each block, the frames still paired.
+- The guide is silent (SBG:3864). Under C2 (development run t2dev-odd2c2,
+  not recorded) the interrupts come each block but every other block
+  starts on a right sample as left: the right channel carries the tone at
+  -27.7 dBFS, where DOSBox-X would keep it silent. A verdict 86Box and the
+  second emulator disagree on is a finding, not a choice: C0 cannot
+  validate T2.EXE S16ODD2, held on STATE question 14 (DOSBox-X the control
+  and the CT2290 the judge, as question 12 settled for PICSMM2, is what I
+  would ask for). Nothing in uCDD changes. Evidence: emulator (the
+  development runs) and both emulators' sources. Hardware: not run.
 
 ## The feature branches offered to the author (rows reconstructed 24 Oct 2026)
 
