@@ -1974,27 +1974,25 @@ todo = "A3: T2.EXE not written yet (the row before the program, r3.5)"
 
 [[test]]
 name = "T2X-SILENCE"
-decides = "VSB:380-386, SBG:3719-3730"
+decides = "SBG:3719-3725, VSB:380-386, SBG:3573-3580"
 runner = "probewav"
 env = "PROBE_WAV=1 PROBE_RUN='T2:T2.EXE SILENCE'"
 groups = ["t2x"]
 fixed = { build = "pinC2", vmodel = "sb16" }
 repeat = 10
 secs = 120
-note = "80h: silence for length+1 sample periods, then the interrupt; nothing in the capture (A3, C2)"
-todo = "A3: T2.EXE not written yet (the row before the program, r3.5)"
+note = "80h at 11025 Hz (41h): 2B10h, 11025 sample periods, one second of silence, its interrupt 17 to 20 ticks after the command; a 1.5 s tone block before (T0) and after (T1): the tone at both and silence (AC, 86Box holds DC) between (A3, C2)"
 
 [[test]]
 name = "T2C0-SILENCE"
-decides = "VSB:380-386, SBG:3719-3730"
+decides = "SBG:3719-3725, VSB:380-386, SBG:3573-3580"
 runner = "probewav"
-env = "PROBE_WAV=1 PROBE_RUN='T2:T2.EXE SILENCE'"
+env = "PROBE_WAV=1 PROBE_RUN='T2:T2.EXE SILENCE C0'"
 groups = ["t2xc0"]
 fixed = { mode = "base", vmodel = "sb16" }
 repeat = 10
 secs = 120
-note = "80h: silence for length+1 sample periods, then the interrupt; nothing in the capture (A3, C0: the client validated on 86Box's own card before C2)"
-todo = "A3: T2.EXE not written yet (the row before the program, r3.5)"
+note = "80h at 11025 Hz (41h): 2B10h, 11025 sample periods, one second of silence, its interrupt 17 to 20 ticks after the command; a 1.5 s tone block before (T0) and after (T1): the tone at both and silence (AC, 86Box holds DC) between (A3, C0: the client validated on 86Box's own card before C2)"
 
 [[test]]
 name = "T2X-DMAMC"
