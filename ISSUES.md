@@ -984,6 +984,15 @@ Observed: T2.TXT `FAIL PICROT both requests waiting: first the timer (the BIOS's
 Trace: by reading, at the pinned SHA: src/audio/irq.asm `virtual_pic_write` takes OCW2 by bits 6:5 (469-483): 01 (20h-3Fh, A0h-BFh) is made a plain non-specific EOI, `mov al, 20h` (479), so A0h's rotation is dropped; 11 is the specific EOI; anything else, Set Priority C0h-C7h among them (bits 10), goes to `.done` (483) and is neither emulated nor passed to the physical controller, though the comment above (471-475) says the physical controller keeps it. The virtual line's interrupt is the driver's own delivery, not the physical chip's, so the physical priorities would not order it anyway. HOSTCD P5, P6 ("kept by the physical controller, not emulated ... harmless") is contradicted by the code and by this row. Minimal reproduction: `T2.EXE PICROT` under C2 (matrix T2X-PICROT).
 Hypothesis (labelled, not tested): a virtual priority (the bottom level, set by C0h-C7h, moved by A0h and E0h-E7h) consulted where the driver chooses between delivering the virtual line and letting a waiting physical one through would answer the document; how the delivery is ordered against the physical timer was not traced. Evidence: emulator (plans 708fb84f and fd562273), dynarec off. Hardware: UNCONFIRMED.
 
+### CAND-9 Tier 2, T2X-SC8PAGE1: an 8-bit block that runs past the end of its 64 KB DMA page is refused, so it never plays and its interrupt never comes (found 26 Oct 2026, open)
+
+Pinned: count-position 7994cd1 (C2 hash UCDD.EXE 03d92066, UCDDHOST.BIN 447ace33; rig86/fixtures/pinned/MANIFEST.txt). Bin: CANDIDATE_UCDD_SFX, FAIL 10/10 under C2, one identical line (Tier 2; the template's 3/3 is the sweep's).
+Cell: none (Tier 2: T2.EXE, real mode, no game), scope not applicable; the author found it in a game (below), so the census can look for games that place a DMA buffer near a page's end.
+Affected: The Big Red Adventure by the author's note (its intro's missing sound and the stop at the Kremlin picture); others not known. Controls: C0 PASS 10/10 (T2C0-SC8PAGE1, plan 5fb0d861: 86Box's own card raises the interrupt for every crossing block, 4 at 11025 Hz, 8 at 22050); C1 not applicable (no virtual card).
+Observed: T2.TXT `FAIL SC8PAGE1 P0 4096 bytes at 11025 Hz: 0 blocks, 0 interrupts, a block's interrupt never came, the address after it F800h ...; P1 4096 bytes at 22050 Hz: 0 blocks, 0 interrupts, a block's interrupt never came, the address after it F800h` in all ten C2 runs (plan 49b66842, folders t2c2p-001 to -010): a 14h block of 4096 bytes programmed at F800h in its page; the virtual channel's address never moves. Expected: "The transfer begins here. The DSP will generate an interrupt after transferring the programmed number of bytes" (SBG:1590-1591; single-cycle mode, 1280-1282; the 14h command, 3271-3278; VSB:319-324), the block taken as the card takes it; the 8237's address wraps within the page (8237:331-338, SBG:1285-1294: SC8PAGE2's, judged on the CT2290 in AKIT). The C0 behaviour for the interrupt.
+Trace: by reading, at the pinned SHA: src/audio/trap.asm, at the DSP command that starts a block, adds the block's length to the channel's 16-bit address (1564-1580) and, for an 8-bit channel, refuses the command when the sum passes 65536: `cmp eax, 65536` / `ja .command_unsupported` (1582-1583, to 453), so the 14h is dropped: nothing plays and no interrupt is raised. Minimal reproduction: `T2.EXE SC8PAGE1` under C2 (matrix T2X-SC8PAGE1).
+Hypothesis (labelled, not tested): the author's Beta 0.9.4-a6 (fork main 8252786, RELEASE-NOTES.md:6): "Play 8-bit sound blocks that run past the end of a 64 KiB DMA page. The DMA address wraps to the start of the same page, as on the hardware. This fixes the missing sound and the stop at the Kremlin picture in the intro of The Big Red Adventure." The pinned line predates it; merge-a6 carries his sample fetch with the page wrap (ISSUES.md UPA6, mix.asm sb_dma_sample: his), built, not run. Under the merging rule his fix is taken, not rewritten; T2X-SC8PAGE1 and SC8PAGE2 are its checks once merge-a6 is the build under test. Evidence: emulator (plans 5fb0d861 and 49b66842), dynarec off. Hardware: UNCONFIRMED.
+
 ### 86CUE2048: 86Box misreads a CUE sheet whose data track has 2048-byte sectors (an emulator limitation; found 25 Oct 2026)
 
 - Seen [86Box] while setting Project A's C0 control for gate A2 (OAKCDROM
@@ -1072,6 +1081,14 @@ Hypothesis (labelled, not tested): a virtual priority (the bottom level, set by 
   the address left at F800h; development run t2dev-sc8c2, not recorded).
   Nothing in uCDD changes. Evidence: emulator (the development runs) and
   both emulators' sources. Hardware: not run.
+- Michael's ruling (26 Oct 2026, question 13): this 86Box build (6.0, build
+  9001) differs from its own master source, which wraps: a build-specific
+  regression of 86Box's, recorded as such; any later 86Box build is checked
+  against T2C0-SC8PAGE2 before its C0 counts for the wrap. SC8PAGE split:
+  SC8PAGE1 (the crossing block's interrupt) on the bench, C0 10/10 (plan
+  5fb0d861), C2 0/10 (plan 49b66842, CAND-9); SC8PAGE2 (the wrap) decides
+  8237:331-338, grade data sheet, DOSBox-X's dma.cpp corroborating, judged
+  on the CT2290 in AKIT (STATE's AKIT list).
 
 ## The feature branches offered to the author (rows reconstructed 24 Oct 2026)
 
