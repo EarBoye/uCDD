@@ -1,4 +1,4 @@
-# μCDD: the EarBoye fork
+# μCDD: fixes/updates/ESS fork
 
 This is a fork of [vorvek's μCDD](https://github.com/vorvek/uCDD), a DOS
 CD-ROM driver for disc images that mixes CD audio with the game's own sound
