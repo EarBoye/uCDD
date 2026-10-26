@@ -1500,7 +1500,7 @@ todo = "A3: T2.EXE not written yet (the row before the program, r3.5)"
 
 [[test]]
 name = "T2X-SC8"
-decides = "VSB:319-324, SBG:3271-3290, SBG:3573-3580, 8237:485-517"
+decides = "VSB:319-324, SBG:1590-1591, SBG:3271-3278, SBG:3573-3580, 8237:485-517"
 runner = "probewav"
 env = "PROBE_WAV=1 PROBE_RUN='T2:T2.EXE SC8'"
 groups = ["t2x"]
@@ -1511,7 +1511,7 @@ note = "8-bit mono single-cycle (14h) at 11025 and 22050 Hz (41h), blocks of 256
 
 [[test]]
 name = "T2C0-SC8"
-decides = "VSB:319-324, SBG:3271-3290, SBG:3573-3580, 8237:485-517"
+decides = "VSB:319-324, SBG:1590-1591, SBG:3271-3278, SBG:3573-3580, 8237:485-517"
 runner = "probewav"
 env = "PROBE_WAV=1 PROBE_RUN='T2:T2.EXE SC8 C0'"
 groups = ["t2xc0"]
@@ -1522,7 +1522,7 @@ note = "8-bit mono single-cycle (14h) at 11025 and 22050 Hz (41h), blocks of 256
 
 [[test]]
 name = "T2X-SC8-M"
-decides = "VSB:319-324, SBG:3271-3290, SBG:3573-3580, 8237:485-517"
+decides = "VSB:319-324, SBG:1590-1591, SBG:3271-3278, SBG:3573-3580, 8237:485-517"
 runner = "probewav"
 env = "PROBE_WAV=1 PROBE_EXTRA='fixtures/synth/out/T1A.BIN|T1\\T1A.BIN;fixtures/synth/out/T1A.CUE|T1\\T1A.CUE' PROBE_RUN='CD:!C:\\SHSUCDX.COM /D:UCDD0001 /L:G > C:\\OUT\\CD.TXT,M:!C:\\UCDD\\UCDD.EXE -mount C:\\T1\\T1A.CUE > C:\\OUT\\M.TXT,T2:T2.EXE SC8 MIX'"
 groups = ["t2x"]
@@ -1534,7 +1534,7 @@ todo = "A3: T2.EXE not written yet (the row before the program, r3.5)"
 
 [[test]]
 name = "T2C0-SC8-M"
-decides = "VSB:319-324, SBG:3271-3290, SBG:3573-3580, 8237:485-517"
+decides = "VSB:319-324, SBG:1590-1591, SBG:3271-3278, SBG:3573-3580, 8237:485-517"
 runner = "probewav"
 env = "PROBE_WAV=1 PROBE_CDROM=fixtures/synth/out/T1B.CUE PROBE_RUN='CD:!C:\\MSCDEX.EXE /D:OAKCD001 /L:G > C:\\OUT\\CD.TXT,T2:T2.EXE SC8 MIX'"
 groups = ["t2xc0"]
@@ -1547,7 +1547,7 @@ todo = "A3: T2.EXE not written yet (the row before the program, r3.5)"
 
 [[test]]
 name = "T2X-SC8PAGE1"
-decides = "SBG:3271-3290, VSB:319-324"
+decides = "SBG:1590-1591, SBG:3271-3278, VSB:319-324"
 runner = "probe"
 env = "PROBE_RUN='T2:T2.EXE SC8PAGE1'"
 groups = ["t2x"]
@@ -1558,7 +1558,7 @@ note = "a 4096-byte 8-bit single-cycle block that crosses the 64 KB page, at 110
 
 [[test]]
 name = "T2C0-SC8PAGE1"
-decides = "SBG:3271-3290, VSB:319-324"
+decides = "SBG:1590-1591, SBG:3271-3278, VSB:319-324"
 runner = "probe"
 env = "PROBE_RUN='T2:T2.EXE SC8PAGE1 C0'"
 groups = ["t2xc0"]
