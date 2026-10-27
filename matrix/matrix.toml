@@ -2159,7 +2159,7 @@ groups = ["t2x"]
 fixed = { build = "pinC2", vmodel = "sb16" }
 repeat = 10
 secs = 120
-note = "the 8-bit channel's current address and count read through the flip-flop during auto-init playback (DMAMC's: 8-bit at 22050 Hz, 8 KB of the 2 kHz tone in 4 KB blocks), in bursts of 256 readings as fast as the reads go with a HLT between them, for 27 ticks from TICK DR; each reading two passes with interrupts off, kept when they lie within 8 bytes (a read torn across a byte's carry is 256 out). The count drops by one per transfer and the address moves with it (8237:253-256); the virtual card's count moves sample by sample and never back within a lap (VSB 7.8, VSB:395-465; the CT2290's one byte at a time, two reads agreeing). Judged in T2.TXT: every address and count inside the buffer, the two of a reading within 8 bytes, no step back within a lap, 3 or 4 laps, 7 or 8 interrupts (SBG:1590-1591); the largest step printed, not judged. tonecheck: the tone in DR, no gap of 20 ms or more. Bursts, not one flat-out loop: read flat out the loop held 86Box's thread at the ceiling and the recorder ran dry (dev runs t2dev-dr0b, -dr2: 5 underruns, all in the reading) (A3, C2; dev runs t2dev-dr2c and -dr2d: PASS, 18176 readings, the largest step 4 bytes, 4 laps)"
+note = "the 8-bit channel's current address and count read through the flip-flop during auto-init playback (DMAMC's: 8-bit at 22050 Hz, 8 KB of the 2 kHz tone in 4 KB blocks), in bursts of 256 readings as fast as the reads go, each followed by an idle to the next BIOS tick, for 27 ticks from TICK DR; each reading two passes with interrupts off, kept when they lie within 8 bytes (a read torn across a byte's carry is 256 out). The count drops by one per transfer and the address moves with it (8237:253-256); the virtual card's count moves sample by sample and never back within a lap (VSB 7.8, VSB:395-465; the CT2290's one byte at a time, two reads agreeing). Judged in T2.TXT: every address and count inside the buffer, the two of a reading within 8 bytes, no step back within a lap, 3 or 4 laps, 7 or 8 interrupts (SBG:1590-1591); the largest step printed, not judged. tonecheck: the tone in DR, no gap of 20 ms or more. Bursts, not one flat-out loop: read flat out the loop held 86Box's thread at the ceiling and the recorder ran dry (dev runs t2dev-dr0b, -dr2: 5 underruns, all in the reading); paced by the tick, not by a single HLT: under C2 uCDD's period interrupt ends a HLT at once (plan 6fc1a31d's first takes, 4 broken captures in 14; Michael, 28 Oct 2026, question 29: a HLT that returns at once is not a wait) (A3, C2; dev runs t2dev-dr2e and -dr2f: PASS, 6912 readings, the largest step 4 bytes, 3 laps)"
 
 [[test]]
 name = "T2C0-DMAREAD"
@@ -2170,31 +2170,29 @@ groups = ["t2xc0"]
 fixed = { mode = "base", vmodel = "sb16" }
 repeat = 10
 secs = 120
-note = "the 8-bit channel's current address and count read through the flip-flop during auto-init playback (DMAMC's: 8-bit at 22050 Hz, 8 KB of the 2 kHz tone in 4 KB blocks), in bursts of 256 readings as fast as the reads go with a HLT between them, for 27 ticks from TICK DR; each reading two passes with interrupts off, kept when they lie within 8 bytes (a read torn across a byte's carry is 256 out). The count drops by one per transfer and the address moves with it (8237:253-256); the virtual card's count moves sample by sample and never back within a lap (VSB 7.8, VSB:395-465; the CT2290's one byte at a time, two reads agreeing). Judged in T2.TXT: every address and count inside the buffer, the two of a reading within 8 bytes, no step back within a lap, 3 or 4 laps, 7 or 8 interrupts (SBG:1590-1591); the largest step printed, not judged. tonecheck: the tone in DR, no gap of 20 ms or more. Bursts, not one flat-out loop: read flat out the loop held 86Box's thread at the ceiling and the recorder ran dry (dev runs t2dev-dr0b, -dr2: 5 underruns, all in the reading) (A3, C0: the client validated on 86Box's own card before C2; dev runs t2dev-dr0c and -dr0d: PASS, 8704 readings, the largest step 1 byte, 3 laps)"
+note = "the 8-bit channel's current address and count read through the flip-flop during auto-init playback (DMAMC's: 8-bit at 22050 Hz, 8 KB of the 2 kHz tone in 4 KB blocks), in bursts of 256 readings as fast as the reads go, each followed by an idle to the next BIOS tick, for 27 ticks from TICK DR; each reading two passes with interrupts off, kept when they lie within 8 bytes (a read torn across a byte's carry is 256 out). The count drops by one per transfer and the address moves with it (8237:253-256); the virtual card's count moves sample by sample and never back within a lap (VSB 7.8, VSB:395-465; the CT2290's one byte at a time, two reads agreeing). Judged in T2.TXT: every address and count inside the buffer, the two of a reading within 8 bytes, no step back within a lap, 3 or 4 laps, 7 or 8 interrupts (SBG:1590-1591); the largest step printed, not judged. tonecheck: the tone in DR, no gap of 20 ms or more. Bursts, not one flat-out loop: read flat out the loop held 86Box's thread at the ceiling and the recorder ran dry (dev runs t2dev-dr0b, -dr2: 5 underruns, all in the reading); paced by the tick, not by a single HLT: under C2 uCDD's period interrupt ends a HLT at once (plan 6fc1a31d's first takes, 4 broken captures in 14; Michael, 28 Oct 2026, question 29: a HLT that returns at once is not a wait) (A3, C0: the client validated on 86Box's own card before C2; dev run t2dev-dr0e: PASS, 6912 readings, the largest step 1 byte, 3 laps)"
 
 [[test]]
 name = "T2X-DMAREAD-M"
-decides = "8237:225-230, VSB:395-465, CT2290"
+decides = "8237:225-230, 8237:253-256, VSB:395-465, CT2290, SBG:1590-1591, VSB:285-348"
 runner = "probewav"
 env = "PROBE_WAV=1 PROBE_EXTRA='fixtures/synth/out/T1A.BIN|T1\\T1A.BIN;fixtures/synth/out/T1A.CUE|T1\\T1A.CUE' PROBE_RUN='CD:!C:\\SHSUCDX.COM /D:UCDD0001 /L:G > C:\\OUT\\CD.TXT,M:!C:\\UCDD\\UCDD.EXE -mount C:\\T1\\T1A.CUE > C:\\OUT\\M.TXT,T2:T2.EXE DMAREAD MIX'"
 groups = ["t2x"]
 fixed = { build = "pinC2", vmodel = "sb16" }
 repeat = 10
 secs = 120
-note = "mixed (T1A track 2 playing, both peaks in the capture): the current address and count read through the flip-flop during playback, as fast as possible: every value inside the block and moving one way (A3, C2)"
-todo = "A3: T2.EXE DMAREAD has no MIX word yet (the plain case written 28 Oct 2026)"
+note = "mixed: DMAREAD's reading (the 8-bit channel's address and count during auto-init at 22050 Hz, bursts of 256 each followed by an idle to the next BIOS tick, 27 ticks from TICK DR; judged in T2.TXT as T2X-DMAREAD: inside the buffer, address and count within 8 bytes, never back within a lap, 3 or 4 laps, 7 or 8 interrupts; 8237:225-230, 253-256, VSB:395-465) while T1A track 2 (1000 Hz; C0: T1B's) plays from TICK MIX, 18 ticks before DR, to TICK OFF 80 ticks after MIX (one play). The capture: the 2 kHz and the 1 kHz present in their bands, no drop of 20 ms or more in either, the 2 kHz band quiet from DR+1.7 to DR+3.2 s after DAh while the CD plays, quiet after OFF (VSB:285-348 for the mix) (A3, C2; dev run t2dev-drm2: PASS)"
 
 [[test]]
 name = "T2C0-DMAREAD-M"
-decides = "8237:225-230, VSB:395-465, CT2290"
+decides = "8237:225-230, 8237:253-256, VSB:395-465, CT2290, SBG:1590-1591, VSB:285-348"
 runner = "probewav"
-env = "PROBE_WAV=1 PROBE_CDROM=fixtures/synth/out/T1B.CUE PROBE_RUN='CD:!C:\\MSCDEX.EXE /D:OAKCD001 /L:G > C:\\OUT\\CD.TXT,T2:T2.EXE DMAREAD MIX'"
+env = "PROBE_WAV=1 PROBE_CDROM=fixtures/synth/out/T1B.CUE PROBE_RUN='CD:!C:\\MSCDEX.EXE /D:OAKCD001 /L:G > C:\\OUT\\CD.TXT,T2:T2.EXE DMAREAD MIX C0'"
 groups = ["t2xc0"]
 fixed = { mode = "base", vmodel = "sb16" }
 repeat = 10
 secs = 120
-note = "mixed (T1A track 2 playing, both peaks in the capture): the current address and count read through the flip-flop during playback, as fast as possible: every value inside the block and moving one way (A3, C0: the client validated on 86Box's own card before C2)"
-todo = "A3: T2.EXE not written yet (the row before the program, r3.5)"
+note = "mixed: DMAREAD's reading (the 8-bit channel's address and count during auto-init at 22050 Hz, bursts of 256 each followed by an idle to the next BIOS tick, 27 ticks from TICK DR; judged in T2.TXT as T2X-DMAREAD: inside the buffer, address and count within 8 bytes, never back within a lap, 3 or 4 laps, 7 or 8 interrupts; 8237:225-230, 253-256, VSB:395-465) while T1A track 2 (1000 Hz; C0: T1B's) plays from TICK MIX, 18 ticks before DR, to TICK OFF 80 ticks after MIX (one play). The capture: the 2 kHz and the 1 kHz present in their bands, no drop of 20 ms or more in either, the 2 kHz band quiet from DR+1.7 to DR+3.2 s after DAh while the CD plays, quiet after OFF (VSB:285-348 for the mix) (A3, C0: the client validated on 86Box's own card before C2; dev run t2dev-drm0: PASS)"
 
 [[test]]
 name = "T2X-DMADEM"
@@ -3231,7 +3229,17 @@ env = "PROBE_WAV=1 PROBE_RUN='T2:T2.EXE DMAREAD C0 L4'"
 groups = ["t2l4"]
 fixed = { mode = "base", vmodel = "sb16" }
 secs = 120
-note = "planted: T2.EXE DMAREAD with the word L4 takes the count's two bytes in the wrong order; T2.EXE's checks (inside the buffer, address and count agreeing, no step back, the laps) must FAIL (A3, L4 for DMAREAD; on 86Box's own card; dev run t2dev-dr0l4c: 7624 readings outside the buffer, 801 apart, 3 steps back, 9 laps)"
+note = "planted: T2.EXE DMAREAD with the word L4 takes the count's two bytes in the wrong order; T2.EXE's checks (inside the buffer, address and count agreeing, no step back, the laps) must FAIL (A3, L4 for DMAREAD; on 86Box's own card; dev run t2dev-dr0l4e: 6086 readings outside the buffer, 803 apart, 3 steps back, 9 laps)"
+
+[[test]]
+name = "T2L4-DMAREAD-M"
+decides = "silent: a planted fault (L4): the check it is planted for must fail"
+runner = "probewav"
+env = "PROBE_WAV=1 PROBE_EXTRA='fixtures/synth/out/T1AP.BIN|T1\\T1AP.BIN;fixtures/synth/out/T1AP.CUE|T1\\T1AP.CUE' PROBE_RUN='CD:!C:\\SHSUCDX.COM /D:UCDD0001 /L:G > C:\\OUT\\CD.TXT,M:!C:\\UCDD\\UCDD.EXE -mount C:\\T1\\T1AP.CUE > C:\\OUT\\M.TXT,T2:T2.EXE DMAREAD MIX'"
+groups = ["t2l4"]
+fixed = { build = "pinC2", vmodel = "sb16" }
+secs = 120
+note = "planted: T2.EXE DMAREAD MIX on T1AP (track 2 at 440 Hz) on the pinned C2; tonecheck's 1000 Hz presence check must FAIL (A3, L4 for DMAREAD-M's capture, as T2L4-ADPCM4-M)"
 
 [[test]]
 name = "T2L4-VOLUME"
