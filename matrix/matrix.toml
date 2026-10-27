@@ -3204,7 +3204,7 @@ env = "PROBE_WAV=1 PROBE_EXTRA='fixtures/synth/out/T1AP.BIN|T1\\T1AP.BIN;fixture
 groups = ["t2l4"]
 fixed = { build = "pinC2", vmodel = "sb16" }
 secs = 120
-note = "planted: T2.EXE S16AI MIX on T1AP (track 2 at 440 Hz) on the pinned C2; tonecheck's 1000 Hz checks in every format and both plays' band-drop checks must FAIL (A3, L4 for S16AI-M's capture; T2.EXE's own SS44, SU44, SS48 and SU48 fail with it, CAND-10)"
+note = "planted: T2.EXE S16AI MIX on T1AP (track 2 at 440 Hz) on the pinned C2; tonecheck's 1000 Hz presence checks in every format must FAIL (A3, L4 for S16AI-M's capture; T2.EXE's own SS44, SU44, SS48 and SU48 fail with it, CAND-10). The band-drop checks find drops only in a tone that is there: plan b7f66041 failed every format's 1 kHz check and MIX's drop check (the 1 kHz band rising and falling with the card's steps), and MX2's found none (440 Hz throughout); presence is judged per format"
 
 [[test]]
 name = "SBT16-legacy"
