@@ -2247,20 +2247,18 @@ groups = ["t2x"]
 fixed = { build = "pinC2", vmodel = "sb16" }
 repeat = 10
 secs = 120
-note = "mixed (T1A track 2 playing, both peaks in the capture): word writes to 20h and 21h (one 16-bit OUT: the command at 20h and the mask at 21h) with the card's line in use (A3, C2)"
-todo = "A3: T2.EXE not written yet (the row before the program, r3.5)"
+note = "mixed: T1A track 2 (1000 Hz; C0: T1B's) plays from TICK MIX; 18 ticks later, at TICK PIC, the case runs as T2X-PICWORD does alone (judged in T2.TXT as that row; it runs 0 to 3 ticks, to TICK AFT); the CD on 27 ticks more, stopped at TICK OFF. The capture (the A3 audio oracle, IRQDET-M's shape): the 1 kHz present from PIC+0.1 to +1.1 s, no gap of 20 ms or more from MIX+0.3 to MIX+2.4 s, quiet after OFF. The PIC cases play no tone of their own, so one peak is due, not two (rule 7: the row's old text said \"both peaks in the capture\", written before the program; IRQDET-M's ruling, Michael 26 Oct 2026, one peak) (A3, C2; dev run t2dev-picwordm2: T2.TXT FAIL as T2X-PICWORD (CAND-7), tonecheck PASS)"
 
 [[test]]
 name = "T2C0-PICWORD-M"
 decides = "8259:565-587, I386:8218-8244"
 runner = "probewav"
-env = "PROBE_WAV=1 PROBE_CDROM=fixtures/synth/out/T1B.CUE PROBE_RUN='CD:!C:\\MSCDEX.EXE /D:OAKCD001 /L:G > C:\\OUT\\CD.TXT,T2:T2.EXE PICWORD MIX'"
+env = "PROBE_WAV=1 PROBE_CDROM=fixtures/synth/out/T1B.CUE PROBE_RUN='CD:!C:\\MSCDEX.EXE /D:OAKCD001 /L:G > C:\\OUT\\CD.TXT,T2:T2.EXE PICWORD MIX C0'"
 groups = ["t2xc0"]
 fixed = { mode = "base", vmodel = "sb16" }
 repeat = 10
 secs = 120
-note = "mixed (T1A track 2 playing, both peaks in the capture): word writes to 20h and 21h (one 16-bit OUT: the command at 20h and the mask at 21h) with the card's line in use (A3, C0: the client validated on 86Box's own card before C2)"
-todo = "A3: T2.EXE not written yet (the row before the program, r3.5)"
+note = "mixed: T1A track 2 (1000 Hz; C0: T1B's) plays from TICK MIX; 18 ticks later, at TICK PIC, the case runs as T2C0-PICWORD does alone (judged in T2.TXT as that row; it runs 0 to 3 ticks, to TICK AFT); the CD on 27 ticks more, stopped at TICK OFF. The capture (the A3 audio oracle, IRQDET-M's shape): the 1 kHz present from PIC+0.1 to +1.1 s, no gap of 20 ms or more from MIX+0.3 to MIX+2.4 s, quiet after OFF. The PIC cases play no tone of their own, so one peak is due, not two (rule 7: the row's old text said \"both peaks in the capture\", written before the program; IRQDET-M's ruling, Michael 26 Oct 2026, one peak) (A3, C0: the client validated on 86Box's own card before C2; dev run t2dev-picwordm0: PASS)"
 
 [[test]]
 name = "T2X-PICSMM1"
@@ -2293,20 +2291,18 @@ groups = ["t2x"]
 fixed = { build = "pinC2", vmodel = "sb16" }
 repeat = 10
 secs = 120
-note = "mixed (T1A track 2 playing, both peaks in the capture): the fully nested mode: with IRQ 0 in service the card's lower request waits until IRQ 0 is ended (split from PICSMM, Michael, 26 Oct 2026, question 12) (A3, C2)"
-todo = "A3: T2.EXE not written yet (the row before the program, r3.5)"
+note = "mixed: T1A track 2 (1000 Hz; C0: T1B's) plays from TICK MIX; 18 ticks later, at TICK PIC, the case runs as T2X-PICSMM1 does alone (judged in T2.TXT as that row; it runs 0 to 3 ticks, to TICK AFT); the CD on 27 ticks more, stopped at TICK OFF. The capture (the A3 audio oracle, IRQDET-M's shape): the 1 kHz present from PIC+0.1 to +1.1 s, no gap of 20 ms or more from MIX+0.3 to MIX+2.4 s, quiet after OFF. The PIC cases play no tone of their own, so one peak is due, not two (rule 7: the row's old text said \"both peaks in the capture\", written before the program; IRQDET-M's ruling, Michael 26 Oct 2026, one peak) (A3, C2; dev run t2dev-picsmm1m2: PASS)"
 
 [[test]]
 name = "T2C0-PICSMM1-M"
 decides = "8259:615-617"
 runner = "probewav"
-env = "PROBE_WAV=1 PROBE_CDROM=fixtures/synth/out/T1B.CUE PROBE_RUN='CD:!C:\\MSCDEX.EXE /D:OAKCD001 /L:G > C:\\OUT\\CD.TXT,T2:T2.EXE PICSMM1 MIX'"
+env = "PROBE_WAV=1 PROBE_CDROM=fixtures/synth/out/T1B.CUE PROBE_RUN='CD:!C:\\MSCDEX.EXE /D:OAKCD001 /L:G > C:\\OUT\\CD.TXT,T2:T2.EXE PICSMM1 MIX C0'"
 groups = ["t2xc0"]
 fixed = { mode = "base", vmodel = "sb16" }
 repeat = 10
 secs = 120
-note = "mixed (T1A track 2 playing, both peaks in the capture): the fully nested mode: with IRQ 0 in service the card's lower request waits until IRQ 0 is ended (split from PICSMM, Michael, 26 Oct 2026, question 12) (A3, C0: the client validated on 86Box's own card before C2)"
-todo = "A3: T2.EXE not written yet (the row before the program, r3.5)"
+note = "mixed: T1A track 2 (1000 Hz; C0: T1B's) plays from TICK MIX; 18 ticks later, at TICK PIC, the case runs as T2C0-PICSMM1 does alone (judged in T2.TXT as that row; it runs 0 to 3 ticks, to TICK AFT); the CD on 27 ticks more, stopped at TICK OFF. The capture (the A3 audio oracle, IRQDET-M's shape): the 1 kHz present from PIC+0.1 to +1.1 s, no gap of 20 ms or more from MIX+0.3 to MIX+2.4 s, quiet after OFF. The PIC cases play no tone of their own, so one peak is due, not two (rule 7: the row's old text said \"both peaks in the capture\", written before the program; IRQDET-M's ruling, Michael 26 Oct 2026, one peak) (A3, C0: the client validated on 86Box's own card before C2; dev run t2dev-picsmm1m0: PASS)"
 
 [[test]]
 name = "T2X-PICSMM2"
@@ -2387,20 +2383,18 @@ groups = ["t2x"]
 fixed = { build = "pinC2", vmodel = "sb16" }
 repeat = 10
 secs = 120
-note = "mixed (T1A track 2 playing, both peaks in the capture): a specific EOI (OCW2) for the card's line, and one for another line while the card's is in service (A3, C2)"
-todo = "A3: T2.EXE not written yet (the row before the program, r3.5)"
+note = "mixed: T1A track 2 (1000 Hz; C0: T1B's) plays from TICK MIX; 18 ticks later, at TICK PIC, the case runs as T2X-PICSEOI does alone (judged in T2.TXT as that row; it runs 0 to 3 ticks, to TICK AFT); the CD on 27 ticks more, stopped at TICK OFF. The capture (the A3 audio oracle, IRQDET-M's shape): the 1 kHz present from PIC+0.1 to +1.1 s, no gap of 20 ms or more from MIX+0.3 to MIX+2.4 s, quiet after OFF. The PIC cases play no tone of their own, so one peak is due, not two (rule 7: the row's old text said \"both peaks in the capture\", written before the program; IRQDET-M's ruling, Michael 26 Oct 2026, one peak) (A3, C2; dev run t2dev-picseoim2: PASS)"
 
 [[test]]
 name = "T2C0-PICSEOI-M"
 decides = "8259:565-595"
 runner = "probewav"
-env = "PROBE_WAV=1 PROBE_CDROM=fixtures/synth/out/T1B.CUE PROBE_RUN='CD:!C:\\MSCDEX.EXE /D:OAKCD001 /L:G > C:\\OUT\\CD.TXT,T2:T2.EXE PICSEOI MIX'"
+env = "PROBE_WAV=1 PROBE_CDROM=fixtures/synth/out/T1B.CUE PROBE_RUN='CD:!C:\\MSCDEX.EXE /D:OAKCD001 /L:G > C:\\OUT\\CD.TXT,T2:T2.EXE PICSEOI MIX C0'"
 groups = ["t2xc0"]
 fixed = { mode = "base", vmodel = "sb16" }
 repeat = 10
 secs = 120
-note = "mixed (T1A track 2 playing, both peaks in the capture): a specific EOI (OCW2) for the card's line, and one for another line while the card's is in service (A3, C0: the client validated on 86Box's own card before C2)"
-todo = "A3: T2.EXE not written yet (the row before the program, r3.5)"
+note = "mixed: T1A track 2 (1000 Hz; C0: T1B's) plays from TICK MIX; 18 ticks later, at TICK PIC, the case runs as T2C0-PICSEOI does alone (judged in T2.TXT as that row; it runs 0 to 3 ticks, to TICK AFT); the CD on 27 ticks more, stopped at TICK OFF. The capture (the A3 audio oracle, IRQDET-M's shape): the 1 kHz present from PIC+0.1 to +1.1 s, no gap of 20 ms or more from MIX+0.3 to MIX+2.4 s, quiet after OFF. The PIC cases play no tone of their own, so one peak is due, not two (rule 7: the row's old text said \"both peaks in the capture\", written before the program; IRQDET-M's ruling, Michael 26 Oct 2026, one peak) (A3, C0: the client validated on 86Box's own card before C2; dev run t2dev-picseoim0: PASS)"
 
 [[test]]
 name = "T2X-PICROT"
@@ -2433,20 +2427,18 @@ groups = ["t2x"]
 fixed = { build = "pinC2", vmodel = "sb16" }
 repeat = 10
 secs = 120
-note = "mixed (T1A track 2 playing, both peaks in the capture): rotating priority, automatic and specific (OCW2), with the card's line in use (A3, C2)"
-todo = "A3: T2.EXE not written yet (the row before the program, r3.5)"
+note = "mixed: T1A track 2 (1000 Hz; C0: T1B's) plays from TICK MIX; 18 ticks later, at TICK PIC, the case runs as T2X-PICROT does alone (judged in T2.TXT as that row; it runs 0 to 3 ticks, to TICK AFT); the CD on 27 ticks more, stopped at TICK OFF. The capture (the A3 audio oracle, IRQDET-M's shape): the 1 kHz present from PIC+0.1 to +1.1 s, no gap of 20 ms or more from MIX+0.3 to MIX+2.4 s, quiet after OFF. The PIC cases play no tone of their own, so one peak is due, not two (rule 7: the row's old text said \"both peaks in the capture\", written before the program; IRQDET-M's ruling, Michael 26 Oct 2026, one peak) (A3, C2; dev run t2dev-picrotm2: T2.TXT FAIL as T2X-PICROT (CAND-8), tonecheck PASS)"
 
 [[test]]
 name = "T2C0-PICROT-M"
 decides = "8259:615-700"
 runner = "probewav"
-env = "PROBE_WAV=1 PROBE_CDROM=fixtures/synth/out/T1B.CUE PROBE_RUN='CD:!C:\\MSCDEX.EXE /D:OAKCD001 /L:G > C:\\OUT\\CD.TXT,T2:T2.EXE PICROT MIX'"
+env = "PROBE_WAV=1 PROBE_CDROM=fixtures/synth/out/T1B.CUE PROBE_RUN='CD:!C:\\MSCDEX.EXE /D:OAKCD001 /L:G > C:\\OUT\\CD.TXT,T2:T2.EXE PICROT MIX C0'"
 groups = ["t2xc0"]
 fixed = { mode = "base", vmodel = "sb16" }
 repeat = 10
 secs = 120
-note = "mixed (T1A track 2 playing, both peaks in the capture): rotating priority, automatic and specific (OCW2), with the card's line in use (A3, C0: the client validated on 86Box's own card before C2)"
-todo = "A3: T2.EXE not written yet (the row before the program, r3.5)"
+note = "mixed: T1A track 2 (1000 Hz; C0: T1B's) plays from TICK MIX; 18 ticks later, at TICK PIC, the case runs as T2C0-PICROT does alone (judged in T2.TXT as that row; it runs 0 to 3 ticks, to TICK AFT); the CD on 27 ticks more, stopped at TICK OFF. The capture (the A3 audio oracle, IRQDET-M's shape): the 1 kHz present from PIC+0.1 to +1.1 s, no gap of 20 ms or more from MIX+0.3 to MIX+2.4 s, quiet after OFF. The PIC cases play no tone of their own, so one peak is due, not two (rule 7: the row's old text said \"both peaks in the capture\", written before the program; IRQDET-M's ruling, Michael 26 Oct 2026, one peak) (A3, C0: the client validated on 86Box's own card before C2; dev run t2dev-picrotm0: PASS)"
 
 [[test]]
 name = "T2X-TCROUND"
@@ -3318,6 +3310,16 @@ fixed = { build = "pinC2", vmodel = "sb16" }
 client = "pmodew"
 secs = 90
 note = "planted: T2PMW.EXE HELLO with the word C0 under C2, so CPL 0 is due where uCDD's host runs it at ring 3; T2W's CPL check must FAIL (A3, L4 for the HELLO rows, PMODE/W)"
+
+[[test]]
+name = "T2L4-PICSEOI-M"
+decides = "silent: a planted fault (L4): the check it is planted for must fail"
+runner = "probewav"
+env = "PROBE_WAV=1 PROBE_EXTRA='fixtures/synth/out/T1AP.BIN|T1\\T1AP.BIN;fixtures/synth/out/T1AP.CUE|T1\\T1AP.CUE' PROBE_RUN='CD:!C:\\SHSUCDX.COM /D:UCDD0001 /L:G > C:\\OUT\\CD.TXT,M:!C:\\UCDD\\UCDD.EXE -mount C:\\T1\\T1AP.CUE > C:\\OUT\\M.TXT,T2:T2.EXE PICSEOI MIX'"
+groups = ["t2l4"]
+fixed = { build = "pinC2", vmodel = "sb16" }
+secs = 120
+note = "planted: T2.EXE PICSEOI MIX on T1AP (track 2 at 440 Hz) on the pinned C2; tonecheck's PIC+0.1-1.1 s 1000 Hz check must FAIL (A3, L4 for the four PIC cases' MIX, one wrapper and one set of checks in T2.EXE and tonecheck)"
 
 [[test]]
 name = "T2L4-VOLUME"
