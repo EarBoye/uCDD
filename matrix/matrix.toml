@@ -1916,15 +1916,14 @@ note = "the virtual SB Pro's 8-bit stereo high-speed auto-init, the guide's proc
 
 [[test]]
 name = "T2X-PROST-M"
-decides = "VSB:359-367, SBG:2392-2421"
+decides = "SBG:1930-2034, SBG:1954-1960, SBG:2394-2398, SBG:1418-1430, SBG:2001, VSB:287-289, VSB:302-304, VSB:359-366, EMUSRC, 8237:485-517, VSB:285-348"
 runner = "probewav"
 env = "PROBE_WAV=1 PROBE_EXTRA='fixtures/synth/out/T1A.BIN|T1\\T1A.BIN;fixtures/synth/out/T1A.CUE|T1\\T1A.CUE' PROBE_RUN='CD:!C:\\SHSUCDX.COM /D:UCDD0001 /L:G > C:\\OUT\\CD.TXT,M:!C:\\UCDD\\UCDD.EXE -mount C:\\T1\\T1A.CUE > C:\\OUT\\M.TXT,T2:T2.EXE PROST MIX'"
 groups = ["t2x"]
 fixed = { build = "pinC2", vmodel = "pro" }
 repeat = 10
 secs = 120
-note = "mixed (T1A track 2 playing, both peaks in the capture): the virtual SB Pro: stereo through mixer 0Eh bit 1 with 90h high-speed auto-init, the left channel first (A3, C2)"
-todo = "A3: T2.EXE not written yet (the row before the program, r3.5)"
+note = "mixed: PROST's two steps (the SB Pro's 8-bit stereo high-speed auto-init, ST11 and ST22; judged in T2.TXT as T2X-PROST) while T1A track 2 (1000 Hz; C0: T1B's) plays from TICK MIX, 18 ticks before ST11, to TICK OFF 120 ticks later (one play). The capture: each step the card's 2 kHz present in its band on the right (the data's first byte goes right after the silent byte: SBG:1954-1960, 2394-2398 read literally, question 16) and the 1 kHz present (the peak over the floor and the level above -60 dBFS), the left quiet in the 2 kHz band (under -60 dBFS: the CD is on both sides), no drop of 20 ms or more in the tone's band; the 1 kHz without a drop from MIX+0.3 s to MIX+6.3 s; quiet after OFF; each step's windows end at its TICK DONE; (A3, C2; dev run t2dev-prm2: FAIL as T2X-PROST, the tone left at -22 dBFS and the right at -87: CAND-15)"
 
 [[test]]
 name = "T2X-PROST2"
@@ -1950,15 +1949,14 @@ note = "EMU_DISPUTE until hardware answers (Michael, 26 Oct 2026, question 16): 
 
 [[test]]
 name = "T2C0-PROST-M"
-decides = "VSB:359-367, SBG:2392-2421"
+decides = "SBG:1930-2034, SBG:1954-1960, SBG:2394-2398, SBG:1418-1430, SBG:2001, VSB:287-289, VSB:302-304, VSB:359-366, EMUSRC, 8237:485-517, VSB:285-348"
 runner = "probewav"
-env = "PROBE_WAV=1 PROBE_CDROM=fixtures/synth/out/T1B.CUE PROBE_RUN='CD:!C:\\MSCDEX.EXE /D:OAKCD001 /L:G > C:\\OUT\\CD.TXT,T2:T2.EXE PROST MIX'"
+env = "PROBE_WAV=1 PROBE_CDROM=fixtures/synth/out/T1B.CUE PROBE_RUN='CD:!C:\\MSCDEX.EXE /D:OAKCD001 /L:G > C:\\OUT\\CD.TXT,T2:T2.EXE PROST MIX C0'"
 groups = ["t2xc0"]
 fixed = { mode = "base", vmodel = "pro" }
 repeat = 10
 secs = 120
-note = "mixed (T1A track 2 playing, both peaks in the capture): the virtual SB Pro: stereo through mixer 0Eh bit 1 with 90h high-speed auto-init, the left channel first (A3, C0: the client validated on 86Box's own card before C2)"
-todo = "A3: T2.EXE not written yet (the row before the program, r3.5)"
+note = "mixed: PROST's two steps (the SB Pro's 8-bit stereo high-speed auto-init, ST11 and ST22; judged in T2.TXT as T2X-PROST) while T1A track 2 (1000 Hz; C0: T1B's) plays from TICK MIX, 18 ticks before ST11, to TICK OFF 120 ticks later (one play). The capture: each step the card's 2 kHz present in its band on the right (the data's first byte goes right after the silent byte: SBG:1954-1960, 2394-2398 read literally, question 16) and the 1 kHz present (the peak over the floor and the level above -60 dBFS), the left quiet in the 2 kHz band (under -60 dBFS: the CD is on both sides), no drop of 20 ms or more in the tone's band; the 1 kHz without a drop from MIX+0.3 s to MIX+6.3 s; quiet after OFF; each step's windows end at its TICK DONE; 86Box's own SB Pro v2 (A3, C0: the client validated on 86Box's own card before C2; dev run t2dev-prm0: PASS)"
 
 [[test]]
 name = "T2X-DAC"
@@ -3348,6 +3346,16 @@ groups = ["t2l4"]
 fixed = { mode = "base", vmodel = "sb16" }
 secs = 120
 note = "planted: T2.EXE S16ON8 MIX C0 on T1AP (track 2 at 440 Hz) in 86Box's own drive, on 86Box's own card: on the pinned C2 every S16ON8 step is refused (CAND-14) and too short to judge, so the plant is on C0, where the steps play; tonecheck's 1000 Hz presence checks in every format must FAIL (A3, L4 for S16ON8-M's capture)"
+
+[[test]]
+name = "T2L4-PROST-M"
+decides = "silent: a planted fault (L4): the check it is planted for must fail"
+runner = "probewav"
+env = "PROBE_WAV=1 PROBE_EXTRA='fixtures/synth/out/T1AP.BIN|T1\\T1AP.BIN;fixtures/synth/out/T1AP.CUE|T1\\T1AP.CUE' PROBE_RUN='CD:!C:\\SHSUCDX.COM /D:UCDD0001 /L:G > C:\\OUT\\CD.TXT,M:!C:\\UCDD\\UCDD.EXE -mount C:\\T1\\T1AP.CUE > C:\\OUT\\M.TXT,T2:T2.EXE PROST MIX'"
+groups = ["t2l4"]
+fixed = { build = "pinC2", vmodel = "pro" }
+secs = 120
+note = "planted: T2.EXE PROST MIX on T1AP (track 2 at 440 Hz) on the pinned C2, where PROST's steps play (the tone on the wrong side, CAND-15); tonecheck's 1000 Hz presence checks in both steps must FAIL (A3, L4 for PROST-M's capture)"
 
 [[test]]
 name = "SBT16-legacy"
