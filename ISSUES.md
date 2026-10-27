@@ -1428,6 +1428,14 @@ Closed (Michael, 27 Oct 2026): a missed refill cannot move the closing beep; onl
   of the interrupted block, SBG's block counter being the DSP's,
   8237:485-491 scoping the clear to the DMA controller).
 
+### PITCHCAL The captured pitch's tolerance, calibrated from C0 (27 Oct 2026)
+
+Rule (Michael, 27 Oct 2026, question 26, from rules-bot): tolerance = max(0.5 %, 3 x the largest C0 pitch deviation over all plans to date). The 1.5 % that stood before was rules-bot's uncalibrated figure in the fold (context/docs/project_a.md:205); the charter's 0.5 % at project_a.md:146-147 is Tier 0's resampler check on a synthetic tone, another measurement.
+Figures (the bench's runs/rec/pitchcal.py, bench b36f058): every current C0 capture on disk, 1990 tone and band checks in 36 C0 plans, each check's peak within 5 % of its expected frequency in its own window (Hann, a parabola through the peak bin). The largest deviation 0.161 % (T2C0-SC8-M, S4, 374e7ae5-006: 1996.77 Hz against 2000); then T2C0-AI8 A0 0.129 % (2002.58 Hz), T2C0-SC8-M S0 0.099 %, T2C0-SC8 S4 0.092 %; every S16SC-M step 0.045 to 0.047 %. Result: max(0.5 %, 3 x 0.161 % = 0.483 %) = 0.5 % (thresholds.toml tone.freq_tolerance 0.005).
+Applied with it: the band check's neighbourhood its own 5 % (tone.neighbourhood; three tolerances hid the 1940 Hz skirt plant at 0.5 %); ADPCM4's C2 expected from the DSP 4.13's table (VSB:292-304: A5h, R = 61, 10863.3 Hz, the tone 1977.1 Hz; measured 1976.7; the CT2290 1974). test_rec.py 36 of 36.
+Judged again (887 current captures in 100 plans), the moves the tolerance makes: T2X-DAC d376fe5b PASS to FAIL x10 (1982.8 to 1984.9 Hz against 2002.0: 0.9 % low) and T2X-SC8 9646a9cc x9 (S4 1977.6 to 1980.2 Hz, 1.1 % low), both taken again as Michael asked (the plain variants of CAND-18 and CAND-19); A2's Tier 1 CD cases on C2, plan 0cf7cb43 (T1-PLAY6 x10, PLAY23 x4, PLAY5 x1: the CD's 440 and 1000 Hz at 438.2 to 1002.8 Hz in single 1 s windows, so under 90 % of windows inside 0.5 %), put to Michael (STATE question 27). The other moves are not the tolerance's: ccb39d17's T1 captures from before T1.EXE's TICK END; nine single captures to HARNESS_ERROR by question 21's rule (no host record, an unexplained lateness); one a fault in the re-judging script (a C0 plant judged as C2).
+Open: the C2 expected pitch of SC8, AI8 and the other 41h cases is 2000 Hz in tonecheck, where the DSP 4.13's register plays 2003.0 Hz (VSB:292-304): a 0.15 % bias inside the 0.5 %, not yet corrected.
+
 ### STALLCAL: the recorder's stall, calibrated (a bench instrument; Michael, 26 Oct 2026)
 
 - What: 86Box's recorder (OpenAL's writer running dry) puts exact digital
