@@ -1479,20 +1479,18 @@ groups = ["t2x"]
 fixed = { build = "pinC2", vmodel = "sb16" }
 repeat = 10
 secs = 120
-note = "mixed (T1A track 2 playing, both peaks in the capture): the IRQ detection sequence: F2h, the interrupt on the configured line only, 82h bit 0, acknowledged at 2xEh (A3, C2)"
-todo = "A3: T2.EXE not written yet (the row before the program, r3.5)"
+note = "mixed: T1A track 2 (1000 Hz; C0: T1B's) plays from TICK MIX; 18 ticks later, at TICK DET, the IRQ detection sequence (DSP reset, F2h: the interrupt on the configured line only, 82h bit 0, acknowledged at 2xEh, as T2X-IRQDET); the CD on 27 ticks more, stopped at TICK OFF. The capture (the A3 audio oracle): the 1 kHz present through DET, no gap of 20 ms or more from MIX to OFF (thresholds.toml [gaps], Michael 25 Oct 2026 question 9), quiet after OFF. IRQDET plays no tone of its own, so one peak is due, not two (A3, C2; dev run t2dev-im2: PASS)"
 
 [[test]]
 name = "T2C0-IRQDET-M"
 decides = "VSB:474-489, SBG:1030-1076, CT2290"
 runner = "probewav"
-env = "PROBE_WAV=1 PROBE_CDROM=fixtures/synth/out/T1B.CUE PROBE_RUN='CD:!C:\\MSCDEX.EXE /D:OAKCD001 /L:G > C:\\OUT\\CD.TXT,T2:T2.EXE IRQDET MIX'"
+env = "PROBE_WAV=1 PROBE_CDROM=fixtures/synth/out/T1B.CUE PROBE_RUN='CD:!C:\\MSCDEX.EXE /D:OAKCD001 /L:G > C:\\OUT\\CD.TXT,T2:T2.EXE IRQDET MIX C0'"
 groups = ["t2xc0"]
 fixed = { mode = "base", vmodel = "sb16" }
 repeat = 10
 secs = 120
-note = "mixed (T1A track 2 playing, both peaks in the capture): the IRQ detection sequence: F2h, the interrupt on the configured line only, 82h bit 0, acknowledged at 2xEh (A3, C0: the client validated on 86Box's own card before C2)"
-todo = "A3: T2.EXE not written yet (the row before the program, r3.5)"
+note = "mixed: T1A track 2 (1000 Hz; C0: T1B's) plays from TICK MIX; 18 ticks later, at TICK DET, the IRQ detection sequence (DSP reset, F2h: the interrupt on the configured line only, 82h bit 0, acknowledged at 2xEh, as T2X-IRQDET); the CD on 27 ticks more, stopped at TICK OFF. The capture (the A3 audio oracle): the 1 kHz present through DET, no gap of 20 ms or more from MIX to OFF (thresholds.toml [gaps], Michael 25 Oct 2026 question 9), quiet after OFF. IRQDET plays no tone of its own, so one peak is due, not two (A3, C0: the client validated on 86Box's own card before C2; dev run t2dev-im0: PASS)"
 
 [[test]]
 name = "T2X-SC8"
@@ -3173,6 +3171,16 @@ groups = ["t2l4"]
 fixed = { build = "pinC2", vmodel = "sb16" }
 secs = 120
 note = "planted: T2.EXE VOLUME MIX with the word L4 sets M1's master to 29, not 27 (4 dB down, not 8); tonecheck's M1 level checks for both tones must FAIL (A3, L4 for the mixed level checks)"
+
+[[test]]
+name = "T2L4-IRQDET-M"
+decides = "silent: a planted fault (L4): the check it is planted for must fail"
+runner = "probewav"
+env = "PROBE_WAV=1 PROBE_EXTRA='fixtures/synth/out/T1AP.BIN|T1\\T1AP.BIN;fixtures/synth/out/T1AP.CUE|T1\\T1AP.CUE' PROBE_RUN='CD:!C:\\SHSUCDX.COM /D:UCDD0001 /L:G > C:\\OUT\\CD.TXT,M:!C:\\UCDD\\UCDD.EXE -mount C:\\T1\\T1AP.CUE > C:\\OUT\\M.TXT,T2:T2.EXE IRQDET MIX'"
+groups = ["t2l4"]
+fixed = { build = "pinC2", vmodel = "sb16" }
+secs = 120
+note = "planted: T2.EXE IRQDET MIX on T1AP (track 2 at 440 Hz) on the pinned C2; tonecheck's 1000 Hz check through DET must FAIL (A3, L4 for IRQDET-M's capture)"
 
 [[test]]
 name = "SBT16-legacy"
