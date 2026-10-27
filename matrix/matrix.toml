@@ -2130,27 +2130,25 @@ note = "where the first block interrupt comes after an 8237 master clear and the
 
 [[test]]
 name = "T2X-DMAMASK"
-decides = "8237:492-517"
+decides = "8237:421-427, 8237:493-495, 8237:225-230, SBG:1590-1591, SBG:1652-1668, silent: the 2.00 ms window (DMAMCR's: the CT2290 FIFO of 16 samples 0.73 ms at 22050 Hz; one output period at 32 frames under uCDD 0.73 ms; 0.5 ms for the count read and the polling)"
 runner = "probewav"
 env = "PROBE_WAV=1 PROBE_RUN='T2:T2.EXE DMAMASK'"
 groups = ["t2x"]
 fixed = { build = "pinC2", vmodel = "sb16" }
 repeat = 10
 secs = 120
-note = "mask-all and clear-mask during playback: the transfer pauses while masked and goes on after (A3, C2)"
-todo = "A3: T2.EXE not written yet (the row before the program, r3.5)"
+note = "an 8237 mask during auto-init playback (8-bit at 22050 Hz, 8 KB of the 2 kHz tone in 4 KB blocks; DMAMC's): MP playing 27 ticks; then, half a block into the next block, Write All Mask Register Bits (port 0Fh) and the count read once masked; MK 27 ticks masked: a mask bit 'can be set to disable the incoming DREQ' (8237:421-427), so no interrupt, the count unchanged across the hold, and quiet (SBG:1590-1591: the DSP's block interrupt only after its bytes); the count read again and Clear Mask Register (port 0Eh, 8237:493-495); the first interrupt within 2.00 ms of the interrupted block's remainder at 22050 bytes a second (DMAMCR's window); MU 27 ticks playing (7 or 8 interrupts, within 2); DAh. tonecheck: the tone in MP and MU, quiet in MK. The notes' DMAMASK row (23 Oct 2026) is its symptom (A3, C2; dev run t2dev-mk2b: FAIL, the count 17DEh then 1B86h across the hold, the first interrupt 365 us after the unmask against 133832 us due; tonecheck PASS)"
 
 [[test]]
 name = "T2C0-DMAMASK"
-decides = "8237:492-517"
+decides = "8237:421-427, 8237:493-495, 8237:225-230, SBG:1590-1591, SBG:1652-1668, silent: the 2.00 ms window (DMAMCR's: the CT2290 FIFO of 16 samples 0.73 ms at 22050 Hz; one output period at 32 frames under uCDD 0.73 ms; 0.5 ms for the count read and the polling)"
 runner = "probewav"
-env = "PROBE_WAV=1 PROBE_RUN='T2:T2.EXE DMAMASK'"
+env = "PROBE_WAV=1 PROBE_RUN='T2:T2.EXE DMAMASK C0'"
 groups = ["t2xc0"]
 fixed = { mode = "base", vmodel = "sb16" }
 repeat = 10
 secs = 120
-note = "mask-all and clear-mask during playback: the transfer pauses while masked and goes on after (A3, C0: the client validated on 86Box's own card before C2)"
-todo = "A3: T2.EXE not written yet (the row before the program, r3.5)"
+note = "an 8237 mask during auto-init playback (8-bit at 22050 Hz, 8 KB of the 2 kHz tone in 4 KB blocks; DMAMC's): MP playing 27 ticks; then, half a block into the next block, Write All Mask Register Bits (port 0Fh) and the count read once masked; MK 27 ticks masked: a mask bit 'can be set to disable the incoming DREQ' (8237:421-427), so no interrupt, the count unchanged across the hold, and quiet (SBG:1590-1591: the DSP's block interrupt only after its bytes); the count read again and Clear Mask Register (port 0Eh, 8237:493-495); the first interrupt within 2.00 ms of the interrupted block's remainder at 22050 bytes a second (DMAMCR's window); MU 27 ticks playing (7 or 8 interrupts, within 2); DAh. tonecheck: the tone in MP and MU, quiet in MK. The notes' DMAMASK row (23 Oct 2026) is its symptom (A3, C0: the client validated on 86Box's own card before C2; dev run t2dev-mk0b: PASS, the count 17F1h across the hold, the first interrupt 92201 us after the unmask against 92244 us due)"
 
 [[test]]
 name = "T2X-DMAREAD"
@@ -3206,6 +3204,26 @@ groups = ["t2l4"]
 fixed = { mode = "base", vmodel = "sb16" }
 secs = 120
 note = "planted: T2.EXE DMAMCR with the word L4 sends 48h and 1Ch again at the set-up, so the DSP's block starts afresh and its interrupt comes a whole block (185.8 ms) after it, not the remainder (about 92 ms); T2.EXE's remainder check must FAIL (A3, L4 for DMAMCR; on 86Box's own card, where the check passes: under C2 the pinned build fails it already)"
+
+[[test]]
+name = "T2L4-DMAMASK"
+decides = "silent: a planted fault (L4): the check it is planted for must fail"
+runner = "probewav"
+env = "PROBE_WAV=1 PROBE_RUN='T2:T2.EXE DMAMASK C0 L4'"
+groups = ["t2l4"]
+fixed = { mode = "base", vmodel = "sb16" }
+secs = 120
+note = "planted: T2.EXE DMAMASK with the word L4 leaves the mask out, so the channel plays on through MK; T2.EXE's hold checks (no interrupt, the count unchanged) and tonecheck's MK quiet must FAIL (A3, L4 for DMAMASK; on 86Box's own card, where the checks pass: under C2 the pinned build fails T2.EXE's already; dev run t2dev-mk0l4: 8 interrupts, the count moved, MK -18.7 dBFS)"
+
+[[test]]
+name = "T2L4-DMAMASK-T"
+decides = "silent: a planted fault (L4): the check it is planted for must fail"
+runner = "probewav"
+env = "PROBE_WAV=1 PROBE_RUN='T2:T2.EXE DMAMASK C0 L4T'"
+groups = ["t2l4"]
+fixed = { mode = "base", vmodel = "sb16" }
+secs = 120
+note = "planted: T2.EXE DMAMASK with the word L4T sends 48h and 1Ch again at the unmask, so the DSP's block starts afresh and its interrupt comes a whole block (185.8 ms) after it, not the remainder; T2.EXE's remainder check must FAIL, the hold and tonecheck still pass (A3, L4 for DMAMASK's timing; on 86Box's own card; dev run t2dev-mk0l4t: 185762 us against 92244 us)"
 
 [[test]]
 name = "T2L4-VOLUME"
