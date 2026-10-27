@@ -1460,6 +1460,17 @@ Closed (Michael, 27 Oct 2026): a missed refill cannot move the closing beep; onl
   CPU is decided at A5 from the calibration set's fill rate at 233; if
   games fill, A6 runs at the MMX 166 for the whole sweep, recorded once, no
   CPU axis.
+- Under C2 an idle is no idle (Michael, 28 Oct 2026, question 29): a
+  HLT under uCDD wakes on its period interrupt, 1378 times a second at 32
+  frames, so a game that idles in HLT costs the host what a spinning one
+  does on this bench. Seen in T2X-DMAREAD (plan 6fc1a31d's first takes):
+  bursts of port reads with one HLT between them ran nearly flat out on C2
+  (18176 readings, 18624 with no HLT at all) and broke 4 captures in 14,
+  every underrun in the reading with 86Box's thread at 90 % or more; on
+  C0, where the HLT waits for the next real interrupt, none in 10. The
+  case now idles to the next BIOS tick (a HLT that returns at once is not
+  a wait). A5's fill-rate measurement expects it: the calibration set's
+  games under C2 fill as busy loops would, whether they spin or halt.
 
 ### TOL2: "within 2" in the interrupt counts of CLIGAP, PICHOLD and DMAMC (a bench tolerance; written 27 Oct 2026)
 
