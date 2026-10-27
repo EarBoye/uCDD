@@ -2196,27 +2196,25 @@ note = "mixed: DMAREAD's reading (the 8-bit channel's address and count during a
 
 [[test]]
 name = "T2X-DMADEM"
-decides = "8237:248-258"
+decides = "8237:248-258, 8237:485-517, SBG:1300-1306, SBG:1590-1591"
 runner = "probewav"
 env = "PROBE_WAV=1 PROBE_RUN='T2:T2.EXE DMADEM'"
 groups = ["t2x"]
 fixed = { build = "pinC2", vmodel = "sb16" }
 repeat = 10
 secs = 120
-note = "the output channel in demand mode instead of single mode: the transfer as the bare card's (A3, C2)"
-todo = "A3: T2.EXE not written yet (the row before the program, r3.5)"
+note = "the output channel in demand mode instead of single mode: DMAMC's auto-init playback (8-bit at 22050 Hz, 8 KB of the 2 kHz tone, 4 KB blocks) with the channel's mode 18h + channel (demand, auto-init, read) in place of 58h, 27 ticks from TICK DM, DAh, quiet. Demand mode transfers until TC, EOP or DREQ goes inactive and resumes on DREQ (8237:248-258), so the card's DREQ paces it and the transfer is the bare card's. Judged in T2.TXT: 7 or 8 interrupts (one a block, SBG:1590-1591; DMAMC's); tonecheck: the tone in DM, no gap of 20 ms or more (four laps of the buffer in the window, so a reload that fails shows) (A3, C2; dev run t2dev-dm2: PASS, 7 interrupts)"
 
 [[test]]
 name = "T2C0-DMADEM"
-decides = "8237:248-258"
+decides = "8237:248-258, 8237:485-517, SBG:1300-1306, SBG:1590-1591"
 runner = "probewav"
-env = "PROBE_WAV=1 PROBE_RUN='T2:T2.EXE DMADEM'"
+env = "PROBE_WAV=1 PROBE_RUN='T2:T2.EXE DMADEM C0'"
 groups = ["t2xc0"]
 fixed = { mode = "base", vmodel = "sb16" }
 repeat = 10
 secs = 120
-note = "the output channel in demand mode instead of single mode: the transfer as the bare card's (A3, C0: the client validated on 86Box's own card before C2)"
-todo = "A3: T2.EXE not written yet (the row before the program, r3.5)"
+note = "the output channel in demand mode instead of single mode: DMAMC's auto-init playback (8-bit at 22050 Hz, 8 KB of the 2 kHz tone, 4 KB blocks) with the channel's mode 18h + channel (demand, auto-init, read) in place of 58h, 27 ticks from TICK DM, DAh, quiet. Demand mode transfers until TC, EOP or DREQ goes inactive and resumes on DREQ (8237:248-258), so the card's DREQ paces it and the transfer is the bare card's. Judged in T2.TXT: 7 or 8 interrupts (one a block, SBG:1590-1591; DMAMC's); tonecheck: the tone in DM, no gap of 20 ms or more (four laps of the buffer in the window, so a reload that fails shows) (A3, C0: the client validated on 86Box's own card before C2; dev run t2dev-dm0: PASS, 7 interrupts)"
 
 [[test]]
 name = "T2X-PICWORD"
@@ -3240,6 +3238,16 @@ groups = ["t2l4"]
 fixed = { build = "pinC2", vmodel = "sb16" }
 secs = 120
 note = "planted: T2.EXE DMAREAD MIX on T1AP (track 2 at 440 Hz) on the pinned C2; tonecheck's 1000 Hz presence check must FAIL (A3, L4 for DMAREAD-M's capture, as T2L4-ADPCM4-M)"
+
+[[test]]
+name = "T2L4-DMADEM"
+decides = "silent: a planted fault (L4): the check it is planted for must fail"
+runner = "probewav"
+env = "PROBE_WAV=1 PROBE_RUN='T2:T2.EXE DMADEM C0 L4'"
+groups = ["t2l4"]
+fixed = { mode = "base", vmodel = "sb16" }
+secs = 120
+note = "planted: T2.EXE DMADEM with the word L4 sets mode 08h (demand, no auto-init), so the channel stops at its first terminal count; T2.EXE's interrupt count and tonecheck's DM tone check must FAIL (A3, L4 for DMADEM; on 86Box's own card; dev run t2dev-dm0l4: 2 interrupts, the tone absent; its gap check reads none, C0 holding DC after a stop, the gap check's known blind spot)"
 
 [[test]]
 name = "T2L4-VOLUME"
