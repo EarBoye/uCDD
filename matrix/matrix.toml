@@ -1716,27 +1716,25 @@ note = "SB16 16-bit single-cycle (B0h, the 4.xx procedure) in S16AI's twelve for
 
 [[test]]
 name = "T2X-S16SC-M"
-decides = "VSB:285-324, SBG:3837-3872"
+decides = "SBG:2038-2098, SBG:1280-1283, SBG:3837-3872, SBG:1029-1056, SBG:1188-1199, SBG:1229-1236, VSB:285-348, 82C206:1407-1440, 82C206:1660-1720"
 runner = "probewav"
 env = "PROBE_WAV=1 PROBE_EXTRA='fixtures/synth/out/T1A.BIN|T1\\T1A.BIN;fixtures/synth/out/T1A.CUE|T1\\T1A.CUE' PROBE_RUN='CD:!C:\\SHSUCDX.COM /D:UCDD0001 /L:G > C:\\OUT\\CD.TXT,M:!C:\\UCDD\\UCDD.EXE -mount C:\\T1\\T1A.CUE > C:\\OUT\\M.TXT,T2:T2.EXE S16SC MIX'"
 groups = ["t2x"]
 fixed = { build = "pinC2", vmodel = "sb16" }
 repeat = 10
 secs = 120
-note = "mixed (T1A track 2 playing, both peaks in the capture): SB16 single-cycle (B0h): the same twelve formats (A3, C2)"
-todo = "A3: T2.EXE not written yet (the row before the program, r3.5)"
+note = "mixed: S16SC's twelve formats (B0h 16-bit single-cycle, each block half the 0.2 s buffer, sent again at each block's interrupt for 27 ticks; judged in T2.TXT as T2X-S16SC) while T1A track 2 (1000 Hz; C0: T1B's) plays from TICK MIX, 18 ticks before MS22, to TICK OFF 480 ticks later (one play: the steps take about 444 ticks, the track 546). The capture: each format the card's tone (stereo: left) and the 1 kHz present (the peak over the floor and the level above -60 dBFS), the tone's third harmonic 20 dB down or more and no drop of 20 ms or more in its band; in stereo the right quiet in the tone's band; the 1 kHz without a drop from MIX+0.3 s to MIX+26.1 s; quiet after OFF; each step's windows end at its TICK DONE (too short to judge under 1 s); the tone due at 2003.0 Hz at 22050 and 44100 Hz and 1892.2 Hz at 48000 (VSB:290-304) (A3, C2; dev run t2dev-scm2: PASS)"
 
 [[test]]
 name = "T2C0-S16SC-M"
-decides = "VSB:285-324, SBG:3837-3872"
+decides = "SBG:2038-2098, SBG:1280-1283, SBG:3837-3872, SBG:1029-1056, SBG:1188-1199, SBG:1229-1236, EMUSRC, 82C206:1407-1440, 82C206:1660-1720"
 runner = "probewav"
-env = "PROBE_WAV=1 PROBE_CDROM=fixtures/synth/out/T1B.CUE PROBE_RUN='CD:!C:\\MSCDEX.EXE /D:OAKCD001 /L:G > C:\\OUT\\CD.TXT,T2:T2.EXE S16SC MIX'"
+env = "PROBE_WAV=1 PROBE_CDROM=fixtures/synth/out/T1B.CUE PROBE_RUN='CD:!C:\\MSCDEX.EXE /D:OAKCD001 /L:G > C:\\OUT\\CD.TXT,T2:T2.EXE S16SC MIX C0'"
 groups = ["t2xc0"]
 fixed = { mode = "base", vmodel = "sb16" }
 repeat = 10
 secs = 120
-note = "mixed (T1A track 2 playing, both peaks in the capture): SB16 single-cycle (B0h): the same twelve formats (A3, C0: the client validated on 86Box's own card before C2)"
-todo = "A3: T2.EXE not written yet (the row before the program, r3.5)"
+note = "mixed: S16SC's twelve formats (B0h 16-bit single-cycle, each block half the 0.2 s buffer, sent again at each block's interrupt for 27 ticks; judged in T2.TXT as T2X-S16SC) while T1A track 2 (1000 Hz; C0: T1B's) plays from TICK MIX, 18 ticks before MS22, to TICK OFF 480 ticks later (one play: the steps take about 444 ticks, the track 546). The capture: each format the card's tone (stereo: left) and the 1 kHz present (the peak over the floor and the level above -60 dBFS), the tone's third harmonic 20 dB down or more and no drop of 20 ms or more in its band; in stereo the right quiet in the tone's band; the 1 kHz without a drop from MIX+0.3 s to MIX+26.1 s; quiet after OFF; each step's windows end at its TICK DONE (too short to judge under 1 s); 86Box's own SB16 plays 41h's rate as written (EMUSRC: src/sound/snd_sb_dsp.c at 6311adc, sb_exec_command, case 0x41), the tone due at 2000 Hz (A3, C0: the client validated on 86Box's own card before C2; dev run t2dev-scm0: PASS)"
 
 [[test]]
 name = "T2X-S16ODD1"
@@ -3247,6 +3245,16 @@ groups = ["t2l4"]
 fixed = { build = "pinC2", vmodel = "sb16" }
 secs = 120
 note = "planted: T2.EXE S16AIH with the mode byte's sign bit the other way and the stereo tone right (the word L4, as T2L4-S16AI); SS44 must FAIL tonecheck's left-tone, third-harmonic and right-silence checks (A3, L4 for S16AIH's capture on the pinned C2)"
+
+[[test]]
+name = "T2L4-S16SC-M"
+decides = "silent: a planted fault (L4): the check it is planted for must fail"
+runner = "probewav"
+env = "PROBE_WAV=1 PROBE_EXTRA='fixtures/synth/out/T1AP.BIN|T1\\T1AP.BIN;fixtures/synth/out/T1AP.CUE|T1\\T1AP.CUE' PROBE_RUN='CD:!C:\\SHSUCDX.COM /D:UCDD0001 /L:G > C:\\OUT\\CD.TXT,M:!C:\\UCDD\\UCDD.EXE -mount C:\\T1\\T1AP.CUE > C:\\OUT\\M.TXT,T2:T2.EXE S16SC MIX'"
+groups = ["t2l4"]
+fixed = { build = "pinC2", vmodel = "sb16" }
+secs = 120
+note = "planted: T2.EXE S16SC MIX on T1AP (track 2 at 440 Hz) on the pinned C2; tonecheck's 1000 Hz presence checks in every format must FAIL (A3, L4 for S16SC-M's capture; a drop check finds no drop in an absent tone, as b7f66041 showed)"
 
 [[test]]
 name = "SBT16-legacy"
