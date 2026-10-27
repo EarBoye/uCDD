@@ -1413,20 +1413,18 @@ groups = ["t2x"]
 fixed = { build = "pinC2", vmodel = "sb16" }
 repeat = 10
 secs = 120
-note = "master (30h, 31h) and voice (32h, 33h) volume stepped while a 2 kHz tone plays: each step's level in the capture against the register (A3, C2)"
-todo = "A3: T2.EXE not written yet (the row before the program, r3.5)"
+note = "master (30h, 31h) and voice (32h, 33h) stepped while the 2 kHz tone plays (8-bit auto-init at 22050 Hz, 4 KB blocks): nine phases of 27 ticks, V0 to V4 the voice 31, 27, 23, 19, 15 with the master 31, M1 to M4 the master 27, 23, 19, 15 with the voice 31; '5 bits per channel, giving 32 levels. 0 to 31 => -62 dB to 0 dB, in 2 dB steps' (SBG:2681-2689), bits 7:3 (VSB 9.4): each phase's level against V0's, 8, 16, 24, 32 dB down, within 1.0 dB (thresholds.toml volume.step_tol_db: half a step, mine); each register read back as written (the CT2290 keeps its own bits, VSB 9.4); the registers put back after (A3, C2; dev run t2dev-vol2: PASS, every step within 0.2 dB)"
 
 [[test]]
 name = "T2C0-VOLUME"
 decides = "VSB:548-587, SBG:2598-2700"
 runner = "probewav"
-env = "PROBE_WAV=1 PROBE_RUN='T2:T2.EXE VOLUME'"
+env = "PROBE_WAV=1 PROBE_RUN='T2:T2.EXE VOLUME C0'"
 groups = ["t2xc0"]
 fixed = { mode = "base", vmodel = "sb16" }
 repeat = 10
 secs = 120
-note = "master (30h, 31h) and voice (32h, 33h) volume stepped while a 2 kHz tone plays: each step's level in the capture against the register (A3, C0: the client validated on 86Box's own card before C2)"
-todo = "A3: T2.EXE not written yet (the row before the program, r3.5)"
+note = "master (30h, 31h) and voice (32h, 33h) stepped while the 2 kHz tone plays (8-bit auto-init at 22050 Hz, 4 KB blocks): nine phases of 27 ticks, V0 to V4 the voice 31, 27, 23, 19, 15 with the master 31, M1 to M4 the master 27, 23, 19, 15 with the voice 31; '5 bits per channel, giving 32 levels. 0 to 31 => -62 dB to 0 dB, in 2 dB steps' (SBG:2681-2689), bits 7:3 (VSB 9.4): each phase's level against V0's, 8, 16, 24, 32 dB down, within 1.0 dB (thresholds.toml volume.step_tol_db: half a step, mine); each register read back as written (the CT2290 keeps its own bits, VSB 9.4); the registers put back after (A3, C0: the client validated on 86Box's own card before C2; dev run t2dev-vol0: PASS, within 0.1 dB)"
 
 [[test]]
 name = "T2X-VOLUME-M"
@@ -3157,6 +3155,16 @@ groups = ["t2l4"]
 fixed = { mode = "base", vmodel = "sb16" }
 secs = 120
 note = "planted: T2.EXE DMAMCR with the word L4 sends 48h and 1Ch again at the set-up, so the DSP's block starts afresh and its interrupt comes a whole block (185.8 ms) after it, not the remainder (about 92 ms); T2.EXE's remainder check must FAIL (A3, L4 for DMAMCR; on 86Box's own card, where the check passes: under C2 the pinned build fails it already)"
+
+[[test]]
+name = "T2L4-VOLUME"
+decides = "silent: a planted fault (L4): the check it is planted for must fail"
+runner = "probewav"
+env = "PROBE_WAV=1 PROBE_RUN='T2:T2.EXE VOLUME L4'"
+groups = ["t2l4"]
+fixed = { build = "pinC2", vmodel = "sb16" }
+secs = 120
+note = "planted: T2.EXE VOLUME with the word L4 sets V1's voice to 29, not 27 (4 dB down, not 8); tonecheck's V1 level check must FAIL (A3, L4 for VOLUME's level check)"
 
 [[test]]
 name = "SBT16-legacy"
