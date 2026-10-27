@@ -150,7 +150,7 @@ l4boot = "$UCDD_TREE/l4_boot_32$UCDD_SUFFIX"
 probe_parallel = 7
 # Groups only --group brings in: runs on the PC are Michael's evenings; the
 # Project A lists (below, before the tests) run when their gate asks.
-optional_groups = ["pc", "t0", "t1", "t2x", "t2xc0", "sweep", "pinned", "t0l4", "t1l4", "t1c0", "t2l4"]
+optional_groups = ["pc", "t0", "t1", "t2x", "t2xc0", "sweep", "pinned", "t0l4", "t1l4", "t1c0", "t2l4", "cmp"]
 
 # How each runner is started, from the bench directory. $UCDD_FIXTEST is the
 # bench's fixtest.py and $UCDD_KIT its kit folder (the caller sets both, as it
@@ -3255,6 +3255,28 @@ groups = ["t2l4"]
 fixed = { build = "pinC2", vmodel = "sb16" }
 secs = 120
 note = "planted: T2.EXE S16SC MIX on T1AP (track 2 at 440 Hz) on the pinned C2; tonecheck's 1000 Hz presence checks in every format must FAIL (A3, L4 for S16SC-M's capture; a drop check finds no drop in an absent tone, as b7f66041 showed)"
+
+[[test]]
+name = "T2X-S16AI-M-HALT"
+decides = "silent: a named comparison, not evidence (Michael, 27 Oct 2026, from rules-bot): the spinning and the halting test program alternated on the same case, the underruns and the emulation thread laid against the wait kinds by runs/underruns.py; underruns on spinning only with the thread at the ceiling close RECSTALL into 86FILL (otherwise both stay open)"
+runner = "probewav"
+env = "PROBE_WAV=1 PROBE_EXTRA='fixtures/synth/out/T1A.BIN|T1\\T1A.BIN;fixtures/synth/out/T1A.CUE|T1\\T1A.CUE' PROBE_RUN='CD:!C:\\SHSUCDX.COM /D:UCDD0001 /L:G > C:\\OUT\\CD.TXT,M:!C:\\UCDD\\UCDD.EXE -mount C:\\T1\\T1A.CUE > C:\\OUT\\M.TXT,T2:T2.EXE S16AI MIX'"
+groups = ["cmp"]
+fixed = { build = "pinC2", vmodel = "sb16" }
+repeat = 10
+secs = 120
+note = "a named comparison: T2X-S16AI-M's case on the pinned C2 with the halting test program (wait_mark halts between ticks, from bench 50c3a63); the case's verdicts are T2X-S16AI-M's (CAND-10), not judged here; what is read is cpu.txt and alrec.txt"
+
+[[test]]
+name = "T2X-S16AI-M-SPIN"
+decides = "silent: a named comparison, not evidence (Michael, 27 Oct 2026, from rules-bot): the spinning and the halting test program alternated on the same case, the underruns and the emulation thread laid against the wait kinds by runs/underruns.py; underruns on spinning only with the thread at the ceiling close RECSTALL into 86FILL (otherwise both stay open)"
+runner = "probewav"
+env = "PROBE_WAV=1 PROBE_EXTRA='fixtures/synth/out/T1A.BIN|T1\\T1A.BIN;fixtures/synth/out/T1A.CUE|T1\\T1A.CUE' PROBE_RUN='CD:!C:\\SHSUCDX.COM /D:UCDD0001 /L:G > C:\\OUT\\CD.TXT,M:!C:\\UCDD\\UCDD.EXE -mount C:\\T1\\T1A.CUE > C:\\OUT\\M.TXT,T2:T2.EXE S16AI MIX SPIN'"
+groups = ["cmp"]
+fixed = { build = "pinC2", vmodel = "sb16" }
+repeat = 10
+secs = 120
+note = "a named comparison: T2X-S16AI-M's case on the pinned C2 with the word SPIN: wait_mark spins on INT 1Ah between ticks, as T2.EXE did before 27 Oct 2026; the case's verdicts are T2X-S16AI-M's (CAND-10), not judged here; what is read is cpu.txt and alrec.txt"
 
 [[test]]
 name = "SBT16-legacy"
