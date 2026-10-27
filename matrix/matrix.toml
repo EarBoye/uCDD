@@ -1992,27 +1992,25 @@ note = "a named comparison, not evidence (Michael, 26 Oct 2026, question 17): T2
 
 [[test]]
 name = "T2X-DAC-M"
-decides = "VSB:180-184, SBG:3250-3266"
+decides = "SBG:3250-3261, SBG:1260-1273, SBG:1188-1199, SBG:983-1000, VSB:182, VSB:285-348"
 runner = "probewav"
-env = "PROBE_WAV=1 PROBE_EXTRA='fixtures/synth/out/T1A.BIN|T1\\T1A.BIN;fixtures/synth/out/T1A.CUE|T1\\T1A.CUE' PROBE_RUN='CD:!C:\\SHSUCDX.COM /D:UCDD0001 /L:G > C:\\OUT\\CD.TXT,M:!C:\\UCDD\\UCDD.EXE -mount C:\\T1\\T1A.CUE > C:\\OUT\\M.TXT,T2:T2.EXE DAC MIX'"
+env = "PROBE_WAV=1 PROBE_EXTRA='fixtures/synth/out/T1A.BIN|T1\\T1A.BIN;fixtures/synth/out/T1A.CUE|T1\\T1A.CUE' PROBE_RUN='CD:!C:\\SHSUCDX.COM /D:UCDD0001 /L:G > C:\\OUT\\CD.TXT,M:!C:\\UCDD\\UCDD.EXE -mount C:\\T1\\T1A.CUE > C:\\OUT\\M.TXT,T2:T2.EXE DAC 8000 MIX'"
 groups = ["t2x"]
 fixed = { build = "pinC2", vmodel = "sb16" }
 repeat = 10
 secs = 120
-note = "mixed (T1A track 2 playing, both peaks in the capture): direct DAC (10h) at 8 kHz paced by the PIT: the tone in the capture (A3, C2)"
-todo = "A3: T2.EXE not written yet (the row before the program, r3.5)"
+note = "mixed: DAC's direct 8-bit output (10h) from IRQ 0 at 8000 Hz asked (PIT divisor 149, 8007.9 Hz, the tone a quarter of it, 2002.0 Hz) for 2.0 s, judged in T2.TXT as T2X-DAC (every byte sent, none given up), while T1A track 2 (1000 Hz; C0: T1B's) plays from TICK MIX, 18 ticks before the DAC's start, to TICK OFF 80 ticks later (one play). The capture: the DAC's tone present in its band (the band's peak the neighbourhood's, within 1.5 % of 2002 Hz) and the 1 kHz present (the level above -60 dBFS), no drop of 20 ms or more in the tone's band; the 1 kHz without a drop from MIX+0.3 s to MIX+4.1 s; quiet after OFF; the closing beep's lateness the guest's when the host record is clean (question 21), ticks_lost shown (the bench's trap cost, AKIT's 8 kHz entry); (A3, C2; dev run t2dev-dacm2: FAIL, the tone at 1939 Hz, 3.1 % low, ticks_lost 58.6 ms over 117 ticks, the closing beep +0.060 s with no underrun; plain T2X-DAC on C2 plays 1983 Hz, ticks_lost 16.7 ms)"
 
 [[test]]
 name = "T2C0-DAC-M"
-decides = "VSB:180-184, SBG:3250-3266"
+decides = "SBG:3250-3261, SBG:1260-1273, SBG:1188-1199, SBG:983-1000, VSB:182, VSB:285-348"
 runner = "probewav"
-env = "PROBE_WAV=1 PROBE_CDROM=fixtures/synth/out/T1B.CUE PROBE_RUN='CD:!C:\\MSCDEX.EXE /D:OAKCD001 /L:G > C:\\OUT\\CD.TXT,T2:T2.EXE DAC MIX'"
+env = "PROBE_WAV=1 PROBE_CDROM=fixtures/synth/out/T1B.CUE PROBE_RUN='CD:!C:\\MSCDEX.EXE /D:OAKCD001 /L:G > C:\\OUT\\CD.TXT,T2:T2.EXE DAC 8000 MIX C0'"
 groups = ["t2xc0"]
 fixed = { mode = "base", vmodel = "sb16" }
 repeat = 10
 secs = 120
-note = "mixed (T1A track 2 playing, both peaks in the capture): direct DAC (10h) at 8 kHz paced by the PIT: the tone in the capture (A3, C0: the client validated on 86Box's own card before C2)"
-todo = "A3: T2.EXE not written yet (the row before the program, r3.5)"
+note = "mixed: DAC's direct 8-bit output (10h) from IRQ 0 at 8000 Hz asked (PIT divisor 149, 8007.9 Hz, the tone a quarter of it, 2002.0 Hz) for 2.0 s, judged in T2.TXT as T2X-DAC (every byte sent, none given up), while T1A track 2 (1000 Hz; C0: T1B's) plays from TICK MIX, 18 ticks before the DAC's start, to TICK OFF 80 ticks later (one play). The capture: the DAC's tone present in its band (the band's peak the neighbourhood's, within 1.5 % of 2002 Hz) and the 1 kHz present (the level above -60 dBFS), no drop of 20 ms or more in the tone's band; the 1 kHz without a drop from MIX+0.3 s to MIX+4.1 s; quiet after OFF; the closing beep's lateness the guest's when the host record is clean (question 21), ticks_lost shown (the bench's trap cost, AKIT's 8 kHz entry); (A3, C0: the client validated on 86Box's own card before C2; dev run t2dev-dacm0: PASS, ticks_lost -2.2 ms)"
 
 [[test]]
 name = "T2X-ADPCM4"
@@ -3356,6 +3354,16 @@ groups = ["t2l4"]
 fixed = { build = "pinC2", vmodel = "pro" }
 secs = 120
 note = "planted: T2.EXE PROST MIX on T1AP (track 2 at 440 Hz) on the pinned C2, where PROST's steps play (the tone on the wrong side, CAND-15); tonecheck's 1000 Hz presence checks in both steps must FAIL (A3, L4 for PROST-M's capture)"
+
+[[test]]
+name = "T2L4-DAC-M"
+decides = "silent: a planted fault (L4): the check it is planted for must fail"
+runner = "probewav"
+env = "PROBE_WAV=1 PROBE_EXTRA='fixtures/synth/out/T1AP.BIN|T1\\T1AP.BIN;fixtures/synth/out/T1AP.CUE|T1\\T1AP.CUE' PROBE_RUN='CD:!C:\\SHSUCDX.COM /D:UCDD0001 /L:G > C:\\OUT\\CD.TXT,M:!C:\\UCDD\\UCDD.EXE -mount C:\\T1\\T1AP.CUE > C:\\OUT\\M.TXT,T2:T2.EXE DAC 8000 MIX'"
+groups = ["t2l4"]
+fixed = { build = "pinC2", vmodel = "sb16" }
+secs = 120
+note = "planted: T2.EXE DAC 8000 MIX on T1AP (track 2 at 440 Hz) on the pinned C2; tonecheck's 1000 Hz presence check must FAIL (A3, L4 for DAC-M's capture)"
 
 [[test]]
 name = "SBT16-legacy"
