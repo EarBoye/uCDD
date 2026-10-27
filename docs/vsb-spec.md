@@ -626,11 +626,23 @@ No mixer at the card's base (section 2). [doc]
     86Box's own non-PnP SB16 does it (snd_sb.c at master, mixer case
     0x81; snd_sb_dsp.c, sb_16_dmanum 4) [emu-86], and Project A's
     hardware kit judges it (T2X-S16ON8 on the AKIT list).
-  - Where PnP boards differ: "Registers 80h and 81h are Read Only for PnP
-    boards", and applications should not write them, only system software
-    such as SBCONFIG.EXE (SBG:1140-1148). A PnP SB16 keeps its settings
-    whatever a program writes; the CT2290 is not one, and the virtual card
-    follows it.
+  - The PnP caveat struck (Michael, 27 Oct 2026, from rules-bot; the
+    mantra's rule 7).
+    - Old text (26 to 27 Oct 2026): "Where PnP boards differ: "Registers
+      80h and 81h are Read Only for PnP boards", and applications should
+      not write them, only system software such as SBCONFIG.EXE
+      (SBG:1140-1148). A PnP SB16 keeps its settings whatever a program
+      writes; the CT2290 is not one, and the virtual card follows it."
+    - New text: none beside this card. The CT2290 is a second-generation,
+      non-PnP SB16; on it 80h and 81h are written as any mixer register
+      is (SBG:1100-1106: "Reading and writing the register 80h and 81h are
+      accomplished in the same manner as reading and writing any of the
+      other mixer registers"; the DMA select and the 16-bit data on an
+      8-bit channel, SBG:1131-1138). The guide's PnP note (SBG:1148) is
+      another card's and is not this one's expected result.
+    - Why: the caveat was read as if it applied to the CT2290, twice
+      (question 15's record and the CAND-14 hold of 27 Oct 2026, both
+      withdrawn by Michael the same evening).
   - The pinned build (count-position 7994cd1) still reads both as its own
     settings and cannot move 16-bit data on an 8-bit channel: ISSUES.md
     CAND-14 (no fix under Project A's freeze).
