@@ -3611,6 +3611,28 @@ secs = 120
 note = "CAND-19's plain variant on the author's 0.9.5-a1 (build option a1; Michael, 27 Oct 2026: the plain SC8's fail on C2 is CAND-19's plain variant, and every candidate's C2 case runs on a1, 10 runs; a pass there: the fork line lacks the upstream fix, B's backlog; a fail: an upstream candidate). As T2X-SC8: 8-bit mono single-cycle (14h) at 11025 and 22050 Hz (41h), blocks of 256, 4096, 8191 and 65535 bytes chained at each block's interrupt, no CD; an interrupt a block, the 2 kHz tone with no gap of 20 ms or more and at its pitch (a1 plays 41h's rate as asked, 2000.0 Hz, inside the tolerance of the pin's 2003.0 Hz)"
 
 [[test]]
+name = "T2X-ADPCM4-A1"
+decides = "VSB:368-379, SBG:3637-3680, EMUSRC, VSB:292-304"
+runner = "probewav"
+env = "PROBE_WAV=1 PROBE_RUN='T2:T2.EXE ADPCM4'"
+groups = ["a1"]
+fixed = { build = "a1", vmodel = "sb16" }
+repeat = 10
+secs = 120
+note = "CAND-3's first a1 step (Michael, 28 Oct 2026, question 28: run ADPCM4 plain and mixed on a1 first; if the oracle sees the symptom, that is CAND-3's a1 line; if not, one attempt to %include a1's mixer unmodified in a Tier 0 harness, a needed patch makes it NOT-UNIT-TESTABLE for a1). Predicted before the run: ADPCM4 is a 4-bit block (75h), CAND-3 is the 2.6-bit decoder (76h/77h), so this oracle cannot see CAND-3's symptom whatever a1 does; it shows a1's 4-bit decoder and its timing only. As T2X-ADPCM4: 75h with its reference byte, adpcm4.py's block (EMUSRC decode_ADPCM_4_sample), A5h (SBG:1567), one interrupt 24 to 28 ticks after the command (SBG:1590-1591), none after; tonecheck as on the pin, its expected pitch the DSP 4.13's rate table (VSB:292-304, 1977.1 Hz); a1 plays rates as asked (41h's 22050 Hz at 2000.0 Hz, T2X-SC8-A1), so a 2000 Hz tone here is that difference, not the decoder's"
+
+[[test]]
+name = "T2X-ADPCM4-M-A1"
+decides = "VSB:368-379, SBG:3637-3680, EMUSRC, VSB:285-348, VSB:292-304"
+runner = "probewav"
+env = "PROBE_WAV=1 PROBE_EXTRA='fixtures/synth/out/T1A.BIN|T1\\T1A.BIN;fixtures/synth/out/T1A.CUE|T1\\T1A.CUE' PROBE_RUN='CD:!C:\\SHSUCDX.COM /D:UCDD0001 /L:G > C:\\OUT\\CD.TXT,M:!C:\\UCDD\\UCDD.EXE -mount C:\\T1\\T1A.CUE > C:\\OUT\\M.TXT,T2:T2.EXE ADPCM4 MIX'"
+groups = ["a1"]
+fixed = { build = "a1", vmodel = "sb16" }
+repeat = 10
+secs = 120
+note = "CAND-3's first a1 step (Michael, 28 Oct 2026, question 28: run ADPCM4 plain and mixed on a1 first; if the oracle sees the symptom, that is CAND-3's a1 line; if not, one attempt to %include a1's mixer unmodified in a Tier 0 harness, a needed patch makes it NOT-UNIT-TESTABLE for a1). Predicted before the run: ADPCM4 is a 4-bit block (75h), CAND-3 is the 2.6-bit decoder (76h/77h), so this oracle cannot see CAND-3's symptom whatever a1 does; it shows a1's 4-bit decoder and its timing only. As T2X-ADPCM4-M: the block while T1A track 2 (1000 Hz) plays from TICK MIX to TICK OFF (one play); the capture's checks as on the pin (VSB:285-348 for the mix), its expected pitch the DSP 4.13's rate table (VSB:292-304); a 2000 Hz tone is a1's rate as asked, not the decoder's"
+
+[[test]]
 name = "SBT16-legacy"
 decides = "SBG"
 runner = "perf"
