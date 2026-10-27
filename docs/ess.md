@@ -1,8 +1,10 @@
 # ESSOUT: native ESS AudioDrive output
 
-A change from the EarBoye/uCDD fork, on top of Beta 0.9.4-a6 (built, not run), offered for
-the author to take if he wants it. This file says what it does, why, and
-what was tested.
+Plays μCDD's output through an ESS AudioDrive chip in its own extended
+mode, 16-bit stereo at 44.1 kHz, where an ESS could only stand in as a Sound
+Blaster Pro before. Developed on the EarBoye/uCDD fork, where it has run on
+an ES1868 since 5 Oct 2026, and ported here onto Beta 0.9.4-a6. On this
+base it is built and not yet run.
 
 ## Why
 
