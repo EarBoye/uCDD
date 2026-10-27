@@ -24,7 +24,7 @@ mode = ["engaged", "base", "free"]
 midi = ["off", "gm"]
 # Which kind of program the test runs. A property of the test, not set by
 # the bench; the planner reports which clients a plan covers.
-client = ["real", "dos4gw", "dpmi16"]
+client = ["real", "dos4gw", "dpmi16", "pmodew"]   # pmodew: T2W bound with PMODE/W (Michael, 28 Oct 2026)
 build = ["p32", "p128", "p256", "verify32", "verify128", "ess32", "ess128", "pinC1", "pinC2", "l4boot", "a1"]
 
 # Kept here, left out of every plan until taken off this list: the ESS work
@@ -2738,6 +2738,54 @@ note = "the BIOS timer stopped and reprogrammed from protected mode while T1A tr
 todo = "A3: T2P.EXE, the raw DPMI client (NASM, INT 2Fh 1687h), not written yet; C0 has no DPMI host (JemmEx alone offers VCPI, not DPMI): which host validates the raw client is STATE question 11"
 
 [[test]]
+name = "T2X-W-HELLO"
+decides = "DPMI09:270-271, DPMI09:2082-2101, HOSTCD:48"
+runner = "probe"
+env = "PROBE_RUN='D:!SET DOS4GPATH=C:\\DOS4GW.EXE,T2W:T2D4GW.EXE HELLO'"
+groups = ["t2x"]
+fixed = { build = "pinC2", vmodel = "sb16" }
+client = "dos4gw"
+repeat = 10
+secs = 90
+note = "T2W's first case, the toolchain's proof as a row (Michael, 28 Oct 2026): the client's privilege level from its code selector and the DPMI version from INT 31h 0400h (AH major, AL minor, DPMI09:2082-2101), written by the program itself to C:\\OUT\\T2.TXT (the extender's own messages go to T2W.TXT). Under C2 the host is uCDD's: ring 3 (DPMI09:270-271, 'DPMI applications will always run at a non-privileged ring (usually ring 3)'; HOSTCD:48, the host's ring-3 client) and 0.90 (the pinned src/host/dpmi.asm .version, AX=90, BX=1); under C0 the extender is its own host over JemmEx's VCPI: CPL 0, 0.90. Beside T2X-VCPI (INT 67h DE00h refused while uCDD provides DPMI) (A3, C2, DOS/4GW: T2D4GW.EXE, DOS4GW.EXE beside it; dev run t2wdev-4g2: PASS, CS 022Fh, CPL 3, DPMI 0.90, flags 0001h)"
+
+[[test]]
+name = "T2C0-W-HELLO"
+decides = "DPMI09:270-271, DPMI09:2082-2101, HOSTCD:48"
+runner = "probe"
+env = "PROBE_RUN='D:!SET DOS4GPATH=C:\\DOS4GW.EXE,T2W:T2D4GW.EXE HELLO C0'"
+groups = ["t2xc0"]
+fixed = { mode = "base", vmodel = "sb16" }
+client = "dos4gw"
+repeat = 10
+secs = 90
+note = "T2W's first case, the toolchain's proof as a row (Michael, 28 Oct 2026): the client's privilege level from its code selector and the DPMI version from INT 31h 0400h (AH major, AL minor, DPMI09:2082-2101), written by the program itself to C:\\OUT\\T2.TXT (the extender's own messages go to T2W.TXT). Under C2 the host is uCDD's: ring 3 (DPMI09:270-271, 'DPMI applications will always run at a non-privileged ring (usually ring 3)'; HOSTCD:48, the host's ring-3 client) and 0.90 (the pinned src/host/dpmi.asm .version, AX=90, BX=1); under C0 the extender is its own host over JemmEx's VCPI: CPL 0, 0.90. Beside T2X-VCPI (INT 67h DE00h refused while uCDD provides DPMI) (A3, C0, DOS/4GW: the client validated on 86Box's own card before C2; dev run t2wdev-4g0: PASS, CS 0150h, CPL 0, DPMI 0.90)"
+
+[[test]]
+name = "T2X-WP-HELLO"
+decides = "DPMI09:270-271, DPMI09:2082-2101, HOSTCD:48"
+runner = "probe"
+env = "PROBE_RUN='T2W:T2PMW.EXE HELLO'"
+groups = ["t2x"]
+fixed = { build = "pinC2", vmodel = "sb16" }
+client = "pmodew"
+repeat = 10
+secs = 90
+note = "T2W's first case, the toolchain's proof as a row (Michael, 28 Oct 2026): the client's privilege level from its code selector and the DPMI version from INT 31h 0400h (AH major, AL minor, DPMI09:2082-2101), written by the program itself to C:\\OUT\\T2.TXT (the extender's own messages go to T2W.TXT). Under C2 the host is uCDD's: ring 3 (DPMI09:270-271, 'DPMI applications will always run at a non-privileged ring (usually ring 3)'; HOSTCD:48, the host's ring-3 client) and 0.90 (the pinned src/host/dpmi.asm .version, AX=90, BX=1); under C0 the extender is its own host over JemmEx's VCPI: CPL 0, 0.90. Beside T2X-VCPI (INT 67h DE00h refused while uCDD provides DPMI) (A3, C2, PMODE/W v1.33 bound: T2PMW.EXE; dev run t2wdev-pw2: PASS, CS 00C7h, CPL 3, DPMI 0.90, flags 0001h)"
+
+[[test]]
+name = "T2C0-WP-HELLO"
+decides = "DPMI09:270-271, DPMI09:2082-2101, HOSTCD:48"
+runner = "probe"
+env = "PROBE_RUN='T2W:T2PMW.EXE HELLO C0'"
+groups = ["t2xc0"]
+fixed = { mode = "base", vmodel = "sb16" }
+client = "pmodew"
+repeat = 10
+secs = 90
+note = "T2W's first case, the toolchain's proof as a row (Michael, 28 Oct 2026): the client's privilege level from its code selector and the DPMI version from INT 31h 0400h (AH major, AL minor, DPMI09:2082-2101), written by the program itself to C:\\OUT\\T2.TXT (the extender's own messages go to T2W.TXT). Under C2 the host is uCDD's: ring 3 (DPMI09:270-271, 'DPMI applications will always run at a non-privileged ring (usually ring 3)'; HOSTCD:48, the host's ring-3 client) and 0.90 (the pinned src/host/dpmi.asm .version, AX=90, BX=1); under C0 the extender is its own host over JemmEx's VCPI: CPL 0, 0.90. Beside T2X-VCPI (INT 67h DE00h refused while uCDD provides DPMI) (A3, C0, PMODE/W: the client validated on 86Box's own card before C2; dev run t2wdev-pw0: PASS, CS 0868h, CPL 0, DPMI 0.90, flags 0003h)"
+
+[[test]]
 name = "T2X-W-IRQDET"
 decides = "DPMI09:351-400, VSB:474-489, CT2290"
 runner = "probe"
@@ -3248,6 +3296,28 @@ groups = ["t2l4"]
 fixed = { mode = "base", vmodel = "sb16" }
 secs = 120
 note = "planted: T2.EXE DMADEM with the word L4 sets mode 08h (demand, no auto-init), so the channel stops at its first terminal count; T2.EXE's interrupt count and tonecheck's DM tone check must FAIL (A3, L4 for DMADEM; on 86Box's own card; dev run t2dev-dm0l4: 2 interrupts, the tone absent; its gap check reads none, C0 holding DC after a stop, the gap check's known blind spot)"
+
+[[test]]
+name = "T2L4-W-HELLO"
+decides = "silent: a planted fault (L4): the check it is planted for must fail"
+runner = "probe"
+env = "PROBE_RUN='D:!SET DOS4GPATH=C:\\DOS4GW.EXE,T2W:T2D4GW.EXE HELLO C0'"
+groups = ["t2l4"]
+fixed = { build = "pinC2", vmodel = "sb16" }
+client = "dos4gw"
+secs = 90
+note = "planted: T2D4GW.EXE HELLO with the word C0 under C2, so CPL 0 is due where uCDD's host runs it at ring 3; T2W's CPL check must FAIL (A3, L4 for the HELLO rows, DOS/4GW)"
+
+[[test]]
+name = "T2L4-WP-HELLO"
+decides = "silent: a planted fault (L4): the check it is planted for must fail"
+runner = "probe"
+env = "PROBE_RUN='T2W:T2PMW.EXE HELLO C0'"
+groups = ["t2l4"]
+fixed = { build = "pinC2", vmodel = "sb16" }
+client = "pmodew"
+secs = 90
+note = "planted: T2PMW.EXE HELLO with the word C0 under C2, so CPL 0 is due where uCDD's host runs it at ring 3; T2W's CPL check must FAIL (A3, L4 for the HELLO rows, PMODE/W)"
 
 [[test]]
 name = "T2L4-VOLUME"
