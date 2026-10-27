@@ -104,15 +104,31 @@ def build_head(sha):
     return results, headroom
 
 
+def upstream_only(sha):
+    """The commits reachable from sha that are the author's: reachable from any
+    [fixed] upstream_refs ref that exists. The method does not check his commits
+    (r3.6; before it, six of his commits on feature branches got refused for
+    lacking trailers he never agreed to write)."""
+    refs = [ref for ref in CONFIG.get('fixed', {}).get('upstream_refs', []) if checks.ref_exists(ref)]
+    if not refs:
+        return set()
+    ours = set(checks.git('rev-list', sha, *[f'^{ref}' for ref in refs]).stdout.split())
+    everything = set(checks.git('rev-list', sha).stdout.split())
+    return everything - ours
+
+
 def commits_after(sha, cutoff):
     if not cutoff:
         return []
     since = datetime.datetime.fromisoformat(cutoff)
     if since.tzinfo is None:
         since = since.replace(tzinfo=datetime.timezone.utc)
+    skip = upstream_only(sha)
     found = []
     for line in checks.git('log', '--format=%H %cI', sha).stdout.splitlines():
         commit, date = line.split()
+        if commit in skip:
+            continue
         if datetime.datetime.fromisoformat(date) >= since:
             found.append(commit)
     return list(reversed(found))

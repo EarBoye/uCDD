@@ -1,0 +1,56 @@
+#!/usr/bin/env python3
+"""The method worktree's pre-commit: a staged matrix.toml must pass plan.py check.
+
+Lesson L33 (27 Oct 2026): a row with a bad `decides` reached the method
+branch because `plan.py check | tail -1` hid the failing exit code from an
+`&&` chain. The guard against a check that can be hidden is a check that
+runs where no pipeline sits: here, on the staged file itself.
+
+Installed once, by Michael, in the method worktree only:
+
+    git -C METHOD config --worktree core.hooksPath METHOD/hooks/method
+
+The Claude Code guard refuses any change to core.hooksPath, so the agent
+can neither install nor remove this; that is the point. The hook does
+nothing unless matrix/matrix.toml is staged, so a method worktree whose
+commit touches only tools or tests is unaffected.
+"""
+
+from pathlib import Path
+import subprocess
+import sys
+import tempfile
+
+HERE = Path(__file__).resolve().parent
+PACKAGE = HERE.parent.parent
+PLAN = PACKAGE / 'matrix' / 'plan.py'
+MATRIX = 'matrix/matrix.toml'
+
+
+def git(*args, **kw):
+    return subprocess.run(['git', *args], capture_output=True, text=True, **kw)
+
+
+def main():
+    staged = git('diff', '--cached', '--name-only', '--', MATRIX).stdout.split()
+    if not staged:
+        return 0
+    content = git('show', f':{MATRIX}').stdout
+    with tempfile.NamedTemporaryFile('w', suffix='.toml', dir=PLAN.parent, delete=False) as tmp:
+        tmp.write(content)
+        path = Path(tmp.name)
+    try:
+        done = subprocess.run([sys.executable, str(PLAN), 'check', '--matrix', str(path)],
+                              capture_output=True, text=True)
+    finally:
+        path.unlink(missing_ok=True)
+    sys.stdout.write(done.stdout)
+    if done.returncode:
+        print('pre-commit: matrix.toml as staged fails plan.py check (above); nothing committed. '
+              'No pipeline can hide this one (L33).', file=sys.stderr)
+        return 1
+    return 0
+
+
+if __name__ == '__main__':
+    sys.exit(main())
