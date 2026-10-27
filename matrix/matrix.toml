@@ -3207,6 +3207,16 @@ secs = 120
 note = "planted: T2.EXE S16AI MIX on T1AP (track 2 at 440 Hz) on the pinned C2; tonecheck's 1000 Hz presence checks in every format must FAIL (A3, L4 for S16AI-M's capture; T2.EXE's own SS44, SU44, SS48 and SU48 fail with it, CAND-10). The band-drop checks find drops only in a tone that is there: plan b7f66041 failed every format's 1 kHz check and MIX's drop check (the 1 kHz band rising and falling with the card's steps), and MX2's found none (440 Hz throughout); presence is judged per format"
 
 [[test]]
+name = "T2L4-S16AI-SHRT"
+decides = "silent: a planted fault (L4): the check it is planted for must fail"
+runner = "probewav"
+env = "PROBE_WAV=1 PROBE_RUN='T2:T2.EXE S16AI SHRT C0'"
+groups = ["t2l4"]
+fixed = { mode = "base", vmodel = "sb16" }
+secs = 120
+note = "planted: T2.EXE S16AI with the word SHRT on 86Box's own card: MU22 stopped after its first interrupt, a step about 0.2 s long whose DONE comes 9 ticks after its tick and the next step 18 (Michael, 27 Oct 2026: check windows end at the step's logged end; a step shorter than the window reads too short to judge; a refused step's presence check must not see the next step). Expected: T2.TXT FAIL on MU22 (1 interrupt before D9h); tonecheck NOT_JUDGED, MU22's tone, purity and gaps checks too short to judge, every other step's checks as T2C0-S16AI (A3, L4 for tonecheck's step windows; dev run t2dev-shrt0: so)"
+
+[[test]]
 name = "SBT16-legacy"
 decides = "SBG"
 runner = "perf"
