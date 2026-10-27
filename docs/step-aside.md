@@ -1,8 +1,10 @@
 # STEPASIDE: the driver steps aside when it has nothing to add
 
-A change from the EarBoye/uCDD fork, on top of Beta 0.9.4-a6 (built, not run), offered for
-the author to take if he wants it. This file says what it does, why, and
-what was tested.
+When nothing mounted needs CD audio and the physical card can be the
+virtual one, the driver steps out of the way, and games run on the real
+card as fast as they do without μCDD. Developed on the EarBoye/uCDD fork
+and ported here onto Beta 0.9.4-a6. On this base it is built and not yet
+run.
 
 ## Why
 

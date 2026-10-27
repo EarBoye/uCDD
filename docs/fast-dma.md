@@ -1,9 +1,10 @@
 # FASTDMA: the chipset's own fast DMA timing on the output channel
 
-A change from the EarBoye/uCDD fork, on top of Beta 0.9.4-a6 (built, not run), offered for
-the author to take if he wants it. This file says what it does, why, and
-what was tested. The chipset table and its sources are in
-`docs/platform-dma.md`.
+Runs the output channel with the chipset's documented fast ISA DMA timing,
+which cuts the stream's cost to the machine: on a PIIX3, memory copy loss
+falls from 9 to 0.7 percent at the half rate. Developed on the EarBoye/uCDD
+fork and ported here onto Beta 0.9.4-a6. On this base it is built and not
+yet run. The chipset table and its sources are in `docs/platform-dma.md`.
 
 This branch builds on two others, which it contains: `feature/disk-irq`
 (its PCI scan finds the chipset) and `feature/step-aside` (its engage and

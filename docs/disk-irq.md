@@ -1,8 +1,10 @@
 # DISKIRQ: disk controller IRQs go straight to DOS
 
-A change from the EarBoye/uCDD fork, on top of Beta 0.9.4-a6 (built, not run), offered for
-the author to take if he wants it. This file says what it does, why, and
-what was tested.
+Stops DOS/4GW games freezing at their banner on PCs whose disk controller
+is a PCI card, by sending the disk IRQs straight to their real-mode
+handlers. Developed on the EarBoye/uCDD fork, where it has been the driver
+on our test PC since 19 Oct 2026, and ported here onto Beta 0.9.4-a6. On
+this base it is built and not yet run.
 
 ## The fault
 
