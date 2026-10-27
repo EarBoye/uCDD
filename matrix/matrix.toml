@@ -1828,29 +1828,51 @@ todo = "A3: the control is DOSBox-X at T6, not 86Box's own card (86ODDSC); the C
 
 [[test]]
 name = "T2X-S16ON8"
-decides = "VSB:570-603, SBG:1136-1138, SBG:1140-1148, SBG:3837-3872, SBG:2108-2172, SBG:4020-4030, SBG:1029-1056, 8237:485-517"
+decides = "VSB:570-603, SBG:1100-1106, SBG:1131-1138, SBG:3837-3872, SBG:2108-2172, SBG:4020-4030, SBG:1029-1056, 8237:485-517"
 runner = "probewav"
 env = "PROBE_WAV=1 PROBE_RUN='T2:T2.EXE S16ON8'"
 groups = ["t2x"]
 fixed = { build = "pinC2", vmodel = "sb16" }
 repeat = 10
 secs = 120
-note = "16-bit samples through the 8-bit DMA channel: mixer 81h written with the 8-bit channel's bit alone (02h for D1), read back, then S16AI's four formats at 22050 Hz (MS22, MU22, SS22, SU22: 0.2 s buffers of a 2 kHz tone, stereo left only, blocks of half) on channel 1 (byte counts, mode 59h), each stopped with D9h, and 81h restored. Expected, the CT2290's (vsb-spec 9.4, VSB:570-603: 81h is written on that card, HWPROBE 19 Oct 2026, F12; 16-bit data on the 8-bit channel, SBG:1136-1138): 81h reads back 02h; each step two interrupts or more, exactly one after D9h, none after that; 82h 02h at the first interrupt, 00h after 2xFh; tonecheck as S16AI. PnP caveat: on a PnP SB16 80h and 81h are read only (SBG:1140-1148): the write is ignored there and the case does not apply; the virtual card presents the CT2290, not a PnP board (A3, C2; the pinned build fails it by reading: CAND-14; the CT2290 in AKIT judges)"
+note = "16-bit samples through the 8-bit DMA channel: mixer 81h written with the 8-bit channel's bit alone (02h for D1), read back, then S16AI's four formats at 22050 Hz (MS22, MU22, SS22, SU22: 0.2 s buffers of a 2 kHz tone, stereo left only, blocks of half) on channel 1 (byte counts, mode 59h), each stopped with D9h, and 81h restored. Expected, the CT2290's (vsb-spec 9.4, VSB:570-603: 81h is written on that card, HWPROBE 19 Oct 2026, F12; 16-bit data on the 8-bit channel, SBG:1136-1138): 81h reads back 02h; each step two interrupts or more, exactly one after D9h, none after that; 82h 02h at the first interrupt, 00h after 2xFh; tonecheck as S16AI. the CT2290 is a non-PnP SB16, its 80h and 81h written as any mixer register (SBG:1100-1106; the PnP caveat that stood here, on SBG:1140-1148, struck 27 Oct 2026 by Michael's correction) (A3, C2; the pinned build fails it by reading: CAND-14; the CT2290 in AKIT judges)"
 
 [[test]]
 name = "T2C0-S16ON8"
-decides = "VSB:570-603, SBG:1136-1138, SBG:1140-1148, SBG:3837-3872, SBG:2108-2172, SBG:4020-4030, SBG:1029-1056, 8237:485-517"
+decides = "VSB:570-603, SBG:1100-1106, SBG:1131-1138, SBG:3837-3872, SBG:2108-2172, SBG:4020-4030, SBG:1029-1056, 8237:485-517"
 runner = "probewav"
 env = "PROBE_WAV=1 PROBE_RUN='T2:T2.EXE S16ON8 C0'"
 groups = ["t2xc0"]
 fixed = { mode = "base", vmodel = "sb16" }
 repeat = 10
 secs = 120
-note = "16-bit samples through the 8-bit DMA channel: mixer 81h written with the 8-bit channel's bit alone (02h for D1), read back, then S16AI's four formats at 22050 Hz (MS22, MU22, SS22, SU22: 0.2 s buffers of a 2 kHz tone, stereo left only, blocks of half) on channel 1 (byte counts, mode 59h), each stopped with D9h, and 81h restored. Expected, the CT2290's (vsb-spec 9.4, VSB:570-603: 81h is written on that card, HWPROBE 19 Oct 2026, F12; 16-bit data on the 8-bit channel, SBG:1136-1138): 81h reads back 02h; each step two interrupts or more, exactly one after D9h, none after that; 82h 02h at the first interrupt, 00h after 2xFh; tonecheck as S16AI. PnP caveat: on a PnP SB16 80h and 81h are read only (SBG:1140-1148): the write is ignored there and the case does not apply; the virtual card presents the CT2290, not a PnP board (A3, C0: 86Box's own non-PnP SB16 takes the 81h write, snd_sb.c case 0x81; the client validated before C2)"
+note = "16-bit samples through the 8-bit DMA channel: mixer 81h written with the 8-bit channel's bit alone (02h for D1), read back, then S16AI's four formats at 22050 Hz (MS22, MU22, SS22, SU22: 0.2 s buffers of a 2 kHz tone, stereo left only, blocks of half) on channel 1 (byte counts, mode 59h), each stopped with D9h, and 81h restored. Expected, the CT2290's (vsb-spec 9.4, VSB:570-603: 81h is written on that card, HWPROBE 19 Oct 2026, F12; 16-bit data on the 8-bit channel, SBG:1136-1138): 81h reads back 02h; each step two interrupts or more, exactly one after D9h, none after that; 82h 02h at the first interrupt, 00h after 2xFh; tonecheck as S16AI. the CT2290 is a non-PnP SB16, its 80h and 81h written as any mixer register (SBG:1100-1106; the PnP caveat that stood here, on SBG:1140-1148, struck 27 Oct 2026 by Michael's correction) (A3, C0: 86Box's own non-PnP SB16 takes the 81h write, snd_sb.c case 0x81; the client validated before C2)"
+
+[[test]]
+name = "T2X-S16ON8-NOH"
+decides = "SBG:1100-1106, SBG:1131-1138, VSB:570-603, SBG:3837-3872, SBG:2108-2172, SBG:4020-4030, SBG:1029-1056, 8237:485-517"
+runner = "probewav"
+env = "PROBE_WAV=1 PROBE_RUN='B:!SET BLASTER=A220 I5 D1 T6,T2:T2.EXE S16ON8'"
+groups = ["t2x"]
+fixed = { build = "pinC2", vmodel = "sb16" }
+repeat = 10
+secs = 120
+note = "the author's 0.9.3d shape (Michael, 27 Oct 2026: the second row): a game set up with no high DMA channel, BLASTER without H (A220 I5 D1 T6, set before T2.EXE), writes 81h with the 8-bit channel's bit alone and plays 16-bit on channel 1: T2.EXE S16ON8's four formats at 22050 Hz. UCDD.CFG keeps its virtual high channel 5: the config holds only 5, 6 or 7, in the pinned build and in the author's line (setup/config_file.asm, dma16_values), and his 0.9.3d path is switched by the game's 81h write (merge-a6 sb_mixer.asm:31-39). Expected as T2X-S16ON8 (the guide's register map and DMA select, SBG:1100-1106 and 1131-1138; the CT2290 a non-PnP SB16): 81h reads back 02h; each step two interrupts or more, one after D9h, none after it; 82h 02h at the first interrupt, 00h after 2xFh; tonecheck as S16AI (L4: T2L4-S16ON8, the same case and checks) (A3, C2; dev run t2dev-noh2: FAIL as T2X-S16ON8, 81h reads 22h, every step refused: CAND-14)"
+
+[[test]]
+name = "T2C0-S16ON8-NOH"
+decides = "SBG:1100-1106, SBG:1131-1138, VSB:570-603, SBG:3837-3872, SBG:2108-2172, SBG:4020-4030, SBG:1029-1056, 8237:485-517"
+runner = "probewav"
+env = "PROBE_WAV=1 PROBE_RUN='B:!SET BLASTER=A220 I5 D1 T6,T2:T2.EXE S16ON8 C0'"
+groups = ["t2xc0"]
+fixed = { mode = "base", vmodel = "sb16" }
+repeat = 10
+secs = 120
+note = "the author's 0.9.3d shape (Michael, 27 Oct 2026: the second row): a game set up with no high DMA channel, BLASTER without H (A220 I5 D1 T6, set before T2.EXE), writes 81h with the 8-bit channel's bit alone and plays 16-bit on channel 1: T2.EXE S16ON8's four formats at 22050 Hz. UCDD.CFG keeps its virtual high channel 5: the config holds only 5, 6 or 7, in the pinned build and in the author's line (setup/config_file.asm, dma16_values), and his 0.9.3d path is switched by the game's 81h write (merge-a6 sb_mixer.asm:31-39). Expected as T2X-S16ON8 (the guide's register map and DMA select, SBG:1100-1106 and 1131-1138; the CT2290 a non-PnP SB16): 81h reads back 02h; each step two interrupts or more, one after D9h, none after it; 82h 02h at the first interrupt, 00h after 2xFh; tonecheck as S16AI (L4: T2L4-S16ON8, the same case and checks) (A3, C0: the client validated on 86Box's own card before C2; dev run t2dev-noh0: PASS)"
 
 [[test]]
 name = "T2X-S16ON8-M"
-decides = "VSB:570-603, SBG:1136-1138, SBG:1140-1148, SBG:3837-3872, SBG:2108-2172, SBG:4020-4030, SBG:1029-1056, 8237:485-517, VSB:285-348"
+decides = "VSB:570-603, SBG:1100-1106, SBG:1131-1138, SBG:3837-3872, SBG:2108-2172, SBG:4020-4030, SBG:1029-1056, 8237:485-517, VSB:285-348"
 runner = "probewav"
 env = "PROBE_WAV=1 PROBE_EXTRA='fixtures/synth/out/T1A.BIN|T1\\T1A.BIN;fixtures/synth/out/T1A.CUE|T1\\T1A.CUE' PROBE_RUN='CD:!C:\\SHSUCDX.COM /D:UCDD0001 /L:G > C:\\OUT\\CD.TXT,M:!C:\\UCDD\\UCDD.EXE -mount C:\\T1\\T1A.CUE > C:\\OUT\\M.TXT,T2:T2.EXE S16ON8 MIX'"
 groups = ["t2x"]
@@ -1861,7 +1883,7 @@ note = "mixed: S16ON8's four formats at 22050 Hz through the 8-bit channel (81h 
 
 [[test]]
 name = "T2C0-S16ON8-M"
-decides = "VSB:570-603, SBG:1136-1138, SBG:1140-1148, SBG:3837-3872, SBG:2108-2172, SBG:4020-4030, SBG:1029-1056, 8237:485-517, VSB:285-348"
+decides = "VSB:570-603, SBG:1100-1106, SBG:1131-1138, SBG:3837-3872, SBG:2108-2172, SBG:4020-4030, SBG:1029-1056, 8237:485-517, VSB:285-348"
 runner = "probewav"
 env = "PROBE_WAV=1 PROBE_CDROM=fixtures/synth/out/T1B.CUE PROBE_RUN='CD:!C:\\MSCDEX.EXE /D:OAKCD001 /L:G > C:\\OUT\\CD.TXT,T2:T2.EXE S16ON8 MIX C0'"
 groups = ["t2xc0"]
