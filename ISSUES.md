@@ -1098,7 +1098,9 @@ Trace: by reading, in part, at the pinned SHA: the master clear marks the owned 
 Hypothesis (labelled, not tested; mine): the virtual DSP's bytes into its block are not kept across the clear, or the position is re-based to the new address so that a block end is crossed at the first output period; keeping the DSP's count of the block where the transfer stopped, and counting on from the set-up, would give the remainder.
 0.9.5-a1: adds a starved state (sb_starved) cleared at each unmask of the owned channel (a1 c5531c8 against a6 8252786, src/audio/trap.asm); its release notes name no master clear change; whether it moves the first interrupt after a set-up is not read further (a1 read-only). Related: DMAMASK (a single mask, open). Evidence: emulator (plan 22599c44), dynarec off. Hardware: UNCONFIRMED (AKIT: the CT2290 confirms; 86Box can be as wrong here as uCDD, Michael 27 Oct 2026).
 
-### FLAKY-1 Tier 2, T2X-PICHOLD and T2X-PICHOLD12: 2 of 10 and 1 of 10 runs under C2 lose 20 ms of the 2 kHz tone in silence of the recorder stall's shape (filed 27 Oct 2026, open)
+Line to check at the re-pin (Michael, 27 Oct 2026): the author's 0.9.5-a1, RELEASE-NOTES.md:15-17 (c5531c8): "Start a single-cycle block that is longer than the DMA count, as a real card does"; "Send the interrupt of a single-cycle block that starts a stream after one output period, not during the start command" (an interrupt one output period after a start is what C2 gave here, though this is auto-init after a set-up); "At the exact start of a new lap of an auto-initialize transfer, report the DMA count of the end of the previous lap". Whether a1 keeps the DSP's block across a master clear: DMAMCR on the re-pinned build says.
+
+### FLAKY-1 Tier 2, T2X-PICHOLD and T2X-PICHOLD12: 2 of 10 and 1 of 10 runs under C2 lose 20 ms of the 2 kHz tone in silence of the recorder stall's shape (filed 27 Oct 2026, closed the same day: recorder insertions)
 
 Pinned: count-position 7994cd1 (C2 hash UCDD.EXE 03d92066, UCDDHOST.BIN 447ace33). Bin: FLAKY (Michael, 27 Oct 2026; project_a.md has no FLAKY bin: as on 25 Oct, "9/10 is FAIL with the count" carries it), until the host's record can be cited.
 Rule (Michael, 27 Oct 2026): the capture's shape cannot tell a recorder stall from a refill uCDD missed inside one 86Box buffer period, so under C2 a "stall" is a FAIL unless the recorder's host-side record shows a stall at the same instant. Runs before 27 Oct have no such record; the record exists from bench 565a960 (runs/rec/alrec.c, alrec.txt beside each sound.wav).
@@ -1114,6 +1116,8 @@ The six C2 recorder faults since the Logo=0 bench (runs/stalls.py; case, run, po
 None fell while a line was held.
 Related (Michael, 26 Oct 2026): the author's 0.9.4-a2, RELEASE-NOTES.md:158, the 128-frame period against a mouse driver holding its interrupt for several milliseconds; 0.9.4-a6, RELEASE-NOTES.md:98, three output periods in the ring against a mouse driver keeping interrupts off longer than one period (the F2 ring row: the sound during a hold is not fixed by the ring).
 Next: PICHOLD and PICHOLD12 under C2 again with alrec.txt (bench 565a960 on), so a stall can be read against the host's record. Evidence: emulator (plans 7211c04e, 7ae43d11), dynarec off. Hardware: UNCONFIRMED.
+
+Closed (Michael, 27 Oct 2026): a missed refill cannot move the closing beep; only samples the recorder adds can. A silence whose buffer-rounded length equals the closing beep's lateness is the recorder's insertion (HARNESS_ERROR); with the beep on time it is the guest's (FAIL). All six faults above are insertions: -403, -405, 7211c04e-006, -009 and 7ae43d11-003 each 18.67 ms of silence, 20 ms in whole buffers, the closing beep +0.020 s; ccb39d17-410 +0.060 s with no silence (buffers played again). tonecheck now (bench c426591): `HARNESS_ERROR PICHOLD tonecheck: recorder insertion, not judged: silence at 24.52 s, 18.67 ms (20 ms in whole buffers), the closing beep +0.020 s late (no host record)`. So PICHOLD (7211c04e) and PICHOLD12 (7ae43d11) return to their clean re-run results, 10 of 10 each, the re-takes standing; the C2 rule this row was filed under is retired (STALLCAL, rule 7 form).
 
 ### 86CUE2048: 86Box misreads a CUE sheet whose data track has 2048-byte sectors (an emulator limitation; found 25 Oct 2026)
 
@@ -1440,6 +1444,60 @@ Next: PICHOLD and PICHOLD12 under C2 again with alrec.txt (bench 565a960 on), so
   host_startup_s 1.0. test_rec.py judges each stall plant four ways: 25 of
   25. PICHOLD's three C2 stalls are FAILs by it (FLAKY-1).
 
+- Corrected 27 Oct 2026 (Michael), in the rule 7 form, both kept:
+  - Old text (26 Oct, and the morning of 27 Oct): the recorder's stall is
+    told by the silence's shape (exact zeros on a straight fade or ending
+    on the 20 ms buffer edge), HARNESS_ERROR; then, as the stalls fell on
+    C2 only (C0 0 of 90 against C2 6 of 135: the rate's asymmetry,
+    inferred, not measured), the shape under C2 a FAIL unless the host's
+    record showed the recorder stalled at that instant.
+  - New text (27 Oct 2026): whose silence is measured by the closing beep.
+    A missed refill cannot move the beep; only samples the recorder adds
+    can. An exact silence where sound is due whose length in whole
+    buffers equals the closing beep's lateness is the recorder's insertion
+    (HARNESS_ERROR); with the beep on time it is the guest's (FAIL by the
+    gap rule); C0 and C2 alike, old captures included; the host record
+    (alrec.txt) confirms from 27 Oct on. The shape rule is retired. The
+    measure: every one of the six faults had the beep late by its silence
+    in whole buffers (+0.020 s for 18.67 ms; -410 +0.060 s, no silence).
+    Bench c426591; thresholds.toml [stall] beep_tol_s 0.010 (the beep read
+    in 10 ms frames), insert_min_s 0.010; test_rec.py: insertions of one
+    and two buffers HARNESS_ERROR four ways, silence in place four shapes
+    FAIL on C0 and C2, 25 of 25 (against the shape rule's tonecheck 11).
+- The planted host stall (Michael, 27 Oct 2026; the bench's
+  runs/rec/hoststall.py, C0, T2.EXE SC8 C0, 18.3 s after the device
+  opened). SIGSTOP and SIGCONT: 25 ms nothing; 50 ms an underrun in the
+  record, nothing in the capture; 100 ms 38.67 ms of silence, the beep
+  +0.060 s; 200 ms 138.67 ms, +0.160 s. SIGSTOP freezes OpenAL's mixer too,
+  which a real stall does not, so the plant was also made inside 86Box
+  (alrec.c RIG_ALSTALL: the sound thread held while the mixer runs on): 25
+  ms nothing; 50 ms an underrun only; 70 ms no silence, the beep +0.020 s;
+  80 ms 18.67 ms, +0.040 s; 90 ms 38.67 ms, +0.040 s (tonecheck: recorder
+  insertion, the host record shows an underrun there); 100 ms 38.67 ms,
+  +0.060 s. So the +20 ms signature (the beep late by the silence in whole
+  buffers) holds for every real fault and for the 90 ms plant, but a
+  planted stall can also leave the beep one buffer later than its silence
+  (80 and 100 ms): the rule as written would call such a silence the
+  guest's (STATE question 20). The record logs the underrun 1 to 23 ms
+  after the silence ends in every plant: stall.host_after_s 0.040 (bench
+  07ef9be) replaces the 0.10 s window around the start, which a 140 ms
+  silence would have missed.
+- Old captures judged again under the rule (27 Oct 2026, every capture
+  with a tonecheck verdict, 552): three passes turned out insertions
+  (0cf7cb43-033 T1-PLAY5, ccb39d17-403 and -405 T1-PLAY23, each 18.67 ms
+  with the beep +0.020 s), kept as .ins1 and taken again: pass, pass,
+  pass; no FAIL changed. 70 more (ccb39d17-391 to -470 bar PLAY23) read as
+  unfinished because they predate T1.EXE's closing beep; plan 0cf7cb43
+  replaced them as the audio evidence on 25 Oct.
+- Still open (STATE RECSTALL): why 86Box's OpenAL source runs dry. The
+  record does not show it under C2 only: since bench 565a960, 3 of 10 C0
+  recordings and 3 of 14 C2 recordings with a record hold an underrun past
+  start-up, every source at once (86Box's whole sound thread behind);
+  under C0 they left the capture alone or added a buffer of sound (the
+  beep +0.020 s, no silence), while every insertion of silence so far is
+  under C2. Hypothesis (labelled, Michael's): single-step bursts in uCDD's
+  host slow 86Box's emulation; the C0 underruns say that cannot be all of
+  it. Same family as 86FILL; the A5 CPU decision covers both.
 ## The feature branches offered to the author (rows reconstructed 24 Oct 2026)
 
 These four issues were ported from the fork's line onto the author's
