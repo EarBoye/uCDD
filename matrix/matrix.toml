@@ -1435,20 +1435,18 @@ groups = ["t2x"]
 fixed = { build = "pinC2", vmodel = "sb16" }
 repeat = 10
 secs = 120
-note = "mixed (T1A track 2 playing, both peaks in the capture): master (30h, 31h) and voice (32h, 33h) volume stepped while a 2 kHz tone plays: each step's level in the capture against the register (A3, C2)"
-todo = "A3: T2.EXE not written yet (the row before the program, r3.5)"
+note = "mixed: VOLUME's nine phases (master and voice stepped, 2 dB a step, SBG:2681-2689, VSB 9.4) while T1A track 2 (1000 Hz; C0: T1B's) plays from TICK MIX, 18 ticks before V0, the CD register (36h, 37h) at 31; the guide's output mixing paths (SBG figure 4-4: the CD through CD volume and master, the card through voice and master): the 2 kHz falls 8, 16, 24, 32 dB through V1 to V4 and M1 to M4, the 1 kHz holds through V1 to V4 and falls with the master through M1 to M4, each within 1.0 dB of V0 (volume.step_tol_db); each source present and without a drop in its band in each phase; each register read back; 30h to 37h put back after (A3, C2; dev runs t2dev-vm2 a recorder event, t2dev-vm2b PASS within 0.7 dB)"
 
 [[test]]
 name = "T2C0-VOLUME-M"
 decides = "VSB:548-587, SBG:2598-2700"
 runner = "probewav"
-env = "PROBE_WAV=1 PROBE_CDROM=fixtures/synth/out/T1B.CUE PROBE_RUN='CD:!C:\\MSCDEX.EXE /D:OAKCD001 /L:G > C:\\OUT\\CD.TXT,T2:T2.EXE VOLUME MIX'"
+env = "PROBE_WAV=1 PROBE_CDROM=fixtures/synth/out/T1B.CUE PROBE_RUN='CD:!C:\\MSCDEX.EXE /D:OAKCD001 /L:G > C:\\OUT\\CD.TXT,T2:T2.EXE VOLUME MIX C0'"
 groups = ["t2xc0"]
 fixed = { mode = "base", vmodel = "sb16" }
 repeat = 10
 secs = 120
-note = "mixed (T1A track 2 playing, both peaks in the capture): master (30h, 31h) and voice (32h, 33h) volume stepped while a 2 kHz tone plays: each step's level in the capture against the register (A3, C0: the client validated on 86Box's own card before C2)"
-todo = "A3: T2.EXE not written yet (the row before the program, r3.5)"
+note = "mixed: VOLUME's nine phases (master and voice stepped, 2 dB a step, SBG:2681-2689, VSB 9.4) while T1A track 2 (1000 Hz; C0: T1B's) plays from TICK MIX, 18 ticks before V0, the CD register (36h, 37h) at 31; the guide's output mixing paths (SBG figure 4-4: the CD through CD volume and master, the card through voice and master): the 2 kHz falls 8, 16, 24, 32 dB through V1 to V4 and M1 to M4, the 1 kHz holds through V1 to V4 and falls with the master through M1 to M4, each within 1.0 dB of V0 (volume.step_tol_db); each source present and without a drop in its band in each phase; each register read back; 30h to 37h put back after (A3, C0: the client validated on 86Box's own card before C2; dev run t2dev-vm0: PASS within 0.1 dB)"
 
 [[test]]
 name = "T2X-IRQDET"
@@ -3165,6 +3163,16 @@ groups = ["t2l4"]
 fixed = { build = "pinC2", vmodel = "sb16" }
 secs = 120
 note = "planted: T2.EXE VOLUME with the word L4 sets V1's voice to 29, not 27 (4 dB down, not 8); tonecheck's V1 level check must FAIL (A3, L4 for VOLUME's level check)"
+
+[[test]]
+name = "T2L4-VOLUME-M"
+decides = "silent: a planted fault (L4): the check it is planted for must fail"
+runner = "probewav"
+env = "PROBE_WAV=1 PROBE_EXTRA='fixtures/synth/out/T1A.BIN|T1\\T1A.BIN;fixtures/synth/out/T1A.CUE|T1\\T1A.CUE' PROBE_RUN='CD:!C:\\SHSUCDX.COM /D:UCDD0001 /L:G > C:\\OUT\\CD.TXT,M:!C:\\UCDD\\UCDD.EXE -mount C:\\T1\\T1A.CUE > C:\\OUT\\M.TXT,T2:T2.EXE VOLUME MIX L4'"
+groups = ["t2l4"]
+fixed = { build = "pinC2", vmodel = "sb16" }
+secs = 120
+note = "planted: T2.EXE VOLUME MIX with the word L4 sets M1's master to 29, not 27 (4 dB down, not 8); tonecheck's M1 level checks for both tones must FAIL (A3, L4 for the mixed level checks)"
 
 [[test]]
 name = "SBT16-legacy"
