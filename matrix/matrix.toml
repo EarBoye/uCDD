@@ -25,7 +25,7 @@ midi = ["off", "gm"]
 # Which kind of program the test runs. A property of the test, not set by
 # the bench; the planner reports which clients a plan covers.
 client = ["real", "dos4gw", "dpmi16"]
-build = ["p32", "p128", "p256", "verify32", "verify128", "ess32", "ess128", "pinC1", "pinC2", "l4boot"]
+build = ["p32", "p128", "p256", "verify32", "verify128", "ess32", "ess128", "pinC1", "pinC2", "l4boot", "a1"]
 
 # Kept here, left out of every plan until taken off this list: the ESS work
 # is parked (20 Oct).
@@ -38,7 +38,7 @@ build = ["ess32", "ess128"]
 [opt_in]
 mode = ["base", "free"]
 # pinC1, pinC2: Project A's pinned build (A0); l4boot: its planted fault.
-build = ["verify32", "verify128", "pinC1", "pinC2", "l4boot"]
+build = ["verify32", "verify128", "pinC1", "pinC2", "l4boot", "a1"]
 
 # A run takes these unless its test or a varied axis sets them. The PC's
 # card: an SB16 (CT2290) at 220h, IRQ 5, DMA 1 and 5.
@@ -132,6 +132,11 @@ ess128 = "--resident-audio --no-refill-hint --audio-period-frames 128 --virtual-
 pinC2 = "--resident-audio --no-refill-hint --audio-period-frames 32"
 pinC1 = "--no-refill-hint --audio-period-frames 32"
 l4boot = "--resident-audio --no-refill-hint --audio-period-frames 32"
+# a1: the author's 0.9.5-a1 (fork main c5531c8, exported, scripts/build.py
+# untouched; the bench's fixtures/a1/MANIFEST.txt), the C2 audio build at 32
+# frames; his build.py has no --no-refill-hint (Michael, 27 Oct 2026: every
+# candidate row's C2 case run on a1 beside the pin).
+a1 = "--resident-audio --audio-period-frames 32"
 
 [build_dirs]
 p32 = "$UCDD_TREE/build_32$UCDD_SUFFIX"
@@ -144,13 +149,14 @@ ess128 = "$UCDD_TREE/build_128${UCDD_SUFFIX}_ess"
 pinC2 = "$UCDD_TREE/C2_32$UCDD_SUFFIX"
 pinC1 = "$UCDD_TREE/C1_32$UCDD_SUFFIX"
 l4boot = "$UCDD_TREE/l4_boot_32$UCDD_SUFFIX"
+a1 = "$UCDD_TREE/../a1/C2_32$UCDD_SUFFIX"
 
 [run]
 # Probes may share the machine; a recording never does (lesson L6).
 probe_parallel = 7
 # Groups only --group brings in: runs on the PC are Michael's evenings; the
 # Project A lists (below, before the tests) run when their gate asks.
-optional_groups = ["pc", "t0", "t1", "t2x", "t2xc0", "sweep", "pinned", "t0l4", "t1l4", "t1c0", "t2l4", "cmp"]
+optional_groups = ["pc", "t0", "t1", "t2x", "t2xc0", "sweep", "pinned", "t0l4", "t1l4", "t1c0", "t2l4", "cmp", "a1"]
 
 # How each runner is started, from the bench directory. $UCDD_FIXTEST is the
 # bench's fixtest.py and $UCDD_KIT its kit folder (the caller sets both, as it
@@ -3364,6 +3370,17 @@ groups = ["t2l4"]
 fixed = { build = "pinC2", vmodel = "sb16" }
 secs = 120
 note = "planted: T2.EXE DAC 8000 MIX on T1AP (track 2 at 440 Hz) on the pinned C2; tonecheck's 1000 Hz presence check must FAIL (A3, L4 for DAC-M's capture)"
+
+[[test]]
+name = "T2X-S16ON8-A1"
+decides = "VSB:570-603, SBG:1100-1106, SBG:1131-1138, SBG:3837-3872, SBG:2108-2172, SBG:4020-4030, SBG:1029-1056, 8237:485-517"
+runner = "probewav"
+env = "PROBE_WAV=1 PROBE_RUN='T2:T2.EXE S16ON8'"
+groups = ["a1"]
+fixed = { build = "a1", vmodel = "sb16" }
+repeat = 10
+secs = 120
+note = "CAND-14's C2 case on the author's 0.9.5-a1 (build option a1; Michael, 27 Oct 2026, rules-bot's fold: each candidate's C2 case on a1, 10 runs, beside the pin; a pass there: the fork line lacks the upstream fix, cited, to B's backlog; a fail: an upstream candidate). Expected as T2X-S16ON8. Dev run t2dev-a1on8: PASS, 81h reads back 02h, every format plays on channel 1 (the tone at 2000.0 Hz: a1 plays 41h's rate as asked, not the DSP 4.13's register)"
 
 [[test]]
 name = "SBT16-legacy"
