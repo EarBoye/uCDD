@@ -1949,7 +1949,7 @@ env = "PROBE_WAV=1 PROBE_RUN='T2:T2.EXE DAC 8000 C0'"
 groups = ["t2xc0"]
 fixed = { mode = "base", vmodel = "sb16" }
 secs = 120
-note = "a named comparison, not evidence (Michael, 26 Oct 2026, question 17): T2C0-DAC at 8000 Hz run once with 86Box's recompiler on (RIG_DYNAREC=1, recorded as dynarec on), to see whether the capture's padding is the interpreter's cost"
+note = "a named comparison, not evidence (Michael, 26 Oct 2026, question 17): T2C0-DAC at 8000 Hz run once with 86Box's recompiler on (the bench's recompiler switch on, recorded as dynarec on), to see whether the capture's padding is the interpreter's cost"
 
 [[test]]
 name = "T2X-DAC-M"
