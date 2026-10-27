@@ -3589,6 +3589,28 @@ secs = 120
 note = "CAND-19's C2 case on the author's 0.9.5-a1 (build option a1; Michael, 27 Oct 2026, rules-bot's fold: each candidate's C2 case on a1, 10 runs; a pass there: the fork line lacks the upstream fix, B's backlog; a fail: an upstream candidate). As T2X-SC8-M: mixed: SC8's eight steps (8-bit mono single-cycle 14h at 11025 and 22050 Hz, 41h; blocks of 256, 4096, 8191 and 65535 bytes chained at each block's interrupt; an interrupt a block, judged in T2.TXT as T2X-SC8) while T1A track 2 (1000 Hz; C0: T1B's) plays from TICK MIX, 18 ticks before S0, to TICK OFF 440 ticks after MIX; the capture: each step the 2 kHz and the 1 kHz present, the 2 kHz without a d"
 
 [[test]]
+name = "T2X-DAC-A1"
+decides = "SBG:3250-3261, SBG:1260-1273, SBG:1188-1199, SBG:983-1000, VSB:182"
+runner = "probewav"
+env = "PROBE_WAV=1 PROBE_RUN='T2:T2.EXE DAC 8000'"
+groups = ["a1"]
+fixed = { build = "a1", vmodel = "sb16" }
+repeat = 10
+secs = 120
+note = "CAND-18's plain variant on the author's 0.9.5-a1 (build option a1; Michael, 27 Oct 2026: the plain DAC's fail on C2 is CAND-18's plain variant, and every candidate's C2 case runs on a1, 10 runs; a pass there: the fork line lacks the upstream fix, B's backlog; a fail: an upstream candidate). As T2X-DAC: direct DAC (10h and one byte) from IRQ 0 at 8000 Hz asked (PIT divisor 149, 8007.9 Hz, the tone a quarter of it, 2002.0 Hz) for 2.0 s, no CD; judged in T2.TXT as T2X-DAC and the tone's pitch by tonecheck (thresholds.toml tone.freq_tolerance, PITCHCAL)"
+
+[[test]]
+name = "T2X-SC8-A1"
+decides = "VSB:319-324, SBG:1590-1591, SBG:3271-3278, SBG:3573-3580, 8237:485-517"
+runner = "probewav"
+env = "PROBE_WAV=1 PROBE_RUN='T2:T2.EXE SC8'"
+groups = ["a1"]
+fixed = { build = "a1", vmodel = "sb16" }
+repeat = 10
+secs = 120
+note = "CAND-19's plain variant on the author's 0.9.5-a1 (build option a1; Michael, 27 Oct 2026: the plain SC8's fail on C2 is CAND-19's plain variant, and every candidate's C2 case runs on a1, 10 runs; a pass there: the fork line lacks the upstream fix, B's backlog; a fail: an upstream candidate). As T2X-SC8: 8-bit mono single-cycle (14h) at 11025 and 22050 Hz (41h), blocks of 256, 4096, 8191 and 65535 bytes chained at each block's interrupt, no CD; an interrupt a block, the 2 kHz tone with no gap of 20 ms or more and at its pitch (a1 plays 41h's rate as asked, 2000.0 Hz, inside the tolerance of the pin's 2003.0 Hz)"
+
+[[test]]
 name = "SBT16-legacy"
 decides = "SBG"
 runner = "perf"
