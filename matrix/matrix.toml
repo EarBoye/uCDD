@@ -1523,20 +1523,18 @@ groups = ["t2x"]
 fixed = { build = "pinC2", vmodel = "sb16" }
 repeat = 10
 secs = 120
-note = "mixed (T1A track 2 playing, both peaks in the capture): 8-bit mono single-cycle (14h) at 11025 and 22050 Hz (41h), blocks of 256, 4096, 8191 and 65535 bytes chained at each block's interrupt, steps S0-S7: an interrupt a block and the 2 kHz tone with no gap of 20 ms or more (the page-crossing block is SC8PAGE's, question 13) (A3, C2)"
-todo = "A3: T2.EXE not written yet (the row before the program, r3.5)"
+note = "mixed: SC8's eight steps (8-bit mono single-cycle 14h at 11025 and 22050 Hz, 41h; blocks of 256, 4096, 8191 and 65535 bytes chained at each block's interrupt; an interrupt a block, judged in T2.TXT as T2X-SC8) while T1A track 2 (1000 Hz; C0: T1B's) plays from TICK MIX, 18 ticks before S0, to TICK OFF 440 ticks after MIX; the capture: each step the 2 kHz and the 1 kHz present, the 2 kHz without a drop of 20 ms or more in its band, the 1 kHz without one from MIX+0.3 s to MIX+24.1 s, quiet after OFF (the page-crossing block is SC8PAGE's, question 13) (A3, C2; dev run t2dev-s8m2: PASS)"
 
 [[test]]
 name = "T2C0-SC8-M"
 decides = "VSB:319-324, SBG:1590-1591, SBG:3271-3278, SBG:3573-3580, 8237:485-517"
 runner = "probewav"
-env = "PROBE_WAV=1 PROBE_CDROM=fixtures/synth/out/T1B.CUE PROBE_RUN='CD:!C:\\MSCDEX.EXE /D:OAKCD001 /L:G > C:\\OUT\\CD.TXT,T2:T2.EXE SC8 MIX'"
+env = "PROBE_WAV=1 PROBE_CDROM=fixtures/synth/out/T1B.CUE PROBE_RUN='CD:!C:\\MSCDEX.EXE /D:OAKCD001 /L:G > C:\\OUT\\CD.TXT,T2:T2.EXE SC8 MIX C0'"
 groups = ["t2xc0"]
 fixed = { mode = "base", vmodel = "sb16" }
 repeat = 10
 secs = 120
-note = "mixed (T1A track 2 playing, both peaks in the capture): 8-bit mono single-cycle (14h) at 11025 and 22050 Hz (41h), blocks of 256, 4096, 8191 and 65535 bytes chained at each block's interrupt, steps S0-S7: an interrupt a block and the 2 kHz tone with no gap of 20 ms or more (the page-crossing block is SC8PAGE's, question 13) (A3, C0: the client validated on 86Box's own card before C2)"
-todo = "A3: T2.EXE not written yet (the row before the program, r3.5)"
+note = "mixed: SC8's eight steps (8-bit mono single-cycle 14h at 11025 and 22050 Hz, 41h; blocks of 256, 4096, 8191 and 65535 bytes chained at each block's interrupt; an interrupt a block, judged in T2.TXT as T2X-SC8) while T1A track 2 (1000 Hz; C0: T1B's) plays from TICK MIX, 18 ticks before S0, to TICK OFF 440 ticks after MIX; the capture: each step the 2 kHz and the 1 kHz present, the 2 kHz without a drop of 20 ms or more in its band, the 1 kHz without one from MIX+0.3 s to MIX+24.1 s, quiet after OFF (the page-crossing block is SC8PAGE's, question 13) (A3, C0: the client validated on 86Box's own card before C2; dev run t2dev-s8m0: PASS)"
 
 
 [[test]]
@@ -3181,6 +3179,16 @@ groups = ["t2l4"]
 fixed = { build = "pinC2", vmodel = "sb16" }
 secs = 120
 note = "planted: T2.EXE IRQDET MIX on T1AP (track 2 at 440 Hz) on the pinned C2; tonecheck's 1000 Hz check through DET must FAIL (A3, L4 for IRQDET-M's capture)"
+
+[[test]]
+name = "T2L4-SC8-M"
+decides = "silent: a planted fault (L4): the check it is planted for must fail"
+runner = "probewav"
+env = "PROBE_WAV=1 PROBE_EXTRA='fixtures/synth/out/T1AP.BIN|T1\\T1AP.BIN;fixtures/synth/out/T1AP.CUE|T1\\T1AP.CUE' PROBE_RUN='CD:!C:\\SHSUCDX.COM /D:UCDD0001 /L:G > C:\\OUT\\CD.TXT,M:!C:\\UCDD\\UCDD.EXE -mount C:\\T1\\T1AP.CUE > C:\\OUT\\M.TXT,T2:T2.EXE SC8 MIX'"
+groups = ["t2l4"]
+fixed = { build = "pinC2", vmodel = "sb16" }
+secs = 120
+note = "planted: T2.EXE SC8 MIX on T1AP (track 2 at 440 Hz) on the pinned C2; tonecheck's 1000 Hz checks in every step must FAIL (A3, L4 for SC8-M's capture)"
 
 [[test]]
 name = "SBT16-legacy"
