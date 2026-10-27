@@ -1511,6 +1511,25 @@ Closed (Michael, 27 Oct 2026): a missed refill cannot move the closing beep; onl
   in 2c278c7c-005, corr-c0-1 and -5): not yet fit to count. Every capture
   judged again: 27 move to "not explained" (STATE question 21; none taken
   again yet).
+- The record outranks the capture (Michael, 27 Oct 2026, question 21;
+  bench eda4e08). With alrec.txt: an underrun where the checks judge is a
+  recorder event (HARNESS_ERROR), whether it put sound in or took the
+  guest's place; elsewhere it is noted; none makes the capture the guest's
+  and the closing beep's lateness a result. Without a record: the silence
+  and the beep's sum as before, the replay scan not used, "not explained"
+  kept; only runs that are current evidence for a FAIL or a candidate are
+  taken again, superseded runs never judged again. The replay scan is
+  dropped (it counted a tone's own repetition, and could not tell it from
+  86Box's replays within one capture). DAC under C2 judged: its record
+  clean, its lateness the guest's; ticks_lost from the TSC (the guest's
+  BIOS count behind real time) 16.7 to 17.4 ms over 77 ticks under C2,
+  -1.4 ms on C0: the bench's trap cost, shown, not judged; it feeds the
+  AKIT 8 kHz entry (EXPECTED_PERF if the PC loses ticks too). The current
+  evidence judged again: 20 moved; the five that were evidence for a FAIL
+  or a candidate taken again (0add08f0-008, -009, dc6405c7-005,
+  0cf7cb43-079, 22599c44-002): the same verdicts, each record with no
+  underrun where the checks judge; the 15 that were PASS evidence left as
+  recorded. test_rec.py 31 of 31.
 - The stall is the box's (Michael, 27 Oct 2026): host underruns at the same
   rate on C0 and C2 (since bench 565a960: C0 3 of 10, C2 3 of 14; the batch
   corr-*: C0 2 of 8, C2 1 of 8, DAC C2 0 of 2). The single-step hypothesis
