@@ -1489,18 +1489,45 @@ Closed (Michael, 27 Oct 2026): a missed refill cannot move the closing beep; onl
   pass; no FAIL changed. 70 more (ccb39d17-391 to -470 bar PLAY23) read as
   unfinished because they predate T1.EXE's closing beep; plan 0cf7cb43
   replaced them as the audio evidence on 25 Oct.
-- Still open (STATE RECSTALL): why 86Box's OpenAL source runs dry. The
-  record does not show it under C2 only: since bench 565a960, 3 of 10 C0
-  recordings and 3 of 14 C2 recordings with a record hold an underrun past
-  start-up, every source at once (86Box's whole sound thread behind);
-  under C0 they left the capture alone or added a buffer of sound (the
-  beep +0.020 s, no silence), while every insertion of silence so far is
-  under C2. Hypothesis (labelled, Michael's): single-step bursts in uCDD's
-  host slow 86Box's emulation; the C0 underruns say that cannot be all of
-  it. Same family as 86FILL; the A5 CPU decision covers both.
-## The feature branches offered to the author (rows reconstructed 24 Oct 2026)
+- The rule as a sum (Michael, 27 Oct 2026, question 20): the buffers the
+  recorder put in are the silences' in whole buffers (those no longer than
+  the lateness) plus the buffers 86Box played again (a copy of the buffer 4
+  back: 86Box's src/sound/openal.c queues 4 buffers a source and, finding
+  it stopped, plays them again); an insertion when the closing beep is late
+  by exactly that sum; silence where sound is due then HARNESS_ERROR;
+  copies alone inside the 50 ms limit: the verdict stands, noted with
+  their count; past the limit a broken capture; lateness not explained:
+  reported, not judged (bench d0bed03; test_rec.py 29 of 29).
+- Measured against it (27 Oct 2026). Replays: 22599c44-002 (C2), 9b053b5b-004
+  (C0) and 4de3c65b-006 (C2) each hold three copies of the buffers 4 back
+  at the record's underrun, the beep only 1 buffer late; 4de3c65b-005 (C2)
+  the same three with the beep on time: a replay mostly takes the guest's
+  place rather than adding to it, so the sum does not hold and these read
+  "not explained". DAC C2: all ten of d376fe5b and both new runs with a
+  record (corr-dac2-1, -2) +0.020 s, no underrun, no copy, the writer
+  steady: that lateness is not the recorder's; the guest's beep comes 20
+  ms late in DAC under C2 (C0 -0.000 s in all ten). The replay scan counts
+  the SC8 tone's own repetition on C0 as copies (14.2 to 15.0 s, the same
+  in 2c278c7c-005, corr-c0-1 and -5): not yet fit to count. Every capture
+  judged again: 27 move to "not explained" (STATE question 21; none taken
+  again yet).
+- The stall is the box's (Michael, 27 Oct 2026): host underruns at the same
+  rate on C0 and C2 (since bench 565a960: C0 3 of 10, C2 3 of 14; the batch
+  corr-*: C0 2 of 8, C2 1 of 8, DAC C2 0 of 2). The single-step hypothesis
+  is demoted to why C2 gets silence where C0 gets a repeat. Correlation
+  (bench 22da675, alrec.txt's writer lines, watch.txt): the nearest DONE
+  poll or screenshot 280 to 900 ms from each underrun (polls 2.6 ms on
+  average); OpenAL's wave writer kept writing every 20.2 to 20.3 ms through
+  each (longest gap in any run 21 to 28 ms); 86Box's main source last
+  queued 40 to 86 ms before: 86Box's sound thread fell behind. Nothing
+  aligned, so each run now logs the host's load and the agent's CPU seconds
+  at its start and end, and no build, test or git work runs while a plan
+  records (plan_run's recording.flag; the backups to wait on it through
+  runs/quiet.sh, the crontab change Michael's to apply). Same family as
+  86FILL; the A5 CPU decision covers both.
+## The feature branches (rows reconstructed 24 Oct 2026)
 
-These four issues were ported from the fork's line onto the author's
+These four changes were ported from the fork's line onto the author's
 0.9.4-a6 on 23 Oct 2026, one `feature/*` branch each, and committed with
 Issue trailers but no row. The rows below are reconstructed 24 Oct 2026
 from each commit's own message and HANDOFF ("four feature branches for the
