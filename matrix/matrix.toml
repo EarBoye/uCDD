@@ -3258,7 +3258,7 @@ note = "planted: T2.EXE S16SC MIX on T1AP (track 2 at 440 Hz) on the pinned C2; 
 
 [[test]]
 name = "T2X-S16AI-M-HALT"
-decides = "silent: a named comparison, not evidence (Michael, 27 Oct 2026, from rules-bot): the spinning and the halting test program alternated on the same case, the underruns and the emulation thread laid against the wait kinds by runs/underruns.py; underruns on spinning only with the thread at the ceiling close RECSTALL into 86FILL (otherwise both stay open)"
+decides = "silent: a named comparison and not evidence (Michael 27 Oct 2026 from rules-bot): the spinning and the halting test program alternated on one case with the underruns and the emulation thread laid against the wait kinds by runs/underruns.py; underruns on spinning only with the thread at the ceiling close RECSTALL into 86FILL (otherwise both stay open)"
 runner = "probewav"
 env = "PROBE_WAV=1 PROBE_EXTRA='fixtures/synth/out/T1A.BIN|T1\\T1A.BIN;fixtures/synth/out/T1A.CUE|T1\\T1A.CUE' PROBE_RUN='CD:!C:\\SHSUCDX.COM /D:UCDD0001 /L:G > C:\\OUT\\CD.TXT,M:!C:\\UCDD\\UCDD.EXE -mount C:\\T1\\T1A.CUE > C:\\OUT\\M.TXT,T2:T2.EXE S16AI MIX'"
 groups = ["cmp"]
@@ -3269,7 +3269,7 @@ note = "a named comparison: T2X-S16AI-M's case on the pinned C2 with the halting
 
 [[test]]
 name = "T2X-S16AI-M-SPIN"
-decides = "silent: a named comparison, not evidence (Michael, 27 Oct 2026, from rules-bot): the spinning and the halting test program alternated on the same case, the underruns and the emulation thread laid against the wait kinds by runs/underruns.py; underruns on spinning only with the thread at the ceiling close RECSTALL into 86FILL (otherwise both stay open)"
+decides = "silent: a named comparison and not evidence (Michael 27 Oct 2026 from rules-bot): the spinning and the halting test program alternated on one case with the underruns and the emulation thread laid against the wait kinds by runs/underruns.py; underruns on spinning only with the thread at the ceiling close RECSTALL into 86FILL (otherwise both stay open)"
 runner = "probewav"
 env = "PROBE_WAV=1 PROBE_EXTRA='fixtures/synth/out/T1A.BIN|T1\\T1A.BIN;fixtures/synth/out/T1A.CUE|T1\\T1A.CUE' PROBE_RUN='CD:!C:\\SHSUCDX.COM /D:UCDD0001 /L:G > C:\\OUT\\CD.TXT,M:!C:\\UCDD\\UCDD.EXE -mount C:\\T1\\T1A.CUE > C:\\OUT\\M.TXT,T2:T2.EXE S16AI MIX SPIN'"
 groups = ["cmp"]
