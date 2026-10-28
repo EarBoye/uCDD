@@ -1824,7 +1824,7 @@ fixed = { mode = "base", vmodel = "sb16" }
 repeat = 10
 secs = 120
 note = "SB16 16-bit stereo single-cycle (B0h) with an odd sample count, the same formats, rates and tone: blocks of 4409 samples from where the last one ended, the channel and B0h sent again at each interrupt for 27 ticks; DOSBox-X interrupts each block and keeps the odd sample for the next (the left and right stay paired); 86Box's own card reads a frame past the channel's count and gets no data: no interrupt (EMUSRC: DOSBox-X src/hardware/sblaster.cpp at 97ff66a, SB_INFO::GenerateDMASound (the odd last sample kept for the next transfer, remain_size); 86Box src/sound/snd_sb_dsp.c at 6311adc, sb_poll_o (two words a frame, the count down by 2: whole frames)). The emulators disagree: the C0 twin waits for DOSBox-X at T6 (question 14); under C2 the frames' pairing is uCDD's own (CAND-13) (A3, C0: the client validated on 86Box's own card before C2)"
-todo = "A3: the control is DOSBox-X at T6, not 86Box's own card (86ODDSC); the CT2290 in AKIT the judge (Michael, 26 Oct 2026, question 14)"
+todo = "A3: the control is DOSBox-X at T6, not 86Box's own card (86ODDSC); the CT2290 in AKIT the judge (Michael, 26 Oct 2026, question 14); held for T6 (Michael, 28 Oct 2026, question 35: T6 opens with DOSBox-X's port 61h bit 5 and channel 2 gating read from its source, the runner runs/dbx_test.py validated on SC8 C0 and an L4 plant, the wave capture wired and proven; nothing from DOSBox-X is evidence until then)"
 
 [[test]]
 name = "T2X-S16ODD-M"
@@ -1871,7 +1871,7 @@ fixed = { mode = "base", vmodel = "sb16" }
 repeat = 10
 secs = 120
 note = "mixed: S16ODD2's single-cycle stereo with an odd sample count (B0h, each block from where the last ended), steps SS22, SU22, SS44, SU44 (blocks of 4409 samples, an odd count; judged in T2.TXT as T2X-S16ODD2) while T1A track 2 (1000 Hz; C0: T1B's) plays from TICK MIX, 18 ticks before SS22, to TICK OFF 300 ticks later (one play). The capture: each step the tone left and the 1 kHz present (the peak over the floor and the level above -60 dBFS), the tone's third harmonic 20 dB down or more and no drop of 20 ms or more in its band, the right quiet in the tone's band (under -60 dBFS: the CD is on both sides); the 1 kHz without a drop from MIX+0.3 s to MIX+16.2 s; quiet after OFF; each step's windows end at its TICK DONE (too short to judge under 1 s); (A3, C0; held as T2C0-S16ODD2)"
-todo = "A3: the control is DOSBox-X at T6, not 86Box's own card (86ODDSC); the CT2290 in AKIT the judge (Michael, 26 Oct 2026, question 14)"
+todo = "A3: the control is DOSBox-X at T6, not 86Box's own card (86ODDSC); the CT2290 in AKIT the judge (Michael, 26 Oct 2026, question 14); held for T6 (Michael, 28 Oct 2026, question 35: T6 opens with DOSBox-X's port 61h bit 5 and channel 2 gating read from its source, the runner runs/dbx_test.py validated on SC8 C0 and an L4 plant, the wave capture wired and proven; nothing from DOSBox-X is evidence until then)"
 
 [[test]]
 name = "T2X-S16ON8"
