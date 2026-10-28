@@ -3174,7 +3174,7 @@ secs = 150
 note = "the CD's PLAY AUDIO from the raw client through INT 31h 0300h (INT 2Fh 1510h simulated, DPMI09:1613-1652; MSCDEX:1030-1044, 'play the selected audio tracks until the requested sectors have been exhausted'): track 2 of T1A (C0: T1B), 750 sectors (10 s); STOP AUDIO at 200 ticks. Judged in T2.TXT: the drive found (1500h), track 2's start read (IOCTL input 11), the play and the stop taken; tonecheck W-PLAY0300: the 1000 Hz from PLAY+0.5 to +9.5 s, its onset, no gap of 20 ms or more, quiet after STOP (A3, C0: the client validated on 86Box's own card before C2, HDPMI16 its host (question 11); dev run t2pdev-pl0: PASS, the same statuses; first audio +0.23 s)"
 [[test]]
 name = "T2X-P-DMAHI"
-decides = "DPMI09:2202-2230, 8237:331-338, SBG:1285-1294"
+decides = "XMS30:466-492, XMS30:572-590, DPMI09:2502-2533, DPMI09:803-838, DPMI09:939-990, 8237:331-338, SBG:1285-1294"
 runner = "probewav"
 env = "PROBE_WAV=1 PROBE_RUN='T2:T2P.EXE DMAHI'"
 groups = ["t2x"]
@@ -3182,12 +3182,10 @@ fixed = { build = "pinC2", vmodel = "sb16" }
 client = "dpmi16"
 repeat = 10
 secs = 150
-note = "a DMA buffer above 1 MB (0501h, below 16 MB): the tone plays from it (A3, C2)"
-todo = "A3: held on question 33 (Michael, 28 Oct 2026): a 0501h block has only a linear address (DPMI09:2202-2230); a DMA controller needs the physical one, which a client gets through VDS (DPMI10:450-456; RBIL INTERRUP.N:8387-8410, Lock DMA Region); on C0 HDPMI16 runs over JemmEx's VCPI with its own page tables, so JemmEx's VDS cannot translate its linear addresses: how the buffer's physical address is had on each host"
-
+note = "a DMA buffer above 1 MB (XMS, locked, mapped by 0800h, below 16 MB; Michael, 28 Oct 2026, question 33): in real mode before the switch a 32 KB XMS block (XMS30:466-492) locked for its physical address (XMS30:572-590), its 16 KB that keep to one 64 KB page (8237:331-338) checked at or above 1 MB and ending at or below 16 MB (the page register's 24 bits; SBG:1285-1294), a block outside released and requested again, never used (up to 4), the address written to T2.TXT; in the client the block mapped by INT 31h 0800h (DPMI09:2502-2533) with a descriptor of its own (0000h, 0007h, 0008h; DPMI09:803-838, 939-990); AI8's playback from it; the block freed through 0301h. Judged in T2.TXT: the block, its bounds, the mapping, AI8's counts; tonecheck W-DMAHI (AI8's). Above 16 MB is a separate note, not judged (Michael) (A3, C2; dev run t2pdev-hi2: FAIL, the 16 KB at physical 00217400h (linear 00400400h), 0 interrupts and no sound: uCDD's virtual transfer from a buffer above 1 MB in auto-init (the fork's merge review: the pin's line takes memory above 1 MB for 8-bit mono single-cycle only))"
 [[test]]
 name = "T2C0-P-DMAHI"
-decides = "DPMI09:2202-2230, 8237:331-338, SBG:1285-1294"
+decides = "XMS30:466-492, XMS30:572-590, DPMI09:2502-2533, DPMI09:803-838, DPMI09:939-990, 8237:331-338, SBG:1285-1294"
 runner = "probewav"
 env = "PROBE_WAV=1 PROBE_RUN='H:!C:\\HDPMI16.EXE -r > C:\\OUT\\H.TXT,T2:T2P.EXE DMAHI C0'"
 groups = ["t2xc0"]
@@ -3195,38 +3193,29 @@ fixed = { mode = "base", vmodel = "sb16" }
 client = "dpmi16"
 repeat = 10
 secs = 150
-note = "a DMA buffer above 1 MB (0501h, below 16 MB): the tone plays from it (A3, C0: the client validated on 86Box's own card before C2)"
-todo = "A3: held on question 33 (Michael, 28 Oct 2026): a 0501h block has only a linear address (DPMI09:2202-2230); a DMA controller needs the physical one, which a client gets through VDS (DPMI10:450-456; RBIL INTERRUP.N:8387-8410, Lock DMA Region); on C0 HDPMI16 runs over JemmEx's VCPI with its own page tables, so JemmEx's VDS cannot translate its linear addresses: how the buffer's physical address is had on each host"
-
+note = "a DMA buffer above 1 MB (XMS, locked, mapped by 0800h, below 16 MB; Michael, 28 Oct 2026, question 33): in real mode before the switch a 32 KB XMS block (XMS30:466-492) locked for its physical address (XMS30:572-590), its 16 KB that keep to one 64 KB page (8237:331-338) checked at or above 1 MB and ending at or below 16 MB (the page register's 24 bits; SBG:1285-1294), a block outside released and requested again, never used (up to 4), the address written to T2.TXT; in the client the block mapped by INT 31h 0800h (DPMI09:2502-2533) with a descriptor of its own (0000h, 0007h, 0008h; DPMI09:803-838, 939-990); AI8's playback from it; the block freed through 0301h. Judged in T2.TXT: the block, its bounds, the mapping, AI8's counts; tonecheck W-DMAHI (AI8's). Above 16 MB is a separate note, not judged (Michael) (A3, C0: the client validated on 86Box's own card before C2, HDPMI16 its host (question 11); dev run t2pdev-hi0: PASS, the 16 KB at physical 0024C000h (linear 00111000h: HDPMI16 pages), 3, 1, 0; 1999.9 Hz)"
 [[test]]
 name = "T2X-P-CHILD"
-decides = "HOSTCD:62, DPMI09:474-540"
+decides = "HOSTCD:62, DPMI09:474-540, DPMI09:1613-1652, SBG:3328-3345"
 runner = "probewav"
 env = "PROBE_WAV=1 PROBE_RUN='T2:T2P.EXE CHILD'"
 groups = ["t2x"]
 fixed = { build = "pinC2", vmodel = "sb16" }
 client = "dpmi16"
 repeat = 10
-secs = 150
-note = "a child DPMI program (EXEC through 0300h) plays and exits, then the parent plays again (A3, C2)"
-todo = "A3: held on question 32 (Michael, 28 Oct 2026): written (T2P.EXE CHILD, bench 26ef68b on), its T2.TXT passing on both hosts (dev t2pdev-ch0, -ch2: P1, the child's C and P2 3, 1, 0 each; the child's exit code 0; VCPI from the child: 00h present under HDPMI16, 84h hidden under uCDD's host, D-16), but the EXEC's Get Date makes MS-DOS 7.1 set the BIOS count again (t2pdev-chd0, -chd2: INT 21h 2Ah alone moved it -10 and +7 ticks), so the BIOS tick cannot place C and P2 in the capture"
-
+secs = 180
+note = "a DPMI program started by a DPMI program from the raw client (HOSTCD:62, D-16; the host's tasks, DPMI09:474-540): the parent plays P1 (AI8's playback), its card handler off, runs C:\\\\T2P.EXE CHILDRUN by INT 21h 4B00h through INT 31h 0300h; the child enters the host itself, after 3 s of quiet sounds its own beep (BEEPC) and plays C, its line PASS CHILDRUN judging C (AI8's counts; INT 67h DE00h's answer from the child shown: VCPI hidden under uCDD, D-16); after the child, 3 s of quiet, BEEP2 and P2. Judged in T2.TXT: P1 and P2 by AI8's counts, the EXEC taken, the child's exit code 0. MS-DOS 7.1's Get Date sets the BIOS count again at the EXEC and can at the child's end (notes DOSDATE): each phase is placed by the beep in its own count, P1 by BEEP, C by BEEPC, P2 by BEEP2 (Michael, 28 Oct 2026, question 32: a second beep after the child; the child's own beep added when the count moved at its end too, t2pdev-che0); tonecheck W-CHILD: the tone in P1, C and P2 (A3, C2; dev run t2pdev-chf2: PASS; BEEPC -0.440 s and BEEP2 +0.500 s from where the beep before put them)"
 [[test]]
 name = "T2C0-P-CHILD"
-decides = "HOSTCD:62, DPMI09:474-540"
+decides = "HOSTCD:62, DPMI09:474-540, DPMI09:1613-1652, SBG:3328-3345"
 runner = "probewav"
 env = "PROBE_WAV=1 PROBE_RUN='H:!C:\\HDPMI16.EXE -r > C:\\OUT\\H.TXT,T2:T2P.EXE CHILD C0'"
 groups = ["t2xc0"]
 fixed = { mode = "base", vmodel = "sb16" }
 client = "dpmi16"
 repeat = 10
-secs = 150
-note = "a child DPMI program (EXEC through 0300h) plays and exits, then the parent plays again (A3, C0: the client validated on 86Box's own card before C2)"
-todo = "A3: held on question 32 (Michael, 28 Oct 2026): written (T2P.EXE CHILD, bench 26ef68b on), its T2.TXT passing on both hosts (dev t2pdev-ch0, -ch2: P1, the child's C and P2 3, 1, 0 each; the child's exit code 0; VCPI from the child: 00h present under HDPMI16, 84h hidden under uCDD's host, D-16), but the EXEC's Get Date makes MS-DOS 7.1 set the BIOS count again (t2pdev-chd0, -chd2: INT 21h 2Ah alone moved it -10 and +7 ticks), so the BIOS tick cannot place C and P2 in the capture"
-
-# Its planted faults (L4, A1), a list of their own so their FAILs never
-# stand as list t0's evidence.
-
+secs = 180
+note = "a DPMI program started by a DPMI program from the raw client (HOSTCD:62, D-16; the host's tasks, DPMI09:474-540): the parent plays P1 (AI8's playback), its card handler off, runs C:\\\\T2P.EXE CHILDRUN by INT 21h 4B00h through INT 31h 0300h; the child enters the host itself, after 3 s of quiet sounds its own beep (BEEPC) and plays C, its line PASS CHILDRUN judging C (AI8's counts; INT 67h DE00h's answer from the child shown: VCPI hidden under uCDD, D-16); after the child, 3 s of quiet, BEEP2 and P2. Judged in T2.TXT: P1 and P2 by AI8's counts, the EXEC taken, the child's exit code 0. MS-DOS 7.1's Get Date sets the BIOS count again at the EXEC and can at the child's end (notes DOSDATE): each phase is placed by the beep in its own count, P1 by BEEP, C by BEEPC, P2 by BEEP2 (Michael, 28 Oct 2026, question 32: a second beep after the child; the child's own beep added when the count moved at its end too, t2pdev-che0); tonecheck W-CHILD: the tone in P1, C and P2 (A3, C0: the client validated on 86Box's own card before C2, HDPMI16 its host (question 11); dev run t2pdev-chf0: PASS; BEEPC +0.550 s, BEEP2 -0.500 s)"
 [[test]]
 name = "T0L4-CUE-GAP"
 decides = "silent: a planted fault (L4): the check it is planted for must fail"
@@ -3809,6 +3798,30 @@ fixed = { build = "pinC2", vmodel = "sb16" }
 client = "dpmi16"
 secs = 150
 note = "planted: T2P.EXE PLAY0300 on T1AP (track 2 at 440 Hz), on the pinned C2; tonecheck W-PLAY0300's 1000 Hz check must FAIL (A3, L4 for T2P PLAY0300's interval)"
+
+[[test]]
+name = "T2L4-P-CHILD-P"
+decides = "silent: a planted fault (L4): the check it is planted for must fail"
+searched = "terms: planted fault; hits: 2 in 2 documents (SNDLIB 1, docs/sound-engines/dmx.md 1); 28 Oct 2026"
+runner = "probewav"
+env = "PROBE_WAV=1 PROBE_RUN='H:!C:\\HDPMI16.EXE -r > C:\\OUT\\H.TXT,T2:T2P.EXE CHILD C0 L4P'"
+groups = ["t2l4"]
+fixed = { mode = "base", vmodel = "sb16" }
+client = "dpmi16"
+secs = 180
+note = "planted: T2P.EXE CHILD with the word L4P, passed to the child: the child plays C at 11025 Hz, the tone at 1 kHz; tonecheck W-CHILD's pitch in C must FAIL, placed by BEEPC (A3, L4 for T2P CHILD's second frame)"
+
+[[test]]
+name = "T2L4-P-DMAHI-P"
+decides = "silent: a planted fault (L4): the check it is planted for must fail"
+searched = "terms: planted fault; hits: 2 in 2 documents (SNDLIB 1, docs/sound-engines/dmx.md 1); 28 Oct 2026"
+runner = "probewav"
+env = "PROBE_WAV=1 PROBE_RUN='H:!C:\\HDPMI16.EXE -r > C:\\OUT\\H.TXT,T2:T2P.EXE DMAHI C0 L4P'"
+groups = ["t2l4"]
+fixed = { mode = "base", vmodel = "sb16" }
+client = "dpmi16"
+secs = 120
+note = "planted: T2P.EXE DMAHI with the word L4P plays at 11025 Hz, the tone at 1 kHz; tonecheck W-DMAHI's pitch must FAIL (A3, L4 for T2P DMAHI's capture)"
 [[test]]
 name = "T2L4-PICSEOI-M"
 decides = "silent: a planted fault (L4): the check it is planted for must fail"
@@ -4433,6 +4446,18 @@ repeat = 10
 secs = 120
 note = "CAND-20's C2 case on the author's 0.9.5-a1 (build option a1; Michael, 27 Oct 2026, rules-bot's fold: every candidate row, existing and new, gets its C2 case run on a1, 10 runs; a pass there: the fork line lacks the upstream fix, B's backlog; a fail: an upstream candidate). As T2X-DMAMASK: Write All Mask Register Bits (0Fh) half a block into an auto-init block at 22050 Hz, 27 ticks masked (no interrupt, the count unchanged, quiet: 8237:421-427), Clear Mask Register (0Eh, 8237:493-495), the first interrupt within 2.00 ms of the block's remainder, 27 ticks playing"
 
+
+[[test]]
+name = "T2X-P-DMAHI-A1"
+decides = "XMS30:466-492, XMS30:572-590, DPMI09:2502-2533, DPMI09:803-838, DPMI09:939-990, 8237:331-338, SBG:1285-1294"
+runner = "probewav"
+env = "PROBE_WAV=1 PROBE_RUN='T2:T2P.EXE DMAHI'"
+groups = ["a1"]
+fixed = { build = "a1", vmodel = "sb16" }
+client = "dpmi16"
+repeat = 10
+secs = 150
+note = "T2X-P-DMAHI's C2 case on the author's 0.9.5-a1 (build option a1; Michael, 27 Oct 2026, rules-bot's fold: every candidate row's C2 case run on a1, 10 runs; a pass there: the fork line lacks the upstream fix, B's backlog; a fail: an upstream candidate). As T2X-P-DMAHI: AI8's playback from a locked XMS block below 16 MB mapped by 0800h, from the raw client (A3, a1)"
 [[test]]
 name = "SBT16-legacy"
 decides = "SBG"
