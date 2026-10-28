@@ -1367,6 +1367,26 @@ Closed (Michael, 27 Oct 2026): a missed refill cannot move the closing beep; onl
   line is IRQ 12 (its serial ports off: T2X-PICHOLD12). Nothing in uCDD.
   Evidence: data sheet and 86Box's source; emulator (the runs).
 
+### DOSDATE: MS-DOS 7.1's Get Date sets the BIOS tick count again (found 28 Oct 2026; environment, open: question 32)
+
+- Seen [86Box, both C0 and C2] in T2P CHILD (the raw DPMI client EXECing
+  itself through INT 31h 0300h): across INT 21h 2Ah alone the count at
+  0040:006Ch moved -10 ticks (C0, t2pdev-chd0) and +7 (C2, t2pdev-chd2)
+  while the TSC moved 9 ms; DOS's EXEC asks for the date, so a program it
+  starts reads the new count from its first instruction (t2pdev-chc0,
+  -chc2). Neither host's: HDPMI16 and uCDD's host show it alike. The size
+  and sign differ run to run (the RTC's second against the tick count
+  the run has kept).
+- Documents: RBIL INTERRUP.F:4657-4664 (Get Date) says nothing of the
+  count; 4674-4677, the closest, has the default CLOCK$ as "the BIOS
+  time-of-day clock". libsearch: "terms: CLOCK$, tick count, ticks since
+  midnight, 1A01, real-time clock; hits: 179 in 23 documents; 28 Oct
+  2026", none on a reset.
+- Effect: a capture placed by the BIOS tick (tonecheck) cannot be placed
+  across a DOS date read or an EXEC. T2.EXE and T2W ask for no date; T2P
+  CHILD must EXEC (question 32). Hardware: UNCONFIRMED (AKIT, the Get
+  Date check). Evidence: emulator.
+
 ### IOSYS08: MS-DOS 7.1's IO.SYS holds IRQ 0 in service for up to 8 ms every other BIOS tick (a bench and PC finding, not uCDD's; found 26 Oct 2026; closed the same day: MSDOS.SYS [Options] Logo=0)
 
 - Seen [86Box] chasing Project A's T2X-DAC (gate A3): with PIT channel 0
