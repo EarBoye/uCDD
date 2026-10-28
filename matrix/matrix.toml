@@ -2777,6 +2777,30 @@ secs = 90
 note = "T2W's first case, the toolchain's proof as a row (Michael, 28 Oct 2026): the client's privilege level from its code selector and the DPMI version from INT 31h 0400h (AH major, AL minor, DPMI09:2082-2101), written by the program itself to C:\\OUT\\T2.TXT (the extender's own messages go to T2W.TXT). Under C2 the host is uCDD's: ring 3 (DPMI09:270-271, 'DPMI applications will always run at a non-privileged ring (usually ring 3)'; HOSTCD:48, the host's ring-3 client) and 0.90 (the pinned src/host/dpmi.asm .version, AX=90, BX=1); under C0 the extender is its own host over JemmEx's VCPI: CPL 0, 0.90. Beside T2X-VCPI (INT 67h DE00h refused while uCDD provides DPMI) (A3, C0, PMODE/W: the client validated on 86Box's own card before C2; dev run t2wdev-pw0: PASS, CS 0868h, CPL 0, DPMI 0.90, flags 0003h)"
 
 [[test]]
+name = "T2X-W-HLT"
+decides = "DPMI09:229-230, DPMI09:1382-1385, DPMI09:1376-1418, DPMI09:1455-1470"
+runner = "probe"
+env = "PROBE_RUN='D:!SET DOS4GPATH=C:\\DOS4GW.EXE,T2W:T2D4GW.EXE HLT'"
+groups = ["t2x"]
+fixed = { build = "pinC2", vmodel = "sb16" }
+client = "dos4gw"
+repeat = 10
+secs = 90
+note = "W-HLT (Michael, 28 Oct 2026): a client's HLT under DOS/4GW (T2D4GW.EXE): a 0Dh handler installed by INT 31h 0203h counts the fault, keeps its EIP and error code and steps past the one-byte HLT. Programs run 'at a protection level that prevents them from executing privileged instructions' (DPMI09:229-230); the host examines every exception first and reflects one it does not handle through the client's chain (1382-1385), with the 32-bit frame (1376-1418, 1455-1470). Judged in T2.TXT: under C2 (ring 3) one #GP at the HLT, reflected to the client (Michael's reading); under C0 the extender's client runs at ring 0 (HELLO), HLT legal, no fault. The dev observation without a handler (the word BARE, t2wdev-hltb2): under C2 DOS/4GW ends 'DOS/4GW error (2001): exception 0Dh (general protection fault)', where on C0 the same HLT returns: the triage note in STATE (A3, C2; dev run t2wdev-hlt2: PASS, one #GP at the HLT, error code 0)"
+
+[[test]]
+name = "T2C0-W-HLT"
+decides = "DPMI09:229-230, DPMI09:1382-1385, DPMI09:1376-1418, DPMI09:1455-1470"
+runner = "probe"
+env = "PROBE_RUN='D:!SET DOS4GPATH=C:\\DOS4GW.EXE,T2W:T2D4GW.EXE HLT C0'"
+groups = ["t2xc0"]
+fixed = { mode = "base", vmodel = "sb16" }
+client = "dos4gw"
+repeat = 10
+secs = 90
+note = "W-HLT (Michael, 28 Oct 2026): a client's HLT under DOS/4GW (T2D4GW.EXE): a 0Dh handler installed by INT 31h 0203h counts the fault, keeps its EIP and error code and steps past the one-byte HLT. Programs run 'at a protection level that prevents them from executing privileged instructions' (DPMI09:229-230); the host examines every exception first and reflects one it does not handle through the client's chain (1382-1385), with the 32-bit frame (1376-1418, 1455-1470). Judged in T2.TXT: under C2 (ring 3) one #GP at the HLT, reflected to the client (Michael's reading); under C0 the extender's client runs at ring 0 (HELLO), HLT legal, no fault. The dev observation without a handler (the word BARE, t2wdev-hltb2): under C2 DOS/4GW ends 'DOS/4GW error (2001): exception 0Dh (general protection fault)', where on C0 the same HLT returns: the triage note in STATE (A3, C0: the client validated on 86Box's own card before C2; dev run t2wdev-hlt0: PASS, no fault)"
+
+[[test]]
 name = "T2X-W-IRQDET"
 decides = "DPMI09:351-400, SBG:1030-1076, VSB:474-512, CT2290"
 runner = "probe"
@@ -3368,6 +3392,17 @@ fixed = { mode = "base", vmodel = "sb16" }
 client = "dos4gw"
 secs = 120
 note = "planted: T2D4GW.EXE AI8 with the word L4P plays at 11025 Hz, the tone at 1 kHz; tonecheck W-AI8's pitch check must FAIL (A3, L4 for T2W AI8's capture; on 86Box's own card; dev run t2wdev-ai0l4p: peak 999.9 Hz)"
+
+[[test]]
+name = "T2L4-W-HLT"
+decides = "silent: a planted fault (L4): the check it is planted for must fail"
+runner = "probe"
+env = "PROBE_RUN='D:!SET DOS4GPATH=C:\\DOS4GW.EXE,T2W:T2D4GW.EXE HLT C0'"
+groups = ["t2l4"]
+fixed = { build = "pinC2", vmodel = "sb16" }
+client = "dos4gw"
+secs = 90
+note = "planted: T2D4GW.EXE HLT with the word C0 under C2, so no fault is due where uCDD's host reflects one; T2W's check must FAIL (A3, L4 for the W-HLT rows)"
 
 [[test]]
 name = "T2L4-VOLUME"
