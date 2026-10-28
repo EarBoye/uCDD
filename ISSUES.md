@@ -1118,6 +1118,7 @@ Trace: by reading, at the pinned SHA: the legacy commands take the mixer's stere
 Hypothesis (labelled, not tested; mine): taking the one-byte transfer into the stereo stream when the switch is on, and keeping its byte's place for the next transfer as DOSBox-X does, would send the data's first byte right; whether a reset between transfers clears that, as DOSBox-X does and 86Box does not need to, is PROST2's open question. None of the author's release notes names the SB Pro's channel order (a1's RELEASE-NOTES.md read for "stereo", "left", "swap"); two older ones concern odd or short stereo transfers: RELEASE-NOTES.md:319 (Beta 0.9.1c), "Support combined SB Pro mixer writes and odd-length stereo transfers" (Battle Chess in SB Pro mode), and :359 (Beta 0.9.1), the "short stereo transfer used by Archimedean Dynasty during sound detection"; what they do with a one-byte transfer was not read. Evidence: emulator (plans e555a482 and 04866e8f), dynarec off. Hardware: UNCONFIRMED.
 0.9.5-a1 (Michael, 27 Oct 2026, rules-bot's fold: the reading-grade line replaced by a plan; rule 7, the old line: "0.9.5-a1: none (reading, a1 c5531c8 against a6 8252786: no hunk touches the legacy commands' stereo)."): the author's 0.9.5-a1 built as the bench's option a1 (fork main c5531c8, fixtures/a1/MANIFEST.txt), T2X-PROST-A1, plan fc0a98b9 `fail: 10`, the same: T2.TXT PASS, the tone on the left (`ST11+0.1-1.1 s L silence: RMS -18.6 dBFS FAIL`, the same at ST22) and nothing on the right, all ten. Label (rule 7: the old, CANDIDATE_UCDD_SFX against the pinned C2): upstream candidate. Evidence: emulator (plans 04866e8f, fc0a98b9), dynarec off.
 Firmware re-read (Michael, 28 Oct 2026: PROST's expected result against the CT1341's 3.02, grade [fw], cited by command and behaviour; rule 7: the row's text above unchanged, this added): silent. The 3.02 sends 14h's single byte, 1Ch's and 90h/91h's bytes from the DMA to its one DAC port the same way and keeps no channel state (FW302, vsb-spec 7.4); the left and right alternation is the CT1345 mixer's, undocumented. The expectation stands as vsb-spec 7.4 has it (emulation decides: the data's first byte right); the label stands; an SB Pro 2 decides when one is on hand.
+Re-graded (Michael, 28 Oct 2026, from rules-bot; rule 7: the Expected line above, grade emulator, superseded and kept): data sheet, two manufacturers. The CT1345 sends the first byte after the switch left and its toggle persists (SBG:2393-2395, 2476-2478; the silent primer, SBG:1845-1854), so the application's first byte goes right; the ESS starts every transfer right (ES1868:2457-2459). Either way the data's first byte is the right channel, where the pinned build and a1 put it left: CAND-15 stands, stronger. The firmware re-read above (silent) stands beside it. Hardware: the PC's ES1868 in AKIT for the ESS's side; an SB Pro 2 is now low priority (vsb-spec 7.4).
 
 ### CAND-16 Tier 2, T2X-TIMERSTOP: with the timer stopped, CD audio drops out for 307 ms 1.73 s later, until IRQ 0 comes back: the CD queue is refilled only from the timer interrupt for a real-mode program (found 26 Oct 2026; the fork line lacks the upstream fix, B's backlog, 27 Oct; LACKS-FIX, 28 Oct)
 
@@ -2093,3 +2094,17 @@ UCDDSET and documentation:
   firmware/sb.hex, local read-only clones pinned by commit in the bench's
   downloads.lock, cited by command and behaviour only; the Snark Barker's
   Sb202Spec.md is in the library as key SB202SPEC (CC BY-SA 4.0).
+
+### VESS-STEREO: the virtual ESS takes compatibility-mode 8-bit stereo's first byte as left, where the ESS starts every transfer right (28 Oct 2026, open; the virtual ESS is parked)
+
+- Expected: "For 8-bit data, the ES1868 expects the first byte transferred
+  to be for the right channel, and subsequent bytes to alternate left,
+  right etc." (ES1868:2457-2459; the same in all five ESS sheets,
+  vess-spec 7.2, E68:2456); the first byte of every stereo transfer right
+  (Michael, 28 Oct 2026: ES1868 decides for an ESS).
+- Observed, by reading only: uCDD takes the first byte as left
+  (mix.asm .stereo8_normal), vess-spec 17 item 1. No Project A run: the
+  virtual ESS is parked (rule 6 keeps the ESS and the SB families apart).
+- Hardware: the PC's ES1868 confirms in AKIT (the PROST case on the ESS
+  in compatibility mode). Evidence: data sheet; the virtual card's
+  behaviour by reading. Hardware: UNCONFIRMED.

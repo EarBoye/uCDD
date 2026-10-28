@@ -395,6 +395,25 @@ the block size and start with 90h or 91h. [doc]
     the next and clears it only at a reset, so by its source the transfer
     after a reset starts left. The guide says nothing. Project A reports
     the channel there and does not judge it.
+  - Re-graded: data sheet, two manufacturers (Michael, 28 Oct 2026, from
+    rules-bot; the mantra's rule 7: the "Evidence, grade emulator" bullet
+    above is superseded and kept). The CT1345: "There is a switch on CT1345
+    to toggle digitized sound output data between the left and right DAC
+    channels. The first digitized sound data byte will be directed to the
+    left channel" (SBG:2393-2395; 0Eh:1, SBG:2476-2478); the guide's
+    procedure sends one silent byte after setting the switch
+    (SBG:1845-1854): the toggle persists, which is why the silent primer
+    exists, and the application's first byte goes right. The ESS: "For
+    8-bit data, the ES1868 expects the first byte transferred to be for the
+    right channel, and subsequent bytes to alternate left, right etc."
+    (ES1868:2457-2459): every transfer starts right. Either way the
+    application's first data byte is the right channel. [doc, two
+    manufacturers; the emulators agree; hardware: the PC's ES1868 in AKIT
+    for the ESS's side, an SB Pro 2 (low priority now) for the CT1345's]
+  - The transfer after the first (PROST2), both recorded: on the CT1345 the
+    toggle persists from one transfer to the next (no document says what a
+    reset does to it); on the ESS every transfer starts right (ES1868
+    decides for an ESS).
   - The pinned build (count-position 7994cd1) puts the data's first byte
     left: ISSUES.md CAND-15 (no fix under Project A's freeze).
   - The DSP firmware, re-read (Michael, 28 Oct 2026: PROST's expected
@@ -404,8 +423,11 @@ the block size and start with 90h or 91h. [doc]
     90h/91h's high-speed bytes each go from the DMA to its one DAC port
     the same way, and no flag or pin of the 3.02 marks a channel. The
     alternation between left and right is outside the DSP, in the CT1345
-    mixer's handling of the DAC output with 0Eh's stereo switch set, for
-    which no document is held. So the firmware does not decide which
+    mixer's handling of the DAC output with 0Eh's stereo switch set (rule 7,
+    struck 28 Oct 2026, Michael: "for which no document is held" was wrong;
+    the guide's chapter 4 is the CT1345's documentation, SBG:2393-2395 and
+    0Eh:1 at SBG:2476-2478; what no document gives is only the switch's
+    state after a transfer or a reset). So the firmware does not decide which
     channel the data's first byte takes; the rule above (emulation decides,
     the data's first byte right) stands, and an SB Pro 2 decides when one
     is on hand.
