@@ -473,7 +473,7 @@ groups = ["t0"]
 fixed = { build = "pinC2", vmodel = "sb16" }
 repeat = 10
 secs = 60
-note = "INDEX 02 and higher: mounts, index 2 ignored for positioning (Michael, 25 Oct 2026, question 6; the author's 0.9.4-a1 note)"
+note = "INDEX 02 and higher: mounts, index 2 ignored for positioning (Michael, 25 Oct 2026, question 6; the author's 0.9.4-a1 note); missing document (Michael, 28 Oct 2026): the CUE sheet syntax reference (the CDRWIN manual), cited here when held; README stays the key for what uCDD accepts"
 
 [[test]]
 name = "T0-CUE-GAPA"
@@ -485,7 +485,7 @@ groups = ["t0"]
 fixed = { build = "pinC2", vmodel = "sb16" }
 repeat = 10
 secs = 60
-note = "PREGAP after INDEX, which has no real-disc meaning: rejected, or accepted with the gap ignored; the program records which, either passes (Michael, 25 Oct 2026, question 6)"
+note = "PREGAP after INDEX, which has no real-disc meaning: rejected, or accepted with the gap ignored; the program records which, either passes (Michael, 25 Oct 2026, question 6); missing document (Michael, 28 Oct 2026): the CUE sheet syntax reference (the CDRWIN manual), cited here when held; README stays the key for what uCDD accepts"
 
 [[test]]
 name = "T0-CUE-BOM"
@@ -497,7 +497,7 @@ groups = ["t0"]
 fixed = { build = "pinC2", vmodel = "sb16" }
 repeat = 10
 secs = 60
-note = "a UTF-8 byte order mark before the first line: mounts (Michael, 25 Oct 2026, question 6; the author's 0.9.4-a1 note)"
+note = "a UTF-8 byte order mark before the first line: mounts (Michael, 25 Oct 2026, question 6; the author's 0.9.4-a1 note); missing document (Michael, 28 Oct 2026): the CUE sheet syntax reference (the CDRWIN manual), cited here when held; README stays the key for what uCDD accepts"
 
 [[test]]
 name = "T0-MDM-ABS"
@@ -695,7 +695,7 @@ groups = ["t0"]
 fixed = { build = "pinC2", vmodel = "sb16" }
 repeat = 10
 secs = 60
-note = "de-emphasis gain at 1 kHz within 0.5 dB of the analytic 50/15 us curve (directive A1)"
+note = "de-emphasis gain at 1 kHz within 0.5 dB of the analytic 50/15 us curve (directive A1); missing document (Michael, 28 Oct 2026): the Red Book's 50/15 us pre-emphasis definition (IEC 60908 or equivalent), cited here when held"
 
 [[test]]
 name = "T0-DEEM-3K5"
@@ -707,7 +707,7 @@ groups = ["t0"]
 fixed = { build = "pinC2", vmodel = "sb16" }
 repeat = 10
 secs = 60
-note = "at 3.5 kHz, within 0.5 dB"
+note = "at 3.5 kHz, within 0.5 dB; missing document (Michael, 28 Oct 2026): the Red Book's 50/15 us pre-emphasis definition (IEC 60908 or equivalent), cited here when held"
 
 [[test]]
 name = "T0-DEEM-10K"
@@ -719,7 +719,7 @@ groups = ["t0"]
 fixed = { build = "pinC2", vmodel = "sb16" }
 repeat = 10
 secs = 60
-note = "at 10 kHz, within 0.5 dB"
+note = "at 10 kHz, within 0.5 dB; missing document (Michael, 28 Oct 2026): the Red Book's 50/15 us pre-emphasis definition (IEC 60908 or equivalent), cited here when held"
 
 [[test]]
 name = "T0-DEEM-16K"
@@ -731,7 +731,7 @@ groups = ["t0"]
 fixed = { build = "pinC2", vmodel = "sb16" }
 repeat = 10
 secs = 60
-note = "at 16 kHz, within 0.5 dB"
+note = "at 16 kHz, within 0.5 dB; missing document (Michael, 28 Oct 2026): the Red Book's 50/15 us pre-emphasis definition (IEC 60908 or equivalent), cited here when held"
 
 # Project A, list t1 (A2): Tier 1, the driver as games drive it, on the
 # synthetic discs (the bench's fixtures/synth, MANIFEST.txt). One case a
@@ -928,7 +928,7 @@ groups = ["t1"]
 fixed = { build = "pinC2", vmodel = "sb16" }
 repeat = 10
 secs = 120
-note = "disc T1A: play track 5 (FLAGS PRE): de-emphasised; its 10 kHz to 1 kHz level ratio against track 2's within 2 dB of the analytic 50/15 us value (A2; README Images: FLAGS PRE)"
+note = "disc T1A: play track 5 (FLAGS PRE): de-emphasised; its 10 kHz to 1 kHz level ratio against track 2's within 2 dB of the analytic 50/15 us value (A2; README Images: FLAGS PRE); missing document (Michael, 28 Oct 2026): the Red Book's 50/15 us pre-emphasis definition (IEC 60908 or equivalent), cited here when held"
 
 [[test]]
 name = "T1-PLAY6"
@@ -2824,7 +2824,7 @@ fixed = { build = "pinC2", vmodel = "sb16" }
 client = "dos4gw"
 repeat = 10
 secs = 90
-note = "W-HLT (Michael, 28 Oct 2026): a client's HLT under DOS/4GW (T2D4GW.EXE): a 0Dh handler installed by INT 31h 0203h counts the fault, keeps its EIP and error code and steps past the one-byte HLT. Programs run 'at a protection level that prevents them from executing privileged instructions' (DPMI09:229-230); the host examines every exception first and reflects one it does not handle through the client's chain (1382-1385), with the 32-bit frame (1376-1418, 1455-1470). Judged in T2.TXT: under C2 (ring 3) one #GP at the HLT, reflected to the client (Michael's reading); under C0 the extender's client runs at ring 0 (HELLO), HLT legal, no fault. The dev observation without a handler (the word BARE, t2wdev-hltb2): under C2 DOS/4GW ends 'DOS/4GW error (2001): exception 0Dh (general protection fault)', where on C0 the same HLT returns: the triage note in STATE (A3, C2; dev run t2wdev-hlt2: PASS, one #GP at the HLT, error code 0)"
+note = "W-HLT (Michael, 28 Oct 2026): a client's HLT under DOS/4GW (T2D4GW.EXE): a 0Dh handler installed by INT 31h 0203h counts the fault, keeps its EIP and error code and steps past the one-byte HLT. Programs run 'at a protection level that prevents them from executing privileged instructions' (DPMI09:229-230); the host examines every exception first and reflects one it does not handle through the client's chain (1382-1385), with the 32-bit frame (1376-1418, 1455-1470). Judged in T2.TXT: under C2 (ring 3) one #GP at the HLT, reflected to the client (Michael's reading); under C0 the extender's client runs at ring 0 (HELLO), HLT legal, no fault. The dev observation without a handler (the word BARE, t2wdev-hltb2): under C2 DOS/4GW ends 'DOS/4GW error (2001): exception 0Dh (general protection fault)', where on C0 the same HLT returns: the triage note in STATE (A3, C2; dev run t2wdev-hlt2: PASS, one #GP at the HLT, error code 0); the expected result (Michael, 28 Oct 2026; rule 7: the first version wanted the fault reflected only): under C2 either reflected or absorbed, both DPMI09-conformant (229-230, 1382-1385), the pass meaning conformant and T2.TXT saying which; observed: reflected (8ec36406, all ten, a pass under both rules, so not taken again); B's backlog: a host that absorbs a client HLT would fix games that idle with it under VCPI, if the sweep finds one"
 
 [[test]]
 name = "T2C0-W-HLT"
@@ -2836,7 +2836,7 @@ fixed = { mode = "base", vmodel = "sb16" }
 client = "dos4gw"
 repeat = 10
 secs = 90
-note = "W-HLT (Michael, 28 Oct 2026): a client's HLT under DOS/4GW (T2D4GW.EXE): a 0Dh handler installed by INT 31h 0203h counts the fault, keeps its EIP and error code and steps past the one-byte HLT. Programs run 'at a protection level that prevents them from executing privileged instructions' (DPMI09:229-230); the host examines every exception first and reflects one it does not handle through the client's chain (1382-1385), with the 32-bit frame (1376-1418, 1455-1470). Judged in T2.TXT: under C2 (ring 3) one #GP at the HLT, reflected to the client (Michael's reading); under C0 the extender's client runs at ring 0 (HELLO), HLT legal, no fault. The dev observation without a handler (the word BARE, t2wdev-hltb2): under C2 DOS/4GW ends 'DOS/4GW error (2001): exception 0Dh (general protection fault)', where on C0 the same HLT returns: the triage note in STATE (A3, C0: the client validated on 86Box's own card before C2; dev run t2wdev-hlt0: PASS, no fault)"
+note = "W-HLT (Michael, 28 Oct 2026): a client's HLT under DOS/4GW (T2D4GW.EXE): a 0Dh handler installed by INT 31h 0203h counts the fault, keeps its EIP and error code and steps past the one-byte HLT. Programs run 'at a protection level that prevents them from executing privileged instructions' (DPMI09:229-230); the host examines every exception first and reflects one it does not handle through the client's chain (1382-1385), with the 32-bit frame (1376-1418, 1455-1470). Judged in T2.TXT: under C2 (ring 3) one #GP at the HLT, reflected to the client (Michael's reading); under C0 the extender's client runs at ring 0 (HELLO), HLT legal, no fault. The dev observation without a handler (the word BARE, t2wdev-hltb2): under C2 DOS/4GW ends 'DOS/4GW error (2001): exception 0Dh (general protection fault)', where on C0 the same HLT returns: the triage note in STATE (A3, C0: the client validated on 86Box's own card before C2; dev run t2wdev-hlt0: PASS, no fault); the expected result (Michael, 28 Oct 2026; rule 7: the first version wanted the fault reflected only): under C2 either reflected or absorbed, both DPMI09-conformant (229-230, 1382-1385), the pass meaning conformant and T2.TXT saying which; observed: reflected (8ec36406, all ten, a pass under both rules, so not taken again); B's backlog: a host that absorbs a client HLT would fix games that idle with it under VCPI, if the sweep finds one"
 
 [[test]]
 name = "T2X-W-IRQDET"
@@ -3685,7 +3685,7 @@ groups = ["a1"]
 fixed = { build = "a1", vmodel = "sb16" }
 repeat = 10
 secs = 60
-note = "CAND-1's C2 case on the author's 0.9.5-a1 (build option a1; Michael, 27 Oct 2026, rules-bot's fold: each candidate's C2 case on a1, 10 runs; a pass there: the fork line lacks the upstream fix, B's backlog; a fail: an upstream candidate). T0CUE assembled against a1's src (T0CUEA1.COM, the bench's dos/build.sh). As T0-CUE-I02: INDEX 02 and higher: mounts, index 2 ignored for positioning (Michael, 25 Oct 2026, question 6; the author's 0.9.4-a1 note)"
+note = "CAND-1's C2 case on the author's 0.9.5-a1 (build option a1; Michael, 27 Oct 2026, rules-bot's fold: each candidate's C2 case on a1, 10 runs; a pass there: the fork line lacks the upstream fix, B's backlog; a fail: an upstream candidate). T0CUE assembled against a1's src (T0CUEA1.COM, the bench's dos/build.sh). As T0-CUE-I02: INDEX 02 and higher: mounts, index 2 ignored for positioning (Michael, 25 Oct 2026, question 6; the author's 0.9.4-a1 note); missing document (Michael, 28 Oct 2026): the CUE sheet syntax reference (the CDRWIN manual), cited here when held; README stays the key for what uCDD accepts"
 
 [[test]]
 name = "T0-CUE-BOM-A1"
@@ -3697,7 +3697,7 @@ groups = ["a1"]
 fixed = { build = "a1", vmodel = "sb16" }
 repeat = 10
 secs = 60
-note = "CAND-2's C2 case on the author's 0.9.5-a1 (build option a1; Michael, 27 Oct 2026, rules-bot's fold: each candidate's C2 case on a1, 10 runs; a pass there: the fork line lacks the upstream fix, B's backlog; a fail: an upstream candidate). T0CUE assembled against a1's src (T0CUEA1.COM, the bench's dos/build.sh). As T0-CUE-BOM: a UTF-8 byte order mark before the first line: mounts (Michael, 25 Oct 2026, question 6; the author's 0.9.4-a1 note)"
+note = "CAND-2's C2 case on the author's 0.9.5-a1 (build option a1; Michael, 27 Oct 2026, rules-bot's fold: each candidate's C2 case on a1, 10 runs; a pass there: the fork line lacks the upstream fix, B's backlog; a fail: an upstream candidate). T0CUE assembled against a1's src (T0CUEA1.COM, the bench's dos/build.sh). As T0-CUE-BOM: a UTF-8 byte order mark before the first line: mounts (Michael, 25 Oct 2026, question 6; the author's 0.9.4-a1 note); missing document (Michael, 28 Oct 2026): the CUE sheet syntax reference (the CDRWIN manual), cited here when held; README stays the key for what uCDD accepts"
 
 [[test]]
 name = "T1-EJECT-A1"
