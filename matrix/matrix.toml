@@ -2888,30 +2888,26 @@ note = "8-bit auto-init from protected mode under DOS/4GW (T2D4GW.EXE, DOS4GW.EX
 
 [[test]]
 name = "T2X-W-SC8"
-decides = "DPMI09:351-400, VSB:319-324, SBG:3271-3290"
+decides = "DPMI09:351-400, SBG:3271-3278, SBG:1590-1591, VSB:319-324, 8237:485-517"
 runner = "probewav"
-env = "PROBE_WAV=1 PROBE_RUN='T2:T2W.EXE SC8'"
+env = "PROBE_WAV=1 PROBE_RUN='D:!SET DOS4GPATH=C:\\DOS4GW.EXE,T2W:T2D4GW.EXE SC8'"
 groups = ["t2x"]
 fixed = { build = "pinC2", vmodel = "sb16" }
 client = "dos4gw"
 repeat = 10
 secs = 150
-note = "8-bit single-cycle 4096-byte blocks from protected mode (A3, C2)"
-todo = "A3: T2W.EXE, the DOS/4GW build, not written yet; Open Watcom not yet installed in ~/.local/opt"
-
+note = "8-bit mono single-cycle from protected mode under DOS/4GW (T2D4GW.EXE, DOS4GW.EXE beside it): T2.EXE SC8's 4096-byte steps, S0 at 11025 Hz and S1 at 22050 (41h), a 4096-byte buffer in DOS memory (INT 31h 0100h, within one 64 KB page) of whole cycles near 2 kHz (743 and 372), the channel set again for each block (mode 49h, 8237:485-517) and 14h 4095 sent once the last block's interrupt has come (SBG:3271-3278; 'The DSP will generate an interrupt after transferring the programmed number of bytes', SBG:1590-1591; the handler through INT 21h 25h, DPMI09:351-400), 27 ticks a step. Judged in T2.TXT as T2.EXE's: an interrupt for every block sent, none timed out; tonecheck W-SC8: each step's tone from +0.15 to +1.15 s at the card's pitch (C2 through the virtual SB16's 41h register, VSB:292-304: 2002.9 and 2005.6 Hz; C0 as asked, 1999.9 and 2002.6 Hz), no gap of 20 ms or more to +1.45 s. The citation was SBG:3271-3290 when the row was planned; 3279-3290 is 16h (ADPCM), so 3271-3278 (28 Oct 2026) (A3, C2; dev run t2wdev-sc2: PASS, 4 and 8 blocks and interrupts; 2002.5 and 2005.3 Hz)"
 [[test]]
 name = "T2C0-W-SC8"
-decides = "DPMI09:351-400, VSB:319-324, SBG:3271-3290"
+decides = "DPMI09:351-400, SBG:3271-3278, SBG:1590-1591, VSB:319-324, 8237:485-517"
 runner = "probewav"
-env = "PROBE_WAV=1 PROBE_RUN='T2:T2W.EXE SC8'"
+env = "PROBE_WAV=1 PROBE_RUN='D:!SET DOS4GPATH=C:\\DOS4GW.EXE,T2W:T2D4GW.EXE SC8 C0'"
 groups = ["t2xc0"]
 fixed = { mode = "base", vmodel = "sb16" }
 client = "dos4gw"
 repeat = 10
 secs = 150
-note = "8-bit single-cycle 4096-byte blocks from protected mode (A3, C0: the client validated on 86Box's own card before C2)"
-todo = "A3: T2W.EXE, the DOS/4GW build, not written yet; Open Watcom not yet installed in ~/.local/opt"
-
+note = "8-bit mono single-cycle from protected mode under DOS/4GW (T2D4GW.EXE, DOS4GW.EXE beside it): T2.EXE SC8's 4096-byte steps, S0 at 11025 Hz and S1 at 22050 (41h), a 4096-byte buffer in DOS memory (INT 31h 0100h, within one 64 KB page) of whole cycles near 2 kHz (743 and 372), the channel set again for each block (mode 49h, 8237:485-517) and 14h 4095 sent once the last block's interrupt has come (SBG:3271-3278; 'The DSP will generate an interrupt after transferring the programmed number of bytes', SBG:1590-1591; the handler through INT 21h 25h, DPMI09:351-400), 27 ticks a step. Judged in T2.TXT as T2.EXE's: an interrupt for every block sent, none timed out; tonecheck W-SC8: each step's tone from +0.15 to +1.15 s at the card's pitch (C2 through the virtual SB16's 41h register, VSB:292-304: 2002.9 and 2005.6 Hz; C0 as asked, 1999.9 and 2002.6 Hz), no gap of 20 ms or more to +1.45 s. The citation was SBG:3271-3290 when the row was planned; 3279-3290 is 16h (ADPCM), so 3271-3278 (28 Oct 2026) (A3, C0: the client validated on 86Box's own card before C2; dev run t2wdev-sc0: PASS, 4 and 8 blocks and interrupts; 1999.8 and 2002.5 Hz)"
 [[test]]
 name = "T2X-W-DMA"
 decides = "DPMI09:351-400, 8237:225-230, 8237:485-517"
@@ -3462,6 +3458,30 @@ fixed = { mode = "base", vmodel = "sb16" }
 client = "dos4gw"
 secs = 120
 note = "planted: T2D4GW.EXE AI8 with the word L4P plays at 11025 Hz, the tone at 1 kHz; tonecheck W-AI8's pitch check must FAIL (A3, L4 for T2W AI8's capture; on 86Box's own card; dev run t2wdev-ai0l4p: peak 999.9 Hz)"
+
+[[test]]
+name = "T2L4-W-SC8"
+decides = "silent: a planted fault (L4): the check it is planted for must fail"
+searched = "terms: planted fault; hits: 2 in 2 documents (SNDLIB 1, docs/sound-engines/dmx.md 1); 28 Oct 2026"
+runner = "probewav"
+env = "PROBE_WAV=1 PROBE_RUN='D:!SET DOS4GPATH=C:\\DOS4GW.EXE,T2W:T2D4GW.EXE SC8 C0 L4'"
+groups = ["t2l4"]
+fixed = { mode = "base", vmodel = "sb16" }
+client = "dos4gw"
+secs = 120
+note = "planted: T2D4GW.EXE SC8 with the word L4 leaves the 2xEh acknowledge out of the handler, so the card's line stays high and the second block's interrupt does not come; T2W's check must FAIL (A3, L4 for T2W SC8's T2.TXT; on 86Box's own card; dev run t2wdev-sc0l4: S0 1 block then a timeout, S1 0)"
+
+[[test]]
+name = "T2L4-W-SC8-P"
+decides = "silent: a planted fault (L4): the check it is planted for must fail"
+searched = "terms: planted fault; hits: 2 in 2 documents (SNDLIB 1, docs/sound-engines/dmx.md 1); 28 Oct 2026"
+runner = "probewav"
+env = "PROBE_WAV=1 PROBE_RUN='D:!SET DOS4GPATH=C:\\DOS4GW.EXE,T2W:T2D4GW.EXE SC8 C0 L4P'"
+groups = ["t2l4"]
+fixed = { mode = "base", vmodel = "sb16" }
+client = "dos4gw"
+secs = 120
+note = "planted: T2D4GW.EXE SC8 with the word L4P halves each block's cycles, the tone near 1 kHz; tonecheck W-SC8's pitch check must FAIL (A3, L4 for T2W SC8's capture; on 86Box's own card; dev run t2wdev-sc0l4p: peaks 998.6 and 1001.3 Hz)"
 
 [[test]]
 name = "T2L4-W-HLT"
