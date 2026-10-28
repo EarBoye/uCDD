@@ -2778,29 +2778,27 @@ note = "T2W's first case, the toolchain's proof as a row (Michael, 28 Oct 2026):
 
 [[test]]
 name = "T2X-W-IRQDET"
-decides = "DPMI09:351-400, VSB:474-489, CT2290"
+decides = "DPMI09:351-400, SBG:1030-1076, VSB:474-512, CT2290"
 runner = "probe"
-env = "PROBE_RUN='T2:T2W.EXE IRQDET'"
+env = "PROBE_RUN='D:!SET DOS4GPATH=C:\\DOS4GW.EXE,T2W:T2D4GW.EXE IRQDET'"
 groups = ["t2x"]
 fixed = { build = "pinC2", vmodel = "sb16" }
 client = "dos4gw"
 repeat = 10
 secs = 150
-note = "the IRQ detection sequence from protected mode: F2h, the interrupt reaching the client's handler once (A3, C2)"
-todo = "A3: T2W.EXE, the DOS/4GW build, not written yet; Open Watcom not yet installed in ~/.local/opt"
+note = "the IRQ detection sequence from protected mode under DOS/4GW (T2D4GW.EXE, DOS4GW.EXE beside it): T2.EXE IRQDET's (DSP reset, F2h, 50 ms and 20 ms more), the handlers installed through INT 21h 25h, which the extender routes to a protected-mode handler for a hardware interrupt whichever mode it lands in (DPMI09:351-400); judged in T2.TXT (the program's own line): one interrupt on the card's line, none on IRQ 7 or 10, 82h bit 0 set in the handler and clear after the 2xEh acknowledge (SBG:1030-1076, VSB:474-512) (A3, C2; dev run t2wdev-id2: PASS, 82h 81h then 80h)"
 
 [[test]]
 name = "T2C0-W-IRQDET"
-decides = "DPMI09:351-400, VSB:474-489, CT2290"
+decides = "DPMI09:351-400, SBG:1030-1076, VSB:474-512, CT2290"
 runner = "probe"
-env = "PROBE_RUN='T2:T2W.EXE IRQDET'"
+env = "PROBE_RUN='D:!SET DOS4GPATH=C:\\DOS4GW.EXE,T2W:T2D4GW.EXE IRQDET C0'"
 groups = ["t2xc0"]
 fixed = { mode = "base", vmodel = "sb16" }
 client = "dos4gw"
 repeat = 10
 secs = 150
-note = "the IRQ detection sequence from protected mode: F2h, the interrupt reaching the client's handler once (A3, C0: the client validated on 86Box's own card before C2)"
-todo = "A3: T2W.EXE, the DOS/4GW build, not written yet; Open Watcom not yet installed in ~/.local/opt"
+note = "the IRQ detection sequence from protected mode under DOS/4GW (T2D4GW.EXE, DOS4GW.EXE beside it): T2.EXE IRQDET's (DSP reset, F2h, 50 ms and 20 ms more), the handlers installed through INT 21h 25h, which the extender routes to a protected-mode handler for a hardware interrupt whichever mode it lands in (DPMI09:351-400); judged in T2.TXT (the program's own line): one interrupt on the card's line, none on IRQ 7 or 10, 82h bit 0 set in the handler and clear after the 2xEh acknowledge (SBG:1030-1076, VSB:474-512) (A3, C0: the client validated on 86Box's own card before C2; dev run t2wdev-id0: PASS, 82h 21h then 20h)"
 
 [[test]]
 name = "T2X-W-AI8"
@@ -3339,6 +3337,17 @@ groups = ["t2l4"]
 fixed = { mode = "base", vmodel = "sb16" }
 secs = 120
 note = "planted: T2.EXE TCROUND with the word L4T sends each time constant 30h below the formula's while the blocks due are reckoned from the formula's; T2.EXE's interrupt check must FAIL (A3, L4 for TCROUND's T2.TXT; on 86Box's own card; dev run t2dev-tr0l4td: from 11025 Hz on, 2 against 3 up to 4 against 15)"
+
+[[test]]
+name = "T2L4-W-IRQDET"
+decides = "silent: a planted fault (L4): the check it is planted for must fail"
+runner = "probe"
+env = "PROBE_RUN='D:!SET DOS4GPATH=C:\\DOS4GW.EXE,T2W:T2D4GW.EXE IRQDET C0 L4'"
+groups = ["t2l4"]
+fixed = { mode = "base", vmodel = "sb16" }
+client = "dos4gw"
+secs = 90
+note = "planted: T2D4GW.EXE IRQDET with the word L4 leaves the 2xEh acknowledge out of the handler, so 82h bit 0 stays set; T2W's check must FAIL (A3, L4 for T2W IRQDET; on 86Box's own card; dev run t2wdev-id0l4: 82h 21h after)"
 
 [[test]]
 name = "T2L4-VOLUME"
