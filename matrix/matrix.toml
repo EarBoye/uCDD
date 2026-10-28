@@ -2814,6 +2814,182 @@ repeat = 10
 secs = 90
 note = "T2W's first case, the toolchain's proof as a row (Michael, 28 Oct 2026): the client's privilege level from its code selector and the DPMI version from INT 31h 0400h (AH major, AL minor, DPMI09:2082-2101), written by the program itself to C:\\OUT\\T2.TXT (the extender's own messages go to T2W.TXT). Under C2 the host is uCDD's: ring 3 (DPMI09:270-271, 'DPMI applications will always run at a non-privileged ring (usually ring 3)'; HOSTCD:48, the host's ring-3 client) and 0.90 (the pinned src/host/dpmi.asm .version, AX=90, BX=1); under C0 the extender is its own host over JemmEx's VCPI: CPL 0, 0.90. Beside T2X-VCPI (INT 67h DE00h refused while uCDD provides DPMI) (A3, C0, PMODE/W: the client validated on 86Box's own card before C2; dev run t2wdev-pw0: PASS, CS 0868h, CPL 0, DPMI 0.90, flags 0003h)"
 
+
+[[test]]
+name = "T2X-WP-IRQDET"
+decides = "DPMI09:351-400, SBG:1030-1076, VSB:474-512, CT2290"
+runner = "probe"
+env = "PROBE_RUN='T2W:T2PMW.EXE IRQDET'"
+groups = ["t2x"]
+fixed = { build = "pinC2", vmodel = "sb16" }
+client = "pmodew"
+repeat = 10
+secs = 150
+note = "T2W bound with PMODE/W v1.33 (T2PMW.EXE; Michael, 28 Oct 2026: the same cases as under DOS/4GW, the second extender): T2X-W-IRQDET's case and checks, the program the same source (dos/src/pm/t2w.c), its expected result and keys T2X-W-IRQDET's; under C2 PMODE/W runs as uCDD's ring-3 DPMI client, on C0 as its own host over JemmEx's VCPI (A3, C2; dev run wpdev-id2: PASS, 82h 81h then 80h)"
+
+
+[[test]]
+name = "T2C0-WP-IRQDET"
+decides = "DPMI09:351-400, SBG:1030-1076, VSB:474-512, CT2290"
+runner = "probe"
+env = "PROBE_RUN='T2W:T2PMW.EXE IRQDET C0'"
+groups = ["t2xc0"]
+fixed = { mode = "base", vmodel = "sb16" }
+client = "pmodew"
+repeat = 10
+secs = 150
+note = "T2W bound with PMODE/W v1.33 (T2PMW.EXE; Michael, 28 Oct 2026: the same cases as under DOS/4GW, the second extender): T2C0-W-IRQDET's case and checks, the program the same source (dos/src/pm/t2w.c), its expected result and keys T2C0-W-IRQDET's; under C2 PMODE/W runs as uCDD's ring-3 DPMI client, on C0 as its own host over JemmEx's VCPI (A3, C0: the client validated on 86Box's own card before C2; dev run wpdev-id0: PASS, 82h 21h then 20h)"
+
+
+[[test]]
+name = "T2X-WP-AI8"
+decides = "DPMI09:351-400, SBG:3328-3345, SBG:1678-1680, VSB:325-348, VSB:292-304"
+runner = "probewav"
+env = "PROBE_WAV=1 PROBE_RUN='T2W:T2PMW.EXE AI8'"
+groups = ["t2x"]
+fixed = { build = "pinC2", vmodel = "sb16" }
+client = "pmodew"
+repeat = 10
+secs = 150
+note = "T2W bound with PMODE/W v1.33 (T2PMW.EXE; Michael, 28 Oct 2026: the same cases as under DOS/4GW, the second extender): T2X-W-AI8's case and checks, the program the same source (dos/src/pm/t2w.c), its expected result and keys T2X-W-AI8's; under C2 PMODE/W runs as uCDD's ring-3 DPMI client, on C0 as its own host over JemmEx's VCPI (A3, C2; dev run wpdev-ai2: PASS, 3, 1, 0; 2002.7 Hz)"
+
+
+[[test]]
+name = "T2C0-WP-AI8"
+decides = "DPMI09:351-400, SBG:3328-3345, SBG:1678-1680, VSB:325-348, VSB:292-304"
+runner = "probewav"
+env = "PROBE_WAV=1 PROBE_RUN='T2W:T2PMW.EXE AI8 C0'"
+groups = ["t2xc0"]
+fixed = { mode = "base", vmodel = "sb16" }
+client = "pmodew"
+repeat = 10
+secs = 150
+note = "T2W bound with PMODE/W v1.33 (T2PMW.EXE; Michael, 28 Oct 2026: the same cases as under DOS/4GW, the second extender): T2C0-W-AI8's case and checks, the program the same source (dos/src/pm/t2w.c), its expected result and keys T2C0-W-AI8's; under C2 PMODE/W runs as uCDD's ring-3 DPMI client, on C0 as its own host over JemmEx's VCPI (A3, C0: the client validated on 86Box's own card before C2; dev run wpdev-ai0: PASS, 3, 1, 0; 1999.9 Hz)"
+
+
+[[test]]
+name = "T2X-WP-SC8"
+decides = "DPMI09:351-400, SBG:3271-3278, SBG:1590-1591, VSB:319-324, 8237:485-517"
+runner = "probewav"
+env = "PROBE_WAV=1 PROBE_RUN='T2W:T2PMW.EXE SC8'"
+groups = ["t2x"]
+fixed = { build = "pinC2", vmodel = "sb16" }
+client = "pmodew"
+repeat = 10
+secs = 150
+note = "T2W bound with PMODE/W v1.33 (T2PMW.EXE; Michael, 28 Oct 2026: the same cases as under DOS/4GW, the second extender): T2X-W-SC8's case and checks, the program the same source (dos/src/pm/t2w.c), its expected result and keys T2X-W-SC8's; under C2 PMODE/W runs as uCDD's ring-3 DPMI client, on C0 as its own host over JemmEx's VCPI (A3, C2; dev run wpdev-sc2: PASS, 4 and 8 blocks and interrupts; 2002.7 Hz in S0)"
+
+[[test]]
+name = "T2C0-WP-SC8"
+decides = "DPMI09:351-400, SBG:3271-3278, SBG:1590-1591, VSB:319-324, 8237:485-517"
+runner = "probewav"
+env = "PROBE_WAV=1 PROBE_RUN='T2W:T2PMW.EXE SC8 C0'"
+groups = ["t2xc0"]
+fixed = { mode = "base", vmodel = "sb16" }
+client = "pmodew"
+repeat = 10
+secs = 150
+note = "T2W bound with PMODE/W v1.33 (T2PMW.EXE; Michael, 28 Oct 2026: the same cases as under DOS/4GW, the second extender): T2C0-W-SC8's case and checks, the program the same source (dos/src/pm/t2w.c), its expected result and keys T2C0-W-SC8's; under C2 PMODE/W runs as uCDD's ring-3 DPMI client, on C0 as its own host over JemmEx's VCPI (A3, C0: the client validated on 86Box's own card before C2; dev run wpdev-sc0: PASS, 4 and 8 blocks and interrupts; 1999.9 Hz in S0)"
+
+[[test]]
+name = "T2X-WP-DMA"
+decides = "DPMI09:351-400, 8237:225-230, 8237:253-256, 8237:421-427, 8237:485-495, SBG:1590-1591, SBG:1652-1668"
+runner = "probewav"
+env = "PROBE_WAV=1 PROBE_RUN='T2W:T2PMW.EXE DMA'"
+groups = ["t2x"]
+fixed = { build = "pinC2", vmodel = "sb16" }
+client = "pmodew"
+repeat = 10
+secs = 150
+note = "T2W bound with PMODE/W v1.33 (T2PMW.EXE; Michael, 28 Oct 2026: the same cases as under DOS/4GW, the second extender): T2X-W-DMA's case and checks, the program the same source (dos/src/pm/t2w.c), its expected result and keys T2X-W-DMA's; under C2 PMODE/W runs as uCDD's ring-3 DPMI client, on C0 as its own host over JemmEx's VCPI (A3, C2; dev run wpdev-dm2: FAIL on the mask alone, the count 17F8h then 1B79h across MK, 0 interrupts and quiet, every other check passing: CAND-20, as under DOS/4GW)"
+
+[[test]]
+name = "T2C0-WP-DMA"
+decides = "DPMI09:351-400, 8237:225-230, 8237:253-256, 8237:421-427, 8237:485-495, SBG:1590-1591, SBG:1652-1668"
+runner = "probewav"
+env = "PROBE_WAV=1 PROBE_RUN='T2W:T2PMW.EXE DMA C0'"
+groups = ["t2xc0"]
+fixed = { mode = "base", vmodel = "sb16" }
+client = "pmodew"
+repeat = 10
+secs = 150
+note = "T2W bound with PMODE/W v1.33 (T2PMW.EXE; Michael, 28 Oct 2026: the same cases as under DOS/4GW, the second extender): T2C0-W-DMA's case and checks, the program the same source (dos/src/pm/t2w.c), its expected result and keys T2C0-W-DMA's; under C2 PMODE/W runs as uCDD's ring-3 DPMI client, on C0 as its own host over JemmEx's VCPI (A3, C0: the client validated on 86Box's own card before C2; dev run wpdev-dm0: PASS, MK 17FFh held)"
+
+[[test]]
+name = "T2X-WP-PIC"
+decides = "DPMI09:351-400, 8259:565-595, 8259:615-617"
+runner = "probe"
+env = "PROBE_RUN='T2W:T2PMW.EXE PIC'"
+groups = ["t2x"]
+fixed = { build = "pinC2", vmodel = "sb16" }
+client = "pmodew"
+repeat = 10
+secs = 120
+note = "T2W bound with PMODE/W v1.33 (T2PMW.EXE; Michael, 28 Oct 2026: the same cases as under DOS/4GW, the second extender): T2X-W-PIC's case and checks, the program the same source (dos/src/pm/t2w.c), its expected result and keys T2X-W-PIC's; under C2 PMODE/W runs as uCDD's ring-3 DPMI client, on C0 as its own host over JemmEx's VCPI (A3, C2; dev run wpdev-pic2: PASS, the ISR 20h, 20h, 00h; NEST 0 during, 1 after)"
+
+[[test]]
+name = "T2C0-WP-PIC"
+decides = "DPMI09:351-400, 8259:565-595, 8259:615-617"
+runner = "probe"
+env = "PROBE_RUN='T2W:T2PMW.EXE PIC C0'"
+groups = ["t2xc0"]
+fixed = { mode = "base", vmodel = "sb16" }
+client = "pmodew"
+repeat = 10
+secs = 120
+note = "T2W bound with PMODE/W v1.33 (T2PMW.EXE; Michael, 28 Oct 2026: the same cases as under DOS/4GW, the second extender): T2C0-W-PIC's case and checks, the program the same source (dos/src/pm/t2w.c), its expected result and keys T2C0-W-PIC's; under C2 PMODE/W runs as uCDD's ring-3 DPMI client, on C0 as its own host over JemmEx's VCPI (A3, C0: the client validated on 86Box's own card before C2; dev run wpdev-pic0: PASS, the ISR 20h, 20h, 00h; NEST 0 during, 1 after)"
+
+[[test]]
+name = "T2X-WP-HLT"
+decides = "DPMI09:229-230, DPMI09:1382-1385, DPMI09:1376-1418, DPMI09:1455-1470"
+runner = "probe"
+env = "PROBE_RUN='T2W:T2PMW.EXE HLT'"
+groups = ["t2x"]
+fixed = { build = "pinC2", vmodel = "sb16" }
+client = "pmodew"
+repeat = 10
+secs = 90
+note = "T2W bound with PMODE/W v1.33 (T2PMW.EXE; Michael, 28 Oct 2026: the same cases as under DOS/4GW, the second extender): T2X-W-HLT's case and checks, the program the same source (dos/src/pm/t2w.c), its expected result and keys T2X-W-HLT's; under C2 PMODE/W runs as uCDD's ring-3 DPMI client, on C0 as its own host over JemmEx's VCPI (A3, C2; dev run wpdev-hlt2: PASS, CPL 3, one #GP reflected at the HLT, error code 0)"
+
+
+[[test]]
+name = "T2C0-WP-HLT"
+decides = "DPMI09:229-230, DPMI09:1382-1385, DPMI09:1376-1418, DPMI09:1455-1470"
+runner = "probe"
+env = "PROBE_RUN='T2W:T2PMW.EXE HLT C0'"
+groups = ["t2xc0"]
+fixed = { mode = "base", vmodel = "sb16" }
+client = "pmodew"
+repeat = 10
+secs = 90
+note = "T2W bound with PMODE/W v1.33 (T2PMW.EXE; Michael, 28 Oct 2026: the same cases as under DOS/4GW, the second extender): T2C0-W-HLT's case and checks, the program the same source (dos/src/pm/t2w.c), its expected result and keys T2C0-W-HLT's; under C2 PMODE/W runs as uCDD's ring-3 DPMI client, on C0 as its own host over JemmEx's VCPI (A3, C0: the client validated on 86Box's own card before C2; dev run wpdev-hlt0: PASS, CPL 0, no fault)"
+
+
+[[test]]
+name = "T2X-WP-TIMERSTOP"
+decides = "DPMI09:351-400, DPMI09:1613-1652, INTEL94:17304-17420, HOSTCD:94-95, MSCDEX:1030-1044, silent: the gap check (thresholds.toml [gaps]; Michael 26 Oct 2026)"
+searched = "terms: dropout, audible gap, glitch; hits: 75 in 23 documents (PBOOK 19, DOC_241731_002_INTEL486_MICROPROCESSORS_AND_ 10, VIPM 9, FIRE 6, INTEL96 6, 756 4); 28 Oct 2026"
+runner = "probewav"
+env = "PROBE_WAV=1 PROBE_EXTRA='fixtures/synth/out/T1A.BIN|T1\\T1A.BIN;fixtures/synth/out/T1A.CUE|T1\\T1A.CUE' PROBE_RUN='CD:!C:\\SHSUCDX.COM /D:UCDD0001 /L:G > C:\\OUT\\CD.TXT,M:!C:\\UCDD\\UCDD.EXE -mount C:\\T1\\T1A.CUE > C:\\OUT\\M.TXT,T2W:T2PMW.EXE TIMERSTOP MIX'"
+groups = ["t2x"]
+fixed = { build = "pinC2", vmodel = "sb16" }
+client = "pmodew"
+repeat = 10
+secs = 150
+note = "T2W bound with PMODE/W v1.33 (T2PMW.EXE; Michael, 28 Oct 2026: the same cases as under DOS/4GW, the second extender): T2X-W-TIMERSTOP's case and checks, the program the same source (dos/src/pm/t2w.c), its expected result and keys T2X-W-TIMERSTOP's; under C2 PMODE/W runs as uCDD's ring-3 DPMI client, on C0 as its own host over JemmEx's VCPI (A3, C2; dev run wpdev-ts2: PASS, 16015 of 16015, no gap; the closing beep +0.050 s with ticks_lost 55.3 ms, the record clean (question 31))"
+
+[[test]]
+name = "T2C0-WP-TIMERSTOP"
+decides = "DPMI09:351-400, DPMI09:1613-1652, INTEL94:17304-17420, HOSTCD:94-95, MSCDEX:1030-1044, silent: the gap check (thresholds.toml [gaps]; Michael 26 Oct 2026)"
+searched = "terms: dropout, audible gap, glitch; hits: 75 in 23 documents (PBOOK 19, DOC_241731_002_INTEL486_MICROPROCESSORS_AND_ 10, VIPM 9, FIRE 6, INTEL96 6, 756 4); 28 Oct 2026"
+runner = "probewav"
+env = "PROBE_WAV=1 PROBE_CDROM=fixtures/synth/out/T1B.CUE PROBE_RUN='CD:!C:\\MSCDEX.EXE /D:OAKCD001 /L:G > C:\\OUT\\CD.TXT,T2W:T2PMW.EXE TIMERSTOP MIX C0'"
+groups = ["t2xc0"]
+fixed = { mode = "base", vmodel = "sb16" }
+client = "pmodew"
+repeat = 10
+secs = 150
+note = "T2W bound with PMODE/W v1.33 (T2PMW.EXE; Michael, 28 Oct 2026: the same cases as under DOS/4GW, the second extender): T2C0-W-TIMERSTOP's case and checks, the program the same source (dos/src/pm/t2w.c), its expected result and keys T2C0-W-TIMERSTOP's; under C2 PMODE/W runs as uCDD's ring-3 DPMI client, on C0 as its own host over JemmEx's VCPI (A3, C0: the client validated on 86Box's own card before C2; dev run wpdev-ts0: PASS, 16015 of 16015, ticks_lost 0.6 ms)"
 [[test]]
 name = "T2X-W-HLT"
 decides = "DPMI09:229-230, DPMI09:1382-1385, DPMI09:1376-1418, DPMI09:1455-1470"
@@ -3377,6 +3553,149 @@ fixed = { build = "pinC2", vmodel = "sb16" }
 client = "pmodew"
 secs = 90
 note = "planted: T2PMW.EXE HELLO with the word C0 under C2, so CPL 0 is due where uCDD's host runs it at ring 3; T2W's CPL check must FAIL (A3, L4 for the HELLO rows, PMODE/W)"
+
+
+[[test]]
+name = "T2L4-WP-IRQDET"
+decides = "silent: a planted fault (L4): the check it is planted for must fail"
+searched = "terms: planted fault; hits: 2 in 2 documents (SNDLIB 1, docs/sound-engines/dmx.md 1); 28 Oct 2026"
+runner = "probe"
+env = "PROBE_RUN='T2W:T2PMW.EXE IRQDET C0 L4'"
+groups = ["t2l4"]
+fixed = { mode = "base", vmodel = "sb16" }
+client = "pmodew"
+secs = 90
+note = "PMODE/W twin of T2L4-W-IRQDET (T2PMW.EXE, the same word and check): planted: T2PMW.EXE IRQDET with the word L4 leaves the 2xEh acknowledge out of the handler, so 82h bit 0 stays set; T2W's check must FAIL (A3, L4 for T2W IRQDET; on 86Box's own card)"
+
+
+[[test]]
+name = "T2L4-WP-AI8"
+decides = "silent: a planted fault (L4): the check it is planted for must fail"
+searched = "terms: planted fault; hits: 2 in 2 documents (SNDLIB 1, docs/sound-engines/dmx.md 1); 28 Oct 2026"
+runner = "probewav"
+env = "PROBE_WAV=1 PROBE_RUN='T2W:T2PMW.EXE AI8 C0 L4'"
+groups = ["t2l4"]
+fixed = { mode = "base", vmodel = "sb16" }
+client = "pmodew"
+secs = 120
+note = "PMODE/W twin of T2L4-W-AI8 (T2PMW.EXE, the same word and check): planted: T2PMW.EXE AI8 with the word L4 leaves the 2xEh acknowledge out of the handler, so no second block interrupt comes; T2W's interrupt counts must FAIL (A3, L4 for T2W AI8's T2.TXT; on 86Box's own card)"
+
+
+[[test]]
+name = "T2L4-WP-AI8-P"
+decides = "silent: a planted fault (L4): the check it is planted for must fail"
+searched = "terms: planted fault; hits: 2 in 2 documents (SNDLIB 1, docs/sound-engines/dmx.md 1); 28 Oct 2026"
+runner = "probewav"
+env = "PROBE_WAV=1 PROBE_RUN='T2W:T2PMW.EXE AI8 C0 L4P'"
+groups = ["t2l4"]
+fixed = { mode = "base", vmodel = "sb16" }
+client = "pmodew"
+secs = 120
+note = "PMODE/W twin of T2L4-W-AI8-P (T2PMW.EXE, the same word and check): planted: T2PMW.EXE AI8 with the word L4P plays at 11025 Hz, the tone at 1 kHz; tonecheck W-AI8's pitch check must FAIL (A3, L4 for T2W AI8's capture; on 86Box's own card)"
+
+
+[[test]]
+name = "T2L4-WP-SC8"
+decides = "silent: a planted fault (L4): the check it is planted for must fail"
+searched = "terms: planted fault; hits: 2 in 2 documents (SNDLIB 1, docs/sound-engines/dmx.md 1); 28 Oct 2026"
+runner = "probewav"
+env = "PROBE_WAV=1 PROBE_RUN='T2W:T2PMW.EXE SC8 C0 L4'"
+groups = ["t2l4"]
+fixed = { mode = "base", vmodel = "sb16" }
+client = "pmodew"
+secs = 120
+note = "PMODE/W twin of T2L4-W-SC8 (T2PMW.EXE, the same word and check): planted: T2PMW.EXE SC8 with the word L4 leaves the 2xEh acknowledge out of the handler, so the card's line stays high and the second block's interrupt does not come; T2W's check must FAIL (A3, L4 for T2W SC8's T2.TXT; on 86Box's own card)"
+
+
+[[test]]
+name = "T2L4-WP-SC8-P"
+decides = "silent: a planted fault (L4): the check it is planted for must fail"
+searched = "terms: planted fault; hits: 2 in 2 documents (SNDLIB 1, docs/sound-engines/dmx.md 1); 28 Oct 2026"
+runner = "probewav"
+env = "PROBE_WAV=1 PROBE_RUN='T2W:T2PMW.EXE SC8 C0 L4P'"
+groups = ["t2l4"]
+fixed = { mode = "base", vmodel = "sb16" }
+client = "pmodew"
+secs = 120
+note = "PMODE/W twin of T2L4-W-SC8-P (T2PMW.EXE, the same word and check): planted: T2PMW.EXE SC8 with the word L4P halves each block's cycles, the tone near 1 kHz; tonecheck W-SC8's pitch check must FAIL (A3, L4 for T2W SC8's capture; on 86Box's own card)"
+
+
+[[test]]
+name = "T2L4-WP-DMA"
+decides = "silent: a planted fault (L4): the check it is planted for must fail"
+searched = "terms: planted fault; hits: 2 in 2 documents (SNDLIB 1, docs/sound-engines/dmx.md 1); 28 Oct 2026"
+runner = "probewav"
+env = "PROBE_WAV=1 PROBE_RUN='T2W:T2PMW.EXE DMA C0 L4'"
+groups = ["t2l4"]
+fixed = { mode = "base", vmodel = "sb16" }
+client = "pmodew"
+secs = 120
+note = "PMODE/W twin of T2L4-W-DMA (T2PMW.EXE, the same word and check): planted: T2PMW.EXE DMA with the word L4 leaves the mask (port 0Fh) unwritten at MK, so the transfer runs on: the count moves, interrupts come and the tone plays in MK; T2W's mask check and tonecheck's MK silence must FAIL (A3, L4 for T2W DMA's MK; on 86Box's own card)"
+
+
+[[test]]
+name = "T2L4-WP-DMA-P"
+decides = "silent: a planted fault (L4): the check it is planted for must fail"
+searched = "terms: planted fault; hits: 2 in 2 documents (SNDLIB 1, docs/sound-engines/dmx.md 1); 28 Oct 2026"
+runner = "probewav"
+env = "PROBE_WAV=1 PROBE_RUN='T2W:T2PMW.EXE DMA C0 L4P'"
+groups = ["t2l4"]
+fixed = { mode = "base", vmodel = "sb16" }
+client = "pmodew"
+secs = 120
+note = "PMODE/W twin of T2L4-W-DMA-P (T2PMW.EXE, the same word and check): planted: T2PMW.EXE DMA with the word L4P halves the buffer's cycles, the tone near 1 kHz; tonecheck W-DMA's pitch checks must FAIL (A3, L4 for T2W DMA's capture; on 86Box's own card)"
+
+
+[[test]]
+name = "T2L4-WP-PIC"
+decides = "silent: a planted fault (L4): the check it is planted for must fail"
+searched = "terms: planted fault; hits: 2 in 2 documents (SNDLIB 1, docs/sound-engines/dmx.md 1); 28 Oct 2026"
+runner = "probe"
+env = "PROBE_RUN='T2W:T2PMW.EXE PIC C0 L4'"
+groups = ["t2l4"]
+fixed = { mode = "base", vmodel = "sb16" }
+client = "pmodew"
+secs = 90
+note = "PMODE/W twin of T2L4-W-PIC (T2PMW.EXE, the same word and check): planted: T2PMW.EXE PIC with the word L4 leaves the card's own specific EOI out of SEOI, so its in-service bit stays set; T2W's SEOI check must FAIL (A3, L4 for T2W PIC's SEOI; on 86Box's own card)"
+
+
+[[test]]
+name = "T2L4-WP-PIC-N"
+decides = "silent: a planted fault (L4): the check it is planted for must fail"
+searched = "terms: planted fault; hits: 2 in 2 documents (SNDLIB 1, docs/sound-engines/dmx.md 1); 28 Oct 2026"
+runner = "probe"
+env = "PROBE_RUN='T2W:T2PMW.EXE PIC C0 L4N'"
+groups = ["t2l4"]
+fixed = { mode = "base", vmodel = "sb16" }
+client = "pmodew"
+secs = 90
+note = "PMODE/W twin of T2L4-W-PIC-N (T2PMW.EXE, the same word and check): planted: T2PMW.EXE PIC with the word L4N ends IRQ 0 (specific EOI) in its handler before F2h, so the card's request comes during NEST; T2W's NEST check must FAIL (A3, L4 for T2W PIC's NEST; on 86Box's own card)"
+
+
+[[test]]
+name = "T2L4-WP-HLT"
+decides = "silent: a planted fault (L4): the check it is planted for must fail"
+searched = "terms: planted fault; hits: 2 in 2 documents (SNDLIB 1, docs/sound-engines/dmx.md 1); 28 Oct 2026"
+runner = "probe"
+env = "PROBE_RUN='T2W:T2PMW.EXE HLT C0'"
+groups = ["t2l4"]
+fixed = { build = "pinC2", vmodel = "sb16" }
+client = "pmodew"
+secs = 90
+note = "PMODE/W twin of T2L4-W-HLT (T2PMW.EXE, the same word and check): planted: T2PMW.EXE HLT with the word C0 under C2, so no fault is due where uCDD's host reflects one; T2W's check must FAIL (A3, L4 for the W-HLT rows)"
+
+
+[[test]]
+name = "T2L4-WP-TIMERSTOP"
+decides = "silent: a planted fault (L4): the check it is planted for must fail"
+searched = "terms: planted fault; hits: 2 in 2 documents (SNDLIB 1, docs/sound-engines/dmx.md 1); 28 Oct 2026"
+runner = "probewav"
+env = "PROBE_WAV=1 PROBE_EXTRA='fixtures/synth/out/T1AP.BIN|T1\\T1AP.BIN;fixtures/synth/out/T1AP.CUE|T1\\T1AP.CUE' PROBE_RUN='CD:!C:\\SHSUCDX.COM /D:UCDD0001 /L:G > C:\\OUT\\CD.TXT,M:!C:\\UCDD\\UCDD.EXE -mount C:\\T1\\T1AP.CUE > C:\\OUT\\M.TXT,T2W:T2PMW.EXE TIMERSTOP MIX'"
+groups = ["t2l4"]
+fixed = { build = "pinC2", vmodel = "sb16" }
+client = "pmodew"
+secs = 150
+note = "PMODE/W twin of T2L4-W-TIMERSTOP (T2PMW.EXE, the same word and check): planted: T2PMW.EXE TIMERSTOP on T1AP, the disc with tracks 2 and 3 swapped (track 2 at 440 Hz), on the pinned C2; the 1000 Hz tone check in every phase must FAIL (A3, L4 for W-TIMERSTOP's intervals, T2L4-TIMERSTOP's plant)"
 
 [[test]]
 name = "T2L4-PICSEOI-M"
