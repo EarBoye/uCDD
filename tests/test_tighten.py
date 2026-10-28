@@ -184,7 +184,8 @@ def main():
         with_tests = base + ('\n[[test]]\nname = "T-NODEC"\nrunner = "perf"\nargs = "x"\ngroups = ["core"]\n'
                              '\n[[test]]\nname = "T-BADKEY"\nrunner = "perf"\nargs = "x"\ngroups = ["core"]\ndecides = "BOGUS 1-2"\n'
                              '\n[[test]]\nname = "T-SILENT"\nrunner = "perf"\nargs = "x"\ngroups = ["core"]\ndecides = "silent"\n'
-                             '\n[[test]]\nname = "T-GOOD"\nrunner = "perf"\nargs = "x"\ngroups = ["core"]\ndecides = "SBG:6-12, silent: the CT2290 decides"\n')
+                             '\n[[test]]\nname = "T-GOOD"\nrunner = "perf"\nargs = "x"\ngroups = ["core"]\ndecides = "SBG:6-12, silent: the CT2290 decides"\nsearched = "terms: x; hits: 0 in 0 documents; 28 Oct 2026"\n'
+                             '\n[[test]]\nname = "T-UNSEARCHED"\nrunner = "perf"\nargs = "x"\ngroups = ["core"]\ndecides = "silent: the bench decides"\n')
         mtoml.write_text(with_tests)
         done = subprocess.run([PY, str(pkg / 'matrix' / 'plan.py'), 'check'], cwd=str(wt),
                               capture_output=True, text=True, env={**os.environ, **env})
@@ -192,7 +193,9 @@ def main():
         check('T-NODEC: no "decides"' in out, 'plan check: a test without decides is reported')
         check('T-BADKEY: decides "BOGUS" is not a key' in out, 'plan check: an unknown decides key is a problem')
         check('T-SILENT: decides "silent" needs what decides' in out, 'plan check: a bare silent is a problem')
-        check('T-GOOD' not in out, 'plan check: a good decides line (key and silent-with-reason) passes')
+        check('T-GOOD' not in out, 'plan check: a good decides line (key and silent-with-reason, searched) passes')
+        check('T-UNSEARCHED: decides "silent" without a "searched" line' in out,
+              'plan check (r3.7): a silent without a searched line is reported')
         mtoml.write_text(base)
 
         # --- fixed.py ---

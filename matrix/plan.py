@@ -527,20 +527,33 @@ def check(matrix):
     _method = _toml.loads((Path(__file__).resolve().parent.parent / 'method.toml').read_text())
     _keys = set(_method.get('references', {}).get('keys', {}))
     _required = bool(_method.get('matrix', {}).get('decides_required', False))
+    # r3.7: a "silent" is a claim that the library was searched and holds nothing. The row
+    # proves it with a "searched" line from tools/libsearch.py --searched (terms, hit count,
+    # date). Missing: a warning until [matrix].searched_required, then a problem.
+    _searched_required = bool(_method.get('matrix', {}).get('searched_required', False))
+    _searched_form = re.compile(r'terms:\s*\S.*;\s*hits:\s*\d+', re.I)
     for name, entry in matrix.tests.items():
         decides = entry.get('decides')
         if not decides:
             (problems if _required else warnings).append(
                 f'test {name}: no "decides" (the key that decides its expected result, or "silent: <what decides>")')
         else:
+            silent = False
             for item in str(decides).split(','):
                 item = item.strip()
                 head = re.split(r'[\s,;:]', item, maxsplit=1)[0].strip()
                 if head.lower() == 'silent':
+                    silent = True
                     if ':' not in item or not item.split(':', 1)[1].strip():
                         problems.append(f'test {name}: decides "silent" needs what decides instead')
                 elif _keys and head not in _keys:
                     problems.append(f'test {name}: decides "{head}" is not a key in method.toml [references.keys]')
+            if silent:
+                searched = str(entry.get('searched', '')).strip()
+                if not searched or not _searched_form.search(searched):
+                    (problems if _searched_required else warnings).append(
+                        f'test {name}: decides "silent" without a "searched" line (terms and hit count from '
+                        f'tools/libsearch.py --searched); silent means searched and not found')
         if entry.get('runner') not in matrix.runners:
             problems.append(f'test {name}: no runner "{entry.get("runner")}"')
         values_ok(f'test {name} fixed', entry.get('fixed', {}), single=True)

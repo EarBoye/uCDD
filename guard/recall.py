@@ -235,6 +235,26 @@ def doc_hits(terms, top):
             found.append(f'{key}:{number}: {text.strip()[:120]}')
         if len(found) >= DOC_HITS:
             break
+    # r3.7: the keyed files are not the whole library. When they give fewer hits than
+    # asked for, the rest of the worktree's text is searched too, named by path, so a
+    # document with no key yet (the audit's D3h sat in two of them) is still shown.
+    if len(found) < DOC_HITS:
+        keyed = {str((tree / name).resolve()) for name in REF_KEYS.values()}
+        try:
+            done = subprocess.run(['grep', '-r', '-n', '-i', '-I', '-m', '2', '-E', pattern,
+                                   '--include=*.txt', '--include=*.md', str(tree)],
+                                  capture_output=True, text=True)
+            for line in done.stdout.splitlines():
+                path, _, rest = line.partition(':')
+                if str(Path(path).resolve()) in keyed:
+                    continue
+                number, _, text = rest.partition(':')
+                rel = str(Path(path).resolve().relative_to(tree.resolve()))
+                found.append(f'{rel}:{number}: {text.strip()[:120]}')
+                if len(found) >= DOC_HITS:
+                    break
+        except (OSError, ValueError):
+            pass
     return found[:DOC_HITS], ''
 
 
