@@ -1191,6 +1191,22 @@ Observed, a1: T2X-DMAMASK-A1, plan f8c012c0 `fail: 10` (runs f8c012c0-001 to -01
 Hypothesis, a1 (labelled, not tested; by reading): the same mechanism as the pin's: a1's mixer sums silence while the owned channel is masked and advances the frame (src/audio/mix.asm 432-437 at c5531c8, the pin's lines); its starved state (sb_starved) is set only for a single-cycle block longer than the DMA count (trap.asm:1391) and cleared at an unmask, so a mask during auto-init does not hold the stream. The upstream report: the case, its T2.TXT line, the two counts and this reading. Label: upstream candidate (8237:421-427, 493-495).
 Evidence: emulator (plans d34e05da, 3b9b90c9, 871d558f, 81ad7f7c, f8c012c0; protected mode c14ca056, e77493eb, d716334f), dynarec off; the mechanism by reading, in part. Hardware: UNCONFIRMED (AKIT: the CT2290 confirms the remainder; 86Box can be as wrong here as uCDD, as for CAND-17).
 
+### CAND-21 Tier 2, T2X-P-DMAHI: an 8-bit auto-init transfer from a buffer above 1 MB (below 16 MB) gives no interrupt and no sound (found 28 Oct 2026, open; the fork line lacks the upstream fix: a1 passes, B's backlog, LACKS-FIX; pin and a1 sections)
+
+Pinned: count-position 7994cd1 (C2 hash UCDD.EXE 03d92066, UCDDHOST.BIN 447ace33; the bench's fixtures/pinned/MANIFEST.txt). Bin: CANDIDATE_UCDD_SFX, FAIL 10/10 under C2, the same failing checks in every run (Tier 2; the template's 3/3 is the sweep's).
+Cell: none (Tier 2: T2P.EXE, the raw 16-bit DPMI client, no game), scope not applicable; games whose DMA buffer is above 1 MB are not known (a DOS extender's buffer is DOS memory as a rule); the census can look for a channel address with a page register value of 10h or more.
+Affected: not known. Controls: C0 PASS 10/10 (T2C0-P-DMAHI, plan 1854895f: HDPMI16 on 86Box's own card, the 16 KB at physical 0024C000h, 3, 1, 0 interrupts, 1999.9 Hz); C1 not applicable.
+Related: UPA6's table (this file, 24 Oct 2026): "trap.asm, a DMA buffer above 1 MB | every format, single-cycle and auto-init (a2) | 8-bit mono single-cycle only | his": the author's line takes every format there, the fork's line 8-bit mono single-cycle only; merge-a6 keeps his (built, not run).
+Structure (Michael, 28 Oct 2026, question 28): pin and a1 sections, one expectation and citation.
+Expected: the channel programmed with a physical address at or above 1 MB and below 16 MB (the page register's 24 bits; 8237:331-338, SBG:1285-1294; Michael, 28 Oct 2026, question 33) reads that memory as any other: AI8's playback from it, 3 to 5 block interrupts in 27 ticks, 1 after DAh, 0 after (SBG:3328-3345, 1678-1680), and the tone. The buffer: a locked XMS block (XMS30:572-590: "32-bit physical address of the locked block") mapped into the client by INT 31h 0800h (DPMI09:2502-2533).
+Observed, pin: T2X-P-DMAHI, plan 442cbb02 `fail: 10` (runs 442cbb02-011 to -020 by the plan's order): the 16 KB at physical 00217400h (linear 00400400h through uCDD's host) in all ten; 0 interrupts in 27 ticks, 0 after DAh; tonecheck no tone in AI (`AI+0.2-1.2 s 2002 Hz: 0/1 windows (peak nan Hz, SNR -inf dB) FAIL`). T2.TXT, the dev run t2pdev-hi2: `FAIL DMAHI a DMA buffer above 1 MB from XMS (locked, mapped by INT 31h 0800h): the 16 KB at physical 00217400h ... 1 request(s), linear 00400400h; AI8's playback from it: 0 interrupts in 27 ticks (3 to 5), 0 after DAh (1), 0 after that (0)`. Underruns: none in a case.
+Stall or guest (Michael, 26 Oct 2026): not applicable: no interrupt at all; the failing checks are the guest's own counts and the absent tone.
+L4 (the checks fail on a known-bad input, on C0 where they pass): T2L4-P-DMAHI-P, plan da543803 `fail` (L4P: 11025 Hz, the tone at 999.9 Hz); the counts' plant is AI8's (T2L4-P-AI8, a5a88cca), the same code.
+Trace: by reading, in part: UPA6's table above (the fork's line: memory above 1 MB for 8-bit mono single-cycle only); the pinned trap.asm not read for this row yet.
+Hypothesis, pin (labelled, not tested; mine): the virtual transfer refuses, or never starts, an auto-init (or any but 8-bit mono single-cycle) block whose source is above 1 MB, so no block ends and no interrupt comes; the author's a2 change is the fix (his: every format, single-cycle and auto-init).
+Observed, a1: T2X-P-DMAHI-A1, plan ef79c67d `pass: 10`: the 16 KB at physical 00218000h (linear 00400000h), 3 interrupts in 27 ticks, 1999.9 Hz (a1 plays 41h's rate as asked). The fork line lacks the upstream fix: B's backlog (LACKS-FIX, Michael, 28 Oct 2026, question 28's labels).
+Evidence: emulator (plans 1854895f, 442cbb02, da543803, ef79c67d), dynarec off. Hardware: UNCONFIRMED (the CT2290 reads any physical address below 16 MB; the PC confirms the pin's failure in AKIT if Michael adds it).
+
 ### FLAKY-1 Tier 2, T2X-PICHOLD and T2X-PICHOLD12: 2 of 10 and 1 of 10 runs under C2 lose 20 ms of the 2 kHz tone in silence of the recorder stall's shape (filed 27 Oct 2026, closed the same day: recorder insertions)
 
 Pinned: count-position 7994cd1 (C2 hash UCDD.EXE 03d92066, UCDDHOST.BIN 447ace33). Bin: FLAKY (Michael, 27 Oct 2026; project_a.md has no FLAKY bin: as on 25 Oct, "9/10 is FAIL with the count" carries it), until the host's record can be cited.
@@ -1368,7 +1384,7 @@ Closed (Michael, 27 Oct 2026): a missed refill cannot move the closing beep; onl
   line is IRQ 12 (its serial ports off: T2X-PICHOLD12). Nothing in uCDD.
   Evidence: data sheet and 86Box's source; emulator (the runs).
 
-### DOSDATE: MS-DOS 7.1's Get Date sets the BIOS tick count again (found 28 Oct 2026; environment, open: question 32)
+### DOSDATE: MS-DOS 7.1's Get Date sets the BIOS tick count again (found 28 Oct 2026; environment; question 32 answered the same day)
 
 - Seen [86Box, both C0 and C2] in T2P CHILD (the raw DPMI client EXECing
   itself through INT 31h 0300h): across INT 21h 2Ah alone the count at
@@ -1383,8 +1399,15 @@ Closed (Michael, 27 Oct 2026): a missed refill cannot move the closing beep; onl
   time-of-day clock". libsearch: "terms: CLOCK$, tick count, ticks since
   midnight, 1A01, real-time clock; hits: 179 in 23 documents; 28 Oct
   2026", none on a reset.
+- For the sweep and the kit (Michael, 28 Oct 2026, question 32): on MS-DOS
+  7.1 a BIOS tick count read across a DOS date or time call is unreliable;
+  the sweep's alignment (the beep before launch) is unaffected; AKIT
+  confirms on the PC. Seen again at a child program's end (t2pdev-che0:
+  the parent's next mark 18 ticks below the child's last).
 - Effect: a capture placed by the BIOS tick (tonecheck) cannot be placed
-  across a DOS date read or an EXEC. T2.EXE and T2W ask for no date; T2P
+  across a DOS date read or an EXEC: each phase is placed by a beep in its
+  own count (tonecheck: the nearest beep before it; T2P CHILD's BEEP,
+  BEEPC and BEEP2). T2.EXE and T2W ask for no date; T2P
   CHILD must EXEC (question 32). Hardware: UNCONFIRMED (AKIT, the Get
   Date check). Evidence: emulator.
 
