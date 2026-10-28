@@ -14,7 +14,7 @@ version = 1
 
 # Every value an axis can take.
 [axes]
-physical = ["sb16", "es1688"]
+physical = ["sb16", "es1688", "pro", "sb2"]   # pro, sb2: 86Box's SB Pro v2 and SB 2.0 (Michael, 28 Oct 2026, T2X-13)
 pirq = [5, 7]
 vmodel = ["sb16", "pro", "sb2", "ess"]
 virq = [5, 7]
@@ -91,6 +91,13 @@ ess = "4"
 [words.physical]
 sb16 = "--sound sb16 --card sb16"
 es1688 = "--card essfast"
+
+# The physical card for probe_test.py (PROBE_CARD; 86Box's card and UCDD.CFG's
+# card byte, 1 SB Pro and 3 SB 2.0, from ucddcfg through rig86.pc_setup): set
+# for pro and sb2 only, so the sb16 rows' plans are unchanged (Michael, 28 Oct 2026).
+[env.physical]
+pro = "PROBE_CARD=pro"
+sb2 = "PROBE_CARD=sb2"
 
 # The environment each value sets: game_live.py, sndreg and probe_test.py
 # read GL_IRQ, GL_VIRQ, GL_VMODEL and GL_CFG_V4 (always,fast); fixtest.py
@@ -1289,13 +1296,25 @@ note = "disc T1D.ISO: C1, the CD-only build: T1D.ISO: Read Long of CHECK.TXT CRC
 name = "T2X-13"
 decides = "silent: the tone's own pitch within 0.5 % (question 7)"
 searched = "terms: physical axis; hits: 0 in 0 documents; 28 Oct 2026"
-runner = "probe"
+runner = "probewav"
+env = "PROBE_WAV=1 PROBE_EXTRA='fixtures/synth/out/T1A.BIN|T1\\T1A.BIN;fixtures/synth/out/T1A.CUE|T1\\T1A.CUE' PROBE_RUN='CD:!C:\\SHSUCDX.COM /D:UCDD0001 /L:G > C:\\OUT\\CD.TXT,M:!C:\\UCDD\\UCDD.EXE -mount C:\\T1\\T1A.CUE > C:\\OUT\\M.TXT,T1:T1.EXE PLAY2'"
 groups = ["t2x"]
-fixed = { build = "pinC2" }
+fixed = { build = "pinC2", vmodel = "sb16", physical = "pro" }
 repeat = 10
-note = "the pitch of a 1 kHz CD tone under 86Box's SB Pro and SB 2.0 as the physical card (output 43478 and 44444 Hz), within 0.5 % (Michael, 25 Oct 2026, question 7: the resampler's pitch is NOT-UNIT-TESTABLE; the ESS stays parked)"
-todo = "A3: not written; the physical axis has no SB Pro or SB 2.0 value yet"
+secs = 120
+note = "the pitch of the 1 kHz CD tone with 86Box's SB Pro v2 as the physical card (uCDD's output at 43478 Hz), within 0.5 % (Michael, 25 Oct 2026, question 7: the resampler's pitch NOT-UNIT-TESTABLE in A2, so the case here; tonecheck's tolerance, PITCHCAL): T1.EXE PLAY2 on T1A (track 2 10 s, then STOP AUDIO), judged by T1.TXT and tonecheck PLAY2 (1000 Hz in 90 % of 1 s windows, its onset, no gap, quiet after the stop); the physical axis's pro value and UCDD.CFG's card byte from the generator (Michael, 28 Oct 2026) (A3, C2; dev run t13dev-pro: PASS, 1000.0 Hz, SNR 95 dB, no gap)"
 
+[[test]]
+name = "T2X-13-SB2"
+decides = "silent: the tone's own pitch within 0.5 % (question 7)"
+searched = "terms: physical axis; hits: 0 in 0 documents; 28 Oct 2026"
+runner = "probewav"
+env = "PROBE_WAV=1 PROBE_EXTRA='fixtures/synth/out/T1A.BIN|T1\\T1A.BIN;fixtures/synth/out/T1A.CUE|T1\\T1A.CUE' PROBE_RUN='CD:!C:\\SHSUCDX.COM /D:UCDD0001 /L:G > C:\\OUT\\CD.TXT,M:!C:\\UCDD\\UCDD.EXE -mount C:\\T1\\T1A.CUE > C:\\OUT\\M.TXT,T1:T1.EXE PLAY2'"
+groups = ["t2x"]
+fixed = { build = "pinC2", vmodel = "sb16", physical = "sb2" }
+repeat = 10
+secs = 120
+note = "the pitch of the 1 kHz CD tone with 86Box's SB 2.0 as the physical card (uCDD's output at 44444 Hz), within 0.5 % (Michael, 25 Oct 2026, question 7: the resampler's pitch NOT-UNIT-TESTABLE in A2, so the case here; tonecheck's tolerance, PITCHCAL): T1.EXE PLAY2 on T1A (track 2 10 s, then STOP AUDIO), judged by T1.TXT and tonecheck PLAY2 (1000 Hz in 90 % of 1 s windows, its onset, no gap, quiet after the stop); the physical axis's sb2 value and UCDD.CFG's card byte from the generator (Michael, 28 Oct 2026) (A3, C2; dev run t13dev-sb2: PASS, 1000.0 Hz, SNR 116 dB, no gap)"
 [[test]]
 name = "T2X-RESET"
 decides = "VSB:114-150, SBG:900-921"
@@ -3822,6 +3841,17 @@ fixed = { mode = "base", vmodel = "sb16" }
 client = "dpmi16"
 secs = 120
 note = "planted: T2P.EXE DMAHI with the word L4P plays at 11025 Hz, the tone at 1 kHz; tonecheck W-DMAHI's pitch must FAIL (A3, L4 for T2P DMAHI's capture)"
+
+[[test]]
+name = "T2L4-13"
+decides = "silent: a planted fault (L4): the check it is planted for must fail"
+searched = "terms: planted fault; hits: 2 in 2 documents (SNDLIB 1, docs/sound-engines/dmx.md 1); 28 Oct 2026"
+runner = "probewav"
+env = "PROBE_WAV=1 PROBE_EXTRA='fixtures/synth/out/T1AP.BIN|T1\\T1AP.BIN;fixtures/synth/out/T1AP.CUE|T1\\T1AP.CUE' PROBE_RUN='CD:!C:\\SHSUCDX.COM /D:UCDD0001 /L:G > C:\\OUT\\CD.TXT,M:!C:\\UCDD\\UCDD.EXE -mount C:\\T1\\T1AP.CUE > C:\\OUT\\M.TXT,T1:T1.EXE PLAY2'"
+groups = ["t2l4"]
+fixed = { build = "pinC2", vmodel = "sb16", physical = "pro" }
+secs = 120
+note = "planted: T1.EXE PLAY2 on T1AP (tracks 2 and 3 swapped, track 2 at 440 Hz) with 86Box's SB Pro as the physical card; T2X-13's 1000 Hz check must FAIL (A3, L4 for T2X-13's pitch on the new physical axis value)"
 [[test]]
 name = "T2L4-PICSEOI-M"
 decides = "silent: a planted fault (L4): the check it is planted for must fail"
