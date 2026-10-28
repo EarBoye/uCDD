@@ -3851,7 +3851,7 @@ env = "PROBE_WAV=1 PROBE_EXTRA='fixtures/synth/out/T1AP.BIN|T1\\T1AP.BIN;fixture
 groups = ["t2l4"]
 fixed = { build = "pinC2", vmodel = "sb16", physical = "pro" }
 secs = 120
-note = "planted: T1.EXE PLAY2 on T1AP (tracks 2 and 3 swapped, track 2 at 440 Hz) with 86Box's SB Pro as the physical card; T2X-13's 1000 Hz check must FAIL (A3, L4 for T2X-13's pitch on the new physical axis value)"
+note = "planted: T1.EXE PLAY2 on T1AP (tracks 2 and 3 swapped, track 2 at 440 Hz) with 86Box's SB Pro as the physical card; T2X-13's 1000 Hz check must FAIL (A3, L4 for T2X-13's pitch on the new physical axis value). Its first take (plan 74c07910) BLOCKED, three captures stretched by the recorder (the tone 10.6 and 12.0 s, the closing beep +0.74 and +2.2 s): the 86FILL mechanism, T1.EXE's spinning waits on the SB Pro's output path (Michael, 28 Oct 2026); taken again, fail on pitch. T1.EXE halts since bench 060dc9e: dev t1h-prop and -prop2, the plant on the SB Pro, intact captures (the closing beep -0.000 s) failing on pitch alone"
 [[test]]
 name = "T2L4-PICSEOI-M"
 decides = "silent: a planted fault (L4): the check it is planted for must fail"
