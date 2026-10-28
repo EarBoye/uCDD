@@ -1524,6 +1524,13 @@ Closed (Michael, 27 Oct 2026): a missed refill cannot move the closing beep; onl
   case now idles to the next BIOS tick (a HLT that returns at once is not
   a wait). A5's fill-rate measurement expects it: the calibration set's
   games under C2 fill as busy loops would, whether they spin or halt.
+- Again on 28 Oct 2026 (Michael: the 86FILL mechanism): T2L4-13, T1.EXE
+  PLAY2 on T1AP with 86Box's SB Pro v2 as uCDD's physical card, plan
+  74c07910's first take: three captures stretched (the tone 10.6 and 12.0
+  s where 10.0 was due, the closing beep +0.74 and +2.2 s), T1.EXE's waits
+  then spinning (wait_mark looping on INT 1Ah). T1.EXE converted to halting
+  waits (bench 060dc9e): the same plant twice (t1h-prop, -prop2) with
+  intact captures. T1.EXE's earlier evidence stands as recorded.
 
 ### TOL2: "within 2" in the interrupt counts of CLIGAP, PICHOLD and DMAMC (a bench tolerance; written 27 Oct 2026)
 
