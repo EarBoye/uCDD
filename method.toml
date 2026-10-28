@@ -422,6 +422,8 @@ vsb-spec = "the same document as VSB, under the name the rows cite"
 # result, or "silent: <what decides instead>"; a test without one is a problem.
 # Set 26 Oct 2026, once all 133 rows had one (Michael).
 [matrix]
+# r3.7, T9 item 3 (Michael, 28 Oct 2026): a silent decides needs its libsearch line
+searched_required = true
 decides_required = true
 
 # tools/fixed.py, the fixes index: commits reachable from these refs are the
