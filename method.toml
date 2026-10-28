@@ -175,6 +175,7 @@ worktree = "../refs"
 # Hand-named keys: the documents the rows cite. The value is the path on the
 # reference-library branch, checked out as the refs worktree.
 SBG = "Sound Cards/Superset references/Sound_Blaster_Series_Hardware_Programming_Guide.txt"
+SB202SPEC = "Sound Cards/Superset references/Sb202Spec.md"  # the Snark Barker's DSP 2.02 specification, schlae/snark-barker 56ed836, CC BY-SA 4.0 (Michael, 28 Oct 2026); its lines are the original's plus two
 SBDK = "Sound Cards/Superset references/Developer_Kit_SB_Series_Hardware_Programming_Reference.txt"
 ES1868 = "Sound Cards/ESS AudioDrive/ESS_ES1868_Data_Sheet_1996.txt"
 ES1869 = "Sound Cards/ESS AudioDrive/DS1869.txt"
@@ -325,6 +326,7 @@ CT2290 = "docs/sound-engines/ct2290.md"
 [references.decides]
 README = "image formats and mounting (ISO, CUE/BIN, MDM), virtual card models and BLASTER, hotkeys, the driver's documented limits (the pinned upstream README)"
 SBG = "DSP commands, time constants, mixer registers, DMA programming, the detection sequence (Creative's Hardware Programming Guide)"
+SB202SPEC = "the DSP 2.0x where SBG is silent: the SB 2.0 rows, 2-bit and 2.6-bit ADPCM, the 1 MHz timer behind the time constant (Michael, 28 Oct 2026)"
 SBDK = "the same as SBG in the Developer Kit's wording; use when SBG is silent"
 ES1868 = "the ES1868's registers, SB compatibility mode, clock trim, FM mute"
 ES1869 = "the ES1869 (first revision)"
