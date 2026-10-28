@@ -397,6 +397,18 @@ the block size and start with 90h or 91h. [doc]
     the channel there and does not judge it.
   - The pinned build (count-position 7994cd1) puts the data's first byte
     left: ISSUES.md CAND-15 (no fix under Project A's freeze).
+  - The DSP firmware, re-read (Michael, 28 Oct 2026: PROST's expected
+    result against the CT1341's 3.02, grade [fw]; the mantra's rule 7:
+    nothing above changed, this added). Silent on the channel. FW302
+    keeps no left or right: 14h's single byte, 1Ch's auto-init bytes and
+    90h/91h's high-speed bytes each go from the DMA to its one DAC port
+    the same way, and no flag or pin of the 3.02 marks a channel. The
+    alternation between left and right is outside the DSP, in the CT1345
+    mixer's handling of the DAC output with 0Eh's stereo switch set, for
+    which no document is held. So the firmware does not decide which
+    channel the data's first byte takes; the rule above (emulation decides,
+    the data's first byte right) stands, and an SB Pro 2 decides when one
+    is on hand.
 
 ### 7.5 ADPCM (SBG:1360-1377, 3289-3714)
 
