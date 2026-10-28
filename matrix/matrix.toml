@@ -2910,30 +2910,26 @@ secs = 150
 note = "8-bit mono single-cycle from protected mode under DOS/4GW (T2D4GW.EXE, DOS4GW.EXE beside it): T2.EXE SC8's 4096-byte steps, S0 at 11025 Hz and S1 at 22050 (41h), a 4096-byte buffer in DOS memory (INT 31h 0100h, within one 64 KB page) of whole cycles near 2 kHz (743 and 372), the channel set again for each block (mode 49h, 8237:485-517) and 14h 4095 sent once the last block's interrupt has come (SBG:3271-3278; 'The DSP will generate an interrupt after transferring the programmed number of bytes', SBG:1590-1591; the handler through INT 21h 25h, DPMI09:351-400), 27 ticks a step. Judged in T2.TXT as T2.EXE's: an interrupt for every block sent, none timed out; tonecheck W-SC8: each step's tone from +0.15 to +1.15 s at the card's pitch (C2 through the virtual SB16's 41h register, VSB:292-304: 2002.9 and 2005.6 Hz; C0 as asked, 1999.9 and 2002.6 Hz), no gap of 20 ms or more to +1.45 s. The citation was SBG:3271-3290 when the row was planned; 3279-3290 is 16h (ADPCM), so 3271-3278 (28 Oct 2026) (A3, C0: the client validated on 86Box's own card before C2; dev run t2wdev-sc0: PASS, 4 and 8 blocks and interrupts; 1999.8 and 2002.5 Hz)"
 [[test]]
 name = "T2X-W-DMA"
-decides = "DPMI09:351-400, 8237:225-230, 8237:485-517"
+decides = "DPMI09:351-400, 8237:225-230, 8237:253-256, 8237:421-427, 8237:485-495, SBG:1590-1591, SBG:1652-1668"
 runner = "probewav"
-env = "PROBE_WAV=1 PROBE_RUN='T2:T2W.EXE DMA'"
+env = "PROBE_WAV=1 PROBE_RUN='D:!SET DOS4GPATH=C:\\DOS4GW.EXE,T2W:T2D4GW.EXE DMA'"
 groups = ["t2x"]
 fixed = { build = "pinC2", vmodel = "sb16" }
 client = "dos4gw"
 repeat = 10
 secs = 150
-note = "the 8237 from protected mode: master clear, mask-all and the count read during playback (A3, C2)"
-todo = "A3: T2W.EXE, the DOS/4GW build, not written yet; Open Watcom not yet installed in ~/.local/opt"
-
+note = "the 8237 from protected mode under DOS/4GW (T2D4GW.EXE, DOS4GW.EXE beside it): T2.EXE's DMAREAD, DMAMASK and DMAMC in one playback, 8-bit auto-init at 22050 Hz (41h), an 8 KB buffer in DOS memory (INT 31h 0100h) of 743 cycles, 4 KB blocks (48h 4095, 1Ch), the handler through INT 21h 25h (DPMI09:351-400) acknowledging each block; 27 ticks a phase, 8 block interrupts due (7.98), within 2 as DMAMC. DR: 64 readings a tick of the address and count through the flip-flop (8237:225-230), two passes with interrupts off kept within 8 bytes, an idle to the next tick between bursts (DMAREAD's pacing): every kept reading inside the buffer and the count moving (8237:253-256). MK: half a block into the next block, Write All Mask Register Bits (port 0Fh): a mask bit 'can be set to disable the incoming DREQ' (8237:421-427), so the count read once masked and at the end the same, no interrupt (SBG:1590-1591), quiet. MU: Clear Mask Register (port 0Eh, 8237:493-495): the tone, 6 to 10. MC: Master Clear (port 0Dh), 'the Mask register is set. The 8237A will enter the Idle cycle' (8237:485-491): no interrupt, quiet. MS: the channel set up again, the DSP left as it was (SBG:1652-1668): the tone, 6 to 10. Judged in T2.TXT; tonecheck W-DMA: the tone in DR, MU and MS at the card's pitch (C2 through the virtual SB16's 41h register: 2003.0 Hz; C0 1999.9 Hz), quiet in MK and MC, no gap of 20 ms or more. DMAMASK's unmask window (the first interrupt within 2.00 ms of the remainder) is not repeated here: no TSC in T2W; the real-mode row keeps it (A3, C2; dev run t2wdev-dm2: FAIL on the mask alone, the count 17F6h then 1B78h across MK with 0 interrupts and quiet, every other check passing: CAND-20 from protected mode)"
 [[test]]
 name = "T2C0-W-DMA"
-decides = "DPMI09:351-400, 8237:225-230, 8237:485-517"
+decides = "DPMI09:351-400, 8237:225-230, 8237:253-256, 8237:421-427, 8237:485-495, SBG:1590-1591, SBG:1652-1668"
 runner = "probewav"
-env = "PROBE_WAV=1 PROBE_RUN='T2:T2W.EXE DMA'"
+env = "PROBE_WAV=1 PROBE_RUN='D:!SET DOS4GPATH=C:\\DOS4GW.EXE,T2W:T2D4GW.EXE DMA C0'"
 groups = ["t2xc0"]
 fixed = { mode = "base", vmodel = "sb16" }
 client = "dos4gw"
 repeat = 10
 secs = 150
-note = "the 8237 from protected mode: master clear, mask-all and the count read during playback (A3, C0: the client validated on 86Box's own card before C2)"
-todo = "A3: T2W.EXE, the DOS/4GW build, not written yet; Open Watcom not yet installed in ~/.local/opt"
-
+note = "the 8237 from protected mode under DOS/4GW (T2D4GW.EXE, DOS4GW.EXE beside it): T2.EXE's DMAREAD, DMAMASK and DMAMC in one playback, 8-bit auto-init at 22050 Hz (41h), an 8 KB buffer in DOS memory (INT 31h 0100h) of 743 cycles, 4 KB blocks (48h 4095, 1Ch), the handler through INT 21h 25h (DPMI09:351-400) acknowledging each block; 27 ticks a phase, 8 block interrupts due (7.98), within 2 as DMAMC. DR: 64 readings a tick of the address and count through the flip-flop (8237:225-230), two passes with interrupts off kept within 8 bytes, an idle to the next tick between bursts (DMAREAD's pacing): every kept reading inside the buffer and the count moving (8237:253-256). MK: half a block into the next block, Write All Mask Register Bits (port 0Fh): a mask bit 'can be set to disable the incoming DREQ' (8237:421-427), so the count read once masked and at the end the same, no interrupt (SBG:1590-1591), quiet. MU: Clear Mask Register (port 0Eh, 8237:493-495): the tone, 6 to 10. MC: Master Clear (port 0Dh), 'the Mask register is set. The 8237A will enter the Idle cycle' (8237:485-491): no interrupt, quiet. MS: the channel set up again, the DSP left as it was (SBG:1652-1668): the tone, 6 to 10. Judged in T2.TXT; tonecheck W-DMA: the tone in DR, MU and MS at the card's pitch (C2 through the virtual SB16's 41h register: 2003.0 Hz; C0 1999.9 Hz), quiet in MK and MC, no gap of 20 ms or more. DMAMASK's unmask window (the first interrupt within 2.00 ms of the remainder) is not repeated here: no TSC in T2W; the real-mode row keeps it (A3, C0: the client validated on 86Box's own card before C2; dev run t2wdev-dm0: PASS, DR 1728 readings, 0 torn, 7 interrupts; MK 17FFh held, 0; MU 8; MC 0; MS 8; 1999.9 Hz)"
 [[test]]
 name = "T2X-W-PIC"
 decides = "DPMI09:351-400, 8259:565-599"
@@ -3482,6 +3478,30 @@ fixed = { mode = "base", vmodel = "sb16" }
 client = "dos4gw"
 secs = 120
 note = "planted: T2D4GW.EXE SC8 with the word L4P halves each block's cycles, the tone near 1 kHz; tonecheck W-SC8's pitch check must FAIL (A3, L4 for T2W SC8's capture; on 86Box's own card; dev run t2wdev-sc0l4p: peaks 998.6 and 1001.3 Hz)"
+
+[[test]]
+name = "T2L4-W-DMA"
+decides = "silent: a planted fault (L4): the check it is planted for must fail"
+searched = "terms: planted fault; hits: 2 in 2 documents (SNDLIB 1, docs/sound-engines/dmx.md 1); 28 Oct 2026"
+runner = "probewav"
+env = "PROBE_WAV=1 PROBE_RUN='D:!SET DOS4GPATH=C:\\DOS4GW.EXE,T2W:T2D4GW.EXE DMA C0 L4'"
+groups = ["t2l4"]
+fixed = { mode = "base", vmodel = "sb16" }
+client = "dos4gw"
+secs = 120
+note = "planted: T2D4GW.EXE DMA with the word L4 leaves the mask (port 0Fh) unwritten at MK, so the transfer runs on: the count moves, interrupts come and the tone plays in MK; T2W's mask check and tonecheck's MK silence must FAIL (A3, L4 for T2W DMA's MK; on 86Box's own card; dev run t2wdev-dm0l4b: the count 17FFh then 1BCDh, 8 interrupts, MK -18.7 dBFS; the first draft, t2wdev-dm0l4, also left the handler's acknowledge out, two faults in one plant, corrected)"
+
+[[test]]
+name = "T2L4-W-DMA-P"
+decides = "silent: a planted fault (L4): the check it is planted for must fail"
+searched = "terms: planted fault; hits: 2 in 2 documents (SNDLIB 1, docs/sound-engines/dmx.md 1); 28 Oct 2026"
+runner = "probewav"
+env = "PROBE_WAV=1 PROBE_RUN='D:!SET DOS4GPATH=C:\\DOS4GW.EXE,T2W:T2D4GW.EXE DMA C0 L4P'"
+groups = ["t2l4"]
+fixed = { mode = "base", vmodel = "sb16" }
+client = "dos4gw"
+secs = 120
+note = "planted: T2D4GW.EXE DMA with the word L4P halves the buffer's cycles, the tone near 1 kHz; tonecheck W-DMA's pitch checks must FAIL (A3, L4 for T2W DMA's capture; on 86Box's own card; dev run t2wdev-dm0l4p: peak 998.6 Hz in DR, MU and MS)"
 
 [[test]]
 name = "T2L4-W-HLT"
