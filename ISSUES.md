@@ -1532,6 +1532,53 @@ Closed (Michael, 27 Oct 2026): a missed refill cannot move the closing beep; onl
   waits (bench 060dc9e): the same plant twice (t1h-prop, -prop2) with
   intact captures. T1.EXE's earlier evidence stands as recorded.
 
+### PARALLEL: how many 86Box recordings at once (A5's measured setting: one; measured 29 Oct 2026; a bench limit)
+
+- Asked (Michael, 29 Oct 2026): "ten selected games recorded one at a time,
+  then two at a time, then four, each instance with its own display, work
+  copies and capture; compare in-case underruns per capture (alrec.txt) and
+  HARNESS_ERROR retakes. The highest instance count whose rates match the
+  single-instance run is A5's and A6's setting, recorded in NOTES with the
+  data."
+- Measured [86Box 6.0 b9001 on the bench's 20-thread host, dynarec off, the
+  pinned C2 build at 32 frames, the sweep's zero-interaction run of 90 s]:
+  the recorder's stopped-source records inside the window, per capture.
+
+  | game | 1 at a time | 2 at a time | 4 at a time |
+  |---|---|---|---|
+  | DOS_ACT/LOLLYPOP | 230 | 296 | 1395 |
+  | DOS_ACT/REDRAMRA | 10 | 12 | 619 |
+  | DOS_ACT/BATTLEAR | 774 | 1412 | 2337 |
+  | DOS_ACT/TRACKATT | 5 | 450 | 1937 |
+  | DOS_ACT/DEDERBY | 40 | 233 | 1736 |
+  | DOS_THNK/STARGENE | 5 | 474 | 2041 |
+  | DOS_ACT/FXFIGHTE | 0 | 12 | 1188 |
+  | DOS_THNK/GOB3 | 5 | 359 | 1989 |
+  | DOS_THNK/XCOMUF | 114 | 554 | 615 |
+  | DOS_THNK/ADOM | 9 | 6 | 6 |
+  | median | 10 | 328 | 1566 |
+  | total | 1192 | 3808 | 13863 |
+
+  HARNESS_ERROR: 0, 0 and 0 (every capture within 0.02 % of the wall
+  clock). Runs pm1-, pm2- and pm4-GAME; the first 2 and 4 passes (.take1)
+  had every second instance refused by the bench's recording guard and are
+  not counted.
+- Reading: two at a time already multiplies the underruns (median 10 to
+  328; 8 of 10 games up); four at a time by about 150. The capture check
+  does not see it: the recorder fills a starved stretch with silence and
+  the length stays right, so only the underrun record shows the harm.
+  BATTLEAR's watchdog read HANG alone and RUNNING beside others: the
+  sound's gaps move the verdicts too. Only one at a time matches.
+- Setting: one recording at a time for A5 and A6 (the bench's
+  results/parallel.json, instances 1). A5's 762 runs at about 2 minutes
+  each: about 26 hours.
+- Note: even alone, some games starve the recorder (BATTLEAR 774,
+  LOLLYPOP 230, XCOMUF 114 in 90 s): 86FILL's mechanism (above), the
+  emulated machine behind real time without the recompiler. Those games'
+  gaps are the bench's on C0 and C2 alike; the whole-window comparison
+  must read them against the run's underrun record before calling a gap
+  the driver's.
+
 ### TOL2: "within 2" in the interrupt counts of CLIGAP, PICHOLD and DMAMC (a bench tolerance; written 27 Oct 2026)
 
 - What: T2.EXE judges the card's interrupts over a span against the blocks
