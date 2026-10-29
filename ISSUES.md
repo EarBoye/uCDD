@@ -1579,6 +1579,53 @@ Closed (Michael, 27 Oct 2026): a missed refill cannot move the closing beep; onl
   must read them against the run's underrun record before calling a gap
   the driver's.
 
+### TIER3CPU: the sweep's CPU (Tier 3 at a Pentium 133; measured 29 Oct 2026; a bench limit)
+
+- Ruled (Michael, 29 Oct 2026): "Measure the same ten games one at a time
+  at MMX 200, MMX 166 and Pentium 133 (C2; C0 for the three heavy ones as
+  well). Inserted silence per capture from alrec.txt as a fraction of the
+  90 s window. The Tier 3 CPU is the highest of the three at which all ten
+  stay under 2 %; the floor is Pentium-class (uCDD's documented
+  sub-Pentium limitation; no 486). C0 and C2 run at the same CPU. Tier 0-2
+  stay at MMX 233." With it, a new harness rule: a sweep run whose recorder
+  filled over 2 % of the window is HARNESS_ERROR and taken again, and the
+  HANG test counts silence only outside the filled spans.
+- Inserted silence: from the recorder's record, each streaming OpenAL
+  source's queue replayed with its measured buffer (20.0, 27.83 and 22.26
+  ms; source 4 queues only when it has sound and is not counted); where a
+  buffer comes after the queue ran out, the recorder filled. The worst
+  source's share of the window. Proven: a 3 s stall of 86Box's sound
+  thread read 3.34 % (HARNESS_ERROR), a 1 s stall 1.14 % (recorded).
+- Measured [86Box 6.0 b9001, dynarec off, the pinned C2 build at 32
+  frames and C0, the sweep's zero-interaction run; MMX 233 from PARALLEL's
+  single-instance runs (C2) and three C0 runs]: the inserted share and the
+  watchdog's state.
+
+| game | 233 C2 | 200 C2 | 166 C2 | 133 C2 | 233 C0 | 200 C0 | 166 C0 | 133 C0 |
+|---|---|---|---|---|---|---|---|---|
+| LOLLYPOP | 5.54 % running | 2.41 % running | 0.02 % running | 0.00 % running | 6.50 % running | 3.01 % running | 0.12 % running | 0.00 % running |
+| REDRAMRA | 0.16 % running | 0.09 % running | 0.00 % running | 0.01 % running |  |  |  |  |
+| BATTLEAR | 17.63 % hang | 9.58 % hang | 3.09 % hang | 0.00 % hang | 15.15 % hang | 10.29 % hang | 2.91 % hang | 0.01 % hang |
+| TRACKATT | 0.13 % exited | 0.00 % exited | 0.01 % exited | 0.50 % hang |  |  |  |  |
+| DEDERBY | 0.78 % running | 0.19 % running | 0.09 % running | 0.00 % running |  |  |  |  |
+| STARGENE | 0.09 % running | 0.00 % exited | 0.16 % exited | 0.00 % exited |  |  |  |  |
+| FXFIGHTE | 0.01 % running | 0.00 % running | 0.01 % running | 0.04 % running |  |  |  |  |
+| GOB3 | 0.15 % running | 0.10 % running | 0.11 % running | 0.01 % running |  |  |  |  |
+| XCOMUF | 2.63 % running | 0.00 % running | 0.01 % running | 0.04 % running | 2.07 % running | 0.08 % running | 0.18 % running | 0.00 % running |
+| ADOM | 0.20 % hang | 0.10 % hang | 0.03 % hang | 0.00 % hang |  |  |  |  |
+| worst | 17.63 % | 9.58 % | 3.09 % | 0.50 % | 15.15 % | 10.29 % | 2.91 % | 0.01 % |
+
+- Chosen: the Pentium 133 (pentium_p54c, 133 MHz, multiplier 2), every
+  game under 2 % on C2 (0.50 % at worst) and on C0 (0.01 %). MMX 200
+  fails on two games, MMX 166 on one. Set in the bench's thresholds.toml
+  [sweep] cpu; the sweep uses it unless told otherwise.
+- The CPU moves some games' own outcomes, on C0 as on C2: TRACKATT returns
+  to DOS at 166 and above and sits still at 133; STARGENE runs at 233 and
+  returns to DOS at the three slower CPUs. So C0 and C2 at the same CPU is
+  the only fair comparison, as ruled.
+- Timing: the bench's sweep timing comes from a Pentium 133; the PC at MMX
+  233 decides timing (A7's kit entries say so).
+
 ### TOL2: "within 2" in the interrupt counts of CLIGAP, PICHOLD and DMAMC (a bench tolerance; written 27 Oct 2026)
 
 - What: T2.EXE judges the card's interrupts over a span against the blocks
